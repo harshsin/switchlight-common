@@ -17,7 +17,7 @@ $(error $$ROOTFS_ARCH is not specified.)
 endif
 
 include $(SWITCHLIGHT)/make/config.mk
-include $(SWITCHLIGHT_REPO)/packages.mk
+include $(SWITCHLIGHT)/make/packages.mk
 
 ROOTFS_NAME=rootfs-$(ROOTFS_ARCH)
 ROOTFS_DIR=$(ROOTFS_BUILD_DIR)/$(ROOTFS_NAME)
