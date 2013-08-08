@@ -1,0 +1,4 @@
+rootfs-*.cpio
+rootfs-*.sqsh
+rootfs-*/
+*.swi
