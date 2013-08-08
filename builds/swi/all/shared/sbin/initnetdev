@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+exec 9<$0
+flock -x 9
+case $2 in
+    add)
+        dev=$1
+        devid=
+        if [ -e /sys/class/net/${dev}/device ]; then
+            eval $(realpath /sys/class/net/${dev}/device | sed 's#/sys/devices/\(.*\)#devid=\1#')
+        fi
+        while read i n; do
+            expr match "$i" "#" >/dev/null && continue || :
+            [ -n "${devid}" ] && expr match "${devid}" "$i" >/dev/null && name=$n && break || :
+            expr match "@${dev}" "$i" >/dev/null && name=$n && break || :
+        done </etc/sl_net
+        [ -n "${name}" ]
+        ip link set dev ${dev} name ${name}
+        ;;
+esac

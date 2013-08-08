@@ -1,0 +1,13 @@
+#!/bin/sh
+
+PATH=/bin:/sbin:/usr/bin:/usr/sbin
+
+d=$1
+
+exec >>/var/log/savepersist 2>&1
+set -ex
+
+[ "$d" ]
+cd $d
+find . | cpio -o >/mnt/flash${d}0
+mv /mnt/flash${d}0 /mnt/flash$d

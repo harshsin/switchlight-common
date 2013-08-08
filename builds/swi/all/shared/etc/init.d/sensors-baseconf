@@ -1,0 +1,28 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:        sensors-baseconf
+# Required-Start:  initdev
+# Required-Stop:   
+# Default-Start:   S
+# Default-Stop:    
+# Short-Description: Set up platform-specific sensors config
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+plat=$(cat /etc/sl_platform 2>/dev/null)
+
+[ "${plat}" ] || exit 0
+
+log_action_begin_msg "Setting up sensors configuration"
+
+if [ -f /etc/sensors3.conf-${plat} ]; then
+    ln -snf sensors3.conf-${plat} /etc/sensors3.conf
+fi
+
+if [ -f /etc/fancontrol-${plat} ]; then
+    ln -snf fancontrol-${plat} /etc/fancontrol
+fi
+
+log_action_end_msg 0
