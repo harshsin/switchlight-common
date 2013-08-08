@@ -1,0 +1,5 @@
+Configures parameters associated with the specified interface.
+
+An interface can be configured with a static IP address.
+Alternatively, an interface can be configured to request a dynamic
+IP address and other information from a DHCP server.

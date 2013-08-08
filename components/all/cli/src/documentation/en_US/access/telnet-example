@@ -1,0 +1,5 @@
+telnet enable
+  Enable the telnet server to allow remote login.
+
+no telnet enable
+  Disable the telnet server to disallow remote login.

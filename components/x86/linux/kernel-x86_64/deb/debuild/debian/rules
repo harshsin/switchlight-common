@@ -1,0 +1,23 @@
+#!/usr/bin/make -f
+
+DEB_DH_INSTALL_SOURCEDIR = debian/tmp
+INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
+
+%:
+	dh $@
+
+build-arch:
+	dh build-arch
+
+clean:
+	dh clean
+
+override_dh_auto_install:
+	mkdir -p $(INSTALL_DIR)/usr/kernels/x86_64/src
+	cp -R ../../linux-x86_64-headers $(INSTALL_DIR)/usr/kernels/x86_64/src
+	cp -R ../../kernel-x86_64 $(INSTALL_DIR)/usr/kernels/x86_64
+
+override_dh_strip:
+	@echo "Skipping dh_strip"
+
+

@@ -1,0 +1,1 @@
+If set to 'dhcp', enables DHCP on the interface specified by 'boot netdev'.

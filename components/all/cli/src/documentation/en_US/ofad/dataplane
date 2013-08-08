@@ -1,0 +1,2 @@
+Configure OpenFlow to emit log messages concerning the dataplane,
+including port state changes and packet-in messages.

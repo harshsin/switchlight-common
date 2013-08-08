@@ -1,0 +1,18 @@
+username admin secret wonderfulpw
+  Changes the admin user's password to 'wonderfulpw'.
+
+username admin secret md5 $1$12345678$0jYA6jXUG743LVW38f5l6.
+  Changes the admin user's password to that specified by the given MD5 hash.
+
+no username admin secret
+  Changes the admin user's password to the empty string.
+
+no username admin secret wonderfulpw
+  If the admin user's password was 'wonderfulpw', 
+  changes that password to the empty string.
+
+no username admin secret md5 $1$12345678$0jYA6jXUG743LVW38f5l6.
+  If the admin user's password MD5 hashed to 
+  '$1$12345678$0jYA6jXUG743LVW38f5l6.', 
+  changes that password to the empty string.
+

@@ -1,0 +1,4 @@
+Shows flow table statistics, including the maximum number of flow entries
+in the table, the number of currently active flow entries, the number
+of flow lookups that have occurred, and the number of times a lookup
+has resulted in a match.

@@ -1,0 +1,3 @@
+Configure logs to be saved locally.
+Logs will be written to /var/log/auth.log, /var/log/syslog,
+and /var/log/kern.log.

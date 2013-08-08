@@ -1,0 +1,6 @@
+Configure a DNS nameserver for this device.
+
+This command may be specified up to three times, inclusive.
+
+The order of configuration is significant; the first nameserver
+will be queried first, then the second, and finally the third.

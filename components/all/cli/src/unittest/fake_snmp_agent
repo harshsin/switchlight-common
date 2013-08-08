@@ -1,0 +1,28 @@
+#!/bin/sh
+
+if [ $# != 1 ]; then
+    echo "usage: $0 start|stop|reload"
+    exit 1
+fi
+
+case $1 in
+    ( start )
+        echo "fake SNMP agent start"
+	exit 0;;
+    ( stop )
+        echo "fake SNMP agent stop"
+	exit 0;;
+    ( reload )
+        echo "fake SNMP agent config reload"
+	exit 0;;
+    ( restart )
+        echo "fake SNMP agent config restart"
+	exit 0;;
+    ( status )
+        echo "fake SNMP agent status"
+	exit 0;;
+    ( * )
+        echo "usage: $0 start|stop|reload|status"
+	exit 1;;
+esac
+

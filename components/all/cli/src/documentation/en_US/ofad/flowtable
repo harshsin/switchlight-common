@@ -1,0 +1,3 @@
+Configure OpenFlow to emit log messages concerning the management
+of flows in the flowtable, including their addition, modification, or
+deletion.

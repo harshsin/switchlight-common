@@ -1,0 +1,9 @@
+Allows the addition or removal of users, as well as the management of their
+passwords.
+
+However, in its current form, there is only one user named 'admin', and
+that user may not be removed.  This command only permits the admin user's
+password to be changed.
+
+All username configuration commands are present in the running
+configuration.

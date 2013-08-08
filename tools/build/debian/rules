@@ -1,0 +1,14 @@
+#!/usr/bin/make -f
+
+DEB_DH_INSTALL_SOURCEDIR = debian/tmp
+
+INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	mkdir -p $(INSTALL_DIR)/usr/bin
+	cp ../mkws $(INSTALL_DIR)/usr/bin/mkws
+	cp ../chws $(INSTALL_DIR)/usr/bin/chws
+	cp ../chws-child $(INSTALL_DIR)/usr/bin/chws-child

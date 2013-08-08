@@ -1,0 +1,1 @@
+Clears packet and byte counters associated with the flows in the flow table.

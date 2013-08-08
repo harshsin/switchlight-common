@@ -1,0 +1,11 @@
+show interfaces
+* = Link up, D = Disabled
+ #  Name         Speed                   Rx                   Tx        
+ 1* ethernet1    1G                       0                    0        
+ 2* ethernet2    1G                       0                    0        
+ 3* ethernet3    1G                       0                    0        
+ 4* ethernet4    1G                       0                    0        
+ 5  ethernet5                             0                    0        
+ 6  ethernet6                             0                    0        
+ 7  ethernet7                             0                    0        
+ 8  ethernet8                             0                    0        

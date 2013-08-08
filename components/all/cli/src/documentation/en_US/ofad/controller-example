@@ -1,0 +1,11 @@
+controller 1.1.1.1
+  Add a controller at 1.1.1.1, port 6633.
+
+no controller 1.1.1.1
+  Remove the controller at 1.1.1.1, port 6633.
+
+controller 1.1.1.1 port 6900
+  Add a controller at 1.1.1.1, port 6900.
+
+no controller 1.1.1.1 port 6900
+  Remove the controller at 1.1.1.1, port 6900.

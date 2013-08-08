@@ -1,0 +1,8 @@
+show datapath
+  datapath:
+    id            00:00:5c:16:c7:18:a2:17
+    description  
+
+  The datapath id is currently configured to 5c:16:c7:18:a2:17.
+  A datapath description has not yet been configured, so an empty string
+  is displayed.

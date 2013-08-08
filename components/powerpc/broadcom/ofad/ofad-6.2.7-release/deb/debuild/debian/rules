@@ -1,0 +1,31 @@
+#!/usr/bin/make -f
+
+DEB_DH_INSTALL_SOURCEDIR = debian/tmp
+
+INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
+
+OFAD_6_2_7_DIR := $(SWITCHLIGHT)/components/powerpc/broadcom/ofad/ofad-6.2.7-release
+
+%:
+	dh $@
+
+build-arch:
+	dh build-arch
+
+clean:
+	dh clean
+
+override_dh_auto_install:
+	mkdir -p $(INSTALL_DIR)/usr/bin $(INSTALL_DIR)/etc/init.d
+	cp $(OFAD_6_2_7_DIR)/build/$(DEB_HOST_GNU_TYPE)/bin/ofad.shared $(INSTALL_DIR)/usr/bin/ofad-6.2
+	cp $(SWITCHLIGHT)/components/all/ofad/ofad-ctl $(INSTALL_DIR)/usr/bin/ofad-ctl
+	cp $(SWITCHLIGHT)/components/all/ofad/ofad.init debian
+
+override_dh_installinit:
+	dh_installinit --name=ofad
+
+override_dh_shlibdeps:
+	@echo "warning: ignoring shlibdeps due to libbroadcom.so dependency."
+
+override_dh_strip:
+	dh_strip --dbg-package=ofad-6.2.7-release-dbg

@@ -1,0 +1,9 @@
+Switch to the configuration submode, allowing configuration changes
+on the device.
+
+By default, configuration changes are not written to persistent memory;
+they will need to be written using the 'copy running-config startup-config'
+command.
+
+To return the device to the factory default configuration, 
+'delete startup-config' and then 'reload'.

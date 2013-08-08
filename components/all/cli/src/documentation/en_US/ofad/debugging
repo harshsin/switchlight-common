@@ -1,0 +1,2 @@
+Generate log messages for all levels: emergencies, alerts, critical events,
+errors, warnings, notifications, informational events, and debugging events.

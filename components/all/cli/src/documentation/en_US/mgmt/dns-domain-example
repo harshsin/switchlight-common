@@ -1,0 +1,2 @@
+dns-domain example.com
+  For instance, a query for 'host.example.com' can be shortened to 'host'.

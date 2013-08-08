@@ -1,0 +1,5 @@
+Comma-separated list of port and port ranges.
+
+For example, "interfaces ethernet1-4,32,36-40 shutdown" will disable
+ports ethernet1 through ethernet4, inclusive; ethernet32; and ethernet36
+through ethernet40, inclusive.

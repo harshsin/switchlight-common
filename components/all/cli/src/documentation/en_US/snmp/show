@@ -1,0 +1,3 @@
+Shows the SNMP configuration, including its current status,
+contact, location, communities, and trap and inform
+destinations.

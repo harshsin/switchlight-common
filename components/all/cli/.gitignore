@@ -1,0 +1,9 @@
+*.pyc
+*~
+/*.build
+/*.changes
+/*.deb
+/build/linux-headers
+/src/debian
+/squashfs-root
+/src/build

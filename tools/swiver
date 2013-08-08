@@ -1,0 +1,13 @@
+#!/bin/bash -e
+
+swi=$1
+newswi=$2
+version=$3
+
+[ "${version}" ] || { echo "Usage: $0 SWI NEWSWI VERSION" >&2; exit 1; }
+
+d=$(mktemp -d)
+cp "${swi}" $d/swi.zip
+echo "${version}" >$d/version
+( cd $d; zip swi.zip version )
+mv $d/swi.zip "${newswi}"

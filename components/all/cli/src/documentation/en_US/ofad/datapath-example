@@ -1,0 +1,6 @@
+datapath description 'Rack 3, Slot 42'
+  Sets the datapath description to the given text.
+
+datapath id a217;
+datapath id 00:00:00:00:00:00:a2:17
+  Multiple ways of setting the datapath id to 'a217'.

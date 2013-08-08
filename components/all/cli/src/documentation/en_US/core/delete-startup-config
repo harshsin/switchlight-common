@@ -1,0 +1,5 @@
+Deletes the saved startup configuration.
+
+To restore the device to a factory-default configuration:
+  delete startup-config
+  reload

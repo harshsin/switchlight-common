@@ -1,0 +1,3 @@
+Disables the specified interfaces.
+
+When the command preceded by 'no', enables the specified interfaces instead.

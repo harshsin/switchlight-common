@@ -1,0 +1,2 @@
+The 'hostname' keyword filters the running-config output to only
+display the hostname configuration.

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+WS_ROOT=.
+while [ ! -f "${WS_ROOT}/.pandora-ws" ]; do
+    if [ "${WS_ROOT}" -ef / ]; then
+	echo "Must run within a pandora workspace" 2>&1
+	exit 1
+    fi
+    WS_ROOT="${WS_ROOT}/.."
+done
+export WS_ROOT=$(realpath "${WS_ROOT}")
+export OPENSSL_ppccap=0
+sudo update-binfmts --enable
+
+if [ $# -lt 1 ]; then
+    set -- bash
+fi
+
+isolate -c $(dirname "$0")/chws-child -o "${WS_ROOT}" "$@"

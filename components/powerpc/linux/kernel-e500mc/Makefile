@@ -1,0 +1,50 @@
+###############################################################################
+#
+# Powerpc Linux for e500mc
+#
+###############################################################################
+BUILD_POWERPC_LINUX_E500MC := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+include $(SWITCHLIGHT)/make/config.mk
+
+all: kernel-e500mc linux-e500mc-headers 
+
+kernel-e500mc: $(BUILD_POWERPC_LINUX_E500MC)/kernel-e500mc
+linux-e500mc-headers: $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
+
+KERNEL_E500MC := $(BUILD_POWERPC_LINUX_E500MC)/kernel-e500mc
+KERNEL_E500MC_HEADERS := $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
+
+$(BUILD_POWERPC_LINUX_E500MC)/kernel-e500mc: $(SWITCHLIGHT_LINUX)/arch/powerpc/configs/85xx/pandora_e500mc_defconfig
+	mkdir -p $(BUILD_POWERPC_LINUX_E500MC)/linux-build-e500mc
+	$(MAKE) -C $(SWITCHLIGHT_LINUX) 85xx/pandora_e500mc_defconfig ARCH=powerpc O=$(BUILD_POWERPC_LINUX_E500MC)/linux-build-e500mc
+	PATH=$$PATH:$(SWITCHLIGHT)/tools $(MAKE) -C $(SWITCHLIGHT_LINUX) uImage ARCH=powerpc O=$(BUILD_POWERPC_LINUX_E500MC)/linux-build-e500mc
+	powerpc-linux-gnu-strip -o $(BUILD_POWERPC_LINUX_E500MC)/kernel-e500mc $(BUILD_POWERPC_LINUX_E500MC)/linux-build-e500mc/vmlinux
+
+
+$(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers/.done: $(SWITCHLIGHT_LINUX)/arch/powerpc/configs/85xx/pandora_e500mc_defconfig
+	mkdir -p $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
+	cp -a $(SWITCHLIGHT_LINUX)/include $(SWITCHLIGHT_LINUX)/arch/powerpc/include $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
+	$(MAKE) -C $(SWITCHLIGHT_LINUX) ARCH=powerpc O=$(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers 85xx/pandora_e500mc_defconfig
+	$(MAKE) -C $(SWITCHLIGHT_LINUX) ARCH=powerpc O=$(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers headers_install modules_prepare arch/powerpc/lib/crtsavres.o
+	touch $@
+
+$(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers: $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers/.done
+
+
+.PHONY: deb
+
+deb:
+	$(MAKE) -C deb
+
+
+
+
+
+
+
+
+
+
+
+

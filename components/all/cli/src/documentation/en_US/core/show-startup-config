@@ -1,0 +1,2 @@
+The 'show startup-config' displays the saved configuration that will be 
+parsed and executed when the device is started.

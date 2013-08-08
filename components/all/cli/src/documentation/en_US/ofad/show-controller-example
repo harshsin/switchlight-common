@@ -1,0 +1,12 @@
+show controller 
+  1.1.1.1:9999  DISCONNECTED
+
+  In this case, there is one controller configured, but it is 
+  currently disconnected.
+
+show controller history
+  Tue Mar 19 22:34:44 2013 2.2.2.2:6633 - Connected
+  Tue Mar 19 22:35:56 2013 2.2.2.2:6633 - Disconnected
+
+  A controller at 2.2.2.2, port 6633 connected and then disconnected
+  a minute and 12 seconds later on.

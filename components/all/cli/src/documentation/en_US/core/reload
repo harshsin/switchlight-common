@@ -1,0 +1,4 @@
+Reboot the device, using the saved configuration on device startup.
+
+Without the 'now' keyword, asks for confirmation of reboot.
+To confirm, type 'y' or hit return.

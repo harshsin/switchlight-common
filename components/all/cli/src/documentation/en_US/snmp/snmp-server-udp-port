@@ -1,0 +1,2 @@
+Configure the UDP port on which the specified host will receive 
+SNMP traps or informs.

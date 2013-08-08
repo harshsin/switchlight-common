@@ -1,0 +1,3 @@
+#!/bin/sh
+cd /usr/lib/python*/dist-packages/pcli
+exec python cli.py "$@"

@@ -1,0 +1,5 @@
+ssh enable
+  Enable the ssh server to allow remote login.
+
+no ssh enable
+  Disable the ssh server to disallow remote login.

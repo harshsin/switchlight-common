@@ -1,0 +1,11 @@
+interface ma1 ip-address 10.0.0.55/24
+  Use the specified static IP address for ma1.
+
+interface ma1 ip-address dhcp
+  Use DHCP to configure ma1.
+
+interface ethernet4 shutdown
+  Disable ethernet4.
+
+no interface ethernet4 shutdown
+  Enable ethernet4.

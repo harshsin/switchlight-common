@@ -1,0 +1,10 @@
+boot image flash2://switchlight001.swi
+  Boots the image located in /mnt/flash2 named switchlight001.swi.
+
+boot netdev ma1; boot netauto dhcp
+  Enables DHCP on ma1.
+
+boot netdev ma1; boot netip 10.0.0.10; boot netmask 255.255.255.0;
+boot netgw 10.0.0.1; boot netdomain example.com; boot netdns 10.0.0.8
+  Statically configures ma1 as 10.0.0.10/24 with gateway 10.0.0.1,
+  DNS domain example.com, and DNS server 10.0.0.8.

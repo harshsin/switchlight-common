@@ -1,0 +1,3 @@
+Configures parameters associated with the OpenFlow datapath.
+
+The datapath id and datapath description are currently configurable.

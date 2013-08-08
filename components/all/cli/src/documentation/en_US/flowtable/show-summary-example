@@ -1,0 +1,7 @@
+show flowtable summary 
+  table id          0
+  table name        Table 0
+  max entries       2045
+  active entries    3
+  lookup count      59
+  matched count     3

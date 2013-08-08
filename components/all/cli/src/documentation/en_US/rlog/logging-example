@@ -1,0 +1,8 @@
+logging host 20.0.0.20
+  Send logs to the server at 20.0.0.20 using UDP.
+
+logging host server.example.com tcp
+  Send logs to the server at server.example.com using TCP.
+
+logging enable-local
+  Enable local logging.

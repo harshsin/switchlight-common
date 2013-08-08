@@ -1,0 +1,19 @@
+Source: kernel-85xx
+Section: misc
+Priority: optional
+Maintainer: Jeffrey Townsend <jeff@bigswitch.com>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.8.4
+
+Package: kernel-85xx
+Architecture: powerpc
+Depends: 
+Description: SwitchLight Kernel for PowerPC 85xx
+ This package provides the SwitchLight Kernel for PowerPC 85xx
+
+Package: kernel-85xx-headers
+Architecture: powerpc
+Depends: 
+Description: SwitchLight Kernel for PowerPC 85xx (Headers)
+ This package provides the SwitchLight Kernel for PowerPC 85xx (Headers)
+

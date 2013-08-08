@@ -1,0 +1,6 @@
+Configure this device to respond to SNMP queries
+and generate SNMP traps and informs.
+
+Configure SNMP protocol parameters, 
+and configure how SNMP query responses and SNMP trap and inform messages
+are composed.

@@ -1,0 +1,7 @@
+Shows the state of all controllers currently configured 
+for the OpenFlow agent.  A controller is either connected or disconnected.
+
+With the 'history' keyword, shows the last 100 entries
+in the OpenFlow agent's connection log.
+
+With the 'statistics' keyword, shows inbound and outbound message counters.

@@ -1,0 +1,5 @@
+Shows the current health of the device.
+
+This includes CPU load and memory usage, 
+as well as temperatures, fan speeds, and voltages at various locations
+in the device.

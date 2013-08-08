@@ -1,0 +1,25 @@
+Specifies the location of the boot image.
+
+The format of this is one of the following:
+
+DEV:PATH
+  /mnt/DEV/PATH
+  Loads a SWI file from local storage device DEV (e.g. flash).
+
+http://[USER:PASSWORD@]SERVER/PATH
+  Downloads a SWI file via HTTP.
+
+ftp://[USER:PASSWORD@]SERVER/PATH
+  Downloads a SWI file via FTP.
+
+ssh|scp://USER:PASSWORD[:PORT]@SERVER/PATH
+  Downloads a SWI file via SSH.
+
+tftp://SERVER[:PORT]/PATH
+  Downloads a SWI file via TFTP.
+
+nfs://SERVER[:PORT]/PATH
+  If PATH is a file, mounts the parent directory via NFS and loads the
+  SWI file.  If PATH is a directory, mounts the directory and loads
+  the SWI without unpacking; PATH must end with / and the directory
+  must contain an unpacked SWI.

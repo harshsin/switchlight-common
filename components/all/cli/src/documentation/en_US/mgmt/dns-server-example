@@ -1,0 +1,2 @@
+dns-server 10.192.2.1; dns-server 10.194.2.20
+  Use 10.192.2.1 as primary nameserver, and 10.194.2.20 as secondary.

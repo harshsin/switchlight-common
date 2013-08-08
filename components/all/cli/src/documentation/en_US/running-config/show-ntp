@@ -1,0 +1,2 @@
+The 'ntp' keyword filters the running-config output to only
+display the NTP configuration.

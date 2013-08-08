@@ -1,0 +1,10 @@
+Shows the contents of the flow table for the OpenFlow agent.
+
+The priority, input port, destination MAC, source MAC,
+destination IP, source IP, output port, packet count, and duration
+of each flow is displayed.
+
+Warning: running this command may degrade the performance of the 
+OpenFlow agent, especially if there are many flows in the flow table.
+
+With the 'summary' keyword also provided, shows flow table statistics.

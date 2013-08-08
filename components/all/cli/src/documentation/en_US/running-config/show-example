@@ -1,0 +1,7 @@
+show running-config
+    Show the complete running-config
+
+show running-config ssh
+    Show the running-config associated with the ssh server, e.g.:
+    !
+    ssh enable

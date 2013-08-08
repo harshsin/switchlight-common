@@ -1,0 +1,2 @@
+The 'username' keyword filters the running-config output to only
+display the username configuration.

@@ -1,0 +1,37 @@
+#!/usr/bin/python
+# -*- Python -*- 
+import sys
+import os
+import socket
+
+#
+# Issue a command to the ofad network cli. 
+#
+
+if len(sys.argv) == 1:
+    print "usage: %s [command...]" % sys.argv[0]
+    sys.exit(1)
+
+# Default to localhost
+server = "localhost"
+
+# Allow override through environment
+if os.getenv("SERVER"):
+    server = os.getenv("SERVER")
+
+s = socket.socket()
+s.connect((server, 4454))
+cmd = " ".join(sys.argv[1:]) + "\n"
+s.send(cmd)
+
+while True:
+    data = s.recv(1024)
+    if data:
+        sys.stdout.write(data)
+    else:
+        break
+
+s.close()
+
+
+

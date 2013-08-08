@@ -1,0 +1,6 @@
+copy running-config startup-config
+    Copies the running configuration to the startup configuration,
+    to be used on device startup.
+
+copy tech-support flash2
+    Copies tech support information to /mnt/flash2 for later debugging.

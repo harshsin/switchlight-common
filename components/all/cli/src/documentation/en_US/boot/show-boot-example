@@ -1,0 +1,2 @@
+show boot
+  SWI=flash2://switchlight001.swi

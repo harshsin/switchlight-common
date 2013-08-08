@@ -1,0 +1,5 @@
+Displays the complete configuration for the device.
+
+The running-config is intended to show the configuration
+necessary to update a default configuration to the current
+configuration.

@@ -1,0 +1,9 @@
+Configures parameters associated with the specified interfaces.
+
+For management interfaces:
+An interface can be configured with a static IP address.
+Alternatively, an interface can be configured to request a dynamic
+IP address and other information from a DHCP server.
+
+For dataplane interfaces:
+A dataplane interface may be disabled.

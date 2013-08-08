@@ -1,0 +1,2 @@
+show interface ma1
+  Address 10.192.75.4/18  Gateway 10.192.64.1

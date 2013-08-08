@@ -1,0 +1,5 @@
+Configures boot parameters that are used when the switch is booted up.
+
+Changes to these parameters will be written immediately to persistent
+storage.  The values of these parameters will be used during the boot-up 
+process.
