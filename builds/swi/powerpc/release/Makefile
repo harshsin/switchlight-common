@@ -1,39 +1,19 @@
-###############################################################################
-#
-# Switchlight Powerpc Release Image
-#
-###############################################################################
 ifndef SWITCHLIGHT
-$(error $$SWITCHLIGHT is not defined.)
-else
-include $(SWITCHLIGHT)/make/config.mk
-export SWITCHLIGHT
+$(error $$SWITCHLIGHT is undefined.)
 endif
 
-.DEFAULT_GOAL := switchlight-powerpc-release.swi
+# 
+# These are the local packages that must be build
+# for this SWI configuration. 
+#
+SWITCHLIGHT_REQUIRED_PACKAGES := kernel-85xx:powerpc \
+				 kernel-e500mc:powerpc \
+				 pcli:all \
+				 faultd:powerpc \
+				 ofad-5.10.0-release:powerpc \
+				 ofad-5.6.6-release:powerpc \
+				 ofad-6.2.7-release:powerpc
 
-# We need the following package binaries
-kernel-85xx    := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx:powerpc --find-file kernel-85xx)
-kernel-e500mc  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-e500mc:powerpc --find-file kernel-e500mc)
-initrd-powerpc := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
-
-RELEASE := switchlight-release-ng
-
-switchlight-powerpc-release.swi: rootfs-powerpc.sqsh
-	rm -f $@.tmp
-	cp $(kernel-85xx) $(kernel-e500mc) $(initrd-powerpc) .
-	zip -n initrd-powerpc:rootfs-powerpc.sqsh - kernel-85xx kernel-e500mc initrd-powerpc rootfs-powerpc.sqsh >$@.tmp
-	$(SWITCHLIGHT)/tools/swiver $@.tmp $@ "$(RELEASE)"
-	rm kernel-85xx kernel-e500mc initrd-powerpc
-	rm rootfs-powerpc.sqsh
-	rm $@.tmp
-
-rootfs-powerpc.sqsh:
-	$(MAKE) -C rootfs rootfs.all
-	cp rootfs/$@ . 
-
-clean:
-	@rm -f *.swi
-	@$(MAKE) -C rootfs clean
+include $(SWITCHLIGHT)/make/component.mk
 
 
