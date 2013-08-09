@@ -20,8 +20,8 @@ DEBUILD = debuild --prepend-path=/usr/lib/ccache -eSWITCHLIGHT $(DEBUILD_ARGS) -
 
 PACKAGE_DIR := $(SWITCHLIGHT)/debian/repo
 
-all:
-	$(MAKE) -C ../
+deb:
+	@$(MAKE) -C ../ --no-print-directory
 	cd debuild; $(DEBUILD)
 	mv *.deb $(PACKAGE_DIR)
 	rm -rf debuild/debian/tmp $(foreach p,$(PACKAGE_NAMES),debuild/debian/$(p)/ debuild/debian/$(p)-dbg)
@@ -32,5 +32,6 @@ clean:
 dch:
 	cd build; EMAIL="$(USER)@bigswitch.com" dch -i
 
+all: deb
 
 
