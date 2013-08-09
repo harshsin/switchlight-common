@@ -12,8 +12,8 @@ endif
 .DEFAULT_GOAL := switchlight-i386-vm-internal.swi
 
 # We need the following package binaries
-kernel-x86_64  := $(shell $(SWITCHLIGHT)/debian/install.py kernel-x86-64 i386 --find-file kernel-x86_64)
-initrd-i386    := $(shell $(SWITCHLIGHT)/debian/install.py initrd-i386 i386 --find-file initrd-i386)
+kernel-x86_64  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-x86-64:i386 --find-file kernel-x86_64)
+initrd-i386    := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-i386:i386 --find-file initrd-i386)
 
 RELEASE := switchlight-internal-ng
 

@@ -12,9 +12,9 @@ endif
 .DEFAULT_GOAL := switchlight-powerpc-internal.swi
 
 # We need the following package binaries
-kernel-85xx    := $(shell $(SWITCHLIGHT)/debian/install.py kernel-85xx powerpc --find-file kernel-85xx)
-kernel-e500mc  := $(shell $(SWITCHLIGHT)/debian/install.py kernel-e500mc powerpc --find-file kernel-e500mc)
-initrd-powerpc := $(shell $(SWITCHLIGHT)/debian/install.py initrd-powerpc powerpc --find-file initrd-powerpc)
+kernel-85xx    := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx:powerpc --find-file kernel-85xx)
+kernel-e500mc  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-e500mc:powerpc --find-file kernel-e500mc)
+initrd-powerpc := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
 
 RELEASE := switchlight-internal-ng
 

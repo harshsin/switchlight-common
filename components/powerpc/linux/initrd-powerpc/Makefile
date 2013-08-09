@@ -1,34 +1,8 @@
-###############################################################################
-#
-#
-###############################################################################
-BUILD_INITRD_POWERPC := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is undefined.)
+endif
 
-include $(SWITCHLIGHT)/make/config.mk
-
-initrd-powerpc: $(BUILD_INITRD_POWERPC)/initrd-powerpc
-
-$(SWITCHLIGHT_LOADER)/.setup.done:
-	$(MAKE) -C $(SWITCHLIGHT_LOADER) setup
-	touch $(SWITCHLIGHT_LOADER)/.setup.done
-
-$(BUILD_INITRD_POWERPC)/initrd-powerpc: $(SWITCHLIGHT_LOADER)/.setup.done
-	$(MAKE) -C $(SWITCHLIGHT_LOADER) buildroot-powerpc
-	cat $(SWITCHLIGHT_LOADER)/buildroot-powerpc/images/rootfs.cpio.gz >initrd-powerpc
-
-.PHONY: deb
-
-deb:
-	$(MAKE) -C deb
-
-
-
-
-
-
-
-
-
-
+SWITCHLIGHT_REQUIRED_SUBMODULES := loader
+include $(SWITCHLIGHT)/make/component.mk
 
 

@@ -1,0 +1,34 @@
+###############################################################################
+#
+#
+###############################################################################
+BUILD_INITRD_POWERPC := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+include $(SWITCHLIGHT)/make/config.mk
+
+initrd-powerpc: $(BUILD_INITRD_POWERPC)/initrd-powerpc
+
+$(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done:
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) setup
+	touch $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done
+
+$(BUILD_INITRD_POWERPC)/initrd-powerpc: $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) buildroot-powerpc
+	cat $(SWITCHLIGHT_SUBMODULE_LOADER)/buildroot-powerpc/images/rootfs.cpio.gz >initrd-powerpc
+
+.PHONY: deb
+
+deb:
+	$(MAKE) -C deb
+
+
+
+
+
+
+
+
+
+
+
+

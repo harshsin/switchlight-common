@@ -1,11 +1,12 @@
-###############################################################################
-#
-# SDK 6.2.7 Release Build Configuration
-#
-###############################################################################
-SDK_CONFIG=release
-BUILD_SDK_6_2_7_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-include ../sdk-6.2.7.mk
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is undefined.)
+endif
+
+SWITCHLIGHT_REQUIRED_SUBMODULES := sdk-6.2.7
+SWITCHLIGHT_REQUIRED_PACKAGES := kernel-85xx-headers:powerpc
+
+include $(SWITCHLIGHT)/make/component.mk
+
 
 
 

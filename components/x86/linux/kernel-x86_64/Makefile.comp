@@ -1,0 +1,28 @@
+###############################################################################
+#
+# Powerpc kernel builds for all targets. 
+#
+###############################################################################
+BUILD_X86_LINUX := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+include $(SWITCHLIGHT)/make/config.mk
+
+all: kernel-x86_64 linux-x86_64-headers
+
+kernel-x86_64: $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/x86/configs/pandora_x86_64_defconfig
+	mkdir -p $(BUILD_X86_LINUX)/linux-build-x86_64
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) pandora_x86_64_defconfig O=$(BUILD_X86_LINUX)/linux-build-x86_64
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) bzImage O=$(BUILD_X86_LINUX)/linux-build-x86_64
+	cp $(BUILD_X86_LINUX)/linux-build-x86_64/arch/x86/boot/bzImage $(BUILD_X86_LINUX)/kernel-x86_64
+
+
+.PHONY: linux-x86_64-headers deb
+
+linux-x86_64-headers: $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/x86/configs/pandora_x86_64_defconfig
+	mkdir -p $(BUILD_X86_LINUX)/linux-x86_64-headers
+	cp -a $(SWITCHLIGHT_SUBMODULE_LINUX)/include $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/x86/include $(BUILD_X86_LINUX)/linux-x86_64-headers
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) ARCH=x86 O=$(BUILD_X86_LINUX)/linux-x86_64-headers pandora_x86_64_defconfig
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) ARCH=x86 O=$(BUILD_X86_LINUX)/linux-x86_64-headers headers_install modules_prepare 
+
+deb:
+	$(MAKE) -C deb

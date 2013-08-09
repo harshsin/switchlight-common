@@ -1,34 +1,8 @@
-###############################################################################
-#
-#
-###############################################################################
-BUILD_INITRD_386 := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is undefined.)
+endif
 
-include $(SWITCHLIGHT)/make/config.mk
-
-initrd-i386: $(BUILD_INITRD_386)/initrd-i386
-
-$(SWITCHLIGHT_LOADER)/.setup.done:
-	$(MAKE) -C $(SWITCHLIGHT_LOADER) setup
-	touch $(SWITCHLIGHT_LOADER)/.setup.done
-
-$(BUILD_INITRD_386)/initrd-i386: $(SWITCHLIGHT_LOADER)/.setup.done
-	$(MAKE) -C $(SWITCHLIGHT_LOADER) buildroot-i386
-	cat $(SWITCHLIGHT_LOADER)/buildroot-i386/images/rootfs.cpio.gz >initrd-i386
-
-.PHONY: deb
-
-deb:
-	$(MAKE) -C deb
-
-
-
-
-
-
-
-
-
-
+SWITCHLIGHT_REQUIRED_SUBMODULES := loader
+include $(SWITCHLIGHT)/make/component.mk
 
 

@@ -1,0 +1,44 @@
+###############################################################################
+#
+###############################################################################
+SWITCHLIGHT_REQUIRED_SUBMODULES := ly2-sdk-5.10.0
+BUILD_SDK_5_10_0_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
+SDK_CONFIG=release
+include $(SWITCHLIGHT)/make/config.mk
+
+.DEFAULT_GOAL := libbroadcom-$(SDK_CONFIG).so.5.10
+
+###############################################################################
+#
+# We need the 85XX header package installed before we can build
+#
+###############################################################################
+KERNEL_HEADERS := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx-headers:powerpc --find-dir linux-85xx-headers)
+
+###############################################################################
+
+libbroadcom-$(SDK_CONFIG).so.5.10: $(BUILD_SDK_5_10_0_DIR)/libbroadcom-$(SDK_CONFIG).so.5.10
+
+$(BUILD_SDK_5_10_0_DIR)/libbroadcom-$(SDK_CONFIG).so.5.10: $(SWITCHLIGHT_SUBMODULE_SDK_5_10_0)/build/switchlight/powerpc/$(SDK_CONFIG)/libbroadcom.so 
+	cp $(SWITCHLIGHT_SUBMODULE_SDK_5_10_0)/build/unix-user/pandora-powerpc-2_6/libbroadcom.so $(BUILD_SDK_5_10_0_DIR)/libbroadcom-$(SDK_CONFIG).so.5.10
+	cp $(SWITCHLIGHT_SUBMODULE_SDK_5_10_0)/build/linux-pandora-powerpc-2_6/pandora-powerpc-2_6/linux-kernel-bde.ko $(BUILD_SDK_5_10_0_DIR)/linux-kernel-bde-5.10.ko
+	cp $(SWITCHLIGHT_SUBMODULE_SDK_5_10_0)/build/linux-pandora-powerpc-2_6/pandora-powerpc-2_6/linux-user-bde.ko $(BUILD_SDK_5_10_0_DIR)/linux-user-bde-5.10.ko
+	cp $(SWITCHLIGHT_SUBMODULE_SDK_5_10_0)/build/unix-user/pandora-powerpc-2_6/libbroadcom.a $(BUILD_SDK_5_10_0_DIR)/libbroadcom-5.10-$(SDK_CONFIG).a
+	cp $(SWITCHLIGHT_SUBMODULE_SDK_5_10_0)/build/unix-user/pandora-powerpc-2_6/version.o $(BUILD_SDK_5_10_0_DIR)/version.o
+	ln -sf $(BUILD_SDK_5_10_0_DIR)/libbroadcom-$(SDK_CONFIG).so.5.10 $(BUILD_SDK_5_10_0_DIR)/libbroadcom.so
+
+$(SWITCHLIGHT_SUBMODULE_SDK_5_10_0)/build/switchlight/powerpc/$(SDK_CONFIG)/libbroadcom.so:
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_SDK_5_10_0)/systems/linux/user/pandora-powerpc-2_6 SDK=$(SWITCHLIGHT_SUBMODULE_SDK_5_10_0) PANDORA_LINUX_KERNEL=$(KERNEL_HEADERS)
+
+
+.PHONY: deb
+deb:
+	$(MAKE) -C deb SDK=$(SWITCHLIGHT_SUBMODULE_SDK_5_10_0)
+
+
+
+
+
+
+
+
