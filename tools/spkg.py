@@ -107,7 +107,7 @@ for pa in ops.packages[0]:
     #
     if os.path.exists(extract_dir):
         shutil.rmtree(extract_dir)
-        os.makedirs(extract_dir)
+    os.makedirs(extract_dir)
     os.system("dpkg -x %s/%s %s" % (package_dir, deb, extract_dir))
     find_file_or_dir(extract_dir, ops.find_file, ops.find_dir); 
 
