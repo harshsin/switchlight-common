@@ -31,9 +31,9 @@ def find_component_dir(basedir, package_name):
                         # By convention - find the parent directory
                         # That has a 'debian' directory in it. 
                         print "Found at %s" % root
-                        while not 'debian' in os.listdir(root):
+                        while not 'Makefile.comp' in os.listdir(root):
                             root += "/.."
-                        return os.path.abspath(root + "/..")
+                        return os.path.abspath(root)
 
 def find_package(repo, package, arch):
     """Find a package by name and architecture in the given repo dir"""
