@@ -42,10 +42,14 @@ rootfs.all: $(ROOTFS_DIR).sqsh $(ROOTFS_DIR).cpio
 
 export SWITCHLIGHT
 
+ifndef APT_CACHE
+APT_CACHE := 10.198.0.0:3142/
+endif
+
 $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done: $(SWITCHLIGHT_PACKAGE_MANIFEST)
 	sudo update-binfmts --enable
 	sudo rm -rf $(ROOTFS_DIR)
-	f=$$(mktemp); sed "s%__DIR__%$(SWITCHLIGHT_REPO)%g" $(ROOTFS_REPO_PATH) >$$f; $(SWITCHLIGHT)/tools/mkws --apt-cache 10.198.0.0:3142/ --nested -a $(ROOTFS_ARCH) --extra-repo $$f \
+	f=$$(mktemp); sed "s%__DIR__%$(SWITCHLIGHT_REPO)%g" $(ROOTFS_REPO_PATH) >$$f; $(SWITCHLIGHT)/tools/mkws --apt-cache $(APT_CACHE) --nested -a $(ROOTFS_ARCH) --extra-repo $$f \
 --extra-config $(ROOTFS_CLEANUP_PATH) $(ROOTFS_DIR)
 	touch $@
 
