@@ -18,7 +18,7 @@ clean:
 	dh clean
 
 
-SDK_DEV_INSTALL_DIR := $(INSTALL_DIR)/usr/src/libbroadcom-5.10-internal-dev
+SDK_DEV_INSTALL_DIR := $(INSTALL_DIR)/usr/src/libbroadcom-5.10-internal-sdk
 
 override_dh_auto_install:
 	mkdir -p $(INSTALL_DIR)/lib/modules $(INSTALL_DIR)/lib/$(DEB_HOST_GNU_TYPE)

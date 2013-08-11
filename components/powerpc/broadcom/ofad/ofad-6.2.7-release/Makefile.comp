@@ -6,7 +6,7 @@
 ###############################################################################
 include $(SWITCHLIGHT)/make/config.mk
 
-SDK := $(shell $(SWITCHLIGHT_PKG_INSTALL) libbroadcom-6.2-release-dev:powerpc --find-dir libbroadcom-6.2-release-dev)
+SDK := $(shell $(SWITCHLIGHT_PKG_INSTALL) libbroadcom-6.2-release-dev:powerpc --find-dir libbroadcom-6.2-release-sdk)
 SDK_BUILD_TARGET := switchlight-powerpc-release
 LIBBROADCOM_A := libbroadcom-6.2-release.a
 LIBBROADCOM_SO := libbroadcom-release.so.6.2

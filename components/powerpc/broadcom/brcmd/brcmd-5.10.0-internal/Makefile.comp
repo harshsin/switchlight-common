@@ -1,3 +1,4 @@
+# -*- Makefile -*-
 ###############################################################################
 #
 #  Makefile
@@ -13,7 +14,7 @@ endif
 
 DEBUG := 1
 
-SDK := $(shell $(SWITCHLIGHT_PKG_INSTALL) libbroadcom-5.10-release-dev:powerpc --find-dir libbroadcom-5.10-release-dev)
+SDK := $(shell $(SWITCHLIGHT_PKG_INSTALL) libbroadcom-5.10-internal-dev:powerpc --find-dir libbroadcom-5.10-internal-sdk)
 SDK_LIB_DIR := $(SDK)/build/switchlight/powerpc/internal
 SDK_BUILD_TARGET := pandora-powerpc-2_6
 LIBBROADCOM_A := libbroadcom-5.10-internal.a
