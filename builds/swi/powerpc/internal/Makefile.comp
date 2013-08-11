@@ -6,6 +6,7 @@
 ifndef SWITCHLIGHT
 $(error $$SWITCHLIGHT is not defined.)
 else
+include $(SWITCHLIGHT)/make/config.mk
 export SWITCHLIGHT
 endif
 

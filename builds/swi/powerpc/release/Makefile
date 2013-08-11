@@ -8,6 +8,7 @@ endif
 #
 SWITCHLIGHT_REQUIRED_PACKAGES := kernel-85xx:powerpc \
 				 kernel-e500mc:powerpc \
+				 initrd-powerpc:powerpc \
 				 pcli:all \
 				 faultd:powerpc \
 				 ofad-5.10.0-release:powerpc \
