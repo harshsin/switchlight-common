@@ -1,40 +1,15 @@
-###############################################################################
-#
-# Switchlight i386 VM Internal Image
-#
-###############################################################################
 ifndef SWITCHLIGHT
-$(error $$SWITCHLIGHT is not defined.)
-else
-export SWITCHLIGHT
+$(error $$SWITCHLIGHT is undefined.)
 endif
 
-.DEFAULT_GOAL := switchlight-i386-vm-internal.swi
+# 
+# These are the local packages that must be build
+# for this SWI configuration. 
+#
+SWITCHLIGHT_REQUIRED_PACKAGES := kernel-x86-64:i386 \
+				 initrd-i386:i386 \
+				 pcli:all 
 
-# We need the following package binaries
-kernel-x86_64  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-x86-64:i386 --find-file kernel-x86_64)
-initrd-i386    := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-i386:i386 --find-file initrd-i386)
-
-RELEASE := switchlight-internal-ng
-
-switchlight-i386-vm-internal.swi: rootfs-i386.sqsh
-	rm -f $@.tmp
-	cp $(kernel-x86_64) $(initrd-i386) .
-	zip -n initrd-i386:rootfs-i386.sqsh - kernel-x86_64 initrd-i386 rootfs-i386.sqsh >$@.tmp
-	$(SWITCHLIGHT)/tools/swiver $@.tmp $@ "$(RELEASE)"
-	rm kernel-x86_64 initrd-i386
-	rm rootfs-i386.sqsh
-	rm $@.tmp
-
-rootfs-i386.sqsh:
-	$(MAKE) -C rootfs rootfs.all
-	cp rootfs/$@ . 
-
-clean:
-	@rm -f *.swi
-	@$(MAKE) -C rootfs clean
-
-
-
+include $(SWITCHLIGHT)/make/component.mk
 
 
