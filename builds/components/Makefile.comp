@@ -1,0 +1,13 @@
+# -*- Makefile -*-
+###############################################################################
+# 
+# This component makefile doesn't build anything. 
+# Its a placeholder to build all of the prequisite components
+# listed in the original Makefile. 
+# 
+###############################################################################
+
+all:
+	@echo All components built. 
+
+
