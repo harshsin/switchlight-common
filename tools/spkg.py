@@ -83,7 +83,7 @@ for pa in ops.packages[0]:
     if len(packages) == 0:
         print "No matching packages for %s (%s)" % (package, arch)
         # Look for package builder
-        buildpath = find_component_dir(os.path.abspath("%s/components/%s" % (SWITCHLIGHT, arch)), 
+        buildpath = find_component_dir(os.path.abspath("%s/components" % (SWITCHLIGHT)), 
                                        package)
         if buildpath is not None:
             print "Can be built locally at %s" % buildpath
