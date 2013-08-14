@@ -1,3 +1,4 @@
+# -*- Makefile -*- 
 ###############################################################################
 #
 # Switchlight Powerpc Release Image
@@ -17,16 +18,17 @@ kernel-85xx    := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx:powerpc --find-
 kernel-e500mc  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-e500mc:powerpc --find-file kernel-e500mc)
 initrd-powerpc := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
 
-RELEASE := switchlight-release-ng
+SWITCHLIGHT_BUILD_CONFIG := powerpc.release
+RELEASE := SwitchLight (powerpc,release,$(SWITCHLIGHT_BUILD_TIMESTAMP),$(SWITCHLIGHT_BUILD_SHA1))
 
 switchlight-powerpc-release.swi: rootfs-powerpc.sqsh
 	rm -f $@.tmp
 	cp $(kernel-85xx) $(kernel-e500mc) $(initrd-powerpc) .
 	zip -n initrd-powerpc:rootfs-powerpc.sqsh - kernel-85xx kernel-e500mc initrd-powerpc rootfs-powerpc.sqsh >$@.tmp
-	$(SWITCHLIGHT)/tools/swiver $@.tmp $@ "$(RELEASE)"
+	$(SWITCHLIGHT)/tools/swiver $@.tmp switchlight-powerpc-release-$(SWITCHLIGHT_BUILD_TIMESTAMP).swi "$(RELEASE)"
 	rm kernel-85xx kernel-e500mc initrd-powerpc
 	rm rootfs-powerpc.sqsh
-	rm $@.tmp
+	rm *.tmp
 
 rootfs-powerpc.sqsh:
 	$(MAKE) -C rootfs rootfs.all
