@@ -1,0 +1,9 @@
+# -*- Makefile -*-
+###############################################################################
+#
+# This makefile is never invoked. 
+# It is here to mark this directory as the one from which the pcli package
+# can be built. The spkg script looks for a Makefile.comp in the parent
+# directory structure of the debian build directory. 
+#
+###############################################################################
