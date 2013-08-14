@@ -11,7 +11,7 @@ import crypt
 import spwd
 
 import subprocess
-from PandOS import shell
+from sl_util import shell
 
 
 def gen_salt():

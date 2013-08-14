@@ -3,3 +3,6 @@ table-miss-action packet-in
 
 table-miss-action drop
   Drop non-matching packets.
+
+table-miss-action normal
+  Forward according to the HW table state.

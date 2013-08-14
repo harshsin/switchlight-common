@@ -5,8 +5,8 @@ import run_config
 import error
 
 import subprocess
-from PandOS import shell
-from PandOS import OFConnection
+from sl_util import shell
+from sl_util import OFConnection
 
 import loxi.of10 as ofp
 
@@ -35,6 +35,7 @@ def get_port_info():
     num2name = {}
     features_reply = conn.request_features()
     for p in features_reply.ports:
+        p.name = get_port_name(p.name)
         ports[get_port_name(p.name)] = [p]
         num2name[p.port_no] = get_port_name(p.name)
 
@@ -226,7 +227,14 @@ def show_intf(data):
         base = get_base_name(data['intf-port-list'])
 
         if base and plat.mgmt_intf_base.startswith(base):
-            command.action_invoke('implement-show-mgmt-intf', data)
+            port_list = parse_port_list(data['intf-port-list'], 
+                                        base,
+                                        plat.mgmt_intf_base,
+                                        plat.mgmt_intf_min, 
+                                        plat.mgmt_intf_max)
+            for port in port_list:
+                command.action_invoke('implement-show-mgmt-intf',
+                                      ({'ifname': port},))
         elif base and plat.dp_intf_base.startswith(base):
             port_list = parse_port_list(data['intf-port-list'], 
                                         base,

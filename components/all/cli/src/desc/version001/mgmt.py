@@ -9,7 +9,7 @@ import os.path
 import subprocess
 import sys
 
-from PandOS import shell
+from sl_util import shell
 
 import command
 import run_config
@@ -138,18 +138,18 @@ class Interface(object):
 
     @property
     def dhcp_enabled (self):
-        return os.path.exists("/etc/pandos-dhcp-enabled-%s" % (self.name))
+        return os.path.exists("/etc/sl-dhcp-enabled-%s" % (self.name))
 
     @dhcp_enabled.setter
     def dhcp_enabled (self, enabled):
         if enabled == self.dhcp_enabled:
             return
         if enabled:
-            shell.call("touch /etc/pandos-dhcp-enabled-%s" % (self.name))
+            shell.call("touch /etc/sl-dhcp-enabled-%s" % (self.name))
             shell.call(Interface.START_DHCLIENT % ({"name" : self.name}))
         else:
             shell.call(Interface.STOP_DHCLIENT % ({"name" : self.name}))
-            shell.call("rm /etc/pandos-dhcp-enabled-%s" % (self.name))
+            shell.call("rm /etc/sl-dhcp-enabled-%s" % (self.name))
 
     @property
     def dhcp_sticky (self):
@@ -316,8 +316,8 @@ class _DNSConfig(object):
         firstboot = False
         with open(_DNSConfig.PATH, "r") as cfg:
             try:
-                pandos = cfg.readlines()[0]
-                if not pandos.startswith("### PandOS"):
+                line = cfg.readlines()[0]
+                if not line.startswith("### Switch Light"):
                     firstboot = True
             except IndexError, e:
                 firstboot = True
@@ -374,7 +374,7 @@ class _DNSConfig(object):
 
     def _firstboot(self):
         with open(_DNSConfig.PATH, "r+") as cfg:
-            newcfg = ["### PandOS\n"]
+            newcfg = ["### Switch Light\n"]
             for line in cfg.readlines():
                 if line.startswith("#") or not line.strip():
                     continue
@@ -385,7 +385,7 @@ class _DNSConfig(object):
 
     def _write_cache(self):
         with open(_DNSConfig.PATH, "w+") as cfg:
-            cl = ["### PandOS\n"]
+            cl = ["### Switch Light\n"]
             # MUST GRAB THE INTERNAL CACHE!
             # We've whacked it by this point, so ctime/mtime will have changed
             if self._domain_cache != '':

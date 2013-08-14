@@ -2,7 +2,7 @@
 
 import os
 
-from PandOS import shell, Service
+from sl_util import shell, Service
 
 import command
 import run_config
@@ -28,8 +28,8 @@ class _NTPConfig(object):
         firstboot = False
         with open(_NTPConfig.PATH, "r") as cfg:
             try:
-                pandos = cfg.readlines()[0]
-                if not pandos.startswith("### PandOS"):
+                line = cfg.readlines()[0]
+                if not line.startswith("### Switch Light"):
                     firstboot = True
             except IndexError, e:
                 firstboot = True
@@ -68,7 +68,7 @@ class _NTPConfig(object):
 
     def _firstboot (self):
         with open(_NTPConfig.PATH, "r+") as cfg:
-            newcfg = ["### PandOS\n"]
+            newcfg = ["### Switch Light\n"]
             for line in cfg.readlines():
                 if line.startswith("#") or not line.strip():
                     continue
@@ -79,7 +79,7 @@ class _NTPConfig(object):
 
     def _write_cache (self):
         with open(_NTPConfig.PATH, "w+") as cfg:
-            cl = ["### PandOS\n"]
+            cl = ["### Switch Light\n"]
             # MUST GRAB THE INTERNAL CACHE!
             # We've whacked it by this point, so ctime/mtime will have changed
             for server in self._server_cache:

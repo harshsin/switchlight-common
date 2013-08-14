@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import
 
-from PandOS.shell import call
+from sl_util.shell import call
 
 class Service(object):
     SVC_NAME = "UNSET"

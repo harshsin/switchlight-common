@@ -1,0 +1,3 @@
+Shows more detailed information about the flows in the flow table,
+including VLAN identifier, VLAN priority, ethertype, IP protocol,
+IP DSCP, L4 source port, and L4 dest port.

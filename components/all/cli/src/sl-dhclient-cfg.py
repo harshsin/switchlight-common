@@ -3,10 +3,10 @@
 import os
 import sys
 import json
-from PandOS.ofad import Controller, OFADConfig
+from sl_util.ofad import Controller, OFADConfig
 
 REASONS = set(["REBOOT", "RENEW"])
-PATH = "/etc/pandos-dhcp-enabled-%s"
+PATH = "/etc/sl-dhcp-enabled-%s"
 
 def saveLeaseInfo (path):
     e = os.environ

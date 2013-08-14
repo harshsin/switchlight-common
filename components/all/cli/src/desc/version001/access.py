@@ -2,7 +2,7 @@
 
 import command
 import run_config
-from PandOS import Service
+from sl_util import Service
 
 
 class SSH(Service):

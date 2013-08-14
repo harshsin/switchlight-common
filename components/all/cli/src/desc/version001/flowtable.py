@@ -4,15 +4,22 @@ import command
 import error
 
 import subprocess
-from PandOS import shell
-from PandOS import OFConnection
+from sl_util import shell
+from sl_util import OFConnection
 
 import loxi.of10 as ofp
 import fmtcnv
 
 
+# FIXME move this to a common place
+max_port = 52
+
+
 def display(val):
-    return str(val) if val != 0xffffffffffffffff else '---'
+    return str(val) if val != 0xffffffffffffffff else '-'
+
+def convert_mac_in_hex_string_to_byte_array(mac):
+    return [ int(x,16) for x in mac.split(':') ]
 
 
 class disp_flow_ob(object):
@@ -22,9 +29,13 @@ class disp_flow_ob(object):
     inport = "-"
     dmac = "-"
     smac = "-"
+    vid = "-"
+    vpcp = "-"
     prio = "-"
     dip = "-"
     sip = "-"
+    ipproto = "-"
+    ipdscp = "-"
     output = "-"
     modifications = "-"
     packets = "-"
@@ -37,9 +48,13 @@ class disp_flow_ob(object):
                  inport=inport,
                  dmac=dmac,
                  smac=smac,
+                 vid=vid,
+                 vpcp=vpcp,
                  prio=prio,
                  dip=dip,
                  sip=sip,
+                 ipproto=ipproto,
+                 ipdscp=ipdscp,
                  output=output,
                  modifications=modifications,
                  packets=packets,
@@ -51,9 +66,13 @@ class disp_flow_ob(object):
         self.inport = inport
         self.dmac = dmac
         self.smac = smac
+        self.vid = vid
+        self.vpcp = vpcp
         self.prio = prio
         self.dip = dip
         self.sip = sip
+        self.ipproto = ipproto
+        self.ipdscp = ipdscp
         self.output = output
         self.modifications = modifications
         self.packets = packets
@@ -67,17 +86,21 @@ flow_table_titles = disp_flow_ob(
     inport="In-Port",
     dmac="Dest Mac",
     smac="Src Mac",
+    vid="VLAN",
+    vpcp="VP",
     prio="Priority",
-    dip="Dest IP",
-    sip="Src IP",
+    dip="DstIP",
+    sip="SrcIP",
+    ipproto="Prot",
+    ipdscp="DSCP",
     output="Output",
     modifications="Modifications",
     packets="Packets",
     bytes="Bytes",
-    eth_type="Eth Type",
+    eth_type="EType",
     duration="Duration",
-    l4_src="L4 Src",
-    l4_dst="L4 Dst")
+    l4_src="L4Src",
+    l4_dst="L4Dst")
 
 def get_format_string(disp_config):
     """
@@ -85,7 +108,10 @@ def get_format_string(disp_config):
     For now, just return a static string.  But we can expand to do
     this based on configuration
     """
-    return "{0.prio:<8} {0.inport:<7} {0.dmac:<18} {0.smac:<18} {0.dip:<18} {0.sip:<18} {0.output:<16} {0.packets:<10} {0.duration:<10}"
+    if disp_config == 'detail':
+        return "{0.prio:<8} {0.inport:<7} {0.dmac:<18} {0.smac:<18} {0.eth_type:<5} {0.vid:<5} {0.vpcp:<2} {0.dip:<18} {0.sip:<18} {0.ipproto:<4} {0.ipdscp:<4} {0.l4_dst:<6} {0.l4_src:<6} {0.output:<16} {0.packets:<10} {0.duration:<10}"
+    else:
+        return "{0.prio:<8} {0.inport:<7} {0.dmac:<18} {0.smac:<18} {0.dip:<18} {0.sip:<18} {0.output:<16} {0.packets:<10} {0.duration:<10}"
 
 def flow_entry_to_disp(entry):
     """
@@ -95,13 +121,10 @@ def flow_entry_to_disp(entry):
     match = entry.match
     if not (match.wildcards & ofp.OFPFW_IN_PORT):
         rv.inport = str(match.in_port)
-    # FIXME VLAN
     if not (match.wildcards & ofp.OFPFW_DL_VLAN):
-        # str(match.vlan_vid))
-        pass
+        rv.vid = str(match.vlan_vid)
     if not (match.wildcards & ofp.OFPFW_DL_VLAN_PCP):
-        # str(match.vlan_pcp))
-        pass
+        rv.vpcp = str(match.vlan_pcp)
     if not (match.wildcards & ofp.OFPFW_DL_TYPE):
         rv.eth_type = str(hex(match.eth_type))
     if not (match.wildcards & ofp.OFPFW_DL_SRC):
@@ -110,11 +133,9 @@ def flow_entry_to_disp(entry):
         rv.dmac = fmtcnv.convert_mac_in_byte_array_to_hex_string(match.eth_dst)
     # FIXME mask or shift?
     if not (match.wildcards & ofp.OFPFW_NW_TOS):
-        # str(match.ip_dscp)
-        pass
+        rv.ipdscp = str(match.ip_dscp)
     if not (match.wildcards & ofp.OFPFW_NW_PROTO):
-        # str(match.ip_proto)
-        pass
+        rv.ipproto = str(match.ip_proto)
     if not (match.wildcards & ofp.OFPFW_NW_SRC_MASK):
         bits = 32-((match.wildcards & ofp.OFPFW_NW_SRC_MASK) >> ofp.OFPFW_NW_SRC_SHIFT)
         rv.sip = fmtcnv.convert_ip_in_integer_to_dotted_decimal(match.ipv4_src) + "/" + str(bits)
@@ -144,7 +165,7 @@ def flow_entry_to_disp(entry):
 
     rv.prio = str(entry.priority)
     rv.duration = str(entry.duration_sec)
-    rv.packets = str(entry.packet_count)
+    rv.packets = display(entry.packet_count)
 
     return rv
 
@@ -155,11 +176,30 @@ def show_flowtable(data):
     if 'summary' not in data:
         req = ofp.message.flow_stats_request()
         req.match.wildcards = ofp.OFPFW_ALL
+        #print 'starting wildcards ' + str(hex(req.match.wildcards))
+        if 'in-port' in data:
+            req.match.in_port = data['in-port']
+            req.match.wildcards = req.match.wildcards & ~ofp.OFPFW_IN_PORT
+        if 'src-mac' in data:
+            req.match.eth_src = \
+                convert_mac_in_hex_string_to_byte_array(data['src-mac'])
+            req.match.wildcards = req.match.wildcards & ~ofp.OFPFW_DL_SRC
+        if 'dst-mac' in data:
+            req.match.eth_dst = \
+                convert_mac_in_hex_string_to_byte_array(data['dst-mac'])
+            req.match.wildcards = req.match.wildcards & ~ofp.OFPFW_DL_DST
+        if 'vlan-id' in data:
+            # hex-to-integer returns a string?!
+            req.match.vlan_vid = int(data['vlan-id'])
+            req.match.wildcards = req.match.wildcards & ~ofp.OFPFW_DL_VLAN
+        #print 'ending wildcards ' + str(hex(req.match.wildcards))
         req.table_id = 0xff
-        req.out_port = ofp.OFPP_NONE
+        req.out_port = data['out-port'] if 'out-port' in data else ofp.OFPP_NONE
         count = 0
 
-        format_str = get_format_string(None)
+        cfg = 'detail' if 'detail' in data else None
+        format_str = get_format_string(cfg)
+
         print format_str.format(flow_table_titles)
         for x in conn.request_stats(req):
             count += 1
@@ -183,6 +223,55 @@ def show_flowtable(data):
 command.add_action('implement-show-flowtable', show_flowtable,
                     {'kwargs': {'data'      : '$data',}})
 
+IN_PORT = {
+    'field'        : 'in-port',
+    'tag'          : 'in-port',
+    'short-help'   : 'Filter on input port',
+    'base-type'    : 'integer',
+    'range'        : (1, max_port),
+    'optional'     : True,
+    'doc'          : 'flowtable|in-port',
+}
+
+OUT_PORT = {
+    'field'        : 'out-port',
+    'tag'          : 'out-port',
+    'short-help'   : 'Filter on output port',
+    'base-type'    : 'integer',
+    'range'        : (1, max_port),
+    'optional'     : True,
+    'doc'          : 'flowtable|out-port',
+}
+
+SRC_MAC = {
+    'field'        : 'src-mac',
+    'tag'          : 'src-mac',
+    'short-help'   : 'Filter on source MAC',
+    'type'         : 'mac-address',
+    'optional'     : True,
+    'doc'          : 'flowtable|src-mac',
+}
+
+DST_MAC = {
+    'field'        : 'dst-mac',
+    'tag'          : 'dst-mac',
+    'short-help'   : 'Filter on destination MAC',
+    'type'         : 'mac-address',
+    'optional'     : True,
+    'doc'          : 'flowtable|dst-mac',
+}
+
+VLAN_ID = {
+    'field'        : 'vlan-id',
+    'tag'          : 'vlan-id',
+    'short-help'   : 'Filter on VLAN identifier',
+    'base-type'    : 'hex-or-decimal-integer',
+    'range'        : (0, 4095),
+    'optional'     : True,
+    'data-handler' : 'hex-to-integer',
+    'doc'          : 'flowtable|vlan-id',
+}
+
 # FIXME specify table id?
 SHOW_FLOWTABLE_COMMAND_DESCRIPTION = {
     'name'         : 'show',
@@ -197,12 +286,30 @@ SHOW_FLOWTABLE_COMMAND_DESCRIPTION = {
             'doc-example' : 'flowtable|show-example',
         },
         {
-            'token'      : 'summary',
             'optional'   : True,
-            'short-help' : 'Show the flow table summary',
-            'data'       : { 'summary' : True },
-            'doc'        : 'flowtable|show-summary',
-            'doc-example' : 'flowtable|show-summary-example',
+            'choices' : (
+                {
+                    'token'      : 'summary',
+                    'short-help' : 'Show the flow table summary',
+                    'data'       : { 'summary' : True },
+                    'doc'        : 'flowtable|show-summary',
+                    'optional'   : True,
+                },
+                (
+                    IN_PORT,
+                    OUT_PORT,
+                    SRC_MAC,
+                    DST_MAC,
+                    VLAN_ID,
+                    {
+                        'token'      : 'detail',
+                        'short-help' : 'Show detailed flow table',
+                        'data'       : { 'detail' : True },
+                        'doc'        : 'flowtable|show-detail',
+                        'optional'   : True,
+                    },
+                ),
+             ),
         },
     )
 }

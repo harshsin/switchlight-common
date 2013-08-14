@@ -3,7 +3,7 @@
 import command
 import run_config
 import subprocess
-from PandOS import Service
+from sl_util import Service
 import utif
 import cfgfile
 import error

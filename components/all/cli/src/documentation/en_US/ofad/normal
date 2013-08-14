@@ -1,0 +1,1 @@
+Do not drop the packet, but forward it according to the HW table state.

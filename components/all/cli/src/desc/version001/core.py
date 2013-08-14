@@ -10,10 +10,10 @@ import socket
 import cfgfile
 from datetime import timedelta
 
-from PandOS import shell
+from sl_util import shell
 
 
-VERSION_FILE = '/etc/pandora-release'
+VERSION_FILE = '/etc/sl_version'
 
 def show_version(data):
     out = []
@@ -27,31 +27,33 @@ def show_version(data):
          fs_ver = "Switch Light - internal release"
     out.append(fs_ver)
 
-    # Uptime
-    out.append("")
-    try:
-        with open('/proc/uptime', 'r') as data:
-            secs = float(data.readline().split()[0])
-            out.append("Uptime is %s" % (str(timedelta(seconds = secs))[:-7]))
-    except Exception, e:
-        pass
+    if 'full' in data:
+        # Uptime
+        out.append("")
+        try:
+            with open('/proc/uptime', 'r') as data:
+                secs = float(data.readline().split()[0])
+                out.append("Uptime is %s" % 
+                           (str(timedelta(seconds = secs))[:-7]))
+        except Exception, e:
+            pass
 
-    # Load
-    try:
-        with open('/proc/loadavg', 'r') as data:
-            avgs = data.readline().split()[0:3]
-            out.append("Load average:  %s" % " ".join(avgs))
-    except:
-        pass
+        # Load
+        try:
+            with open('/proc/loadavg', 'r') as data:
+                avgs = data.readline().split()[0:3]
+                out.append("Load average:  %s" % " ".join(avgs))
+        except:
+            pass
 
-    # Memory
-    try:
-        with open('/proc/meminfo', 'r') as data:
-            memtotal = data.readline().split(':')[1].strip()
-            memfree = data.readline().split(':')[1].strip()
-            out.append("Memory:  %s of %s free" % (memfree, memtotal))
-    except:
-        pass
+        # Memory
+        try:
+            with open('/proc/meminfo', 'r') as data:
+                memtotal = data.readline().split(':')[1].strip()
+                memfree = data.readline().split(':')[1].strip()
+                out.append("Memory:  %s of %s free" % (memfree, memtotal))
+        except:
+            pass
 
     print "\n".join(out)
 
@@ -70,6 +72,7 @@ SHOW_VERSION_COMMAND_DESCRIPTION = {
             'token'       : 'version',
             'short-help'  : 'Show switch version information',
             'doc'         : 'core|show-version',
+            'data'        : { 'full' : True },
         },
     )
 }
@@ -276,7 +279,7 @@ command.add_action('implement-save', save_config,
 tech_support_tmpfile = 'tech-support.tmp'
 tech_support_script = [
     'date',
-    'cat /etc/pandora-release',
+    'cat /etc/sl_version',
     'cat /mnt/flash/boot-config',
     'cat /var/log/dmesg',
     'cat /etc/network/interfaces',

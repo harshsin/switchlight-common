@@ -112,7 +112,7 @@ def implement_show_running_config(words):
             prefix.append("! hostname: %s\n" % socket.gethostname())
             try:
                 prefix.append("! version: %s\n" % file(
-                        "/etc/pandora-release").read().strip())
+                        "/etc/sl_version").read().strip())
             except IOError:
                 pass
             prefix.append("! current time: %s\n" % time.strftime(

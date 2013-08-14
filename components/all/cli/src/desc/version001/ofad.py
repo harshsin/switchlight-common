@@ -4,7 +4,7 @@ import os
 import json
 
 import subprocess
-from PandOS import shell
+from sl_util import shell
 
 import cfgfile
 from contextlib import contextmanager
@@ -15,8 +15,8 @@ import error
 import command
 import run_config
 
-from PandOS.types import DPID
-from PandOS.ofad import OFADConfig, Controller
+from sl_util.types import DPID
+from sl_util.ofad import OFADConfig, Controller
 
 
 OFAgentConfig = OFADConfig()
@@ -349,7 +349,7 @@ OPENFLOW_TABLE_MISS_ACTION_COMMAND_DESCRIPTION = {
             'field'           : 'table-miss-action',
             'short-help'      : 'Action to take if no matching flows',
             'type'            : 'enum',
-            'values'          : ('packet-in', 'drop'),
+            'values'          : ('packet-in', 'drop', 'normal'),
             'optional-for-no' : True,
             'doc'             : 'ofad|+',
         },

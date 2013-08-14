@@ -5,7 +5,7 @@ import os
 import command
 import run_config
 
-from PandOS import Service
+from sl_util import Service
 
 class RSyslog(Service):
     SVC_NAME = "rsyslog"

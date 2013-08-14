@@ -6,7 +6,7 @@ from contextlib import contextmanager
 import json
 import copy
 
-from PandOS.types import DPID
+from sl_util.types import DPID
 
 class Controller(object):
     def __init__ (self):

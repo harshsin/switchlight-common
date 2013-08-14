@@ -1856,6 +1856,8 @@ class MainSh():
     #  this is just dispatching the command and handling errors
     #
     def loop(self):
+        command.action_invoke('implement-show-version', ({},))
+
         while self.run:
             # Get command line - this will use the command completion above
             try:
