@@ -9,7 +9,7 @@ all:
 	@echo "install-build-deps	Install build dependencies into your local workspace"
 
 install-build-deps:
-	echo -e 'APT::Get::AllowUnauthenticated "true";\nAPT::Get::Assume-Yes "true";' | sudo tee /etc/apt/apt.conf.d/99pandora
+	echo 'APT::Get::AllowUnauthenticated "true";\nAPT::Get::Assume-Yes "true";' | sudo tee /etc/apt/apt.conf.d/99pandora
 	sudo dpkg --add-architecture powerpc
 	echo "deb http://emdebian.org/debian/ wheezy main" | sudo tee /etc/apt/sources.list.d/emdebian.list
 	sudo apt-get update
