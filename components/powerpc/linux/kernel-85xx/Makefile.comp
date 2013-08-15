@@ -1,3 +1,4 @@
+# -*- Makefile -*-
 ###############################################################################
 #
 # Powerpc Linux for 85xx
@@ -27,6 +28,9 @@ $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers/.done: $(SWITCHLIGHT_SUBMODULE_LI
 	cp -a $(SWITCHLIGHT_SUBMODULE_LINUX)/include $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/powerpc/include $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers
 	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) ARCH=powerpc O=$(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers 85xx/pandora_mpc85xx_defconfig
 	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) ARCH=powerpc O=$(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers headers_install modules_prepare arch/powerpc/lib/crtsavres.o
+	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX)/scripts $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers
+	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX)/Makefile $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers
+	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/powerpc/Makefile $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers/arch/powerpc
 	touch $@
 
 $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers: $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers/.done

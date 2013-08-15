@@ -1,3 +1,4 @@
+# -*- Makefile -*-
 ###############################################################################
 #
 # Powerpc Linux for e500mc
@@ -27,6 +28,9 @@ $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers/.done: $(SWITCHLIGHT_SUBMODUL
 	cp -a $(SWITCHLIGHT_SUBMODULE_LINUX)/include $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/powerpc/include $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
 	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) ARCH=powerpc O=$(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers 85xx/pandora_e500mc_defconfig
 	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) ARCH=powerpc O=$(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers headers_install modules_prepare arch/powerpc/lib/crtsavres.o
+	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX)/scripts $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
+	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX)/Makefile $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
+	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/powerpc/Makefile $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers/arch/powerpc
 	touch $@
 
 $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers: $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers/.done
