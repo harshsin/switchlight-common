@@ -3,4 +3,5 @@
 # Except this file and the README
 !.gitignore
 !README
+!Makefile
 
