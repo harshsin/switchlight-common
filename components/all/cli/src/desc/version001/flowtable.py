@@ -13,6 +13,7 @@ import fmtcnv
 
 # FIXME move this to a common place
 max_port = 52
+max_table = 1
 
 
 def display(val):
@@ -26,12 +27,13 @@ class disp_flow_ob(object):
     """
     Defines the attributes of a printable flow
     """
+    prio = "-"
+    table_id = "-"
     inport = "-"
     dmac = "-"
     smac = "-"
     vid = "-"
     vpcp = "-"
-    prio = "-"
     dip = "-"
     sip = "-"
     ipproto = "-"
@@ -42,15 +44,18 @@ class disp_flow_ob(object):
     bytes = "-"
     eth_type = "-"
     duration = "-"
+    hard_to = "-"
+    idle_to = "-"
     l4_src = "-"
     l4_dst = "-"
     def __init__(self,
+                 prio=prio,
+                 table_id=table_id,
                  inport=inport,
                  dmac=dmac,
                  smac=smac,
                  vid=vid,
                  vpcp=vpcp,
-                 prio=prio,
                  dip=dip,
                  sip=sip,
                  ipproto=ipproto,
@@ -61,14 +66,17 @@ class disp_flow_ob(object):
                  bytes=bytes,
                  eth_type=eth_type,
                  duration=duration,
+                 hard_to=hard_to,
+                 idle_to=idle_to,
                  l4_src=l4_src,
                  l4_dst=l4_dst):
+        self.prio = prio
+        self.table_id = table_id
         self.inport = inport
         self.dmac = dmac
         self.smac = smac
         self.vid = vid
         self.vpcp = vpcp
-        self.prio = prio
         self.dip = dip
         self.sip = sip
         self.ipproto = ipproto
@@ -79,16 +87,19 @@ class disp_flow_ob(object):
         self.bytes = bytes
         self.eth_type = eth_type
         self.duration = duration
+        self.hard_to = hard_to
+        self.idle_to = idle_to
         self.l4_src = l4_src
         self.l4_dst = l4_dst
 
 flow_table_titles = disp_flow_ob(
-    inport="In-Port",
+    prio="Prio",
+    table_id="T",
+    inport="InP",
     dmac="Dest Mac",
     smac="Src Mac",
     vid="VLAN",
     vpcp="VP",
-    prio="Priority",
     dip="DstIP",
     sip="SrcIP",
     ipproto="Prot",
@@ -99,6 +110,8 @@ flow_table_titles = disp_flow_ob(
     bytes="Bytes",
     eth_type="EType",
     duration="Duration",
+    hard_to="HardTO",
+    idle_to="IdleTO",
     l4_src="L4Src",
     l4_dst="L4Dst")
 
@@ -109,9 +122,9 @@ def get_format_string(disp_config):
     this based on configuration
     """
     if disp_config == 'detail':
-        return "{0.prio:<8} {0.inport:<7} {0.dmac:<18} {0.smac:<18} {0.eth_type:<5} {0.vid:<5} {0.vpcp:<2} {0.dip:<18} {0.sip:<18} {0.ipproto:<4} {0.ipdscp:<4} {0.l4_dst:<6} {0.l4_src:<6} {0.output:<16} {0.packets:<10} {0.duration:<10}"
+        return "{0.prio:<5} {0.table_id:<1} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.eth_type:<5} {0.vid:<5} {0.vpcp:<2} {0.dip:<15} {0.sip:<15} {0.ipproto:<4} {0.ipdscp:<4} {0.l4_dst:<5} {0.l4_src:<5} {0.output:<16} {0.packets:<10} {0.hard_to:<6} {0.idle_to:<6} {0.duration:<10}"
     else:
-        return "{0.prio:<8} {0.inport:<7} {0.dmac:<18} {0.smac:<18} {0.dip:<18} {0.sip:<18} {0.output:<16} {0.packets:<10} {0.duration:<10}"
+        return "{0.prio:<5} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.dip:<15} {0.sip:<15} {0.output:<16} {0.packets:<10} {0.duration:<10}"
 
 def flow_entry_to_disp(entry):
     """
@@ -164,7 +177,10 @@ def flow_entry_to_disp(entry):
         rv.output += " + %d more" % (output_count - 2)
 
     rv.prio = str(entry.priority)
-    rv.duration = str(entry.duration_sec)
+    rv.table_id = str(entry.table_id)
+    rv.duration = display(entry.duration_sec)
+    rv.hard_to = str(entry.hard_timeout)
+    rv.idle_to = str(entry.idle_timeout)
     rv.packets = display(entry.packet_count)
 
     return rv
@@ -193,7 +209,7 @@ def show_flowtable(data):
             req.match.vlan_vid = int(data['vlan-id'])
             req.match.wildcards = req.match.wildcards & ~ofp.OFPFW_DL_VLAN
         #print 'ending wildcards ' + str(hex(req.match.wildcards))
-        req.table_id = 0xff
+        req.table_id = data['table-id'] if 'table-id' in data else 0xff
         req.out_port = data['out-port'] if 'out-port' in data else ofp.OFPP_NONE
         count = 0
 
@@ -222,6 +238,16 @@ def show_flowtable(data):
 
 command.add_action('implement-show-flowtable', show_flowtable,
                     {'kwargs': {'data'      : '$data',}})
+
+TABLE_ID = {
+    'field'        : 'table-id',
+    'tag'          : 'table-id',
+    'short-help'   : 'Filter on table identifier',
+    'base-type'    : 'integer',
+    'range'        : (0, max_table),
+    'optional'     : True,
+    'doc'          : 'flowtable|table-id',
+}
 
 IN_PORT = {
     'field'        : 'in-port',
@@ -272,7 +298,6 @@ VLAN_ID = {
     'doc'          : 'flowtable|vlan-id',
 }
 
-# FIXME specify table id?
 SHOW_FLOWTABLE_COMMAND_DESCRIPTION = {
     'name'         : 'show',
     'mode'         : 'login',
@@ -296,6 +321,7 @@ SHOW_FLOWTABLE_COMMAND_DESCRIPTION = {
                     'optional'   : True,
                 },
                 (
+                    TABLE_ID,
                     IN_PORT,
                     OUT_PORT,
                     SRC_MAC,
