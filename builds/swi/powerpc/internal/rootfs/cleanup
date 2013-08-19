@@ -14,7 +14,7 @@ chroot "${WS_ROOT}" /usr/sbin/update-rc.d faultd defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d loadstartupconfig defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d ofad defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d snmpd remove
-chroot "${WS_ROOT}" /usr/sbin/update-rc.d ssh remove
+chroot "${WS_ROOT}" /usr/sbin/update-rc.d ssh defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d openbsd-inetd remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d ntp remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d nfs-common remove
@@ -32,7 +32,16 @@ chroot "${WS_ROOT}" /usr/sbin/update-rc.d mountnfs-bootclean.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d mountnfs.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d lm-sensors remove
 
-chroot "${WS_ROOT}" passwd -d root
+cat >>"${WS_ROOT}/tmp/rootpass.sh" <<EOF
+#!/bin/bash
+echo "Setting root password to 'bsn'"
+echo root:bsn | /usr/sbin/chpasswd
+EOF
+
+chmod +x "${WS_ROOT}/tmp/rootpass.sh"
+chroot "${WS_ROOT}" /tmp/rootpass.sh
+rm "${WS_ROOT}/tmp/rootpass.sh"
+
 rm -f "${WS_ROOT}/etc/securetty" # allow root login via telnet
 sed -i "s/\(^[123456]:.*\)/#\1/" "${WS_ROOT}/etc/inittab"
 echo "T0:23:respawn:/sbin/pgetty ttyS0" >>"${WS_ROOT}/etc/inittab"
