@@ -35,6 +35,13 @@ class OFConnection(object):
         assert(isinstance(hello, ofp.message.hello))
         assert(hello.version == ofp.OFP_VERSION)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exctype, excval, exctrace):
+        self.close()
+        return False
+
     def close(self):
         self.sock.close()
 
@@ -71,6 +78,14 @@ class OFConnection(object):
             if reply.flags & 1 == 0:
                 break
         return stats
+
+    def request_stats_generator(self, request):
+        self.sendmsg(request)
+        while True:
+            reply = self.recvmsg()
+            yield reply.entries
+            if reply.flags & 1 == 0:
+                break
 
     def _read_exactly(self, n, timeout=None):
         _timeout = timeout or self.timeout
