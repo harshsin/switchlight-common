@@ -187,8 +187,6 @@ def flow_entry_to_disp(entry):
 
 
 def show_flowtable(data):
-    conn = OFConnection.OFConnection('127.0.0.1', 6634)
-
     if 'summary' not in data:
         req = ofp.message.flow_stats_request()
         req.match.wildcards = ofp.OFPFW_ALL
@@ -217,24 +215,26 @@ def show_flowtable(data):
         format_str = get_format_string(cfg)
 
         print format_str.format(flow_table_titles)
-        for x in conn.request_stats(req):
-            count += 1
-            if count % 20 == 0:
-                print
-                print format_str.format(flow_table_titles)
-            entry_disp = flow_entry_to_disp(x)
-            print format_str.format(entry_disp)
+        with OFConnection.OFConnection('127.0.0.1', 6634) as conn:
+            for entrylist in conn.request_stats_generator(req):
+                for entry in entrylist:
+                    count += 1
+                    if count % 20 == 0:
+                        print
+                        print format_str.format(flow_table_titles)
+                    entry_disp = flow_entry_to_disp(entry)
+                    print format_str.format(entry_disp)
     else:
-        for x in conn.request_stats(ofp.message.table_stats_request()):
-            format_str = '%-16s  %s'
-            print format_str % ('table id', str(x.table_id))
-            print format_str % ('table name', x.name)
-            print format_str % ('max entries', str(x.max_entries))
-            print format_str % ('active entries', str(x.active_count))
-            print format_str % ('lookup count', display(x.lookup_count))
-            print format_str % ('matched count', display(x.matched_count))
+        with OFConnection.OFConnection('127.0.0.1', 6634) as conn:
+            for x in conn.request_stats(ofp.message.table_stats_request()):
+                format_str = '%-16s  %s'
+                print format_str % ('table id', str(x.table_id))
+                print format_str % ('table name', x.name)
+                print format_str % ('max entries', str(x.max_entries))
+                print format_str % ('active entries', str(x.active_count))
+                print format_str % ('lookup count', display(x.lookup_count))
+                print format_str % ('matched count', display(x.matched_count))
 
-    conn.close()
 
 command.add_action('implement-show-flowtable', show_flowtable,
                     {'kwargs': {'data'      : '$data',}})
