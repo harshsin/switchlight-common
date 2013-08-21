@@ -11,7 +11,6 @@
 
 . /lib/lsb/init-functions
 
-cat /etc/sl_version >/etc/pandora-release
 cat /etc/sl_version >/etc/issue
 echo >>/etc/issue
 logger -t rc.boot </etc/sl_version
