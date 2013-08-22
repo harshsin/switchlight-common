@@ -8,7 +8,7 @@ BUILD_POWERPC_LINUX_E500MC := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 include $(SWITCHLIGHT)/make/config.mk
 
-all: kernel-e500mc linux-e500mc-headers 
+all: kernel-e500mc linux-e500mc-headers dtbs
 
 kernel-e500mc: $(BUILD_POWERPC_LINUX_E500MC)/kernel-e500mc
 linux-e500mc-headers: $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
@@ -21,7 +21,7 @@ $(BUILD_POWERPC_LINUX_E500MC)/kernel-e500mc: $(SWITCHLIGHT_SUBMODULE_LINUX)/arch
 	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) 85xx/pandora_e500mc_defconfig ARCH=powerpc O=$(BUILD_POWERPC_LINUX_E500MC)/linux-build-e500mc
 	PATH=$$PATH:$(SWITCHLIGHT)/tools $(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) uImage ARCH=powerpc O=$(BUILD_POWERPC_LINUX_E500MC)/linux-build-e500mc
 	powerpc-linux-gnu-strip -o $(BUILD_POWERPC_LINUX_E500MC)/kernel-e500mc $(BUILD_POWERPC_LINUX_E500MC)/linux-build-e500mc/vmlinux
-
+	cp $(BUILD_POWERPC_LINUX_E500MC)/linux-build-e500mc/vmlinux.bin.gz $(BUILD_POWERPC_LINUX_E500MC)/kernel-e500mc.bin.gz
 
 $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers/.done: $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/powerpc/configs/85xx/pandora_e500mc_defconfig
 	mkdir -p $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
@@ -35,6 +35,15 @@ $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers/.done: $(SWITCHLIGHT_SUBMODUL
 
 $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers: $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers/.done
 
+
+# These are the dtb files built for this kernel configuration:
+DTS_LIST := quanta_ly5
+DTB_LIST := $(foreach dts,$(DTS_LIST),$(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-dtbs/$(dts).dtb)
+
+$(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-dtbs/%.dtb: $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/powerpc/boot/dts/%.dts kernel-e500mc | $(shell mkdir -p $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-dtbs)
+	linux-build-e500mc/scripts/dtc/dtc -I dts -O dtb -o $@ $<
+
+dtbs: $(DTB_LIST)
 
 .PHONY: deb
 
