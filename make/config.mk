@@ -3,6 +3,7 @@
 # SwitchLight Configuration
 #
 ###############################################################################
+SHELL := /bin/bash
 
 #
 # These are the default submodule locations. 
@@ -66,6 +67,10 @@ space :=
 space +=
 SWITCHLIGHT_REQUIRED_SUBMODULES := $(subst $(space),:,$(SWITCHLIGHT_REQUIRED_SUBMODULES))
 SWITCHLIGHT_LOCAL_SUBMODULES := $(subst $(space),:,$(SWITCHLIGHT_LOCAL_SUBMODULES))
+endif
+
+ifdef SWITCHLIGHT_BUILD_CONFIG_FILE
+include $(SWITCHLIGHT_BUILD_CONFIG_FILE)
 endif
 
 ifndef SWITCHLIGHT_BUILD_TIMESTAMP

@@ -8,7 +8,7 @@ BUILD_POWERPC_LINUX_85XX := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 include $(SWITCHLIGHT)/make/config.mk
 
-all: kernel-85xx linux-85xx-headers 
+all: kernel-85xx linux-85xx-headers dtbs
 
 kernel-85xx: $(BUILD_POWERPC_LINUX_85XX)/kernel-85xx
 linux-85xx-headers: $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers
@@ -21,7 +21,7 @@ $(BUILD_POWERPC_LINUX_85XX)/kernel-85xx: $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/pow
 	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) 85xx/pandora_mpc85xx_defconfig ARCH=powerpc O=$(BUILD_POWERPC_LINUX_85XX)/linux-build-85xx
 	PATH=$$PATH:$(SWITCHLIGHT)/tools $(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) uImage ARCH=powerpc O=$(BUILD_POWERPC_LINUX_85XX)/linux-build-85xx
 	powerpc-linux-gnu-strip -o $(BUILD_POWERPC_LINUX_85XX)/kernel-85xx $(BUILD_POWERPC_LINUX_85XX)/linux-build-85xx/vmlinux
-
+	cp $(BUILD_POWERPC_LINUX_85XX)/linux-build-85xx/vmlinux.bin.gz $(BUILD_POWERPC_LINUX_85XX)/kernel-85xx.bin.gz
 
 $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers/.done: $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/powerpc/configs/85xx/pandora_mpc85xx_defconfig
 	mkdir -p $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers
@@ -34,6 +34,15 @@ $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers/.done: $(SWITCHLIGHT_SUBMODULE_LI
 	touch $@
 
 $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers: $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers/.done
+
+# These are the dtb files built for this kernel configuration:
+DTS_LIST := quanta_lb9 quanta_lb9a quanta_ly2 celestica_redstone delta_7448
+DTB_LIST := $(foreach dts,$(DTS_LIST),$(BUILD_POWERPC_LINUX_85XX)/linux-85xx-dtbs/$(dts).dtb)
+
+$(BUILD_POWERPC_LINUX_85XX)/linux-85xx-dtbs/%.dtb: $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/powerpc/boot/dts/%.dts kernel-85xx | $(shell mkdir -p $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-dtbs)
+	linux-build-85xx/scripts/dtc/dtc -I dts -O dtb -o $@ $<
+
+dtbs: $(DTB_LIST)
 
 
 .PHONY: deb
