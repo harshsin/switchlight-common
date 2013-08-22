@@ -1,16 +1,14 @@
-###############################################################################
-#
-# Build SwitchLight installer for all supported powerpc platforms. 
-#
-###############################################################################
 ifndef SWITCHLIGHT
-$(error $$SWITCHLIGHT is not set.)
-else
-include $(SWITCHLIGHT)/make/config.mk
+$(error $$SWITCHLIGHT is undefined.)
 endif
 
-INSTALLER_PLATFORMS := quanta-lb9 quanta-ly2 quanta-ly5 delta-7448 celestica-redstone
-INSTALLER_SWI := $(SWITCHLIGHT)/builds/swi/powerpc/release/switchlight-powerpc-release.swi
-INSTALLER_NAME := switchlight-powerpc-release.all.$(SWITCHLIGHT_BUILD_TIMESTAMP).installer
+# 
+# These are the local packages that must be build
+# for this SWI configuration, based on the required platforms. 
+#
+include platforms.mk
+SWITCHLIGHT_REQUIRED_PACKAGES := $(foreach p,$(INSTALLER_PLATFORMS),platform-$p:powerpc)
 
-include $(SWITCHLIGHT)/make/installer-ppc.mk
+include $(SWITCHLIGHT)/make/component.mk
+
+

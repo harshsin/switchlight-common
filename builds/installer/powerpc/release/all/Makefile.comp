@@ -1,0 +1,17 @@
+###############################################################################
+#
+# Build SwitchLight installer for all supported powerpc platforms. 
+#
+###############################################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not set.)
+else
+include $(SWITCHLIGHT)/make/config.mk
+endif
+
+include platforms.mk
+
+INSTALLER_SWI := $(SWITCHLIGHT)/builds/swi/powerpc/release/switchlight-powerpc-release.swi
+INSTALLER_NAME := switchlight-powerpc-release.all.$(SWITCHLIGHT_BUILD_TIMESTAMP).installer
+
+include $(SWITCHLIGHT)/make/installer-ppc.mk

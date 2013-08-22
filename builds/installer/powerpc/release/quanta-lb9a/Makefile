@@ -1,22 +1,14 @@
-###############################################################################
-#
-# Build SwitchLight installer for the Quanta LB9A
-#
-# 
-# The LB9A only has 512M of memory. This is not enough to handle
-# the size of the full multi-platform installer. 
-#
-###############################################################################
 ifndef SWITCHLIGHT
-$(error $$SWITCHLIGHT is not set.)
-else
-include $(SWITCHLIGHT)/make/config.mk
+$(error $$SWITCHLIGHT is undefined.)
 endif
 
-# Support these platforms. 
-INSTALLER_PLATFORMS := quanta-lb9a 
-# Use the powerpc-release SWI build.
-INSTALLER_SWI := $(SWITCHLIGHT)/builds/swi/powerpc/release/switchlight-powerpc-release.swi
-INSTALLER_NAME := switchlight-powerpc-release.quanta-lb9a.$(SWITCHLIGHT_BUILD_TIMESTAMP).installer
+# 
+# These are the local packages that must be build
+# for this SWI configuration, based on the required platforms. 
+#
+include platforms.mk
+SWITCHLIGHT_REQUIRED_PACKAGES := $(foreach p,$(INSTALLER_PLATFORMS),platform-$p:powerpc)
 
-include $(SWITCHLIGHT)/make/installer-ppc.mk
+include $(SWITCHLIGHT)/make/component.mk
+
+
