@@ -1,0 +1,31 @@
+#!/bin/bash
+
+LOADER_SIZE_KB=$1
+LOADER=$2
+FLASHFS_SIZE_KB=$3
+FLASHFS_ERASEBLOCK_KB=$4
+SWI_URL=$5
+FLASH_IMAGE=$6
+
+if [ ! "${FLASH_IMAGE}" ]; then
+    echo "Usage: $0 LOADER_SIZE_KB LOADER FLASHFS_SIZE_KB FLASHFS_ERASEBLOCK_KB SWI_URL FLASH_IMAGE" >&2
+    exit 1
+fi
+
+d=$(mktemp -d)
+
+set -x
+
+# Copy loader to flash image, add padding
+cat ${LOADER} >${FLASH_IMAGE}
+dd of=${FLASH_IMAGE} seek=${LOADER_SIZE_KB} bs=1024 count=0
+
+# Append another copy of the loader to flash image, add padding
+cat ${LOADER} >>${FLASH_IMAGE}
+dd of=${FLASH_IMAGE} seek=$((2 * ${LOADER_SIZE_KB})) bs=1024 count=0
+
+# Create jffs2 filesystem image containing boot-config file, append to flash image
+mkdir $d/flash
+echo "SWI=${SWI_URL}" >$d/flash/boot-config
+mkfs.jffs2 --root=$d/flash --pad=$((${FLASHFS_SIZE_KB} * 1024)) --eraseblock=${FLASHFS_ERASEBLOCK_KB} --big-endian --output=$d/flash.jffs2
+cat $d/flash.jffs2 >>${FLASH_IMAGE}
