@@ -14,8 +14,11 @@ clean:
 
 override_dh_auto_install:
 	mkdir -p $(INSTALL_DIR)/usr/kernels/85xx/src
+	mkdir -p $(INSTALL_DIR)/usr/kernels/85xx/dtb
 	cp -R ../../linux-85xx-headers $(INSTALL_DIR)/usr/kernels/85xx/src
-	cp -R ../../kernel-85xx $(INSTALL_DIR)/usr/kernels/85xx
+	cp ../../kernel-85xx $(INSTALL_DIR)/usr/kernels/85xx
+	cp ../../kernel-85xx.bin.gz $(INSTALL_DIR)/usr/kernels/85xx
+	cp -R ../../linux-85xx-dtbs/*.dtb $(INSTALL_DIR)/usr/kernels/85xx/dtb
 
 override_dh_strip:
 	@echo "Skipping dh_strip"
