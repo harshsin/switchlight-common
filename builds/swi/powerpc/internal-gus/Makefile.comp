@@ -1,0 +1,44 @@
+# -*- Makefile -*- 
+###############################################################################
+#
+# Switchlight Powerpc Internal Image (Grand Unified SDK)
+#
+###############################################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not defined.)
+else
+include $(SWITCHLIGHT)/make/config.mk
+export SWITCHLIGHT
+endif
+
+.DEFAULT_GOAL := switchlight-powerpc-internal-gus.swi
+
+# We need the following package binaries
+kernel-85xx    := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx:powerpc --find-file kernel-85xx)
+kernel-e500mc  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-e500mc:powerpc --find-file kernel-e500mc)
+initrd-powerpc := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
+
+SWITCHLIGHT_BUILD_CONFIG := powerpc.internal
+RELEASE := SwitchLight (powerpc,internal-gus,$(SWITCHLIGHT_BUILD_TIMESTAMP),$(SWITCHLIGHT_BUILD_SHA1))
+
+switchlight-powerpc-internal-gus.swi: rootfs-powerpc.sqsh
+	rm -f $@.tmp
+	rm -f *.swi
+	cp $(kernel-85xx) $(kernel-e500mc) $(initrd-powerpc) .
+	zip -n initrd-powerpc:rootfs-powerpc.sqsh - kernel-85xx kernel-e500mc initrd-powerpc rootfs-powerpc.sqsh >$@.tmp
+	$(SWITCHLIGHT)/tools/swiver $@.tmp switchlight-powerpc-internal-gus-$(SWITCHLIGHT_BUILD_TIMESTAMP).swi "$(RELEASE)"
+	ln -s switchlight-powerpc-internal-gus-$(SWITCHLIGHT_BUILD_TIMESTAMP).swi $@
+	rm kernel-85xx kernel-e500mc initrd-powerpc
+	rm rootfs-powerpc.sqsh
+	rm *.tmp
+
+rootfs-powerpc.sqsh:
+	$(MAKE) -C rootfs rootfs.all
+	cp rootfs/$@ . 
+
+
+clean:
+	@rm -f *.swi
+	@$(MAKE) -C rootfs clean
+
+
