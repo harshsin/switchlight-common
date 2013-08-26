@@ -49,7 +49,7 @@ ap.add_argument("packages", nargs='*', action='append',
                 help="package:arch", default=None)
 
 ap.add_argument("--force", help="Force reinstall", 
-                action='store_true')
+                action='store_false')
 ap.add_argument("--find-file", help="Return path to given file.", 
                 default=None)
 ap.add_argument("--find-dir", help="Return path to the given directory.", 
