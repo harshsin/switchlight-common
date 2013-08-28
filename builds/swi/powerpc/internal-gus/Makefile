@@ -11,6 +11,7 @@ SWITCHLIGHT_REQUIRED_PACKAGES := kernel-85xx:powerpc \
 				 initrd-powerpc:powerpc \
 				 pcli:all \
 				 faultd:powerpc \
+				 sofcon:powerpc \
 				 ofad-6.2.7-internal:powerpc \
 				 brcmd-6.2.7-internal:powerpc 
 
