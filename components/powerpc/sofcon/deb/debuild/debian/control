@@ -1,0 +1,22 @@
+Source: sofcon
+Section: misc
+Priority: optional
+Maintainer: Jeffrey Townsend <jeff@bigswitch.com>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.8.4
+
+Package: sofcon
+Architecture: powerpc
+Depends: libc6
+Description: Fault Reporting Daemon
+ This package provides the Fault Reporting Daemon. 
+
+Package: sofcon-dbg
+Architecture: powerpc
+Section: debug
+Priority: extra
+Depends:
+        sofcon (= ${binary:Version}),
+	${misc:Depends}
+Description: Debugging symbols for sofcon
+ This packages provides the debug symbols for sofcon.
