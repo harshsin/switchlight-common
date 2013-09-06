@@ -1,0 +1,66 @@
+###############################################################################
+#
+# sl Autogeneration Definitions.
+#
+###############################################################################
+
+cdefs: &cdefs
+- SL_CONFIG_INCLUDE_LOGGING:
+    doc: "Include or exclude logging."
+    default: 1
+- SL_CONFIG_LOG_OPTIONS_DEFAULT:
+    doc: "Default enabled log options."
+    default: AIM_LOG_OPTIONS_DEFAULT
+- SL_CONFIG_LOG_BITS_DEFAULT:
+    doc: "Default enabled log bits."
+    default: AIM_LOG_BITS_DEFAULT
+- SL_CONFIG_LOG_CUSTOM_BITS_DEFAULT:
+    doc: "Default enabled custom log bits."
+    default: 0
+- SL_CONFIG_PORTING_STDLIB:
+    doc: "Default all porting macros to use the C standard libraries."
+    default: 1
+- SL_CONFIG_PORTING_INCLUDE_STDLIB_HEADERS:
+    doc: "Include standard library headers for stdlib porting macros."
+    default: SL_CONFIG_PORTING_STDLIB
+- SL_CONFIG_INCLUDE_UCLI:
+    doc: "Include generic uCli support."
+    default: 0
+
+
+# These are the BSN shell services we support in this module
+shell_services: &shell_services
+- RESERVED 
+- SHELL 
+- CLI 
+
+definitions:
+  cdefs:
+    SL_CONFIG_HEADER:
+      defs: *cdefs
+      basename: sl_config
+
+  portingmacro:
+    SL:
+      macros:
+        - malloc
+        - free
+        - memset
+        - memcpy
+        - strncpy
+        - vsnprintf
+        - snprintf
+        - strlen
+
+  enum: &enum
+    sl_shell_service_type: 
+      members: *shell_services
+
+  xmacro:
+    SL_SHELL_SERVICE_TYPE_ENTRY:
+      members: *shell_services
+
+  xenum:
+    SL_ENUMERATION_ENTRY: 
+      members: *enum
+
