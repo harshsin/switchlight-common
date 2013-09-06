@@ -49,13 +49,15 @@ ap.add_argument("packages", nargs='*', action='append',
                 help="package:arch", default=None)
 
 ap.add_argument("--force", help="Force reinstall", 
-                action='store_false')
+                action='store_true')
 ap.add_argument("--find-file", help="Return path to given file.", 
                 default=None)
 ap.add_argument("--find-dir", help="Return path to the given directory.", 
                 default=None)
 ap.add_argument("--build", help="Attempt to build local package if it exists.", 
                 action='store_true')
+ap.add_argument("--add-pkg", nargs='+', action='append', 
+                default=None, help="Install new package files and invalidate corresponding installs.")
 
 ops = ap.parse_args()
 
@@ -64,6 +66,25 @@ package_dir = os.path.abspath("%s/debian/repo" % SWITCHLIGHT)
 
 if SWITCHLIGHT is None:
     raise Exception("$SWITCHLIGHT is not defined.")
+
+if ops.add_pkg:
+    for pa in ops.add_pkg[0]:
+        # Copy the package into the repo
+        print "Adding new package %s..." % pa
+        shutil.copy(pa, package_dir); 
+        # Determine package name and architecture
+        underscores = pa.split('_')
+        # Package name is the first entry
+        package = underscores[0]
+        # Architecture is the last entry (.deb)
+        arch = underscores[-1].split('.')[0]
+        extract_dir = "%s/debian/installs/%s/%s" % (SWITCHLIGHT, arch, package)
+        if os.path.exists(extract_dir):
+            # Make sure the package gets reinstalled the next time it's needed
+            print "Removed previous install directory %s..." % extract_dir
+            shutil.rmtree(extract_dir)
+    sys.exit(0)
+        
 
 for pa in ops.packages[0]:
 
