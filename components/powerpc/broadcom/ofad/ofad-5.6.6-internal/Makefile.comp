@@ -34,12 +34,12 @@ LIBRARY := ofad-5.6.6-internal-lib
 $(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(BUILDER)/lib.mk
 
-MODULE_DIRS := $(BIGCODE)/Modules $(BIGCODE)/indigo/Modules $(BROADCOM)/Modules
+MODULE_DIRS := $(BIGCODE)/Modules $(BIGCODE)/indigo/Modules $(BROADCOM)/Modules $(SWITCHLIGHT)/modules
 
 DEPENDMODULES := SocketManager OFConnectionManager BRCM BRCMDriver \
 	OFStateManager snmp murmur NSS ELS AET Configuration cjson \
 	loci indigo Faultd IOF PPE IVS uCli BigList BigRing OS AIM \
-	tagport pimu nwac cintm
+	tagport pimu nwac cintm sl
 
 #
 # Resolve module dependencies
