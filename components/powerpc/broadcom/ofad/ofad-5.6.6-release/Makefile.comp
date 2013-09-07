@@ -55,6 +55,10 @@ $(BINARY)_LIBRARIES := $(LIBRARY_TARGETS)
 include $(BUILDER)/bin.mk
 $(BINARY)_EXTRA_LINK_LIBS += $(SDK_STATIC_LINK_LIBS)
 
+SCRIPT := brcm_lb9_gpio_init
+$(SCRIPT)_PARTS := $(BROADCOM)/Modules/BRCM/module/src/$(SCRIPT)
+include $(BUILDER)/script.mk
+
 #
 # Now that we've specified all the things we want to build, 
 # finalize with target definitions. 
