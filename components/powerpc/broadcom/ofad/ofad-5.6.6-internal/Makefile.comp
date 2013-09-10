@@ -39,7 +39,7 @@ MODULE_DIRS := $(BIGCODE)/Modules $(BIGCODE)/indigo/Modules $(BROADCOM)/Modules 
 DEPENDMODULES := SocketManager OFConnectionManager BRCM BRCMDriver \
 	OFStateManager snmp murmur NSS ELS AET Configuration cjson \
 	loci indigo Faultd IOF PPE IVS uCli BigList BigRing OS AIM \
-	tagport pimu nwac cintm sl
+	tagport pimu nwac cintm sl ofadm
 
 #
 # Resolve module dependencies
