@@ -1,12 +1,5 @@
 #!/bin/bash
 
-n=1
-dump() {
-    echo "$2 port $n:"
-    hexdump -C /sys/class/i2c-dev/i2c-$1/device/$1-0050/eeprom 2>/dev/null
-    n=$((n+1))
-}
-
 # Linux assigns I2C bus numbers as it enumerates the I2C master/mux
 # devices in the device tree breadth-first.  The bus numbers below may
 # change if the device tree changes.
@@ -27,11 +20,9 @@ for port in $(seq 1 1 48); do
   hexdump -C $eep 2>/dev/null
 done
 
-for i in $(seq 49 1 52); do
+for port in $(seq 49 1 52); do
   gdev=$[ $port - 49 + $first ]
   eep=$(printf "%s/i2c-%d/%d-0050/eeprom" $base $gdev $gdev)
   echo "QSFP port $port:"
   hexdump -C $eep 2>/dev/null
 done
-
-
