@@ -81,4 +81,9 @@ elif plat in ["quanta-ly2", "celestica-redstone"]:
     os.symlink("linux-kernel-bde-5.10.ko", "/lib/modules/linux-kernel-bde.ko")
     os.symlink("linux-user-bde-5.10.ko", "/lib/modules/linux-user-bde.ko")
 
+if plat == "quanta-lb9":
+    subprocess.call("/usr/bin/brcm_lb9_gpio_init")
+if plat == "quanta-ly2":
+    subprocess.call("/usr/bin/brcm_ly2_gpio_init")
+
 sys.stderr.write("done.\n")
