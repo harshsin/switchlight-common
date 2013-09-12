@@ -1,0 +1,26 @@
+# -*- Makefile -*- 
+###############################################################################
+#
+# Switchlight Powerpc Internal for Quanta LY5
+#
+###############################################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not defined.)
+else
+include $(SWITCHLIGHT)/make/config.mk
+export SWITCHLIGHT
+endif
+
+
+SWI := switchlight-powerpc-quanta-ly5-internal.swi
+
+# We need the following package binaries
+kernel-e500mc    := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-e500mc:powerpc --find-file kernel-e500mc)
+initrd-powerpc := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
+
+KERNELS := $(kernel-e500mc)
+INITRD := $(initrd-powerpc)
+ARCH := powerpc
+SWITCHLIGHT_BUILD_CONFIG := powerpc.internal
+
+include $(SWITCHLIGHT)/make/swi.mk

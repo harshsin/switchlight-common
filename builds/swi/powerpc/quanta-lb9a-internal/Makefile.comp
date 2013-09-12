@@ -1,0 +1,26 @@
+# -*- Makefile -*- 
+###############################################################################
+#
+# Switchlight Powerpc Internal for Quanta LB9A
+#
+###############################################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not defined.)
+else
+include $(SWITCHLIGHT)/make/config.mk
+export SWITCHLIGHT
+endif
+
+
+SWI := switchlight-powerpc-quanta-lb9a-internal.swi
+
+# We need the following package binaries
+kernel-85xx    := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx:powerpc --find-file kernel-85xx)
+initrd-powerpc := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
+
+KERNELS := $(kernel-85xx)
+INITRD := $(initrd-powerpc)
+ARCH := powerpc
+SWITCHLIGHT_BUILD_CONFIG := powerpc.internal
+
+include $(SWITCHLIGHT)/make/swi.mk
