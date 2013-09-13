@@ -14,29 +14,11 @@
 ###############################################################################
 ifndef SWITCHLIGHT
 $(error $$SWITCHLIGHT is not defined.)
+else
+include $(SWITCHLIGHT)/make/config.mk
 endif
 
-SWITCHLIGHT_REQUIRED_PACKAGES := pcli:all \
-				 initrd-powerpc:powerpc \
-				 kernel-85xx:powerpc \
-				 kernel-e500mc:powerpc \
-				 faultd:powerpc \
-				 brcmd-5.6.6-internal:powerpc \
-				 brcmd-5.10.0-internal:powerpc \
-				 brcmd-6.2.7-internal:powerpc \
-				 ofad-5.10.0-internal:powerpc \
-				 ofad-5.6.6-internal:powerpc \
-				 ofad-6.2.7-internal:powerpc \
-				 ofad-5.10.0-release:powerpc \
-				 ofad-5.6.6-release:powerpc \
-				 ofad-6.2.7-release:powerpc \
-				 libbroadcom-5.6-internal:powerpc \
-				 libbroadcom-5.6-release:powerpc \
-				 libbroadcom-5.10-internal:powerpc \
-				 libbroadcom-5.10-release:powerpc \
-				 libbroadcom-6.2-internal:powerpc \
-				 libbroadcom-6.2-release:powerpc \
-				 initrd-i386:i386 \
-				 kernel-x86-64:i386
+# Require all packages
+SWITCHLIGHT_REQUIRED_PACKAGES := $(shell $(SWITCHLIGHT_PKG_INSTALL) --list-all)
 
 include $(SWITCHLIGHT)/make/component.mk
