@@ -1,0 +1,20 @@
+# -*- Makefile -*-
+###############################################################################
+#
+# Build SwitchLight installer for the Quanta LB9
+#
+###############################################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not set.)
+else
+include $(SWITCHLIGHT)/make/config.mk
+endif
+
+# Support these platforms. 
+include platforms.mk
+
+# Use the powerpc-release SWI build.
+INSTALLER_SWI := $(SWITCHLIGHT)/builds/swi/powerpc/quanta-lb9-release/switchlight-powerpc-quanta-lb9-release.swi
+INSTALLER_NAME := switchlight-powerpc-release.quanta-lb9a.$(SWITCHLIGHT_BUILD_TIMESTAMP).installer
+
+include $(SWITCHLIGHT)/make/installer-ppc.mk
