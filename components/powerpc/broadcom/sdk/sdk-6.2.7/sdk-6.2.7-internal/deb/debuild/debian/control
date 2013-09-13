@@ -14,7 +14,7 @@ Description: Broadcom SDK 6.2 Internal Libraries for SwitchLight
 Package: libbroadcom-6.2-internal-dbg
 Section: debug
 Priority: extra
-Architecture: any
+Architecture: powerpc
 Depends: libbroadcom-6.2-internal (= ${binary:Version})
 Description: Debug symbols for libbroadcom-6.2-internal
 

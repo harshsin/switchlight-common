@@ -14,7 +14,7 @@ Description: Broadcom SDK 5.10 Release Libraries for SwitchLight
 Package: libbroadcom-5.10-release-dbg
 Section: debug
 Priority: extra
-Architecture: any
+Architecture: powerpc
 Depends: libbroadcom-5.10-release (= ${binary:Version})
 Description: Debug symbols for libbroadcom-5.10-release
 
