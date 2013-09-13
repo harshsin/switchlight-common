@@ -8,7 +8,7 @@ import subprocess
 from sl_util import shell
 from sl_util import OFConnection
 
-import loxi.of10 as ofp
+import loxi.of10 as of10
 
 import re
 import itertools
@@ -40,14 +40,13 @@ def get_port_info():
         num2name[p.port_no] = get_port_name(p.name)
 
     # merge in rx and tx packet counts
-    for pse in conn.request_stats(ofp.message.port_stats_request( \
-            port_no=ofp.OFPP_ALL)):
+    for pse in conn.of10_request_stats(of10.message.port_stats_request( \
+            port_no=of10.OFPP_ALL)):
         ports[num2name[pse.port_no]].append(pse)
 
     conn.close()
 
     return ports
-
 
 
 class Platform(object):
@@ -104,19 +103,18 @@ class Platform(object):
 plat = Platform()
 
 
-
 def is_err(val):
     return val != 0xffffffffffffffff and val > 0
 def display(val):
     return str(val) if val != 0xffffffffffffffff else '---'
 def get_speed(bmap):
-    if bmap & ofp.OFPPF_10GB_FD:
+    if bmap & of10.OFPPF_10GB_FD:
         return '10G'
-    elif bmap & (ofp.OFPPF_1GB_FD | ofp.OFPPF_1GB_HD):
+    elif bmap & (of10.OFPPF_1GB_FD | of10.OFPPF_1GB_HD):
         return '1G'
-    elif bmap & (ofp.OFPPF_100MB_FD | ofp.OFPPF_100MB_HD):
+    elif bmap & (of10.OFPPF_100MB_FD | of10.OFPPF_100MB_HD):
         return '100M'
-    elif bmap & (ofp.OFPPF_10MB_FD | ofp.OFPPF_10MB_HD):
+    elif bmap & (of10.OFPPF_10MB_FD | of10.OFPPF_10MB_HD):
         return '10M'
     else:
         return ''
@@ -126,10 +124,10 @@ def show_one_dp_intf_detail(port):
 
     print '%s is %s' % \
         (port[0].name, 
-         'down' if port[0].state & ofp.OFPPS_LINK_DOWN
-         else 'admin down' if port[0].config & ofp.OFPPC_PORT_DOWN
+         'down' if port[0].state & of10.OFPPS_LINK_DOWN
+         else 'admin down' if port[0].config & of10.OFPPC_PORT_DOWN
          else 'up')
-    print '  Hardware Address: %s' % ofp.util.pretty_mac(port[0].hw_addr)
+    print '  Hardware Address: %s' % of10.util.pretty_mac(port[0].hw_addr)
     print '  Speed: %s' % get_speed(port[0].curr)
     print '  Received: %s bytes, %s packets' % \
         (display(port[1].rx_bytes), display(port[1].rx_packets))
@@ -147,9 +145,9 @@ def show_one_dp_intf_detail(port):
 def show_one_dp_intf_summary(format_str, port):
     # prints summary info for the given (port_desc, port_stats) tuple
 
-    if port[0].config & ofp.OFPPC_PORT_DOWN:
+    if port[0].config & of10.OFPPC_PORT_DOWN:
         state = 'D'
-    elif (port[0].state & ofp.OFPPS_LINK_DOWN) == 0:
+    elif (port[0].state & of10.OFPPS_LINK_DOWN) == 0:
         state = '*'
     else:
         state = ' '
@@ -294,13 +292,13 @@ def shutdown_intf(no_command, port_list):
 
     for pname in port_list:
         port = ports[pname]
-        req = ofp.message.port_mod(xid=conn._gen_xid(),
-                                   port_no=port[0].port_no,
-                                   hw_addr=port[0].hw_addr,
-                                   config=0 if no_command \
-                                       else ofp.OFPPC_PORT_DOWN,
-                                   mask=ofp.OFPPC_PORT_DOWN, 
-                                   advertise=port[0].advertised)
+        req = of10.message.port_mod(xid=conn._gen_xid(),
+                                    port_no=port[0].port_no,
+                                    hw_addr=port[0].hw_addr,
+                                    config=0 if no_command \
+                                        else of10.OFPPC_PORT_DOWN,
+                                    mask=of10.OFPPC_PORT_DOWN, 
+                                    advertise=port[0].advertised)
         conn.sendmsg(req)
 
     # check for error messages
@@ -308,7 +306,7 @@ def shutdown_intf(no_command, port_list):
     try:
         msg = conn.recvmsg(timeout=1)
     except:
-        if msg and msg.type == ofp.OFPT_ERROR \
+        if msg and msg.type == of10.OFPT_ERROR \
                 and msg.err_type == OFPET_PORT_MOD_FAILED:
             raise error.ActionError('Error changing port state')
 
@@ -449,7 +447,7 @@ def running_config_interface(context, runcfg, words):
     # collect component-specific config
     ports = get_port_info()
     for port in ports.itervalues():
-        if port[0].config & ofp.OFPPC_PORT_DOWN:
+        if port[0].config & of10.OFPPC_PORT_DOWN:
             comp_runcfg.append('interface %s shutdown\n' % port[0].name)
 
     # attach component-specific config

@@ -7,7 +7,8 @@ import subprocess
 from sl_util import shell
 from sl_util import OFConnection
 
-import loxi.of10 as ofp
+import loxi.of10 as of10
+import loxi.of13 as of13
 import fmtcnv
 
 
@@ -19,7 +20,7 @@ max_table = 1
 def display(val):
     return str(val) if val != 0xffffffffffffffff else '-'
 
-def convert_mac_in_hex_string_to_byte_array(mac):
+def convert_mac_hex_string_to_byte_array(mac):
     return [ int(x,16) for x in mac.split(':') ]
 
 
@@ -122,56 +123,88 @@ def get_format_string(disp_config):
     this based on configuration
     """
     if disp_config == 'detail':
-        return "{0.prio:<5} {0.table_id:<1} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.eth_type:<5} {0.vid:<5} {0.vpcp:<2} {0.dip:<15} {0.sip:<15} {0.ipproto:<4} {0.ipdscp:<4} {0.l4_dst:<5} {0.l4_src:<5} {0.output:<16} {0.packets:<10} {0.hard_to:<6} {0.idle_to:<6} {0.duration:<10}"
+        return "{0.prio:<5} {0.table_id:<1} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.eth_type:<6} {0.vid:<5} {0.vpcp:<3} {0.dip:<15} {0.sip:<15} {0.ipproto:<4} {0.ipdscp:<4} {0.l4_dst:<6} {0.l4_src:<6} {0.output:<16} {0.packets:<10} {0.hard_to:<6} {0.idle_to:<6} {0.duration:<10}"
     else:
         return "{0.prio:<5} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.dip:<15} {0.sip:<15} {0.output:<16} {0.packets:<10} {0.duration:<10}"
 
-def flow_entry_to_disp(entry):
+def of13_flow_entry_to_disp(entry):
     """
     Convert a flow entry to a display object
     """
+    mapper = {
+        str(of13.oxm.in_port): ('inport', None),
+        str(of13.oxm.eth_src):
+            ('smac', fmtcnv.convert_mac_in_byte_array_to_hex_string),
+        str(of13.oxm.eth_src_masked):
+            ('smac', fmtcnv.convert_mac_in_byte_array_to_hex_string),
+        str(of13.oxm.eth_dst):
+            ('dmac', fmtcnv.convert_mac_in_byte_array_to_hex_string),
+        str(of13.oxm.eth_dst_masked):
+            ('dmac', fmtcnv.convert_mac_in_byte_array_to_hex_string),
+        str(of13.oxm.eth_type): ('eth_type', None),
+        str(of13.oxm.eth_type_masked): ('eth_type', None),
+        str(of13.oxm.vlan_vid): ('vid', None),
+        str(of13.oxm.vlan_vid_masked): ('vid', None),
+        str(of13.oxm.vlan_pcp): ('vpcp', None),
+        str(of13.oxm.vlan_pcp_masked): ('vpcp', None),
+        str(of13.oxm.ip_dscp): ('ipdscp', None),
+        str(of13.oxm.ip_dscp_masked): ('ipdscp', None),
+        str(of13.oxm.ip_proto): ('ipproto', None),
+        str(of13.oxm.ip_proto_masked): ('ipproto', None),
+        str(of13.oxm.ipv4_src):
+            ('sip', fmtcnv.convert_ip_in_integer_to_dotted_decimal),
+        str(of13.oxm.ipv4_src_masked):
+            ('sip', fmtcnv.convert_ip_in_integer_to_dotted_decimal),
+        str(of13.oxm.ipv4_dst):
+            ('dip', fmtcnv.convert_ip_in_integer_to_dotted_decimal),
+        str(of13.oxm.ipv4_dst_masked):
+            ('dip', fmtcnv.convert_ip_in_integer_to_dotted_decimal),
+        str(of13.oxm.tcp_src): ('l4_src', None),
+        str(of13.oxm.tcp_src_masked): ('l4_src', None),
+        str(of13.oxm.tcp_dst): ('l4_dst', None),
+        str(of13.oxm.tcp_dst_masked): ('l4_dst', None),
+        str(of13.oxm.udp_src): ('l4_src', None),
+        str(of13.oxm.udp_src_masked): ('l4_src', None),
+        str(of13.oxm.udp_dst): ('l4_dst', None),
+        str(of13.oxm.udp_dst_masked): ('l4_dst', None),
+        }
+
     rv = disp_flow_ob()
-    match = entry.match
-    if not (match.wildcards & ofp.OFPFW_IN_PORT):
-        rv.inport = str(match.in_port)
-    if not (match.wildcards & ofp.OFPFW_DL_VLAN):
-        rv.vid = str(match.vlan_vid)
-    if not (match.wildcards & ofp.OFPFW_DL_VLAN_PCP):
-        rv.vpcp = str(match.vlan_pcp)
-    if not (match.wildcards & ofp.OFPFW_DL_TYPE):
-        rv.eth_type = str(hex(match.eth_type))
-    if not (match.wildcards & ofp.OFPFW_DL_SRC):
-        rv.smac = fmtcnv.convert_mac_in_byte_array_to_hex_string(match.eth_src)
-    if not (match.wildcards & ofp.OFPFW_DL_DST):
-        rv.dmac = fmtcnv.convert_mac_in_byte_array_to_hex_string(match.eth_dst)
-    # FIXME mask or shift?
-    if not (match.wildcards & ofp.OFPFW_NW_TOS):
-        rv.ipdscp = str(match.ip_dscp)
-    if not (match.wildcards & ofp.OFPFW_NW_PROTO):
-        rv.ipproto = str(match.ip_proto)
-    if not (match.wildcards & ofp.OFPFW_NW_SRC_MASK):
-        bits = 32-((match.wildcards & ofp.OFPFW_NW_SRC_MASK) >> ofp.OFPFW_NW_SRC_SHIFT)
-        rv.sip = fmtcnv.convert_ip_in_integer_to_dotted_decimal(match.ipv4_src) + "/" + str(bits)
-    if not (match.wildcards & ofp.OFPFW_NW_DST_MASK):
-        bits = 32-((match.wildcards & ofp.OFPFW_NW_SRC_MASK) >> ofp.OFPFW_NW_SRC_SHIFT)
-        rv.dip = fmtcnv.convert_ip_in_integer_to_dotted_decimal(match.ipv4_dst) + "/" + str(bits)
-    if not (match.wildcards & ofp.OFPFW_TP_SRC):
-        rv.l4_src = str(match.tcp_src)
-    if not (match.wildcards & ofp.OFPFW_TP_DST):
-        rv.l4_dst = str(match.tcp_dst)
+    rv_mask = None
+    for field in entry.match.oxm_list:
+        mapval = mapper.get(str(type(field)), None)
+        if mapval:
+            (name, formatter) = mapval
+            # masked values are returned as hex, nonmasked as decimal
+            if 'masked' in str(type(field)):
+                if rv_mask is None:
+                    rv_mask = disp_flow_ob()
+                rv_mask.__setattr__(name,
+                                    formatter(field.value_mask) if formatter \
+                                        else hex(field.value_mask))
+                rv.__setattr__(name, 
+                               formatter(field.value) if formatter \
+                                   else hex(field.value))
+            else:
+                rv.__setattr__(name, 
+                               formatter(field.value) if formatter \
+                                   else str(field.value))
 
     output_count = 0
-    for obj in entry.actions:
-        if (obj.type == ofp.OFPAT_OUTPUT or obj.type == ofp.OFPAT_ENQUEUE):
-            output_count += 1
-            if output_count < 3:
-                if rv.output == "-":
-                    rv.output = str(obj.port)
-                else:
-                    rv.output += " " + str(obj.port)
-        elif (obj.type >= ofp.OFPAT_SET_VLAN_VID and 
-              obj.type <= ofp.OFPAT_SET_TP_DST):
-            rv.modifications = "yes"
+    for inst in entry.instructions:
+        if inst.type == of13.OFPIT_APPLY_ACTIONS:
+            for act in inst.actions:
+                if (act.type == of13.OFPAT_OUTPUT or \
+                        act.type == of13.OFPAT_ENQUEUE):
+                    output_count += 1
+                    if output_count < 3:
+                        if rv.output == "-":
+                            rv.output = str(act.port)
+                        else:
+                            rv.output += " " + str(act.port)
+                elif (act.type >= of13.OFPAT_SET_VLAN_VID and \
+                          act.type <= of13.OFPAT_SET_TP_DST):
+                    rv.modifications = "yes"
 
     if output_count >= 3:
         rv.output += " + %d more" % (output_count - 2)
@@ -182,51 +215,49 @@ def flow_entry_to_disp(entry):
     rv.hard_to = str(entry.hard_timeout)
     rv.idle_to = str(entry.idle_timeout)
     rv.packets = display(entry.packet_count)
-
-    return rv
-
+    return (rv, rv_mask)
 
 def show_flowtable(data):
     if 'summary' not in data:
-        req = ofp.message.flow_stats_request()
-        req.match.wildcards = ofp.OFPFW_ALL
-        #print 'starting wildcards ' + str(hex(req.match.wildcards))
+        # query flow table with 1.3 flow mod
+        match = of13.match()
         if 'in-port' in data:
-            req.match.in_port = data['in-port']
-            req.match.wildcards = req.match.wildcards & ~ofp.OFPFW_IN_PORT
+            match.oxm_list.append(of13.oxm.in_port(value=data['in-port']))
         if 'src-mac' in data:
-            req.match.eth_src = \
-                convert_mac_in_hex_string_to_byte_array(data['src-mac'])
-            req.match.wildcards = req.match.wildcards & ~ofp.OFPFW_DL_SRC
+            match.oxm_list.append(of13.oxm.eth_src(
+                    value=convert_mac_hex_string_to_byte_array(data['src-mac'])))
         if 'dst-mac' in data:
-            req.match.eth_dst = \
-                convert_mac_in_hex_string_to_byte_array(data['dst-mac'])
-            req.match.wildcards = req.match.wildcards & ~ofp.OFPFW_DL_DST
+            match.oxm_list.append(of13.oxm.eth_dst(
+                    value=convert_mac_hex_string_to_byte_array(data['dst-mac'])))
         if 'vlan-id' in data:
-            # hex-to-integer returns a string?!
-            req.match.vlan_vid = int(data['vlan-id'])
-            req.match.wildcards = req.match.wildcards & ~ofp.OFPFW_DL_VLAN
-        #print 'ending wildcards ' + str(hex(req.match.wildcards))
-        req.table_id = data['table-id'] if 'table-id' in data else 0xff
-        req.out_port = data['out-port'] if 'out-port' in data else ofp.OFPP_NONE
-        count = 0
+            match.oxm_list.append(of13.oxm.vlan_vid(
+                    value=int(data['vlan-id'])))
+        req = of13.message.flow_stats_request(
+            match=match,
+            table_id=data.get('table-id', of13.OFPTT_ALL),
+            out_port=data.get('out-port', of13.OFPP_ANY),
+            out_group=of13.OFPG_ANY)
 
+        count = 0
         cfg = 'detail' if 'detail' in data else None
         format_str = get_format_string(cfg)
 
         print format_str.format(flow_table_titles)
         with OFConnection.OFConnection('127.0.0.1', 6634) as conn:
-            for entrylist in conn.request_stats_generator(req):
+            for entrylist in conn.of13_request_stats_generator(req):
                 for entry in entrylist:
                     count += 1
                     if count % 20 == 0:
                         print
                         print format_str.format(flow_table_titles)
-                    entry_disp = flow_entry_to_disp(entry)
-                    print format_str.format(entry_disp)
+                    (disp_val, disp_mask) = of13_flow_entry_to_disp(entry)
+                    print format_str.format(disp_val)
+                    if disp_mask:
+                        print format_str.format(disp_mask)
     else:
         with OFConnection.OFConnection('127.0.0.1', 6634) as conn:
-            for x in conn.request_stats(ofp.message.table_stats_request()):
+            for x in conn.of10_request_stats(
+                    of10.message.table_stats_request()):
                 format_str = '%-16s  %s'
                 print format_str % ('table id', str(x.table_id))
                 print format_str % ('table name', x.name)

@@ -1,7 +1,9 @@
 # Copyright (c) 2013  BigSwitch Networks
 
 import error
-import loxi.of10 as ofp
+import loxi
+import loxi.of10 as ofp10
+import loxi.of13 as ofp13
 import socket
 import select
 import struct
@@ -30,10 +32,10 @@ class OFConnection(object):
                                         errno.errorcode[rv])
 
         self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
-        self.sendmsg(ofp.message.hello())
+        self.sendmsg(ofp10.message.hello())
         hello = self.recvmsg()
-        assert(isinstance(hello, ofp.message.hello))
-        assert(hello.version == ofp.OFP_VERSION)
+        assert(isinstance(hello, ofp10.message.hello))
+        assert(hello.version == ofp10.OFP_VERSION)
 
     def __enter__(self):
         return self
@@ -59,32 +61,40 @@ class OFConnection(object):
     def recvmsg(self, timeout=None):
         _timeout = timeout or self.timeout
         buf = self._read_exactly(4, timeout=_timeout)
-        _, _, msg_len = struct.unpack_from("!BBH", buf)
+        version, _, msg_len = struct.unpack_from("!BBH", buf)
         buf += self._read_exactly(msg_len - 4, timeout=_timeout)
-        return ofp.message.parse_message(buf)
+        return loxi.protocol(version).message.parse_message(buf)
 
     def request_features(self):
-        request = ofp.message.features_request()
+        request = ofp10.message.features_request()
         self.sendmsg(request)
         reply = self.recvmsg()
         return reply
 
-    def request_stats(self, request):
+    def of10_request_stats(self, request):
         self.sendmsg(request)
         stats = []
         while True:
             reply = self.recvmsg()
             stats.extend(reply.entries)
-            if reply.flags & 1 == 0:
+            if reply.flags & ofp10.OFPSF_REPLY_MORE == 0:
                 break
         return stats
 
-    def request_stats_generator(self, request):
+    def of10_request_stats_generator(self, request):
         self.sendmsg(request)
         while True:
             reply = self.recvmsg()
             yield reply.entries
-            if reply.flags & 1 == 0:
+            if reply.flags & ofp10.OFPSF_REPLY_MORE == 0:
+                break
+
+    def of13_request_stats_generator(self, request):
+        self.sendmsg(request)
+        while True:
+            reply = self.recvmsg()
+            yield reply.entries
+            if reply.flags & ofp13.OFPMPF_REPLY_MORE == 0:
                 break
 
     def _read_exactly(self, n, timeout=None):
