@@ -43,3 +43,5 @@ $(INSTALLER_SWI):
 	$(MAKE) -C $(dir $(INSTALLER_SWI))
 
 
+clean:
+	rm *.installer
