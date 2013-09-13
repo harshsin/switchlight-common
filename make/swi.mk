@@ -15,7 +15,7 @@ ifndef SWI
 $(error $$SWI is not defined.)
 endif
 
-.DEFAULT_GOAL := $(SWI)
+.DEFAULT_GOAL := $(SWI).swi
 
 # We need a set of kernels
 ifndef KERNELS
@@ -45,7 +45,7 @@ ifndef ARCH
 $(error $$ARCH is not defined.)
 endif
 
-$(SWI): rootfs-$(ARCH).sqsh
+$(SWI).swi: rootfs-$(ARCH).sqsh
 	rm -f $@.tmp
 	rm -f *.swi
 	cp $(KERNELS) $(INITRD) . 

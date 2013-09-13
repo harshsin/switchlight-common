@@ -12,7 +12,7 @@ export SWITCHLIGHT
 endif
 
 
-SWI := switchlight-powerpc-quanta-ly5-internal.swi
+SWI := switchlight-powerpc-quanta-ly5-internal
 
 # We need the following package binaries
 kernel-e500mc    := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-e500mc:powerpc --find-file kernel-e500mc)

@@ -12,7 +12,7 @@ export SWITCHLIGHT
 endif
 
 
-SWI := switchlight-powerpc-quanta-lb9-release.swi
+SWI := switchlight-powerpc-quanta-lb9-release
 
 # We need the following package binaries
 kernel-85xx    := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx:powerpc --find-file kernel-85xx)
