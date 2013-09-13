@@ -8,6 +8,7 @@ import sys
 import os
 import argparse
 import shutil
+from debian import deb822
 
 def find_file_or_dir(basedir, filename=None, dirname=None):
     """Find and return the path to a given file or directory below the given root"""
@@ -41,6 +42,26 @@ def find_package(repo, package, arch):
     return [ x for x in manifest if arch in x and "%s_" % package in x ]
     
 
+def find_all_packages(basedir):
+    """Find all local component packages."""
+    all_ = []; 
+
+    for root, dirs, files in os.walk(basedir):
+        for file_ in files:
+            if file_ == "control":
+                f = file("%s/%s" % (root,file_))
+                d = deb822.Deb822(f)
+                while d:
+                    if 'Package' in d:
+                        arch = 'all'
+                        if 'Architecture' in d:
+                            arch = d['Architecture']
+                        all_.append("%s:%s" % (d['Package'],arch))
+                    d = deb822.Deb822(f)
+
+    return all_
+                    
+                    
 ###############################################################################
 
 ap = argparse.ArgumentParser("SwitchLight Build Package Manager")
@@ -58,6 +79,7 @@ ap.add_argument("--build", help="Attempt to build local package if it exists.",
                 action='store_true')
 ap.add_argument("--add-pkg", nargs='+', action='append', 
                 default=None, help="Install new package files and invalidate corresponding installs.")
+ap.add_argument("--list-all", action='store_true', help="List all available component packages"); 
 
 ops = ap.parse_args()
 
@@ -66,6 +88,12 @@ package_dir = os.path.abspath("%s/debian/repo" % SWITCHLIGHT)
 
 if SWITCHLIGHT is None:
     raise Exception("$SWITCHLIGHT is not defined.")
+
+if ops.list_all:
+    all_ = find_all_packages(os.path.abspath("%s/components" % (SWITCHLIGHT)))
+    for p in all_:
+        print p
+    sys.exit(0)
 
 if ops.add_pkg:
     for pa in ops.add_pkg[0]:
@@ -94,13 +122,8 @@ for pa in ops.packages[0]:
         print "invalid package specification: ", pa
         sys.exit(1)
 
-    extract_dir = "%s/debian/installs/%s/%s" % (SWITCHLIGHT, arch, package)
-
-    if os.path.exists(extract_dir) and not ops.force:
-        find_file_or_dir(extract_dir, ops.find_file, ops.find_dir); 
-        continue
-
     packages = find_package(package_dir, package, arch)
+
     if len(packages) == 0:
         print "No matching packages for %s (%s)" % (package, arch)
         # Look for package builder
@@ -123,13 +146,29 @@ for pa in ops.packages[0]:
 
     deb = packages[0]
 
-    #
-    # Remove existing
-    #
-    if os.path.exists(extract_dir):
-        shutil.rmtree(extract_dir)
-    os.makedirs(extract_dir)
-    os.system("dpkg -x %s/%s %s" % (package_dir, deb, extract_dir))
+    extract_dir = "%s/debian/installs/%s/%s" % (SWITCHLIGHT, arch, package)
+
+    if os.path.exists("%s/PKG.TIMESTAMP" % extract_dir):
+        if (os.path.getmtime("%s/PKG.TIMESTAMP" % extract_dir) == 
+            os.path.getmtime("%s/%s" % (package_dir, deb))):
+            # Existing extract is identical
+            sys.stderr.write("Existing extract for %s:%s matches the package file.\n" % (deb,arch))
+        else:
+            # Extract must be updated. 
+            ops.force = True
+            sys.stderr.write("Existing extract for %s:%s does not match the package file. Forcing extract.\n" % (deb,arch))
+
+        if ops.force:
+            sys.stderr.write("Force removing %s...\n" % extract_dir)
+            shutil.rmtree(extract_dir)
+
+
+    if not os.path.exists(extract_dir):
+        sys.stderr.write("Extracting %s/%s...\n" % (package_dir, deb))
+        os.makedirs(extract_dir)
+        os.system("dpkg -x %s/%s %s" % (package_dir, deb, extract_dir))
+        os.system("touch -r %s/%s %s/PKG.TIMESTAMP" % (package_dir, deb, extract_dir))
+
     find_file_or_dir(extract_dir, ops.find_file, ops.find_dir); 
 
 
