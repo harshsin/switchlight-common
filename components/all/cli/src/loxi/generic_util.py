@@ -1,6 +1,7 @@
 # Copyright (c) 2008 The Board of Trustees of The Leland Stanford Junior University
 # Copyright (c) 2011, 2012 Open Networking Foundation
 # Copyright (c) 2012, 2013 Big Switch Networks, Inc.
+# See the file LICENSE.pyloxi which should have been included in the source distribution
 """
 Utility functions independent of the protocol version
 """
@@ -38,6 +39,13 @@ def unpack_list_tlv16(reader, deserializer):
         typ, length, = reader.peek('!HH')
         return deserializer(reader.slice(length), typ)
     return unpack_list(reader, wrapper)
+
+def pad_to(alignment, length):
+    """
+    Return a string of zero bytes that will pad a string of length 'length' to
+    a multiple of 'alignment'.
+    """
+    return "\x00" * ((length + alignment - 1)/alignment*alignment - length)
 
 class OFReader(object):
     """
@@ -77,6 +85,12 @@ class OFReader(object):
         if self.offset + length > len(self.buf):
             raise loxi.ProtocolError("Buffer too short")
         self.offset += length
+
+    def skip_align(self):
+        new_offset = (self.offset + 7) / 8 * 8
+        if new_offset > len(self.buf):
+            raise loxi.ProtocolError("Buffer too short")
+        self.offset = new_offset
 
     def is_empty(self):
         return self.offset == len(self.buf)

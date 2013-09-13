@@ -29,14 +29,6 @@ def pretty_flags(v, flag_names):
         set_flags.append("%#x" % v)
     return '|'.join(set_flags) or '0'
 
-def pretty_wildcards(v):
-    if v == const.OFPFW_ALL:
-        return 'OFPFW_ALL'
-    flag_names = ['OFPFW_IN_PORT', 'OFPFW_DL_VLAN', 'OFPFW_DL_SRC', 'OFPFW_DL_DST',
-                  'OFPFW_DL_TYPE', 'OFPFW_NW_PROTO', 'OFPFW_TP_SRC', 'OFPFW_TP_DST',
-                  'OFPFW_NW_SRC_MASK', 'OFPFW_NW_DST_MASK', 'OFPFW_DL_VLAN_PCP',
-                  'OFPFW_NW_TOS']
-    return pretty_flags(v, flag_names)
 
 def pretty_port(v):
     named_ports = [(k,v2) for (k,v2) in const.__dict__.iteritems() if k.startswith('OFPP_')]
@@ -46,34 +38,34 @@ def pretty_port(v):
     return v
 
 def pack_port_no(value):
-    return struct.pack("!H", value)
+    return struct.pack("!L", value)
 
 def unpack_port_no(reader):
-    return reader.read("!H")[0]
+    return reader.read("!L")[0]
 
 def pack_fm_cmd(value):
-    return struct.pack("!H", value)
+    return struct.pack("!B", value)
 
 def unpack_fm_cmd(reader):
-    return reader.read("!H")[0]
+    return reader.read("!B")[0]
 
 def init_wc_bmap():
-    return const.OFPFW_ALL
+    return 0
 
 def pack_wc_bmap(value):
-    return struct.pack("!L", value)
+    return struct.pack("!Q", value)
 
 def unpack_wc_bmap(reader):
-    return reader.read("!L")[0]
+    return reader.read("!Q")[0]
 
 def init_match_bmap():
-    return const.OFPFW_ALL
+    return 0
 
 def pack_match_bmap(value):
-    return struct.pack("!L", value)
+    return struct.pack("!Q", value)
 
 def unpack_match_bmap(reader):
-    return reader.read("!L")[0]
+    return reader.read("!Q")[0]
 
 def pack_list(values):
     return "".join([x.pack() for x in values])
