@@ -30,19 +30,18 @@ swi-$(1):
 	$(MAKE) -C $(2)
 	mkdir -p $(BUILDDIR)
 	cp $(2)/*20*.swi $(BUILDDIR)
-	$(MAKE) -C $(2) clean
 endef
 
 $(foreach plat,$(SWI_BUILD_PATHS),$(eval $(call swi_build_template,$(notdir $(plat)),$(plat))))
 
 # Add to ALL_SWI
-ALL_SWI := $(foreach plat,$(SWI_BUILD_PATHS),$(notdir $(plat)))
+ALL_SWI := $(foreach plat,$(SWI_BUILD_PATHS),swi-$(notdir $(plat)))
 ALL_TARGETS := $(ALL_TARGETS) $(ALL_SWI)
 
 # Build all SWI
 swi-all: $(ALL_SWI)
 
-show_swis:	
+show-swis:	
 	@echo $(SWI_BUILD_PATHS)
 
 
@@ -64,18 +63,21 @@ INST_BUILD_PATHS := $(foreach arch,$(INST_ARCHS),$(wildcard $(arch)/*))
 define installer_build_template
 installer-$(1):
 	$(MAKE) -C $(2)
+	mkdir -p $(BUILDDIR)
+	cp $(2)/*.installer $(BUILDDIR)
+	$(MAKE) -C $(2) clean
 endef
 
 $(foreach inst,$(INST_BUILD_PATHS),$(eval $(call installer_build_template,$(notdir $(inst)),$(inst))))
 
 # Add to ALL_INSTALLER
-ALL_INSTALLER := $(foreach inst,$(INST_BUILD_PATHS),$(notdir $(inst)))
+ALL_INSTALLER := $(foreach inst,$(INST_BUILD_PATHS),installer-$(notdir $(inst)))
 ALL_TARGETS := $(ALL_TARGETS) $(ALL_INSTALLER)
 
 # Build all installers
 installer-all: $(ALL_INSTALLER)
 
-show_installers:
+show-installers:
 	@echo $(INST_BUILD_PATHS)
 
 
@@ -94,6 +96,6 @@ ALL_TARGETS := $(ALL_TARGETS) components
 # All you can eat. 
 all: $(ALL_TARGETS)
 
-default: show_swis 
+default: show-swis 
 
 
