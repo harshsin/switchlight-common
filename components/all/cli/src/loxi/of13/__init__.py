@@ -7,6 +7,9 @@
 # Do not modify
 
 import action, common, const, message
+import instruction
+import oxm
+import meter_band
 from const import *
 from common import *
 from loxi import ProtocolError

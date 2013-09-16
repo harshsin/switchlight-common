@@ -46,16 +46,16 @@ def pretty_port(v):
     return v
 
 def pack_port_no(value):
-    return struct.pack("!H", value)
+    return struct.pack("!L", value)
 
 def unpack_port_no(reader):
-    return reader.read("!H")[0]
+    return reader.read("!L")[0]
 
 def pack_fm_cmd(value):
-    return struct.pack("!H", value)
+    return struct.pack("!B", value)
 
 def unpack_fm_cmd(reader):
-    return reader.read("!H")[0]
+    return reader.read("!B")[0]
 
 def init_wc_bmap():
     return const.OFPFW_ALL

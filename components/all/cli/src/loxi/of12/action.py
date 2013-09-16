@@ -11,6 +11,7 @@ import const
 import util
 import loxi.generic_util
 import loxi
+import oxm # for unpack
 
 def unpack_list(reader):
     def deserializer(reader, typ):
@@ -169,50 +170,36 @@ class bsn_set_tunnel_dst(Action):
             q.breakable()
         q.text('}')
 
-class enqueue(Action):
-    type = 11
+class copy_ttl_in(Action):
+    type = 12
 
-    def __init__(self, port=None, queue_id=None):
-        if port != None:
-            self.port = port
-        else:
-            self.port = 0
-        if queue_id != None:
-            self.queue_id = queue_id
-        else:
-            self.queue_id = 0
+    def __init__(self):
         return
 
     def pack(self):
         packed = []
         packed.append(struct.pack("!H", self.type))
         packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
-        packed.append(util.pack_port_no(self.port))
-        packed.append('\x00' * 6)
-        packed.append(struct.pack("!L", self.queue_id))
+        packed.append('\x00' * 4)
         length = sum([len(x) for x in packed])
         packed[1] = struct.pack("!H", length)
         return ''.join(packed)
 
     @staticmethod
     def unpack(buf):
-        obj = enqueue()
+        obj = copy_ttl_in()
         if type(buf) == loxi.generic_util.OFReader:
             reader = buf
         else:
             reader = loxi.generic_util.OFReader(buf)
         _type = reader.read("!H")[0]
-        assert(_type == 11)
+        assert(_type == 12)
         _len = reader.read("!H")[0]
-        obj.port = util.unpack_port_no(reader)
-        reader.skip(6)
-        obj.queue_id = reader.read("!L")[0]
+        reader.skip(4)
         return obj
 
     def __eq__(self, other):
         if type(self) != type(other): return False
-        if self.port != other.port: return False
-        if self.queue_id != other.queue_id: return False
         return True
 
     def __ne__(self, other):
@@ -223,15 +210,205 @@ class enqueue(Action):
         return loxi.pp.pp(self)
 
     def pretty_print(self, q):
-        q.text("enqueue {")
+        q.text("copy_ttl_in {")
         with q.group():
             with q.indent(2):
                 q.breakable()
-                q.text("port = ");
-                q.text(util.pretty_port(self.port))
-                q.text(","); q.breakable()
-                q.text("queue_id = ");
-                q.text("%#x" % self.queue_id)
+            q.breakable()
+        q.text('}')
+
+class copy_ttl_out(Action):
+    type = 11
+
+    def __init__(self):
+        return
+
+    def pack(self):
+        packed = []
+        packed.append(struct.pack("!H", self.type))
+        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
+        packed.append('\x00' * 4)
+        length = sum([len(x) for x in packed])
+        packed[1] = struct.pack("!H", length)
+        return ''.join(packed)
+
+    @staticmethod
+    def unpack(buf):
+        obj = copy_ttl_out()
+        if type(buf) == loxi.generic_util.OFReader:
+            reader = buf
+        else:
+            reader = loxi.generic_util.OFReader(buf)
+        _type = reader.read("!H")[0]
+        assert(_type == 11)
+        _len = reader.read("!H")[0]
+        reader.skip(4)
+        return obj
+
+    def __eq__(self, other):
+        if type(self) != type(other): return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def show(self):
+        import loxi.pp
+        return loxi.pp.pp(self)
+
+    def pretty_print(self, q):
+        q.text("copy_ttl_out {")
+        with q.group():
+            with q.indent(2):
+                q.breakable()
+            q.breakable()
+        q.text('}')
+
+class dec_mpls_ttl(Action):
+    type = 16
+
+    def __init__(self):
+        return
+
+    def pack(self):
+        packed = []
+        packed.append(struct.pack("!H", self.type))
+        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
+        packed.append('\x00' * 4)
+        length = sum([len(x) for x in packed])
+        packed[1] = struct.pack("!H", length)
+        return ''.join(packed)
+
+    @staticmethod
+    def unpack(buf):
+        obj = dec_mpls_ttl()
+        if type(buf) == loxi.generic_util.OFReader:
+            reader = buf
+        else:
+            reader = loxi.generic_util.OFReader(buf)
+        _type = reader.read("!H")[0]
+        assert(_type == 16)
+        _len = reader.read("!H")[0]
+        reader.skip(4)
+        return obj
+
+    def __eq__(self, other):
+        if type(self) != type(other): return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def show(self):
+        import loxi.pp
+        return loxi.pp.pp(self)
+
+    def pretty_print(self, q):
+        q.text("dec_mpls_ttl {")
+        with q.group():
+            with q.indent(2):
+                q.breakable()
+            q.breakable()
+        q.text('}')
+
+class dec_nw_ttl(Action):
+    type = 24
+
+    def __init__(self):
+        return
+
+    def pack(self):
+        packed = []
+        packed.append(struct.pack("!H", self.type))
+        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
+        packed.append('\x00' * 4)
+        length = sum([len(x) for x in packed])
+        packed[1] = struct.pack("!H", length)
+        return ''.join(packed)
+
+    @staticmethod
+    def unpack(buf):
+        obj = dec_nw_ttl()
+        if type(buf) == loxi.generic_util.OFReader:
+            reader = buf
+        else:
+            reader = loxi.generic_util.OFReader(buf)
+        _type = reader.read("!H")[0]
+        assert(_type == 24)
+        _len = reader.read("!H")[0]
+        reader.skip(4)
+        return obj
+
+    def __eq__(self, other):
+        if type(self) != type(other): return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def show(self):
+        import loxi.pp
+        return loxi.pp.pp(self)
+
+    def pretty_print(self, q):
+        q.text("dec_nw_ttl {")
+        with q.group():
+            with q.indent(2):
+                q.breakable()
+            q.breakable()
+        q.text('}')
+
+class group(Action):
+    type = 22
+
+    def __init__(self, group_id=None):
+        if group_id != None:
+            self.group_id = group_id
+        else:
+            self.group_id = 0
+        return
+
+    def pack(self):
+        packed = []
+        packed.append(struct.pack("!H", self.type))
+        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
+        packed.append(struct.pack("!L", self.group_id))
+        length = sum([len(x) for x in packed])
+        packed[1] = struct.pack("!H", length)
+        return ''.join(packed)
+
+    @staticmethod
+    def unpack(buf):
+        obj = group()
+        if type(buf) == loxi.generic_util.OFReader:
+            reader = buf
+        else:
+            reader = loxi.generic_util.OFReader(buf)
+        _type = reader.read("!H")[0]
+        assert(_type == 22)
+        _len = reader.read("!H")[0]
+        obj.group_id = reader.read("!L")[0]
+        return obj
+
+    def __eq__(self, other):
+        if type(self) != type(other): return False
+        if self.group_id != other.group_id: return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def show(self):
+        import loxi.pp
+        return loxi.pp.pp(self)
+
+    def pretty_print(self, q):
+        q.text("group {")
+        with q.group():
+            with q.indent(2):
+                q.breakable()
+                q.text("group_id = ");
+                q.text("%#x" % self.group_id)
             q.breakable()
         q.text('}')
 
@@ -312,6 +489,7 @@ class output(Action):
         packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
         packed.append(util.pack_port_no(self.port))
         packed.append(struct.pack("!H", self.max_len))
+        packed.append('\x00' * 6)
         length = sum([len(x) for x in packed])
         packed[1] = struct.pack("!H", length)
         return ''.join(packed)
@@ -328,6 +506,7 @@ class output(Action):
         _len = reader.read("!H")[0]
         obj.port = util.unpack_port_no(reader)
         obj.max_len = reader.read("!H")[0]
+        reader.skip(6)
         return obj
 
     def __eq__(self, other):
@@ -356,297 +535,21 @@ class output(Action):
             q.breakable()
         q.text('}')
 
-class set_dl_dst(Action):
-    type = 5
+class pop_mpls(Action):
+    type = 20
 
-    def __init__(self, dl_addr=None):
-        if dl_addr != None:
-            self.dl_addr = dl_addr
+    def __init__(self, ethertype=None):
+        if ethertype != None:
+            self.ethertype = ethertype
         else:
-            self.dl_addr = [0,0,0,0,0,0]
+            self.ethertype = 0
         return
 
     def pack(self):
         packed = []
         packed.append(struct.pack("!H", self.type))
         packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
-        packed.append(struct.pack("!6B", *self.dl_addr))
-        packed.append('\x00' * 6)
-        length = sum([len(x) for x in packed])
-        packed[1] = struct.pack("!H", length)
-        return ''.join(packed)
-
-    @staticmethod
-    def unpack(buf):
-        obj = set_dl_dst()
-        if type(buf) == loxi.generic_util.OFReader:
-            reader = buf
-        else:
-            reader = loxi.generic_util.OFReader(buf)
-        _type = reader.read("!H")[0]
-        assert(_type == 5)
-        _len = reader.read("!H")[0]
-        obj.dl_addr = list(reader.read('!6B'))
-        reader.skip(6)
-        return obj
-
-    def __eq__(self, other):
-        if type(self) != type(other): return False
-        if self.dl_addr != other.dl_addr: return False
-        return True
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def show(self):
-        import loxi.pp
-        return loxi.pp.pp(self)
-
-    def pretty_print(self, q):
-        q.text("set_dl_dst {")
-        with q.group():
-            with q.indent(2):
-                q.breakable()
-                q.text("dl_addr = ");
-                q.text(util.pretty_mac(self.dl_addr))
-            q.breakable()
-        q.text('}')
-
-class set_dl_src(Action):
-    type = 4
-
-    def __init__(self, dl_addr=None):
-        if dl_addr != None:
-            self.dl_addr = dl_addr
-        else:
-            self.dl_addr = [0,0,0,0,0,0]
-        return
-
-    def pack(self):
-        packed = []
-        packed.append(struct.pack("!H", self.type))
-        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
-        packed.append(struct.pack("!6B", *self.dl_addr))
-        packed.append('\x00' * 6)
-        length = sum([len(x) for x in packed])
-        packed[1] = struct.pack("!H", length)
-        return ''.join(packed)
-
-    @staticmethod
-    def unpack(buf):
-        obj = set_dl_src()
-        if type(buf) == loxi.generic_util.OFReader:
-            reader = buf
-        else:
-            reader = loxi.generic_util.OFReader(buf)
-        _type = reader.read("!H")[0]
-        assert(_type == 4)
-        _len = reader.read("!H")[0]
-        obj.dl_addr = list(reader.read('!6B'))
-        reader.skip(6)
-        return obj
-
-    def __eq__(self, other):
-        if type(self) != type(other): return False
-        if self.dl_addr != other.dl_addr: return False
-        return True
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def show(self):
-        import loxi.pp
-        return loxi.pp.pp(self)
-
-    def pretty_print(self, q):
-        q.text("set_dl_src {")
-        with q.group():
-            with q.indent(2):
-                q.breakable()
-                q.text("dl_addr = ");
-                q.text(util.pretty_mac(self.dl_addr))
-            q.breakable()
-        q.text('}')
-
-class set_nw_dst(Action):
-    type = 7
-
-    def __init__(self, nw_addr=None):
-        if nw_addr != None:
-            self.nw_addr = nw_addr
-        else:
-            self.nw_addr = 0
-        return
-
-    def pack(self):
-        packed = []
-        packed.append(struct.pack("!H", self.type))
-        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
-        packed.append(struct.pack("!L", self.nw_addr))
-        length = sum([len(x) for x in packed])
-        packed[1] = struct.pack("!H", length)
-        return ''.join(packed)
-
-    @staticmethod
-    def unpack(buf):
-        obj = set_nw_dst()
-        if type(buf) == loxi.generic_util.OFReader:
-            reader = buf
-        else:
-            reader = loxi.generic_util.OFReader(buf)
-        _type = reader.read("!H")[0]
-        assert(_type == 7)
-        _len = reader.read("!H")[0]
-        obj.nw_addr = reader.read("!L")[0]
-        return obj
-
-    def __eq__(self, other):
-        if type(self) != type(other): return False
-        if self.nw_addr != other.nw_addr: return False
-        return True
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def show(self):
-        import loxi.pp
-        return loxi.pp.pp(self)
-
-    def pretty_print(self, q):
-        q.text("set_nw_dst {")
-        with q.group():
-            with q.indent(2):
-                q.breakable()
-                q.text("nw_addr = ");
-                q.text("%#x" % self.nw_addr)
-            q.breakable()
-        q.text('}')
-
-class set_nw_src(Action):
-    type = 6
-
-    def __init__(self, nw_addr=None):
-        if nw_addr != None:
-            self.nw_addr = nw_addr
-        else:
-            self.nw_addr = 0
-        return
-
-    def pack(self):
-        packed = []
-        packed.append(struct.pack("!H", self.type))
-        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
-        packed.append(struct.pack("!L", self.nw_addr))
-        length = sum([len(x) for x in packed])
-        packed[1] = struct.pack("!H", length)
-        return ''.join(packed)
-
-    @staticmethod
-    def unpack(buf):
-        obj = set_nw_src()
-        if type(buf) == loxi.generic_util.OFReader:
-            reader = buf
-        else:
-            reader = loxi.generic_util.OFReader(buf)
-        _type = reader.read("!H")[0]
-        assert(_type == 6)
-        _len = reader.read("!H")[0]
-        obj.nw_addr = reader.read("!L")[0]
-        return obj
-
-    def __eq__(self, other):
-        if type(self) != type(other): return False
-        if self.nw_addr != other.nw_addr: return False
-        return True
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def show(self):
-        import loxi.pp
-        return loxi.pp.pp(self)
-
-    def pretty_print(self, q):
-        q.text("set_nw_src {")
-        with q.group():
-            with q.indent(2):
-                q.breakable()
-                q.text("nw_addr = ");
-                q.text("%#x" % self.nw_addr)
-            q.breakable()
-        q.text('}')
-
-class set_nw_tos(Action):
-    type = 8
-
-    def __init__(self, nw_tos=None):
-        if nw_tos != None:
-            self.nw_tos = nw_tos
-        else:
-            self.nw_tos = 0
-        return
-
-    def pack(self):
-        packed = []
-        packed.append(struct.pack("!H", self.type))
-        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
-        packed.append(struct.pack("!B", self.nw_tos))
-        packed.append('\x00' * 3)
-        length = sum([len(x) for x in packed])
-        packed[1] = struct.pack("!H", length)
-        return ''.join(packed)
-
-    @staticmethod
-    def unpack(buf):
-        obj = set_nw_tos()
-        if type(buf) == loxi.generic_util.OFReader:
-            reader = buf
-        else:
-            reader = loxi.generic_util.OFReader(buf)
-        _type = reader.read("!H")[0]
-        assert(_type == 8)
-        _len = reader.read("!H")[0]
-        obj.nw_tos = reader.read("!B")[0]
-        reader.skip(3)
-        return obj
-
-    def __eq__(self, other):
-        if type(self) != type(other): return False
-        if self.nw_tos != other.nw_tos: return False
-        return True
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def show(self):
-        import loxi.pp
-        return loxi.pp.pp(self)
-
-    def pretty_print(self, q):
-        q.text("set_nw_tos {")
-        with q.group():
-            with q.indent(2):
-                q.breakable()
-                q.text("nw_tos = ");
-                q.text("%#x" % self.nw_tos)
-            q.breakable()
-        q.text('}')
-
-class set_tp_dst(Action):
-    type = 10
-
-    def __init__(self, tp_port=None):
-        if tp_port != None:
-            self.tp_port = tp_port
-        else:
-            self.tp_port = 0
-        return
-
-    def pack(self):
-        packed = []
-        packed.append(struct.pack("!H", self.type))
-        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
-        packed.append(struct.pack("!H", self.tp_port))
+        packed.append(struct.pack("!H", self.ethertype))
         packed.append('\x00' * 2)
         length = sum([len(x) for x in packed])
         packed[1] = struct.pack("!H", length)
@@ -654,21 +557,21 @@ class set_tp_dst(Action):
 
     @staticmethod
     def unpack(buf):
-        obj = set_tp_dst()
+        obj = pop_mpls()
         if type(buf) == loxi.generic_util.OFReader:
             reader = buf
         else:
             reader = loxi.generic_util.OFReader(buf)
         _type = reader.read("!H")[0]
-        assert(_type == 10)
+        assert(_type == 20)
         _len = reader.read("!H")[0]
-        obj.tp_port = reader.read("!H")[0]
+        obj.ethertype = reader.read("!H")[0]
         reader.skip(2)
         return obj
 
     def __eq__(self, other):
         if type(self) != type(other): return False
-        if self.tp_port != other.tp_port: return False
+        if self.ethertype != other.ethertype: return False
         return True
 
     def __ne__(self, other):
@@ -679,185 +582,17 @@ class set_tp_dst(Action):
         return loxi.pp.pp(self)
 
     def pretty_print(self, q):
-        q.text("set_tp_dst {")
+        q.text("pop_mpls {")
         with q.group():
             with q.indent(2):
                 q.breakable()
-                q.text("tp_port = ");
-                q.text("%#x" % self.tp_port)
+                q.text("ethertype = ");
+                q.text("%#x" % self.ethertype)
             q.breakable()
         q.text('}')
 
-class set_tp_src(Action):
-    type = 9
-
-    def __init__(self, tp_port=None):
-        if tp_port != None:
-            self.tp_port = tp_port
-        else:
-            self.tp_port = 0
-        return
-
-    def pack(self):
-        packed = []
-        packed.append(struct.pack("!H", self.type))
-        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
-        packed.append(struct.pack("!H", self.tp_port))
-        packed.append('\x00' * 2)
-        length = sum([len(x) for x in packed])
-        packed[1] = struct.pack("!H", length)
-        return ''.join(packed)
-
-    @staticmethod
-    def unpack(buf):
-        obj = set_tp_src()
-        if type(buf) == loxi.generic_util.OFReader:
-            reader = buf
-        else:
-            reader = loxi.generic_util.OFReader(buf)
-        _type = reader.read("!H")[0]
-        assert(_type == 9)
-        _len = reader.read("!H")[0]
-        obj.tp_port = reader.read("!H")[0]
-        reader.skip(2)
-        return obj
-
-    def __eq__(self, other):
-        if type(self) != type(other): return False
-        if self.tp_port != other.tp_port: return False
-        return True
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def show(self):
-        import loxi.pp
-        return loxi.pp.pp(self)
-
-    def pretty_print(self, q):
-        q.text("set_tp_src {")
-        with q.group():
-            with q.indent(2):
-                q.breakable()
-                q.text("tp_port = ");
-                q.text("%#x" % self.tp_port)
-            q.breakable()
-        q.text('}')
-
-class set_vlan_pcp(Action):
-    type = 2
-
-    def __init__(self, vlan_pcp=None):
-        if vlan_pcp != None:
-            self.vlan_pcp = vlan_pcp
-        else:
-            self.vlan_pcp = 0
-        return
-
-    def pack(self):
-        packed = []
-        packed.append(struct.pack("!H", self.type))
-        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
-        packed.append(struct.pack("!B", self.vlan_pcp))
-        packed.append('\x00' * 3)
-        length = sum([len(x) for x in packed])
-        packed[1] = struct.pack("!H", length)
-        return ''.join(packed)
-
-    @staticmethod
-    def unpack(buf):
-        obj = set_vlan_pcp()
-        if type(buf) == loxi.generic_util.OFReader:
-            reader = buf
-        else:
-            reader = loxi.generic_util.OFReader(buf)
-        _type = reader.read("!H")[0]
-        assert(_type == 2)
-        _len = reader.read("!H")[0]
-        obj.vlan_pcp = reader.read("!B")[0]
-        reader.skip(3)
-        return obj
-
-    def __eq__(self, other):
-        if type(self) != type(other): return False
-        if self.vlan_pcp != other.vlan_pcp: return False
-        return True
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def show(self):
-        import loxi.pp
-        return loxi.pp.pp(self)
-
-    def pretty_print(self, q):
-        q.text("set_vlan_pcp {")
-        with q.group():
-            with q.indent(2):
-                q.breakable()
-                q.text("vlan_pcp = ");
-                q.text("%#x" % self.vlan_pcp)
-            q.breakable()
-        q.text('}')
-
-class set_vlan_vid(Action):
-    type = 1
-
-    def __init__(self, vlan_vid=None):
-        if vlan_vid != None:
-            self.vlan_vid = vlan_vid
-        else:
-            self.vlan_vid = 0
-        return
-
-    def pack(self):
-        packed = []
-        packed.append(struct.pack("!H", self.type))
-        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
-        packed.append(struct.pack("!H", self.vlan_vid))
-        packed.append('\x00' * 2)
-        length = sum([len(x) for x in packed])
-        packed[1] = struct.pack("!H", length)
-        return ''.join(packed)
-
-    @staticmethod
-    def unpack(buf):
-        obj = set_vlan_vid()
-        if type(buf) == loxi.generic_util.OFReader:
-            reader = buf
-        else:
-            reader = loxi.generic_util.OFReader(buf)
-        _type = reader.read("!H")[0]
-        assert(_type == 1)
-        _len = reader.read("!H")[0]
-        obj.vlan_vid = reader.read("!H")[0]
-        reader.skip(2)
-        return obj
-
-    def __eq__(self, other):
-        if type(self) != type(other): return False
-        if self.vlan_vid != other.vlan_vid: return False
-        return True
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def show(self):
-        import loxi.pp
-        return loxi.pp.pp(self)
-
-    def pretty_print(self, q):
-        q.text("set_vlan_vid {")
-        with q.group():
-            with q.indent(2):
-                q.breakable()
-                q.text("vlan_vid = ");
-                q.text("%#x" % self.vlan_vid)
-            q.breakable()
-        q.text('}')
-
-class strip_vlan(Action):
-    type = 3
+class pop_vlan(Action):
+    type = 18
 
     def __init__(self):
         return
@@ -873,13 +608,13 @@ class strip_vlan(Action):
 
     @staticmethod
     def unpack(buf):
-        obj = strip_vlan()
+        obj = pop_vlan()
         if type(buf) == loxi.generic_util.OFReader:
             reader = buf
         else:
             reader = loxi.generic_util.OFReader(buf)
         _type = reader.read("!H")[0]
-        assert(_type == 3)
+        assert(_type == 18)
         _len = reader.read("!H")[0]
         reader.skip(4)
         return obj
@@ -896,15 +631,350 @@ class strip_vlan(Action):
         return loxi.pp.pp(self)
 
     def pretty_print(self, q):
-        q.text("strip_vlan {")
+        q.text("pop_vlan {")
         with q.group():
             with q.indent(2):
                 q.breakable()
             q.breakable()
         q.text('}')
 
+class push_mpls(Action):
+    type = 19
 
-def parse_vendor(reader):
+    def __init__(self, ethertype=None):
+        if ethertype != None:
+            self.ethertype = ethertype
+        else:
+            self.ethertype = 0
+        return
+
+    def pack(self):
+        packed = []
+        packed.append(struct.pack("!H", self.type))
+        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
+        packed.append(struct.pack("!H", self.ethertype))
+        packed.append('\x00' * 2)
+        length = sum([len(x) for x in packed])
+        packed[1] = struct.pack("!H", length)
+        return ''.join(packed)
+
+    @staticmethod
+    def unpack(buf):
+        obj = push_mpls()
+        if type(buf) == loxi.generic_util.OFReader:
+            reader = buf
+        else:
+            reader = loxi.generic_util.OFReader(buf)
+        _type = reader.read("!H")[0]
+        assert(_type == 19)
+        _len = reader.read("!H")[0]
+        obj.ethertype = reader.read("!H")[0]
+        reader.skip(2)
+        return obj
+
+    def __eq__(self, other):
+        if type(self) != type(other): return False
+        if self.ethertype != other.ethertype: return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def show(self):
+        import loxi.pp
+        return loxi.pp.pp(self)
+
+    def pretty_print(self, q):
+        q.text("push_mpls {")
+        with q.group():
+            with q.indent(2):
+                q.breakable()
+                q.text("ethertype = ");
+                q.text("%#x" % self.ethertype)
+            q.breakable()
+        q.text('}')
+
+class push_vlan(Action):
+    type = 17
+
+    def __init__(self, ethertype=None):
+        if ethertype != None:
+            self.ethertype = ethertype
+        else:
+            self.ethertype = 0
+        return
+
+    def pack(self):
+        packed = []
+        packed.append(struct.pack("!H", self.type))
+        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
+        packed.append(struct.pack("!H", self.ethertype))
+        packed.append('\x00' * 2)
+        length = sum([len(x) for x in packed])
+        packed[1] = struct.pack("!H", length)
+        return ''.join(packed)
+
+    @staticmethod
+    def unpack(buf):
+        obj = push_vlan()
+        if type(buf) == loxi.generic_util.OFReader:
+            reader = buf
+        else:
+            reader = loxi.generic_util.OFReader(buf)
+        _type = reader.read("!H")[0]
+        assert(_type == 17)
+        _len = reader.read("!H")[0]
+        obj.ethertype = reader.read("!H")[0]
+        reader.skip(2)
+        return obj
+
+    def __eq__(self, other):
+        if type(self) != type(other): return False
+        if self.ethertype != other.ethertype: return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def show(self):
+        import loxi.pp
+        return loxi.pp.pp(self)
+
+    def pretty_print(self, q):
+        q.text("push_vlan {")
+        with q.group():
+            with q.indent(2):
+                q.breakable()
+                q.text("ethertype = ");
+                q.text("%#x" % self.ethertype)
+            q.breakable()
+        q.text('}')
+
+class set_field(Action):
+    type = 25
+
+    def __init__(self, field=None):
+        if field != None:
+            self.field = field
+        else:
+            self.field = None
+        return
+
+    def pack(self):
+        packed = []
+        packed.append(struct.pack("!H", self.type))
+        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
+        packed.append(self.field.pack())
+        length = sum([len(x) for x in packed])
+        packed.append(loxi.generic_util.pad_to(8, length))
+        length += len(packed[-1])
+        packed[1] = struct.pack("!H", length)
+        return ''.join(packed)
+
+    @staticmethod
+    def unpack(buf):
+        obj = set_field()
+        if type(buf) == loxi.generic_util.OFReader:
+            reader = buf
+        else:
+            reader = loxi.generic_util.OFReader(buf)
+        _type = reader.read("!H")[0]
+        assert(_type == 25)
+        _len = reader.read("!H")[0]
+        obj.field = oxm.unpack(reader)
+        reader.skip_align()
+        return obj
+
+    def __eq__(self, other):
+        if type(self) != type(other): return False
+        if self.field != other.field: return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def show(self):
+        import loxi.pp
+        return loxi.pp.pp(self)
+
+    def pretty_print(self, q):
+        q.text("set_field {")
+        with q.group():
+            with q.indent(2):
+                q.breakable()
+                q.text("field = ");
+                q.pp(self.field)
+            q.breakable()
+        q.text('}')
+
+class set_mpls_ttl(Action):
+    type = 15
+
+    def __init__(self, mpls_ttl=None):
+        if mpls_ttl != None:
+            self.mpls_ttl = mpls_ttl
+        else:
+            self.mpls_ttl = 0
+        return
+
+    def pack(self):
+        packed = []
+        packed.append(struct.pack("!H", self.type))
+        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
+        packed.append(struct.pack("!B", self.mpls_ttl))
+        packed.append('\x00' * 3)
+        length = sum([len(x) for x in packed])
+        packed[1] = struct.pack("!H", length)
+        return ''.join(packed)
+
+    @staticmethod
+    def unpack(buf):
+        obj = set_mpls_ttl()
+        if type(buf) == loxi.generic_util.OFReader:
+            reader = buf
+        else:
+            reader = loxi.generic_util.OFReader(buf)
+        _type = reader.read("!H")[0]
+        assert(_type == 15)
+        _len = reader.read("!H")[0]
+        obj.mpls_ttl = reader.read("!B")[0]
+        reader.skip(3)
+        return obj
+
+    def __eq__(self, other):
+        if type(self) != type(other): return False
+        if self.mpls_ttl != other.mpls_ttl: return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def show(self):
+        import loxi.pp
+        return loxi.pp.pp(self)
+
+    def pretty_print(self, q):
+        q.text("set_mpls_ttl {")
+        with q.group():
+            with q.indent(2):
+                q.breakable()
+                q.text("mpls_ttl = ");
+                q.text("%#x" % self.mpls_ttl)
+            q.breakable()
+        q.text('}')
+
+class set_nw_ttl(Action):
+    type = 23
+
+    def __init__(self, nw_ttl=None):
+        if nw_ttl != None:
+            self.nw_ttl = nw_ttl
+        else:
+            self.nw_ttl = 0
+        return
+
+    def pack(self):
+        packed = []
+        packed.append(struct.pack("!H", self.type))
+        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
+        packed.append(struct.pack("!B", self.nw_ttl))
+        packed.append('\x00' * 3)
+        length = sum([len(x) for x in packed])
+        packed[1] = struct.pack("!H", length)
+        return ''.join(packed)
+
+    @staticmethod
+    def unpack(buf):
+        obj = set_nw_ttl()
+        if type(buf) == loxi.generic_util.OFReader:
+            reader = buf
+        else:
+            reader = loxi.generic_util.OFReader(buf)
+        _type = reader.read("!H")[0]
+        assert(_type == 23)
+        _len = reader.read("!H")[0]
+        obj.nw_ttl = reader.read("!B")[0]
+        reader.skip(3)
+        return obj
+
+    def __eq__(self, other):
+        if type(self) != type(other): return False
+        if self.nw_ttl != other.nw_ttl: return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def show(self):
+        import loxi.pp
+        return loxi.pp.pp(self)
+
+    def pretty_print(self, q):
+        q.text("set_nw_ttl {")
+        with q.group():
+            with q.indent(2):
+                q.breakable()
+                q.text("nw_ttl = ");
+                q.text("%#x" % self.nw_ttl)
+            q.breakable()
+        q.text('}')
+
+class set_queue(Action):
+    type = 21
+
+    def __init__(self, queue_id=None):
+        if queue_id != None:
+            self.queue_id = queue_id
+        else:
+            self.queue_id = 0
+        return
+
+    def pack(self):
+        packed = []
+        packed.append(struct.pack("!H", self.type))
+        packed.append(struct.pack("!H", 0)) # placeholder for len at index 1
+        packed.append(struct.pack("!L", self.queue_id))
+        length = sum([len(x) for x in packed])
+        packed[1] = struct.pack("!H", length)
+        return ''.join(packed)
+
+    @staticmethod
+    def unpack(buf):
+        obj = set_queue()
+        if type(buf) == loxi.generic_util.OFReader:
+            reader = buf
+        else:
+            reader = loxi.generic_util.OFReader(buf)
+        _type = reader.read("!H")[0]
+        assert(_type == 21)
+        _len = reader.read("!H")[0]
+        obj.queue_id = reader.read("!L")[0]
+        return obj
+
+    def __eq__(self, other):
+        if type(self) != type(other): return False
+        if self.queue_id != other.queue_id: return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def show(self):
+        import loxi.pp
+        return loxi.pp.pp(self)
+
+    def pretty_print(self, q):
+        q.text("set_queue {")
+        with q.group():
+            with q.indent(2):
+                q.breakable()
+                q.text("queue_id = ");
+                q.text("%#x" % self.queue_id)
+            q.breakable()
+        q.text('}')
+
+
+def parse_experimenter(reader):
 
     experimenter, = reader.peek("!4xL")
     if experimenter == 0x005c16c7: # Big Switch Networks
@@ -921,18 +991,20 @@ def parse_vendor(reader):
 
 parsers = {
     const.OFPAT_OUTPUT : output.unpack,
-    const.OFPAT_SET_VLAN_VID : set_vlan_vid.unpack,
-    const.OFPAT_SET_VLAN_PCP : set_vlan_pcp.unpack,
-    const.OFPAT_STRIP_VLAN : strip_vlan.unpack,
-    const.OFPAT_SET_DL_SRC : set_dl_src.unpack,
-    const.OFPAT_SET_DL_DST : set_dl_dst.unpack,
-    const.OFPAT_SET_NW_SRC : set_nw_src.unpack,
-    const.OFPAT_SET_NW_DST : set_nw_dst.unpack,
-    const.OFPAT_SET_NW_TOS : set_nw_tos.unpack,
-    const.OFPAT_SET_TP_SRC : set_tp_src.unpack,
-    const.OFPAT_SET_TP_DST : set_tp_dst.unpack,
-    const.OFPAT_ENQUEUE : enqueue.unpack,
-    const.OFPAT_VENDOR : parse_vendor,
+    const.OFPAT_COPY_TTL_OUT : copy_ttl_out.unpack,
+    const.OFPAT_COPY_TTL_IN : copy_ttl_in.unpack,
+    const.OFPAT_SET_MPLS_TTL : set_mpls_ttl.unpack,
+    const.OFPAT_DEC_MPLS_TTL : dec_mpls_ttl.unpack,
+    const.OFPAT_PUSH_VLAN : push_vlan.unpack,
+    const.OFPAT_POP_VLAN : pop_vlan.unpack,
+    const.OFPAT_PUSH_MPLS : push_mpls.unpack,
+    const.OFPAT_POP_MPLS : pop_mpls.unpack,
+    const.OFPAT_SET_QUEUE : set_queue.unpack,
+    const.OFPAT_GROUP : group.unpack,
+    const.OFPAT_SET_NW_TTL : set_nw_ttl.unpack,
+    const.OFPAT_DEC_NW_TTL : dec_nw_ttl.unpack,
+    const.OFPAT_SET_FIELD : set_field.unpack,
+    const.OFPAT_EXPERIMENTER : parse_experimenter,
 }
 
 experimenter_parsers = {
