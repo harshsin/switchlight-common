@@ -66,6 +66,12 @@ conf["version"] = 1
 
 json.dump(conf, file("/etc/ofad.conf", "w"), indent=4, sort_keys=True)
 
+if os.path.exists("/usr/bin/ofad"):
+    os.unlink("/usr/bin/ofad")
+if os.path.exists("/lib/modules/linux-kernel-bde.ko"):
+    os.unlink("/lib/modules/linux-kernel-bde.ko")
+if os.path.exists("/lib/modules/linux-user-bde.ko"):
+    os.unlink("/lib/modules/linux-user-bde.ko")
 if plat in ["quanta-lb9", "quanta-lb9a"]:
     os.symlink("ofad-5.6", "/usr/bin/ofad")
     os.symlink("linux-kernel-bde-5.6.ko", "/lib/modules/linux-kernel-bde.ko")
@@ -74,5 +80,10 @@ elif plat in ["quanta-ly2", "celestica-redstone"]:
     os.symlink("ofad-5.10", "/usr/bin/ofad")
     os.symlink("linux-kernel-bde-5.10.ko", "/lib/modules/linux-kernel-bde.ko")
     os.symlink("linux-user-bde-5.10.ko", "/lib/modules/linux-user-bde.ko")
+
+if plat == "quanta-lb9":
+    subprocess.call("/usr/bin/brcm_lb9_gpio_init")
+if plat == "quanta-ly2":
+    subprocess.call("/usr/bin/brcm_ly2_gpio_init")
 
 sys.stderr.write("done.\n")

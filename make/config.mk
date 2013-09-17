@@ -49,7 +49,9 @@ endif
 #
 export BIGCODE := $(SWITCHLIGHT_SUBMODULE_BIGCODE)
 export BROADCOM := $(SWITCHLIGHT_SUBMODULE_BROADCOM)
+ifndef BUILDER
 export BUILDER := $(BIGCODE)/indigo/Builder/unix
+endif
 
 #
 # Location of the local package repository
