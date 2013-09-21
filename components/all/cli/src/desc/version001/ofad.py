@@ -18,7 +18,6 @@ import run_config
 from sl_util.types import DPID
 from sl_util.ofad import OFADConfig, Controller
 
-
 OFAgentConfig = OFADConfig()
 
 def print_stats(outstring):
@@ -122,13 +121,6 @@ SHOW_DATAPATH_COMMAND_DESCRIPTION = {
     )
 }
 
-
-def reload_ofad_conf():
-    try:
-        shell.call('service ofad reload')
-    except subprocess.CalledProcessError:
-        raise error.ActionError('Cannot reload openflow agent configuration')
-
 def config_controller(no_command, data):
     clist = OFAgentConfig.controllers
 
@@ -153,7 +145,7 @@ def config_controller(no_command, data):
 
     OFAgentConfig.controllers = clist
     OFAgentConfig.write(warn=True)
-    reload_ofad_conf()
+    OFAgentConfig.reloadService()
 
 command.add_action('implement-config-controller', config_controller,
                     {'kwargs': {
@@ -218,7 +210,7 @@ def config_datapath(no_command, data):
 
         if changed:
             OFAgentConfig.write()
-            reload_ofad_conf()
+            OFAgentConfig.reloadService()
 
 command.add_action('implement-config-datapath', config_datapath,
                     {'kwargs': {
@@ -284,7 +276,7 @@ def config_logging(no_command, data):
 
     OFAgentConfig.logging = log
     OFAgentConfig.write(warn=True)
-    reload_ofad_conf()
+    OFAgentConfig.reloadService()
 
 command.add_action('implement-config-openflow-logging', config_logging,
                     {'kwargs': {
@@ -327,7 +319,7 @@ def config_table_miss_action(no_command, data):
         OFAgentConfig.table_miss_action = data['table-miss-action']
 
     OFAgentConfig.write(warn=True)
-    reload_ofad_conf()
+    OFAgentConfig.reloadService()
 
 command.add_action('implement-config-table-miss-action', 
                    config_table_miss_action,

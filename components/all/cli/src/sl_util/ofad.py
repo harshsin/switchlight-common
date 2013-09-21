@@ -6,6 +6,10 @@ from contextlib import contextmanager
 import json
 import copy
 
+import error
+import subprocess
+
+from sl_util import shell
 from sl_util.types import DPID
 
 class Controller(object):
@@ -94,6 +98,46 @@ class Controller(object):
                     self._cfg_dhcp = other._cfg_dhcp
                     changed = True
         return changed
+
+class Port(object):
+    def __init__ (self, name):
+        self._port_name = name
+        self._port_type = None
+        self._port_number = None
+
+    def toJSON (self):
+        d = {}
+        for k, v in self.__dict__.iteritems():
+            if k == "_port_name" or v is None:
+                continue
+
+            # assume each property name starts with "_"
+            d[k[1:]] = v
+        return d
+
+    @property
+    def portName (self):
+        return self._port_name
+
+    def setPortNumber (self, portNumber):
+        self._port_number = portNumber
+
+class LAGPort(Port):
+    def __init__ (self, name):
+        Port.__init__(self, name)
+        self._port_type = "lag"
+        self._component_ports = None
+        self._hash = None
+        self._mode = None
+
+    def setComponentPorts (self, ports):
+        self._component_ports = ports
+
+    def setHash (self, hash_):
+        self._hash = hash_
+
+    def setMode (self, mode):
+        self._mode = mode
 
 class ConfigChangedError(Exception):
     def __init__ (self, warn_count):
@@ -197,6 +241,16 @@ class OFADConfig(object):
     def table_miss_action (self, val):
         self._data["table_miss_action"] = val
 
+    @property
+    def port_list (self):
+        if "port_list" in self._data:
+            return self._data["port_list"]
+        else:
+            return {}
+
+    @port_list.setter
+    def port_list (self, val):
+        self._data["port_list"] = val
 
     @property
     def needs_update (self):
@@ -252,3 +306,8 @@ class OFADConfig(object):
                 json.dump(data, cfg, sort_keys=True, indent=4, separators=(',', ': '))
             self._rebuild_cache()
 
+    def reloadService (self):
+        try:
+            shell.call('service ofad reload')
+        except subprocess.CalledProcessError:
+            raise error.ActionError('Cannot reload openflow agent configuration')
