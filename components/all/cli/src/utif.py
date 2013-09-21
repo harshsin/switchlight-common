@@ -409,3 +409,64 @@ def pluralize(singular):
         suffix = 's'
     plural = root + suffix
     return plural
+
+
+#
+# --------------------------------------------------------------------------------
+
+def resolve_port_list(spec, sort=True):
+    """
+    Parse a port list spec and return a list of ports represented by the spec.
+    Return None if spec is invalid.
+
+    e.g.    1-2,3-4,7,9 => [1,2,3,4,7,9]
+            1-3,2-4 => None (has overlap)
+            1,2,3,1 => None (has dup)
+            3-1 => None (range must be from small to large)
+            a,b => None (each port should be an integer)
+    """
+
+    def is_int(s):
+        try:
+            int(s)
+            return True
+        except:
+            return False
+
+    ports = []
+    for part in spec.split(","):
+        ports_to_add = []
+
+        if "-" in part:
+            subparts = part.split("-")
+            if len(subparts) != 2:
+                # invalid range
+                return None
+
+            if not is_int(subparts[0]) or not is_int(subparts[1]):
+                # not an integer
+                return None
+
+            start = int(subparts[0])
+            end = int(subparts[1])
+            if not (start < end):
+                # invalid range
+                return None
+
+            ports_to_add = range(start, end + 1)
+
+        else:
+            if not is_int(part):
+                # not an integer
+                return None
+            ports_to_add.append(int(part))
+
+        for p in ports_to_add:
+            if p in ports:
+                # duplicated port
+                return None
+            ports.append(p)
+
+    if sort:
+        ports = sorted(ports)
+    return ports
