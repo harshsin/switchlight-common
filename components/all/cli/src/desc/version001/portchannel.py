@@ -2,37 +2,40 @@
 
 import command
 import error
-from sl_util.ofad import OFADConfig, LAGPort
+import utif
+
+from sl_util.ofad import OFADConfig, PortManager
 
 OFAgentConfig = OFADConfig()
 
-LAG_PORT_NUM_BASE = 60
 LAG_MIN_NUM = 1
 LAG_MAX_NUM = 30
 
+LAG_HASH_TYPES = ["L2", "L3", "MAX"]
+
 def config_port_channel(no_command, data):
-    portListDict = OFAgentConfig.port_list
-    lagName = "lag%d" % data["port-channel-id"]
-    componentPorts = []
+    portManager = PortManager(OFAgentConfig.port_list)
+
+    portId = data["port-channel-id"]
+    if portId < LAG_MIN_NUM or portId > LAG_MAX_NUM:
+        raise error.ActionError("Port channel ID must be from %d to %d" % \
+                                (LAG_MIN_NUM, LAG_MAX_NUM))
+
+    componentPorts = None
     if "interface-list" in data:
-        componentPorts = ([int(p) for p in data["interface-list"].split(",")])
+        componentPorts = utif.resolve_port_list(data["interface-list"])
+        if componentPorts is None:
+            raise error.ActionError("Invalid interface list spec: %s" % data["interface-list"])
+
+        for p in componentPorts:
+            portManager.checkComponentPort(p)
 
     if no_command:
-        if lagName not in portListDict:
-            return
-
-        if len(componentPorts) != 0 and componentPorts != portListDict[lagName]["component_ports"]:
-            raise error.ActionError("Interface list specified does not match the existing list")
-
-        portListDict.pop(lagName)
+        portManager.unconfigureLAGPort(int(portId), componentPorts)
     else:
-        portNumber = LAG_PORT_NUM_BASE + int(data["port-channel-id"])
-        lag = LAGPort(lagName)
-        lag.setComponentPorts(componentPorts)
-        lag.setPortNumber(portNumber)
-        portListDict[lagName] = lag.toJSON()
+        portManager.configureLAGPort(int(portId), componentPorts)
 
-    OFAgentConfig.port_list = portListDict
+    OFAgentConfig.port_list = portManager.toJSON()
     OFAgentConfig.write(warn=True)
     OFAgentConfig.reloadService()
 

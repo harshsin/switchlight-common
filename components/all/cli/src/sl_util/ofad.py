@@ -122,6 +122,13 @@ class Port(object):
     def setPortNumber (self, portNumber):
         self._port_number = portNumber
 
+class EtherPort(Port):
+    def __init__ (self, name):
+        Port.__init__(self, name)
+        #self._port_type = "ether"
+
+LAG_BASE_PORT_NUM = 60
+
 class LAGPort(Port):
     def __init__ (self, name):
         Port.__init__(self, name)
@@ -129,6 +136,10 @@ class LAGPort(Port):
         self._component_ports = None
         self._hash = None
         self._mode = None
+
+    @property
+    def componentPorts (self):
+        return self._component_ports
 
     def setComponentPorts (self, ports):
         self._component_ports = ports
@@ -138,6 +149,96 @@ class LAGPort(Port):
 
     def setMode (self, mode):
         self._mode = mode
+
+class PortManager(object):
+    def __init__ (self, port_list):
+        self.ethers = {}
+        self.lags = {}
+        self.static_ether_list = []
+        self.__parsePortList(port_list)
+
+    def __parsePortList (self, port_list):
+        for k, v in port_list.iteritems():
+            port_type = v.get("port_type", "ether")
+
+            if port_type == "ether":
+                port = EtherPort(k)
+                self.ethers[k] = port
+                self.static_ether_list.append(k)
+
+            elif port_type == "lag":
+                port = LAGPort(k)
+                port.setComponentPorts(v["component_ports"])
+                port.setPortNumber(v["port_number"])
+                port.setHash(v.get("hash", None))
+                port.setMode(v.get("mode", None))
+                self.lags[k] = port
+                self.static_ether_list += ["ether%d" % p for p in v["component_ports"]]
+
+    def __freeEtherPort (self, name):
+        assert name not in self.ethers
+        port = EtherPort(name)
+        self.ethers[name] = port
+
+    def __useEtherPort (self, name):
+        assert name in self.ethers
+        self.ethers.pop(name)
+
+    def __addLAGPort (self, name, ports, port_num, hash_=None, mode=None):
+        assert name not in self.lags
+        for p in ports:
+            etherPort = "ether%d" % p
+            self.__useEtherPort(etherPort)
+
+        port = LAGPort(name)
+        port.setComponentPorts(ports)
+        port.setPortNumber(port_num)
+        port.setHash(hash_)
+        port.setMode(mode)
+        self.lags[name] = port
+
+    def __removeLAGPort (self, name):
+        assert name in self.lags
+        port = self.lags.pop(name)
+        for p in port.componentPorts:
+            etherPort = "ether%d" % p
+            self.__freeEtherPort(etherPort)
+
+    def checkComponentPort (self, port):
+        name = "ether%d" % port
+        if name not in self.static_ether_list:
+            raise error.ActionError("%s is not a valid interface" % name)
+
+    def configureLAGPort (self, id_, ports, hash_=None, mode=None):
+        name = "lag%d" % id_
+        port_num = LAG_BASE_PORT_NUM + id_
+        if name in self.lags:
+            self.__removeLAGPort(name)
+
+        for p in ports:
+            ether = "ether%d" % p
+            if ether not in self.ethers:
+                raise error.ActionError("%s is already in use" % ether)
+
+        self.__addLAGPort(name, ports, port_num, hash_, mode)
+
+    def unconfigureLAGPort (self, id_, ports=None):
+        name = "lag%d" % id_
+        if name not in self.lags:
+            return
+
+        lag_port = self.lags[name]
+        if ports and ports != lag_port.componentPorts:
+            raise error.ActionError("Port list specified does not match existing list")
+
+        self.__removeLAGPort(name)
+
+    def toJSON (self):
+        port_list = {}
+        for d in [self.ethers, self.lags]:
+            for k, port in d.iteritems():
+                port_list[k] = port.toJSON()
+        return port_list
 
 class ConfigChangedError(Exception):
     def __init__ (self, warn_count):
