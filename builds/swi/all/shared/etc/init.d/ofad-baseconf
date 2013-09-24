@@ -14,12 +14,30 @@ import hashlib, json, os, re, subprocess, sys
 sys.stderr.write("Setting up base ofad configuration...")
 sys.stderr.flush()
 
+PLAT_LB9                = "quanta-lb9"
+PLAT_LB9A               = "quanta-lb9a"
+PLAT_LY2                = "quanta-ly2"
+PLAT_CELESTICA_REDSTONE = "celestica-redstone"
+PLAT_UNKNOWN            = "unknown"
+
+PHY_BASE_NAME           = "eth"
+LAG_BASE_NAME           = "lag"
+
+# define number of ether ports for each platform
+NUM_PHY_PORTS = {
+    PLAT_LB9                : 52,
+    PLAT_LB9A               : 52,
+    PLAT_LY2                : 52,
+    PLAT_CELESTICA_REDSTONE : 52,
+    PLAT_UNKNOWN            : 0
+}
+
 conf = {}
 
 try:
     plat = file("/etc/sl_platform").read().strip()
 except IOError:
-    plat = "unknown"
+    plat = PLAT_UNKNOWN
 
 conf["of_mfr_desc"] = "Big Switch Networks"
 conf["of_hw_desc"] = ""
@@ -59,10 +77,14 @@ conf["controllers"] = []
 conf["failover_mode"] = "serial"
 conf["keepalive_period_ms"] = 10000
 conf["of_dp_desc"] = ""
-conf["of_interface_name"] = "eth"
 conf["table_miss_action"] = "packet-in"
 
 conf["version"] = 1
+
+conf["physical_base_name"] = PHY_BASE_NAME
+conf["lag_base_name"] = LAG_BASE_NAME
+conf["port_list"] = dict([("%s%d" % (PHY_BASE_NAME, i+1), {}) \
+                          for i in range(NUM_PHY_PORTS.get(plat))])
 
 json.dump(conf, file("/etc/ofad.conf", "w"), indent=4, sort_keys=True)
 
@@ -72,18 +94,18 @@ if os.path.exists("/lib/modules/linux-kernel-bde.ko"):
     os.unlink("/lib/modules/linux-kernel-bde.ko")
 if os.path.exists("/lib/modules/linux-user-bde.ko"):
     os.unlink("/lib/modules/linux-user-bde.ko")
-if plat in ["quanta-lb9", "quanta-lb9a"]:
+if plat in [PLAT_LB9, PLAT_LB9A]:
     os.symlink("ofad-5.6", "/usr/bin/ofad")
     os.symlink("linux-kernel-bde-5.6.ko", "/lib/modules/linux-kernel-bde.ko")
     os.symlink("linux-user-bde-5.6.ko", "/lib/modules/linux-user-bde.ko")
-elif plat in ["quanta-ly2", "celestica-redstone"]:
+elif plat in [PLAT_LY2, PLAT_CELESTICA_REDSTONE]:
     os.symlink("ofad-5.10", "/usr/bin/ofad")
     os.symlink("linux-kernel-bde-5.10.ko", "/lib/modules/linux-kernel-bde.ko")
     os.symlink("linux-user-bde-5.10.ko", "/lib/modules/linux-user-bde.ko")
 
-if plat == "quanta-lb9":
+if plat == PLAT_LB9:
     subprocess.call("/usr/bin/brcm_lb9_gpio_init")
-if plat == "quanta-ly2":
+if plat == PLAT_LY2:
     subprocess.call("/usr/bin/brcm_ly2_gpio_init")
 
 sys.stderr.write("done.\n")
