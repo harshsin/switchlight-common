@@ -3,6 +3,7 @@
 import command
 import error
 import utif
+import run_config
 
 from sl_util.ofad import OFADConfig, PortManager
 
@@ -12,8 +13,6 @@ PortManager.setLAGBase(OFAgentConfig.lag_base_name)
 
 LAG_MIN_NUM = 1
 LAG_MAX_NUM = 30
-
-LAG_HASH_TYPES = ["L2", "L3", "MAX"]
 
 def config_port_channel(no_command, data):
     portManager = PortManager(OFAgentConfig.port_list)
@@ -32,10 +31,12 @@ def config_port_channel(no_command, data):
         for p in componentPorts:
             portManager.checkValidPhysicalPort(p)
 
+    hashType = data.get("hash-type", None)
+
     if no_command:
         portManager.unconfigureLAGPort(int(portId), componentPorts)
     else:
-        portManager.configureLAGPort(int(portId), componentPorts)
+        portManager.configureLAGPort(int(portId), componentPorts, hashType)
 
     OFAgentConfig.port_list = portManager.toJSON()
     OFAgentConfig.write(warn=True)
@@ -61,23 +62,54 @@ CONFIG_PORTCHANNEL_COMMAND_DESCRIPTION = {
             'syntax-help'       : 'Port channel ID',
         },
         {
-            'choices'           : (
-                (
-                    {
-                        'token'             : 'interface-list',
-                        'short-help'        : 'Interface port range list',
-                        'optional'          : False,
-                        'optional-for-no'   : True,
-                    },
-                    {
-                        'field'             : 'interface-list',
-                        # FIXME: type 'interface-list' doesn't work
-                        'type'              : 'string',
-                        'optional'          : False,
-                        'optional-for-no'   : True,
-                    },
-                ),
-            ),
+            'field'             : 'interface-list',
+            # FIXME: type 'interface-list' doesn't work
+            'tag'               : 'interface-list',
+            'short-help'        : 'Interface port range list',
+            'type'              : 'string',
+            'optional'          : False,
+            'optional-for-no'   : True,
+        },
+        {
+            'field'             : 'hash-type',
+            'tag'               : 'hash',
+            'short-help'        : 'Hash type for port channel',
+            'type'              : 'enum',
+            'values'            : ('L2', 'L3', 'MAX'),
+            'optional'          : True,
+            'optional-for-no'   : True,
         },
     ),
 }
+
+def running_config_port_channel(context, runcfg, words):
+    portManager = PortManager(OFAgentConfig.port_list)
+
+    lagList = [(PortManager.getLAGId(lag.portName), lag) for lag in portManager.getLAGs()]
+    cfg = []
+    for portId, lag in sorted(lagList, key=lambda x: x[0]):
+        interfaceList = ",".join([str(p) for p in lag.componentPorts])
+        line = "port-channel %d interface-list %s" % (portId, interfaceList)
+        if lag.hash:
+            line += " hash %s" % lag.hash
+        cfg.append("%s\n" % line)
+
+    if cfg:
+        runcfg.append("!\n")
+        runcfg += cfg
+
+port_channel_running_config_tuple = (
+    (
+        {
+            'optional'  : False,
+            'field'     : 'running-config',
+            'type'      : 'enum',
+            'values'    : 'port-channel',
+            # FIXME: add short-help and doc
+        },
+    ),
+)
+
+run_config.register_running_config('port-channel', 6000, None,
+                                   running_config_port_channel,
+                                   port_channel_running_config_tuple)

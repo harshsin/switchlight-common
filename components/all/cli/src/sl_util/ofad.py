@@ -149,6 +149,10 @@ class LAGPort(Port):
     def setComponentPorts (self, ports):
         self._component_ports = ports
 
+    @property
+    def hash (self):
+        return self._hash
+
     def setHash (self, hash_):
         self._hash = hash_
 
@@ -239,6 +243,10 @@ class PortManager(object):
     def getLAGName (id_):
         return "%s%d" % (PortManager.lag_base, id_)
 
+    @staticmethod
+    def getLAGId (name):
+        return int(name[len(PortManager.lag_base):])
+
     def checkValidPhysicalPort (self, port):
         name = PortManager.getPhysicalName(port)
         if name not in self.all_phys:
@@ -268,6 +276,9 @@ class PortManager(object):
             raise error.ActionError("Port list specified does not match configured value")
 
         self.__removeLAGPort(name)
+
+    def getLAGs (self):
+        return self.lags.values()
 
     def toJSON (self):
         port_list = {}
