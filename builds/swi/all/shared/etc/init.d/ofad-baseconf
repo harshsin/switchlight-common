@@ -20,10 +20,11 @@ PLAT_LY2                = "quanta-ly2"
 PLAT_CELESTICA_REDSTONE = "celestica-redstone"
 PLAT_UNKNOWN            = "unknown"
 
-BASE_ETH_NAME           = "ether"
+PHY_BASE_NAME           = "eth"
+LAG_BASE_NAME           = "lag"
 
 # define number of ether ports for each platform
-NUM_ETH_PORTS = {
+NUM_PHY_PORTS = {
     PLAT_LB9                : 52,
     PLAT_LB9A               : 52,
     PLAT_LY2                : 52,
@@ -76,13 +77,14 @@ conf["controllers"] = []
 conf["failover_mode"] = "serial"
 conf["keepalive_period_ms"] = 10000
 conf["of_dp_desc"] = ""
-conf["of_interface_name"] = "eth"
 conf["table_miss_action"] = "packet-in"
 
 conf["version"] = 1
 
-conf["port_list"] = dict([("%s%d" % (BASE_ETH_NAME, i+1), {}) \
-                          for i in range(NUM_ETH_PORTS.get(plat))])
+conf["physical_base_name"] = PHY_BASE_NAME
+conf["lag_base_name"] = LAG_BASE_NAME
+conf["port_list"] = dict([("%s%d" % (PHY_BASE_NAME, i+1), {}) \
+                          for i in range(NUM_PHY_PORTS.get(plat))])
 
 json.dump(conf, file("/etc/ofad.conf", "w"), indent=4, sort_keys=True)
 

@@ -437,6 +437,7 @@ def resolve_port_list(spec, sort=True):
     for part in spec.split(","):
         ports_to_add = []
 
+        # handles range, expects "x-y" where x < y
         if "-" in part:
             subparts = part.split("-")
             if len(subparts) != 2:

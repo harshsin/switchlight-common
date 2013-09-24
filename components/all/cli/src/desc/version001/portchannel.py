@@ -7,6 +7,8 @@ import utif
 from sl_util.ofad import OFADConfig, PortManager
 
 OFAgentConfig = OFADConfig()
+PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
+PortManager.setLAGBase(OFAgentConfig.lag_base_name)
 
 LAG_MIN_NUM = 1
 LAG_MAX_NUM = 30
@@ -28,7 +30,7 @@ def config_port_channel(no_command, data):
             raise error.ActionError("Invalid interface list spec: %s" % data["interface-list"])
 
         for p in componentPorts:
-            portManager.checkComponentPort(p)
+            portManager.checkValidPhysicalPort(p)
 
     if no_command:
         portManager.unconfigureLAGPort(int(portId), componentPorts)
@@ -37,7 +39,7 @@ def config_port_channel(no_command, data):
 
     OFAgentConfig.port_list = portManager.toJSON()
     OFAgentConfig.write(warn=True)
-    OFAgentConfig.reloadService()
+    OFAgentConfig.reload()
 
 command.add_action('implement-config-port-channel', config_port_channel,
                    {'kwargs': {
@@ -45,6 +47,7 @@ command.add_action('implement-config-port-channel', config_port_channel,
                        'data'       : '$data',
                     }})
 
+# FIXME: add documentation for port-channel commands
 CONFIG_PORTCHANNEL_COMMAND_DESCRIPTION = {
     'name'          : 'port-channel',
     'mode'          : 'config',
