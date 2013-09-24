@@ -87,8 +87,7 @@ def running_config_port_channel(context, runcfg, words):
 
     lagList = [(PortManager.getLAGId(lag.portName), lag) for lag in portManager.getLAGs()]
     cfg = []
-    for pair in sorted(lagList, key=lambda x: x[0]):
-        portId, lag = pair
+    for portId, lag in sorted(lagList, key=lambda x: x[0]):
         interfaceList = ",".join([str(p) for p in lag.componentPorts])
         line = "port-channel %d interface-list %s" % (portId, interfaceList)
         if lag.hash:
