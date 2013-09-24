@@ -165,7 +165,7 @@ class PortManager(object):
         self.phys = {}
 
         # A dict of configured lag ports
-        # A lag could contain physical ports as component ports
+        # A lag should contain one or more physical ports as component ports
         self.lags = {}
 
         # A list of all physical ports
