@@ -1,0 +1,5 @@
+full-match-table all
+  Allow flows to match on L2, L3, and L4 packet fields.
+
+full-match-table l3l4
+  Allow flows to match on only L3 and L4 packet fields.

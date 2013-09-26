@@ -408,6 +408,13 @@ class OFADConfig(object):
     def port_list (self, val):
         self._data["port_list"] = val
 
+    def full_match_table (self):
+        return self._data["full_match_table"]
+
+    @full_match_table.setter
+    def full_match_table (self, val):
+        self._data["full_match_table"] = val
+
     @property
     def needs_update (self):
         stat = os.stat(OFADConfig.PATH)
