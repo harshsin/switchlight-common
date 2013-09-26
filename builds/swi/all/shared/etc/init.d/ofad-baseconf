@@ -94,15 +94,22 @@ if os.path.exists("/lib/modules/linux-kernel-bde.ko"):
     os.unlink("/lib/modules/linux-kernel-bde.ko")
 if os.path.exists("/lib/modules/linux-user-bde.ko"):
     os.unlink("/lib/modules/linux-user-bde.ko")
-if plat in [PLAT_LB9, PLAT_LB9A]:
-    os.symlink("ofad-5.6", "/usr/bin/ofad")
-    os.symlink("linux-kernel-bde-5.6.ko", "/lib/modules/linux-kernel-bde.ko")
-    os.symlink("linux-user-bde-5.6.ko", "/lib/modules/linux-user-bde.ko")
-elif plat in [PLAT_LY2, PLAT_CELESTICA_REDSTONE]:
-    os.symlink("ofad-5.10", "/usr/bin/ofad")
-    os.symlink("linux-kernel-bde-5.10.ko", "/lib/modules/linux-kernel-bde.ko")
-    os.symlink("linux-user-bde-5.10.ko", "/lib/modules/linux-user-bde.ko")
 
+
+if os.path.exists("/etc/.use-ofad-6.2"):
+    os.symlink("ofad-6.2", "/usr/bin/ofad")
+    os.symlink("linux-kernel-bde-6.2.ko", "/lib/modules/linux-kernel-bde.ko")
+    os.symlink("linux-user-bde-6.2.ko", "/lib/modules/linux-user-bde.ko")
+else:
+    if plat in [PLAT_LB9, PLAT_LB9A]:
+        os.symlink("ofad-5.6", "/usr/bin/ofad")
+        os.symlink("linux-kernel-bde-5.6.ko", "/lib/modules/linux-kernel-bde.ko")
+        os.symlink("linux-user-bde-5.6.ko", "/lib/modules/linux-user-bde.ko")
+    elif plat in [PLAT_LY2, PLAT_CELESTICA_REDSTONE]:
+        os.symlink("ofad-5.10", "/usr/bin/ofad")
+        os.symlink("linux-kernel-bde-5.10.ko", "/lib/modules/linux-kernel-bde.ko")
+        os.symlink("linux-user-bde-5.10.ko", "/lib/modules/linux-user-bde.ko")
+    
 if plat == PLAT_LB9:
     subprocess.call("/usr/bin/brcm_lb9_gpio_init")
 if plat == PLAT_LY2:
