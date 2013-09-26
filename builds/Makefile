@@ -87,6 +87,8 @@ show-installers:
 # Components directory
 #
 ###############################################################################
+.PHONY: components
+
 components:
 	$(MAKE) -C components
 

@@ -18,6 +18,8 @@ clean:
 override_dh_auto_install:
 	mkdir -p $(INSTALL_DIR)/usr/bin $(INSTALL_DIR)/etc/init.d
 	cp $(OFAD_6_2_7_DIR)/build/$(DEB_HOST_GNU_TYPE)/bin/ofad.shared $(INSTALL_DIR)/usr/bin/ofad-6.2
+	cp $(OFAD_6_2_7_DIR)/build/$(DEB_HOST_GNU_TYPE)/bin/brcm_lb9_gpio_init $(INSTALL_DIR)/usr/bin/brcm_lb9_gpio_init
+	cp $(OFAD_6_2_7_DIR)/build/$(DEB_HOST_GNU_TYPE)/bin/brcm_ly2_gpio_init $(INSTALL_DIR)/usr/bin/brcm_ly2_gpio_init
 	cp $(SWITCHLIGHT)/components/all/ofad/ofad-ctl $(INSTALL_DIR)/usr/bin/ofad-ctl
 	cp $(SWITCHLIGHT)/components/all/ofad/ofad.init debian
 
