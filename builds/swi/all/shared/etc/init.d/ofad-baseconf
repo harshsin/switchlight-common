@@ -78,6 +78,7 @@ conf["failover_mode"] = "serial"
 conf["keepalive_period_ms"] = 10000
 conf["of_dp_desc"] = ""
 conf["table_miss_action"] = "packet-in"
+conf["full_match_table"] = "all"
 
 conf["version"] = 1
 
