@@ -1,1 +1,1 @@
-MAX hash mode for port channel.
+Hash on a combination of L2, L3 and L4 fields.
