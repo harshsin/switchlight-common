@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+
+DEB_DH_INSTALL_SOURCEDIR = debian/tmp
+INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
+
+%:
+	dh $@
+
+build-arch:
+	dh build-arch
+
+clean:
+	dh clean
+
+override_dh_auto_install:
+	mkdir -p $(INSTALL_DIR)/usr/loader-i386
+	cp ../../*.iso $(INSTALL_DIR)/usr/loader-i386
+	cp ../../*.img $(INSTALL_DIR)/usr/loader-i386
+
+
