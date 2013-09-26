@@ -7,12 +7,14 @@ import error
 import subprocess
 from sl_util import shell
 from sl_util import OFConnection
+from sl_util.ofad import OFADConfig
 
 import loxi.of10 as of10
 
 import re
 import itertools
 
+OFAgentConfig = OFADConfig()
 
 def get_base_name(s):
     # given a string, return the base name of an interface; 
@@ -54,21 +56,33 @@ class Platform(object):
         self._dp_intf_base = None
         self._dp_intf_min = None
         self._dp_intf_max = None
+        self._lag_intf_base = None
+        self._lag_intf_min = None
+        self._lag_intf_max = None
         self._mgmt_intf_base = 'ma'
         self._mgmt_intf_min = 1
         self._mgmt_intf_max = 1
 
     def populate(self):
+        self._dp_intf_base = OFAgentConfig.physical_base_name
+        self._lag_intf_base = OFAgentConfig.lag_base_name
+
         # FIXME we populate the dataplane-related info once;
         # this needs to be revisited if this info can change
         ports = get_port_info()
 
-        self._dp_intf_base = get_base_name(min(ports.keys()))
+        dp_port_nums = []
+        lag_port_nums = []
+        for p in ports.keys():
+            if p.startswith(self._dp_intf_base):
+                dp_port_nums.append(int(p[len(self._dp_intf_base):]))
+            elif p.startswith(self._lag_intf_base):
+                lag_port_nums.append(int(p[len(self._lag_intf_base):]))
 
-        port_nums = [ int(p[len(self._dp_intf_base):]) for p in ports.keys() ]
-
-        self._dp_intf_min = min(port_nums)
-        self._dp_intf_max = max(port_nums)
+        self._dp_intf_min = min(dp_port_nums)
+        self._dp_intf_max = max(dp_port_nums)
+        self._lag_intf_min = min(lag_port_nums)
+        self._lag_intf_max = max(lag_port_nums)
 
     @property
     def dp_intf_base(self):
@@ -87,6 +101,24 @@ class Platform(object):
         if self._dp_intf_base is None:
             self.populate()
         return self._dp_intf_max
+
+    @property
+    def lag_intf_base(self):
+        if self._lag_intf_base is None:
+            self.populate()
+        return self._lag_intf_base
+
+    @property
+    def lag_intf_min(self):
+        if self._lag_intf_base is None:
+            self.populate()
+        return self._lag_intf_min
+
+    @property
+    def lag_intf_max(self):
+        if self._lag_intf_base is None:
+            self.populate()
+        return self._lag_intf_max
 
     @property
     def mgmt_intf_base(self):
@@ -121,7 +153,6 @@ def get_speed(bmap):
 
 def show_one_dp_intf_detail(port):
     # prints detailed info for the given (port_desc, port_stats) tuple
-
     print '%s is %s' % \
         (port[0].name, 
          'down' if port[0].state & of10.OFPPS_LINK_DOWN
@@ -225,23 +256,30 @@ def show_intf(data):
         base = get_base_name(data['intf-port-list'])
 
         if base and plat.mgmt_intf_base.startswith(base):
-            port_list = parse_port_list(data['intf-port-list'], 
+            port_list = parse_port_list(data['intf-port-list'],
                                         base,
                                         plat.mgmt_intf_base,
-                                        plat.mgmt_intf_min, 
+                                        plat.mgmt_intf_min,
                                         plat.mgmt_intf_max)
             for port in port_list:
                 command.action_invoke('implement-show-mgmt-intf',
                                       ({'ifname': port},))
         elif base and plat.dp_intf_base.startswith(base):
-            port_list = parse_port_list(data['intf-port-list'], 
+            port_list = parse_port_list(data['intf-port-list'],
                                         base,
                                         plat.dp_intf_base,
-                                        plat.dp_intf_min, 
+                                        plat.dp_intf_min,
                                         plat.dp_intf_max)
             show_dp_intf_list(port_list, 'detail' in data)
+        elif base and plat.lag_intf_base.startswith(base):
+            port_list = parse_port_list(data['intf-port-list'],
+                                        base,
+                                        plat.lag_intf_base,
+                                        plat.lag_intf_min,
+                                        plat.lag_intf_max)
+            show_dp_intf_list(port_list, 'detail' in data)
         else:
-            ptypes = [plat.dp_intf_base, plat.mgmt_intf_base]
+            ptypes = [plat.dp_intf_base, plat.lag_intf_base, plat.mgmt_intf_base]
             raise error.ActionError('Port type not in ' + str(ptypes))
     else:
         show_dp_intf_list([], False)
