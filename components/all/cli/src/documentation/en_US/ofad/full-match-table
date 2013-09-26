@@ -1,0 +1,3 @@
+Change the configuration of the full match table.  
+Depending on the specified configuration, this may allow more flows
+to be programmed into the full match table.

@@ -409,6 +409,14 @@ class OFADConfig(object):
         self._data["port_list"] = val
 
     @property
+    def full_match_table (self):
+        return self._data["full_match_table"]
+
+    @full_match_table.setter
+    def full_match_table (self, val):
+        self._data["full_match_table"] = val
+
+    @property
     def needs_update (self):
         stat = os.stat(OFADConfig.PATH)
         if ((stat.st_ctime != self._cache_tinfo[0]) or
