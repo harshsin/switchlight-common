@@ -48,25 +48,28 @@ command.add_action('implement-config-port-channel', config_port_channel,
                        'data'       : '$data',
                     }})
 
-# FIXME: add documentation for port-channel commands
 CONFIG_PORTCHANNEL_COMMAND_DESCRIPTION = {
     'name'          : 'port-channel',
     'mode'          : 'config',
     'short-help'    : 'Configure Port Channel Settings',
     'action'        : 'implement-config-port-channel',
     'no-action'     : 'implement-config-port-channel',
+    'doc'           : 'port-channel|port-channel',
+    'doc-example'   : 'port-channel|port-channel-example',
     'args'          : (
         {
             'field'             : 'port-channel-id',
             'type'              : 'integer',
-            'syntax-help'       : 'Port channel ID',
+            'syntax-help'       : 'Port channel ID (between %d and %d)' % \
+                                  (LAG_MIN_NUM, LAG_MAX_NUM),
         },
         {
             'field'             : 'interface-list',
-            # FIXME: type 'interface-list' doesn't work
             'tag'               : 'interface-list',
             'short-help'        : 'Interface port range list',
+            'syntax-help'       : 'Comma-separated list of integers or integer ranges',
             'type'              : 'string',
+            'doc'               : 'port-channel|interface-list',
             'optional'          : False,
             'optional-for-no'   : True,
         },
@@ -76,6 +79,7 @@ CONFIG_PORTCHANNEL_COMMAND_DESCRIPTION = {
             'short-help'        : 'Hash type for port channel',
             'type'              : 'enum',
             'values'            : ('L2', 'L3', 'MAX'),
+            'doc'               : 'port-channel|+',
             'optional'          : True,
             'optional-for-no'   : True,
         },
@@ -101,11 +105,12 @@ def running_config_port_channel(context, runcfg, words):
 port_channel_running_config_tuple = (
     (
         {
-            'optional'  : False,
-            'field'     : 'running-config',
-            'type'      : 'enum',
-            'values'    : 'port-channel',
-            # FIXME: add short-help and doc
+            'optional'      : False,
+            'field'         : 'running-config',
+            'type'          : 'enum',
+            'values'        : 'port-channel',
+            'short-help'    : 'Configuration for port channel interfaces',
+            'doc'           : 'running-config|show-port-channel',
         },
     ),
 )
