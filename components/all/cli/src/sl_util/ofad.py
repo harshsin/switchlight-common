@@ -408,6 +408,7 @@ class OFADConfig(object):
     def port_list (self, val):
         self._data["port_list"] = val
 
+    @property
     def full_match_table (self):
         return self._data["full_match_table"]
 

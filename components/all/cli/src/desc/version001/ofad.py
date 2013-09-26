@@ -360,7 +360,7 @@ def config_full_match_table(no_command, data):
         OFAgentConfig.full_match_table = data['full-match-table']
 
     OFAgentConfig.write(warn=True)
-    reload_ofad_conf()
+    OFAgentConfig.reload()
 
 command.add_action('implement-config-full-match-table', 
                    config_full_match_table,
