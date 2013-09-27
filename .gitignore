@@ -8,4 +8,7 @@
 *substvars*
 dependmodules.x
 */deb/debuild/debian/files
+*.iso
+*.img
+
 

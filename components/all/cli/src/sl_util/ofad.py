@@ -6,6 +6,10 @@ from contextlib import contextmanager
 import json
 import copy
 
+import error
+import subprocess
+
+from sl_util import shell
 from sl_util.types import DPID
 
 class Controller(object):
@@ -94,6 +98,194 @@ class Controller(object):
                     self._cfg_dhcp = other._cfg_dhcp
                     changed = True
         return changed
+
+PHY_PORT_TYPE = "physical"
+LAG_PORT_TYPE = "lag"
+LAG_BASE_PORT_NUM = 60
+
+class Port(object):
+    """
+    Base port class.
+
+    Each object var that starts with "_" is processed by toJSON().
+    """
+    def __init__ (self, name, type_):
+        self.port_name = name
+        self._port_type = type_
+        self._port_number = None
+
+    def toJSON (self):
+        d = {}
+        for k, v in self.__dict__.iteritems():
+            if not k.startswith("_") or v is None:
+                continue
+            d[k[1:]] = v
+        return d
+
+    @property
+    def portName (self):
+        return self.port_name
+
+    def setPortNumber (self, portNumber):
+        self._port_number = portNumber
+
+class PhysicalPort(Port):
+    def __init__ (self, name):
+        Port.__init__(self, name, PHY_PORT_TYPE)
+        # physical ports don't need port_type in ofad.conf
+        delattr(self, "_port_type")
+
+class LAGPort(Port):
+    def __init__ (self, name):
+        Port.__init__(self, name, LAG_PORT_TYPE)
+        self._component_ports = None
+        self._hash = None
+        self._mode = None
+
+    @property
+    def componentPorts (self):
+        return self._component_ports
+
+    def setComponentPorts (self, ports):
+        self._component_ports = ports
+
+    @property
+    def hash (self):
+        return self._hash
+
+    def setHash (self, hash_):
+        self._hash = hash_
+
+    def setMode (self, mode):
+        self._mode = mode
+
+class PortManager(object):
+    # class variables for port base names
+    phy_base = "_phy_base_"
+    lag_base = "_lag_base_"
+
+    def __init__ (self, port_list):
+        # A dict of configured physical ports
+        self.phys = {}
+
+        # A dict of configured lag ports
+        # A lag should contain one or more physical ports as component ports
+        self.lags = {}
+
+        # A list of all physical ports
+        # This is a fixed list that should not change after init
+        # This is essentially the sum of all standalone physicalports and lag component ports
+        self.all_phys = []
+
+        # Parse port_list
+        self.__parsePortList(port_list)
+
+    def __parsePortList (self, port_list):
+        for k, v in port_list.iteritems():
+            port_type = v.get("port_type", PHY_PORT_TYPE)
+
+            if port_type == PHY_PORT_TYPE:
+                port = PhysicalPort(k)
+                self.phys[k] = port
+                self.all_phys.append(k)
+
+            elif port_type == LAG_PORT_TYPE:
+                port = LAGPort(k)
+                port.setComponentPorts(v["component_ports"])
+                port.setPortNumber(v["port_number"])
+                port.setHash(v.get("hash", None))
+                port.setMode(v.get("mode", None))
+                self.lags[k] = port
+                self.all_phys += [PortManager.getPhysicalName(p) for p in v["component_ports"]]
+
+    def __freePhysicalPort (self, name):
+        assert name not in self.phys
+        port = PhysicalPort(name)
+        self.phys[name] = port
+
+    def __usePhysicalPort (self, name):
+        assert name in self.phys
+        self.phys.pop(name)
+
+    def __addLAGPort (self, name, ports, port_num, hash_=None, mode=None):
+        assert name not in self.lags
+        for p in ports:
+            phy_port = PortManager.getPhysicalName(p)
+            self.__usePhysicalPort(phy_port)
+
+        port = LAGPort(name)
+        port.setComponentPorts(ports)
+        port.setPortNumber(port_num)
+        port.setHash(hash_)
+        port.setMode(mode)
+        self.lags[name] = port
+
+    def __removeLAGPort (self, name):
+        assert name in self.lags
+        port = self.lags.pop(name)
+        for p in port.componentPorts:
+            phy_port = PortManager.getPhysicalName(p)
+            self.__freePhysicalPort(phy_port)
+
+    @classmethod
+    def setPhysicalBase (cls, base):
+        cls.phy_base = base
+
+    @classmethod
+    def setLAGBase (cls, base):
+        cls.lag_base = base
+
+    @staticmethod
+    def getPhysicalName (id_):
+        return "%s%d" % (PortManager.phy_base, id_)
+
+    @staticmethod
+    def getLAGName (id_):
+        return "%s%d" % (PortManager.lag_base, id_)
+
+    @staticmethod
+    def getLAGId (name):
+        return int(name[len(PortManager.lag_base):])
+
+    def checkValidPhysicalPort (self, port):
+        name = PortManager.getPhysicalName(port)
+        if name not in self.all_phys:
+            raise error.ActionError("%s is not a valid interface" % name)
+
+    # FIXME: optimize on updating an existing LAG
+    def configureLAGPort (self, id_, ports, hash_=None, mode=None):
+        name = PortManager.getLAGName(id_)
+        port_num = LAG_BASE_PORT_NUM + id_
+        if name in self.lags:
+            self.__removeLAGPort(name)
+
+        for p in ports:
+            phy_port = PortManager.getPhysicalName(p)
+            if phy_port not in self.phys:
+                raise error.ActionError("%s is already in use" % phy_port)
+
+        self.__addLAGPort(name, ports, port_num, hash_, mode)
+
+    def unconfigureLAGPort (self, id_, ports=None):
+        name = PortManager.getLAGName(id_)
+        if name not in self.lags:
+            return
+
+        lag_port = self.lags[name]
+        if ports and ports != lag_port.componentPorts:
+            raise error.ActionError("Port list specified does not match configured value")
+
+        self.__removeLAGPort(name)
+
+    def getLAGs (self):
+        return self.lags.values()
+
+    def toJSON (self):
+        port_list = {}
+        for d in [self.phys, self.lags]:
+            for k, port in d.iteritems():
+                port_list[k] = port.toJSON()
+        return port_list
 
 class ConfigChangedError(Exception):
     def __init__ (self, warn_count):
@@ -197,6 +389,32 @@ class OFADConfig(object):
     def table_miss_action (self, val):
         self._data["table_miss_action"] = val
 
+    @property
+    def physical_base_name (self):
+        return self._data["physical_base_name"]
+
+    @property
+    def lag_base_name (self):
+        return self._data["lag_base_name"]
+
+    @property
+    def port_list (self):
+        if "port_list" in self._data:
+            return self._data["port_list"]
+        else:
+            return {}
+
+    @port_list.setter
+    def port_list (self, val):
+        self._data["port_list"] = val
+
+    @property
+    def full_match_table (self):
+        return self._data["full_match_table"]
+
+    @full_match_table.setter
+    def full_match_table (self, val):
+        self._data["full_match_table"] = val
 
     @property
     def needs_update (self):
@@ -252,3 +470,8 @@ class OFADConfig(object):
                 json.dump(data, cfg, sort_keys=True, indent=4, separators=(',', ': '))
             self._rebuild_cache()
 
+    def reload (self):
+        try:
+            shell.call('service ofad reload')
+        except subprocess.CalledProcessError:
+            raise error.ActionError('Cannot reload openflow agent configuration')

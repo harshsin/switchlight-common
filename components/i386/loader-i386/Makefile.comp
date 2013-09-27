@@ -1,0 +1,45 @@
+# -*- Makefile -*-
+###############################################################################
+#
+# loader-i386
+#
+# Builds a Switchlight loader ISO file for use with KVM. 
+#
+# How to run:
+# > kvm -m 512 -cdrom loader-i386.iso -boot d -nographic -hda loader-i386-flashfs.img
+#
+###############################################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not defined.)
+else
+include $(SWITCHLIGHT)/make/config.mk
+endif
+
+ifndef kernel-x86_64
+kernel-x86_64  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-x86-64:i386 --find-file kernel-x86_64)
+endif
+
+ifndef initrd-i386
+initrd-i386    := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-i386:i386 --find-file initrd-i386)
+endif
+
+all: loader-i386.iso loader-i386-hda.img
+
+loader-i386.iso: $(kernel-x86_64) $(initrd-i386)
+	mkdir $@.tmp
+	cp /usr/*/syslinux/isolinux.bin $@.tmp/isolinux.bin
+	cp $(kernel-x86_64) $@.tmp/kernel	
+	cp $(initrd-i386) $@.tmp/initrd
+	echo -e 'default SwitchLight\nlabel SwitchLight\nkernel kernel\nappend initrd=initrd console=ttyS0' >$@.tmp/isolinux.cfg
+	genisoimage -o $@ -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table $@.tmp
+	isohybrid $@
+	rm -rf $@.tmp
+
+
+# Empty 8M flash filesystem
+loader-i386-hda.img:
+	rm -rf $@.tmp
+	mkdosfs -F 32 -C $@ 17152
+
+
+include $(SWITCHLIGHT)/make/deb-subdir.mk
