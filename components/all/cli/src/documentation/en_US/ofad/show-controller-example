@@ -5,8 +5,8 @@ show controller
   currently disconnected.
 
 show controller history
-  Tue Mar 19 22:34:44 2013 2.2.2.2:6633 - Connected
-  Tue Mar 19 22:35:56 2013 2.2.2.2:6633 - Disconnected
+  Tue Mar 19 22:34:44 2013 2.2.2.2:6653 - Connected
+  Tue Mar 19 22:35:56 2013 2.2.2.2:6653 - Disconnected
 
-  A controller at 2.2.2.2, port 6633 connected and then disconnected
+  A controller at 2.2.2.2, port 6653 connected and then disconnected
   a minute and 12 seconds later on.
