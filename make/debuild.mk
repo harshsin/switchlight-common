@@ -17,7 +17,7 @@ endif
 
 include $(SWITCHLIGHT)/make/config.mk
 
-DEBUILD = debuild --prepend-path=/usr/lib/ccache -eSWITCHLIGHT $(DEBUILD_ARGS) -a$(ARCH) -b -us -uc
+DEBUILD = debuild --prepend-path=/usr/lib/ccache -eSWITCHLIGHT -eBUILD_DIR $(DEBUILD_ARGS) -a$(ARCH) -b -us -uc
 
 PACKAGE_DIR := $(SWITCHLIGHT)/debian/repo
 
