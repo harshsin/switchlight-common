@@ -1,8 +1,20 @@
-ifndef SWITCHLIGHT
-$(error $$SWITCHLIGHT is undefined.)
-endif
+############################################################
+#
+# ------------------------------
+# Do not edit this header. 
+# It is used by the SPKG script.
+# ------------------------------ 
+# Package:faultd
+# Architecture:powerpc
+# ------------------------------
+#
+############################################################
+export ARCH := powerpc
+export TOOLCHAIN := powerpc-linux-gnu
+export BUILD_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/build
 
-SWITCHLIGHT_REQUIRED_SUBMODULES := bigcode broadcom
-include $(SWITCHLIGHT)/make/component.mk
+all:
+	$(MAKE) -C $(SWITCHLIGHT)/components/any/faultd
 
-
+deb:
+	$(MAKE) -C $(SWITCHLIGHT)/components/any/faultd deb
