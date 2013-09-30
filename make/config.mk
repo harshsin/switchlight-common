@@ -87,5 +87,17 @@ ifndef SWITCHLIGHT_BUILD_CONFIG
 SWITCHLIGHT_BUILD_CONFIG := unknown
 endif
 
+ifeq ("$(origin V)", "command line")
+VERBOSE := $(V)
+endif
+ifneq ($(VERBOSE),1)
+SL_V_at := @
+endif
+SL_V_GEN := @echo GEN $@
 
-
+ifndef SL_MAKEFLAGS
+ifeq ($(VERBOSE),1)
+else
+SL_MAKEFLAGS = --no-print-directory
+endif
+endif

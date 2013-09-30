@@ -30,7 +30,7 @@ DEBUILD = debuild --prepend-path=/usr/lib/ccache -eSWITCHLIGHT -eBUILD_DIR_BASE 
 PACKAGE_DIR := $(SWITCHLIGHT)/debian/repo
 
 deb:
-	@$(MAKE) -C ../ --no-print-directory
+	$(SL_V_at)$(MAKE) -C ../ $(SL_MAKEFLAGS)
 	cd debuild; $(DEBUILD)
 	$(SWITCHLIGHT_PKG_INSTALL) --add-pkg *.deb
 	rm *.deb 
