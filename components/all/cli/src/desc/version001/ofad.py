@@ -18,7 +18,7 @@ import run_config
 from sl_util.types import DPID
 from sl_util.ofad import OFADConfig, Controller
 
-DEFAULT_OF_PORT = 6653
+import loxi.of13 as ofp13
 
 OFAgentConfig = OFADConfig()
 
@@ -129,7 +129,7 @@ def config_controller(no_command, data):
     if 'port' in data:
         port = data['port']
     else:
-        port = DEFAULT_OF_PORT
+        port = ofp13.OFP_TCP_PORT
 
     con = Controller().setAddress(data['ip']).setPort(port).setProtocol('tcp').setStatic(True)
     if no_command:
@@ -398,7 +398,7 @@ def running_config_openflow(context, runcfg, words):
     # collect component-specific config    
     for con in OFAgentConfig.controllers:
         cstr = 'controller ' + con.addr
-        if con.port != DEFAULT_OF_PORT:
+        if con.port != ofp13.OFP_TCP_PORT:
             cstr += ' port ' + str(con.port)
         comp_runcfg.append(cstr + '\n')
 
