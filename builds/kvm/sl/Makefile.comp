@@ -1,0 +1,36 @@
+# -*- Makefile -*-
+############################################################
+#
+# Virtual Switch Light
+#
+############################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not defined.)
+else
+include $(SWITCHLIGHT)/make/config.mk
+endif
+
+.DEFAULT_GOAL := all
+
+# Pull loader from the repo
+loader-i386.iso := $(shell $(SWITCHLIGHT_PKG_INSTALL) loader-i386:i386 --find-file loader-i386.iso)
+
+SWI := $(SWITCHLIGHT)/builds/swi/i386/vm-internal/switchlight-i386-vm-internal.swi
+
+# Rebuild i386.swi
+$(SWI):
+	$(MAKE) -C $(dir $(SWI))
+
+# Create hda image with integrated SWI
+switchlight-i386.img: $(SWI)
+	rm -f $@
+	mkdosfs -F 32 -C $@ 2097152
+	mcopy -i $@ $(SWI) ::switchlight-i386.swi
+	echo "SWI=flash:switchlight-i386.swi" > boot-config
+	echo "NETDEV=ma1" >> boot-config
+	echo "NETAUTO=dhcp" >> boot-config
+	mcopy -i $@ boot-config ::boot-config
+	rm boot-config
+
+all: $(loader-i386.iso) switchlight-i386.img
+	cp $(loader-i386.iso) . 

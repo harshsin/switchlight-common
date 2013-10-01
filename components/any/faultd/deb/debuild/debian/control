@@ -6,13 +6,13 @@ Build-Depends: debhelper (>= 9)
 Standards-Version: 3.8.4
 
 Package: faultd
-Architecture: powerpc
+Architecture: any
 Depends: libc6
 Description: Fault Reporting Daemon
  This package provides the Fault Reporting Daemon. 
 
 Package: faultd-dbg
-Architecture: powerpc
+Architecture: any
 Section: debug
 Priority: extra
 Depends:

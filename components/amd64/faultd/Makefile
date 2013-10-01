@@ -5,12 +5,12 @@
 # It is used by the SPKG script.
 # ------------------------------ 
 # Package:faultd
-# Architecture:powerpc
+# Architecture:amd64
 # ------------------------------
 #
 ############################################################
-export ARCH := powerpc
-export TOOLCHAIN := powerpc-linux-gnu
+export ARCH := amd64
+export TOOLCHAIN := x86_64-linux-gnu
 export BUILD_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/build
 
 all:
