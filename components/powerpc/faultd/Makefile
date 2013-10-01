@@ -5,6 +5,7 @@
 # It is used by the SPKG script.
 # ------------------------------ 
 # Package:faultd
+# Package:faultd-dbg
 # Architecture:powerpc
 # ------------------------------
 #
