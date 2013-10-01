@@ -1,0 +1,52 @@
+# -*- Makefile -*-
+###############################################################################
+#
+#
+###############################################################################
+CURRENT_DIRECTORY := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not defined.)
+else
+include $(SWITCHLIGHT)/make/config.mk
+endif
+
+
+ifndef SWI_NFS_SERVER
+SWI_NFS_SERVER := 10.0.2.2
+endif
+
+SWI_NFS_DIR := $(SWI_NFS_SERVER)$(CURRENT_DIRECTORY)/swi-nfs/
+
+
+.DEFAULT_GOAL := all
+
+# Pull loader from the repo
+loader-i386.iso := $(shell $(SWITCHLIGHT_PKG_INSTALL) loader-i386:i386 --find-file loader-i386.iso)
+
+# Create hda image with NFS boot-config
+.PHONY: slnfs-hda.img
+
+slnfs-hda.img: 
+	rm -f $@
+	mkdosfs -F 32 -C $@ 2097152
+	echo "SWI=nfs://$(SWI_NFS_DIR)" > boot-config
+	echo "NETDEV=ma1" >> boot-config
+	echo "NETAUTO=dhcp" >> boot-config
+	mcopy -i $@ boot-config ::boot-config
+	rm boot-config
+
+# NFS-compatible SWI directory. 
+SWI := $(SWITCHLIGHT)/builds/swi/i386/vm-internal/switchlight-i386-vm-internal.swi
+
+$(SWI):
+	$(MAKE) -C $(dir $(SWI))
+
+swi-nfs: $(SWI)
+	rm -rf swi-nfs
+	unzip -d swi-nfs/ switchlight-i386-vm-internal.swi
+	unsquashfs -d swi-nfs/rootfs-i386 swi-nfs/rootfs-i386.sqsh
+	rm swi-nfs/rootfs-i386.sqsh
+
+all: $(loader-i386.iso) slnfs-hda.img swi-nfs
+	cp $(loader-i386.iso) . 

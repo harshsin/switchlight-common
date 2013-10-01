@@ -1,23 +1,21 @@
+# -*- Makefile -*-
 ###########################################################################
 #
 #
 ###############################################################################
 ifndef SWITCHLIGHT
 $(error $$SWITCHLIGHT is undefined.)
-
 else
-
-SWITCHLIGHT_REQUIRED_PACKAGES := initrd-powerpc:powerpc
-SWITCHLIGHT_REQUIRED_SUBMODULES := bigcode broadcom
 include $(SWITCHLIGHT)/make/config.mk
-
 endif
 
+ifndef TOOLCHAIN
+$(error $$TOOLCHAIN must be specified.)
+else
+export TOOLCHAIN
+endif
 
 MODULE := faultd-build
-ifndef TOOLCHAIN
-TOOLCHAIN := powerpc-linux-gnu
-endif
 include $(BUILDER)/standardinit.mk
 
 LIBRARY := faultd-main
@@ -40,15 +38,11 @@ GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MODULES_INIT=1
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MAIN=1
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_PVS_SYSLOG=1
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_DAEMONIZE=1
+GLOBAL_CFLAGS += -DFAULTD_CONFIG_INCLUDE_MAIN=1
+GLOBAL_CFLAGS += -DFAULTD_CONFIG_INCLUDE_AIM_MAIN=1
 GLOBAL_CFLAGS += -g
 
 GLOBAL_LINK_LIBS += -lpthread
 
 
-ucli:
-	$(BIGCODE)/Tools/uclihandlers.py main.c
-
-.PHONY: deb
-
-deb:
-	$(MAKE) -C deb
+include $(SWITCHLIGHT)/make/deb-subdir.mk
