@@ -100,7 +100,8 @@ if SWITCHLIGHT is None:
 if ops.list_all:
     all_ = find_all_packages(os.path.abspath("%s/components" % (SWITCHLIGHT)))
     for p in all_:
-        print p
+        if not ":any" in p:
+            print p
     sys.exit(0)
 
 if ops.add_pkg:
