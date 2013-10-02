@@ -79,10 +79,13 @@ class Platform(object):
             elif p.startswith(self._lag_intf_base):
                 lag_port_nums.append(int(p[len(self._lag_intf_base):]))
 
-        self._dp_intf_min = min(dp_port_nums)
-        self._dp_intf_max = max(dp_port_nums)
-        self._lag_intf_min = min(lag_port_nums)
-        self._lag_intf_max = max(lag_port_nums)
+        if dp_port_nums:
+            self._dp_intf_min = min(dp_port_nums)
+            self._dp_intf_max = max(dp_port_nums)
+
+        if lag_port_nums:
+            self._lag_intf_min = min(lag_port_nums)
+            self._lag_intf_max = max(lag_port_nums)
 
     @property
     def dp_intf_base(self):
