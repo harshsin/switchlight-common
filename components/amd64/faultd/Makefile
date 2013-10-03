@@ -10,12 +10,9 @@
 # ------------------------------
 #
 ############################################################
-export ARCH := amd64
-export TOOLCHAIN := x86_64-linux-gnu
-export BUILD_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/build
+ARCH := amd64
+TOOLCHAIN := x86_64-linux-gnu
+ANYDIR := faultd 
+include $(SWITCHLIGHT)/make/any.mk
 
-all:
-	$(MAKE) -C $(SWITCHLIGHT)/components/any/faultd
 
-deb:
-	$(MAKE) -C $(SWITCHLIGHT)/components/any/faultd deb
