@@ -4,15 +4,16 @@
 # Do not edit this header. 
 # It is used by the SPKG script.
 # ------------------------------ 
-# Package:faultd
-# Package:faultd-dbg
+# Package:ofad-5.6.6-sim
+# Package:ofad-5.6.6-sim-dbg
 # Architecture:amd64
 # ------------------------------
 #
 ############################################################
 ARCH := amd64
 TOOLCHAIN := x86_64-linux-gnu
-ANYDIR := faultd 
+ANYDIR := broadcom/ofad-sim/ofad-5.6.6-sim
 include $(SWITCHLIGHT)/make/any.mk
+
 
 

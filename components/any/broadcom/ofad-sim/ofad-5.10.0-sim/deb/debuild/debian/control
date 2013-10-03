@@ -1,0 +1,26 @@
+Source: ofad-5.10.0-sim
+Section: misc
+Priority: optional
+Maintainer: Jeffrey Townsend <jeff@bigswitch.com>
+Build-Depends: debhelper (>= 9), libedit-dev, libncurses5-dev, libsnmp-dev
+Standards-Version: 3.8.4
+
+Package: ofad-5.10.0-sim
+Architecture: any
+Depends: libc6, python, libedit2, libncurses5, libsnmp15, faultd
+Description: OpenFlow agent for SwitchLight
+ This package provides the OpenFlow agent for the SwitchLight switch platform.
+
+
+Package: ofad-5.10.0-sim-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends:
+	ofad (= ${binary:Version}),
+	${misc:Depends}
+Description: debugging symbols for ofad
+ This packages provides the debug symbols for ofad. 
+
+
+

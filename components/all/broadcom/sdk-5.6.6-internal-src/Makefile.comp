@@ -1,0 +1,21 @@
+# -*- Makefile -*- 
+###############################################################################
+SDK_CONFIG=internal
+include $(SWITCHLIGHT)/make/config.mk
+
+.DEFAULT_GOAL := src
+
+src: 
+	@echo "Nothing to build. This is a debian package target only."
+
+.PHONY: deb
+deb:
+	$(MAKE) -C deb SDK=$(SWITCHLIGHT_SUBMODULE_SDK_5_6_6)
+
+
+
+
+
+
+
+
