@@ -10,12 +10,7 @@
 # ------------------------------
 #
 ############################################################
-export ARCH := powerpc
-export TOOLCHAIN := powerpc-linux-gnu
-export BUILD_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/build
-
-all:
-	$(MAKE) -C $(SWITCHLIGHT)/components/any/faultd
-
-deb:
-	$(MAKE) -C $(SWITCHLIGHT)/components/any/faultd deb
+ARCH := powerpc
+TOOLCHAIN := powerpc-linux-gnu
+ANYDIR := faultd
+include $(SWITCHLIGHT)/make/any.mk
