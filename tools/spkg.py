@@ -8,6 +8,7 @@ import sys
 import os
 import argparse
 import shutil
+import re
 from debian import deb822
 
 def find_file_or_dir(basedir, filename=None, dirname=None):
@@ -54,6 +55,17 @@ def find_all_packages(basedir):
 
     for root, dirs, files in os.walk(basedir):
         for file_ in files:
+            if file_ == "Makefile" or file_ == "makefile":
+                with open("%s/%s" % (root,file_), "r") as f:
+                    data = f.read()
+                    packages = re.findall("Package:(.*)", data)
+                    architectures = re.findall("Architecture:(.*)", data)
+                    if len(packages) > 0 and len(architectures) > 0:
+                        arch = architectures[0].replace("Architecture:", "")
+                        for p in packages:
+                            p = p.replace("Package:", "")
+                            all_.append("%s:%s" % (p, arch))
+
             if file_ == "control":
                 f = file("%s/%s" % (root,file_))
                 d = deb822.Deb822(f)
