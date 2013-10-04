@@ -3,11 +3,12 @@
 import command
 import run_config
 import error
+import utif
 
 import subprocess
 from sl_util import shell
 from sl_util import OFConnection
-from sl_util.ofad import OFADConfig
+from sl_util.ofad import OFADConfig, PortManager
 
 import loxi.of10 as of10
 
@@ -15,6 +16,8 @@ import re
 import itertools
 
 OFAgentConfig = OFADConfig()
+PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
+PortManager.setLAGBase(OFAgentConfig.lag_base_name)
 
 def get_base_name(s):
     # given a string, return the base name of an interface; 
@@ -50,95 +53,12 @@ def get_port_info():
 
     return ports
 
-
-class Platform(object):
-    def __init__(self):
-        self._dp_intf_base = None
-        self._dp_intf_min = None
-        self._dp_intf_max = None
-        self._lag_intf_base = None
-        self._lag_intf_min = None
-        self._lag_intf_max = None
-        self._mgmt_intf_base = 'ma'
-        self._mgmt_intf_min = 1
-        self._mgmt_intf_max = 1
-
-    def populate(self):
-        self._dp_intf_base = OFAgentConfig.physical_base_name
-        self._lag_intf_base = OFAgentConfig.lag_base_name
-
-        # FIXME we populate the dataplane-related info once;
-        # this needs to be revisited if this info can change
-        ports = get_port_info()
-
-        dp_port_nums = []
-        lag_port_nums = []
-        for p in ports.keys():
-            if p.startswith(self._dp_intf_base):
-                dp_port_nums.append(int(p[len(self._dp_intf_base):]))
-            elif p.startswith(self._lag_intf_base):
-                lag_port_nums.append(int(p[len(self._lag_intf_base):]))
-
-        self._dp_intf_min = min(dp_port_nums)
-        self._dp_intf_max = max(dp_port_nums)
-        self._lag_intf_min = min(lag_port_nums)
-        self._lag_intf_max = max(lag_port_nums)
-
-    @property
-    def dp_intf_base(self):
-        if self._dp_intf_base is None:
-            self.populate()
-        return self._dp_intf_base
-
-    @property
-    def dp_intf_min(self):
-        if self._dp_intf_base is None:
-            self.populate()
-        return self._dp_intf_min
-
-    @property
-    def dp_intf_max(self):
-        if self._dp_intf_base is None:
-            self.populate()
-        return self._dp_intf_max
-
-    @property
-    def lag_intf_base(self):
-        if self._lag_intf_base is None:
-            self.populate()
-        return self._lag_intf_base
-
-    @property
-    def lag_intf_min(self):
-        if self._lag_intf_base is None:
-            self.populate()
-        return self._lag_intf_min
-
-    @property
-    def lag_intf_max(self):
-        if self._lag_intf_base is None:
-            self.populate()
-        return self._lag_intf_max
-
-    @property
-    def mgmt_intf_base(self):
-        return self._mgmt_intf_base
-
-    @property
-    def mgmt_intf_min(self):
-        return self._mgmt_intf_min
-
-    @property
-    def mgmt_intf_max(self):
-        return self._mgmt_intf_max
-
-plat = Platform()
-
-
 def is_err(val):
     return val != 0xffffffffffffffff and val > 0
+
 def display(val):
     return str(val) if val != 0xffffffffffffffff else '---'
+
 def get_speed(bmap):
     if bmap & of10.OFPPF_10GB_FD:
         return '10G'
@@ -214,73 +134,38 @@ def show_dp_intf_list(port_name_list, detail):
         else:
             show_one_dp_intf_detail(p)
 
-def parse_port_list(port_list, orig_base, new_base, minport, maxport):
-    # parse a port list, returning a list of the names of all specified ports.
-    # first strips the string 'orig_base' from the port_list, 
-    # generates the port list, and then prepends new_base to all ports.
-    # ports are checked to be in the range minport to maxport, inclusive.
-    # port_list := range | [, range ]
-    # range := port | low_port-high_port
-    # assumes input only contains [,-0-9]
+def parse_port_list(orig_port_list):
+    portMgr = PortManager(OFAgentConfig.port_list)
 
-    ports = []
+    # extract the interface base name
+    short_base = get_base_name(orig_port_list)
+    base = PortManager.getPortBase(short_base)
 
-    # slicing strips orig_base from port_list
-    for rng in port_list[len(orig_base):].split(','):
-        vals = rng.split('-')
-        if len(vals) == 1 and vals[0]:
-            port = int(vals[0])
-            if port < minport or port > maxport:
-                raise error.ActionError('Bad port ' + rng)
-            if port not in ports:
-                ports.append(port)
-        elif len(vals) == 2:
-            lo = int(vals[0]) if vals[0] else minport
-            hi = int(vals[1]) if vals[1] else maxport
-            if lo < minport or hi > maxport or lo > hi:
-                raise error.ActionError('Bad range ' + rng)
-            else:
-                for i in range(lo, hi+1):
-                    if i not in ports:
-                        ports.append(i)
-        else:
-            raise error.ActionError('Bad range ' + rng)
+    # resolve port list
+    port_spec = orig_port_list[len(short_base):]
+    port_nums = utif.resolve_port_list(port_spec)
+    if port_nums is None:
+        raise error.ActionError('Invalid interface list spec: %s' % port_spec)
+    port_list = ['%s%d' % (base, n) for n in port_nums]
 
-    # prepend new_base to each port number
-    return [ new_base + str(pnum) for pnum in sorted(ports) ]
+    # check that each port exists
+    for port in port_list:
+        portMgr.checkExistingInterface(port)
 
+    return (base, port_list)
 
 def show_intf(data):
     if 'intf-port-list' in data:
-        # extract the interface base name
-        base = get_base_name(data['intf-port-list'])
+        base, port_list = parse_port_list(data['intf-port-list'])
 
-        if base and plat.mgmt_intf_base.startswith(base):
-            port_list = parse_port_list(data['intf-port-list'],
-                                        base,
-                                        plat.mgmt_intf_base,
-                                        plat.mgmt_intf_min,
-                                        plat.mgmt_intf_max)
+        if base == PortManager.mgmt_base:
             for port in port_list:
                 command.action_invoke('implement-show-mgmt-intf',
                                       ({'ifname': port},))
-        elif base and plat.dp_intf_base.startswith(base):
-            port_list = parse_port_list(data['intf-port-list'],
-                                        base,
-                                        plat.dp_intf_base,
-                                        plat.dp_intf_min,
-                                        plat.dp_intf_max)
-            show_dp_intf_list(port_list, 'detail' in data)
-        elif base and plat.lag_intf_base.startswith(base):
-            port_list = parse_port_list(data['intf-port-list'],
-                                        base,
-                                        plat.lag_intf_base,
-                                        plat.lag_intf_min,
-                                        plat.lag_intf_max)
+        elif base in [PortManager.phy_base, PortManager.lag_base]:
             show_dp_intf_list(port_list, 'detail' in data)
         else:
-            ptypes = [plat.dp_intf_base, plat.lag_intf_base, plat.mgmt_intf_base]
-            raise error.ActionError('Port type not in ' + str(ptypes))
+            raise error.ActionError('Unsupported port type: %s' % base)
     else:
         show_dp_intf_list([], False)
 
@@ -352,31 +237,20 @@ def shutdown_intf(no_command, port_list):
 
 
 def config_intf(no_command, data):
-    base = get_base_name(data['intf-port-list'])
+    base, port_list = parse_port_list(data['intf-port-list'])
 
-    if base and plat.mgmt_intf_base.startswith(base):
-        port_list = parse_port_list(data['intf-port-list'], 
-                                    base,
-                                    plat.mgmt_intf_base,
-                                    plat.mgmt_intf_min, 
-                                    plat.mgmt_intf_max)
+    if base == PortManager.mgmt_base:
         for port in port_list:
             data['ifname'] = port
             command.action_invoke('implement-config-mgmt-intf', 
                                   (no_command, data))
-    elif base and plat.dp_intf_base.startswith(base):
-        port_list = parse_port_list(data['intf-port-list'], 
-                                    base,
-                                    plat.dp_intf_base,
-                                    plat.dp_intf_min, 
-                                    plat.dp_intf_max)
+    elif base in [PortManager.phy_base, PortManager.lag_base]:
         if 'shutdown' in data:
             shutdown_intf(no_command, port_list)
         else:
             raise error.ActionError('Invalid action for dataplane interfaces')
     else:
-        ptypes = [plat.dp_intf_base, plat.mgmt_intf_base]
-        raise error.ActionError('Port type not in ' + str(ptypes))
+        raise error.ActionError('Unsupported port type: %s' % base)
 
 command.add_action('implement-config-intf', config_intf,
                     {'kwargs': {

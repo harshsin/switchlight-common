@@ -10,12 +10,17 @@ import subprocess
 import sys
 
 from sl_util import shell
+from sl_util.ofad import OFADConfig, PortManager
 
 import command
 import run_config
 
 import utif
 import error
+
+OFAgentConfig = OFADConfig()
+PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
+PortManager.setLAGBase(OFAgentConfig.lag_base_name)
 
 DHCLIENT_CFG = """### SwitchLight
 
@@ -37,10 +42,6 @@ if [ "$RUN" = "yes" ]; then
     exec python sl-dhclient-cfg.py "$@"
 fi
 """
-
-# FIXME move this to a platform-specific file?
-mgmt_if_choices = ( 'ma1', )
-
 
 def show_single_intf(ifname):
     try:
@@ -64,7 +65,8 @@ def show_mgmt_intf(data):
     if 'ifname' in data:
         show_single_intf(data['ifname'])
     else:
-        for ifname in mgmt_if_choices:
+        portMgr = PortManager(OFAgentConfig.port_list)
+        for ifname in [mgmt.portName for mgmt in portMgr.getManagements()]:
             show_single_intf(ifname)
 
 
@@ -513,9 +515,10 @@ IP_DEFAULT_GATEWAY_COMMAND_DESCRIPTION = {
 
 def running_config_interface(context, runcfg, words):
     comp_runcfg = []
+    portMgr = PortManager(OFAgentConfig.port_list)
 
     # collect component-specific config
-    for ifname in mgmt_if_choices:
+    for ifname in [mgmt.portName for mgmt in portMgr.getManagements()]:
         intf = NetworkConfig.getInterface(ifname)
 
         if intf.dhcp_enabled:
