@@ -25,9 +25,6 @@ def config_port_channel(no_command, data):
     componentPorts = None
     if "interface-list" in data:
         componentPorts = utif.resolve_port_list(data["interface-list"])
-        if componentPorts is None:
-            raise error.ActionError("Invalid interface list spec: %s" % data["interface-list"])
-
         for p in componentPorts:
             portManager.checkValidPhysicalPort(p)
 

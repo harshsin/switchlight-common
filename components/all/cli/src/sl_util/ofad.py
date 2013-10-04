@@ -130,10 +130,6 @@ class Port(object):
     def setPortNumber (self, portNumber):
         self._port_number = portNumber
 
-class ManagementPort(Port):
-    def __init__ (self, name):
-        Port.__init__(self, name, MGMT_PORT_TYPE)
-
 class PhysicalPort(Port):
     def __init__ (self, name):
         Port.__init__(self, name, PHY_PORT_TYPE)
@@ -168,12 +164,8 @@ class PortManager(object):
     # class variables for port base names
     phy_base = "_phy_base_"
     lag_base = "_lag_base_"
-    mgmt_base = "ma"
 
     def __init__ (self, port_list):
-        # A dict of configured management ports
-        self.mgmts = {}
-
         # A dict of configured physical ports
         self.phys = {}
 
@@ -190,10 +182,6 @@ class PortManager(object):
         self.__parsePortList(port_list)
 
     def __parsePortList (self, port_list):
-        # FIXME: assume 1 management port: ma1
-        name = PortManager.getManagementName(1)
-        self.mgmts[name] = ManagementPort(name)
-
         for k, v in port_list.iteritems():
             port_type = v.get("port_type", PHY_PORT_TYPE)
 
@@ -242,15 +230,13 @@ class PortManager(object):
 
     @classmethod
     def setPhysicalBase (cls, base):
+        # str conversion is needed to strip "unicode"
         cls.phy_base = str(base)
 
     @classmethod
     def setLAGBase (cls, base):
+        # str conversion is needed to strip "unicode"
         cls.lag_base = str(base)
-
-    @staticmethod
-    def getManagementName (id_):
-        return "%s%d" % (PortManager.mgmt_base, id_)
 
     @staticmethod
     def getPhysicalName (id_):
@@ -265,18 +251,14 @@ class PortManager(object):
         return int(name[len(PortManager.lag_base):])
 
     @staticmethod
-    def getPortBase (short_base):
-        all_bases = [PortManager.mgmt_base, PortManager.phy_base, PortManager.lag_base]
-        for base in all_bases:
-            if base.startswith(short_base):
-                return base
-        raise error.ActionError("Port type not in %s" % str(all_bases))
+    def getAllPortBases ():
+        all_bases = [PortManager.phy_base, PortManager.lag_base]
+        return all_bases
 
-    def checkExistingInterface (self, name):
-        all_dicts = [self.mgmts, self.phys, self.lags]
-        all_interfaces = reduce(lambda x, y: x + y.keys(), all_dicts, [])
-        if name not in all_interfaces:
-            raise error.ActionError("%s is not an existing interface" % name)
+    def getExistingPorts (self):
+        all_dicts = [self.phys, self.lags]
+        all_ports = reduce(lambda x, y: x + y.keys(), all_dicts, [])
+        return all_ports
 
     def checkValidPhysicalPort (self, port):
         name = PortManager.getPhysicalName(port)
@@ -307,9 +289,6 @@ class PortManager(object):
             raise error.ActionError("Port list specified does not match configured value")
 
         self.__removeLAGPort(name)
-
-    def getManagements (self):
-        return self.mgmts.values()
 
     def getLAGs (self):
         return self.lags.values()

@@ -10,17 +10,13 @@ import subprocess
 import sys
 
 from sl_util import shell
-from sl_util.ofad import OFADConfig, PortManager
+from sl_util import const
 
 import command
 import run_config
 
 import utif
 import error
-
-OFAgentConfig = OFADConfig()
-PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
-PortManager.setLAGBase(OFAgentConfig.lag_base_name)
 
 DHCLIENT_CFG = """### SwitchLight
 
@@ -65,8 +61,7 @@ def show_mgmt_intf(data):
     if 'ifname' in data:
         show_single_intf(data['ifname'])
     else:
-        portMgr = PortManager(OFAgentConfig.port_list)
-        for ifname in [mgmt.portName for mgmt in portMgr.getManagements()]:
+        for ifname in const.MGMT_PORTS:
             show_single_intf(ifname)
 
 
@@ -515,10 +510,9 @@ IP_DEFAULT_GATEWAY_COMMAND_DESCRIPTION = {
 
 def running_config_interface(context, runcfg, words):
     comp_runcfg = []
-    portMgr = PortManager(OFAgentConfig.port_list)
 
     # collect component-specific config
-    for ifname in [mgmt.portName for mgmt in portMgr.getManagements()]:
+    for ifname in const.MGMT_PORTS:
         intf = NetworkConfig.getInterface(ifname)
 
         if intf.dhcp_enabled:

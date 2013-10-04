@@ -8,7 +8,7 @@
 #
 
 import re
-
+import error
 
 #
 # --------------------------------------------------------------------------------
@@ -441,31 +441,26 @@ def resolve_port_list(spec, sort=True):
         if "-" in part:
             subparts = part.split("-")
             if len(subparts) != 2:
-                # invalid range
-                return None
+                raise error.ActionError("Port spec (%s) has an invalid range: %s" % (spec, part))
 
             if not is_int(subparts[0]) or not is_int(subparts[1]):
-                # not an integer
-                return None
+                raise error.ActionError("Port spec (%s) has non-integer: %s" % (spec, part))
 
             start = int(subparts[0])
             end = int(subparts[1])
             if not (start < end):
-                # invalid range
-                return None
-
+                raise error.ActionError("Port spec (%s) has a range where start is not less "
+                                        "than end: %s" % (spec, part))
             ports_to_add = range(start, end + 1)
 
         else:
             if not is_int(part):
-                # not an integer
-                return None
+                raise error.ActionError("Port spec (%s) has non-integer: %s" % (spec, part))
             ports_to_add.append(int(part))
 
         for p in ports_to_add:
             if p in ports:
-                # duplicated port
-                return None
+                raise error.ActionError("Port spec (%s) has duplicated ports: %s" % (spec, p))
             ports.append(p)
 
     if sort:

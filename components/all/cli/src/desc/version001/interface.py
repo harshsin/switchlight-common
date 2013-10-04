@@ -8,6 +8,7 @@ import utif
 import subprocess
 from sl_util import shell
 from sl_util import OFConnection
+from sl_util import const
 from sl_util.ofad import OFADConfig, PortManager
 
 import loxi.of10 as of10
@@ -139,18 +140,25 @@ def parse_port_list(orig_port_list):
 
     # extract the interface base name
     short_base = get_base_name(orig_port_list)
-    base = PortManager.getPortBase(short_base)
+    all_bases = [const.MGMT_PORT_BASE] + PortManager.getAllPortBases()
+    base = None
+    for b in all_bases:
+        if b.startswith(short_base):
+            base = b
+            break
+    if base is None:
+        raise error.ActionError('Port type not in %s' % all_bases)
 
     # resolve port list
     port_spec = orig_port_list[len(short_base):]
     port_nums = utif.resolve_port_list(port_spec)
-    if port_nums is None:
-        raise error.ActionError('Invalid interface list spec: %s' % port_spec)
     port_list = ['%s%d' % (base, n) for n in port_nums]
 
     # check that each port exists
+    all_ports = const.MGMT_PORTS + portMgr.getExistingPorts()
     for port in port_list:
-        portMgr.checkExistingInterface(port)
+        if port not in all_ports:
+            raise error.ActionError('%s is not an existing interface' % port)
 
     return (base, port_list)
 
@@ -158,14 +166,12 @@ def show_intf(data):
     if 'intf-port-list' in data:
         base, port_list = parse_port_list(data['intf-port-list'])
 
-        if base == PortManager.mgmt_base:
+        if base == const.MGMT_PORT_BASE:
             for port in port_list:
                 command.action_invoke('implement-show-mgmt-intf',
                                       ({'ifname': port},))
-        elif base in [PortManager.phy_base, PortManager.lag_base]:
-            show_dp_intf_list(port_list, 'detail' in data)
         else:
-            raise error.ActionError('Unsupported port type: %s' % base)
+            show_dp_intf_list(port_list, 'detail' in data)
     else:
         show_dp_intf_list([], False)
 
@@ -239,18 +245,16 @@ def shutdown_intf(no_command, port_list):
 def config_intf(no_command, data):
     base, port_list = parse_port_list(data['intf-port-list'])
 
-    if base == PortManager.mgmt_base:
+    if base == const.MGMT_PORT_BASE:
         for port in port_list:
             data['ifname'] = port
             command.action_invoke('implement-config-mgmt-intf', 
                                   (no_command, data))
-    elif base in [PortManager.phy_base, PortManager.lag_base]:
+    else:
         if 'shutdown' in data:
             shutdown_intf(no_command, port_list)
         else:
             raise error.ActionError('Invalid action for dataplane interfaces')
-    else:
-        raise error.ActionError('Unsupported port type: %s' % base)
 
 command.add_action('implement-config-intf', config_intf,
                     {'kwargs': {
