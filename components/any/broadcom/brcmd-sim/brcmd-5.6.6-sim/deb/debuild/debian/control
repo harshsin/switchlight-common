@@ -1,0 +1,26 @@
+Source: brcmd-5.6.6-sim
+Section: misc
+Priority: optional
+Maintainer: Jeffrey Townsend <jeff@bigswitch.com>
+Build-Depends: debhelper (>= 9), libedit-dev, libncurses5-dev, libsnmp-dev
+Standards-Version: 3.8.4
+
+Package: brcmd-5.6.6-sim
+Architecture: any
+Depends: libc6, python, libedit2, libncurses5, libsnmp15, faultd
+Description: OpenFlow agent for SwitchLight
+ This package provides the OpenFlow agent for the SwitchLight switch platform.
+
+
+Package: brcmd-5.6.6-sim-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends:
+	brcmd-5.6.6-sim (= ${binary:Version}),
+	${misc:Depends}
+Description: debugging symbols for brcmd
+ This packages provides the debug symbols for brcmd. 
+
+
+
