@@ -17,7 +17,7 @@ Architecture: any
 Section: debug
 Priority: extra
 Depends:
-	ofad (= ${binary:Version}),
+	ofad-5.10.0-sim (= ${binary:Version}),
 	${misc:Depends}
 Description: debugging symbols for ofad
  This packages provides the debug symbols for ofad. 
