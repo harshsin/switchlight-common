@@ -1,0 +1,6 @@
+Configure port channel interfaces.
+Each port channel interface should consist of one or more ethernet interfaces as
+component interfaces. Once an ethernet interface becomes a component interface
+of a port channel interface, it is no longer listed or managed as a standalone
+interface, until this port channel interface is removed or reconfigured to
+not include this ethernet interface.

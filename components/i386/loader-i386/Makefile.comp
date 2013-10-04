@@ -16,7 +16,7 @@ include $(SWITCHLIGHT)/make/config.mk
 endif
 
 ifndef kernel-x86_64
-kernel-x86_64  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-x86-64:i386 --find-file kernel-x86_64)
+kernel-x86_64  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-x86-64:amd64 --find-file kernel-x86_64)
 endif
 
 ifndef initrd-i386

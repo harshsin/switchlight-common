@@ -8,6 +8,7 @@ import sys
 import os
 import argparse
 import shutil
+import re
 from debian import deb822
 
 def find_file_or_dir(basedir, filename=None, dirname=None):
@@ -25,6 +26,12 @@ def find_component_dir(basedir, package_name):
     """Find the local component directory that builds the given package."""
     for root, dirs, files in os.walk(basedir):
         for file_ in files:
+            if file_ == "Makefile" or file_ == "makefile":
+                with open("%s/%s" % (root,file_), "r") as f:
+                    data = f.read()
+                    if "Package:%s" % package_name in data:
+                        # By convention - this is the component directory. 
+                        return os.path.abspath(root)
             if file_ == "control":
                 with open("%s/%s" % (root,file_), "r") as f:
                     control = f.read()
@@ -48,6 +55,17 @@ def find_all_packages(basedir):
 
     for root, dirs, files in os.walk(basedir):
         for file_ in files:
+            if file_ == "Makefile" or file_ == "makefile":
+                with open("%s/%s" % (root,file_), "r") as f:
+                    data = f.read()
+                    packages = re.findall("Package:(.*)", data)
+                    architectures = re.findall("Architecture:(.*)", data)
+                    if len(packages) > 0 and len(architectures) > 0:
+                        arch = architectures[0].replace("Architecture:", "")
+                        for p in packages:
+                            p = p.replace("Package:", "")
+                            all_.append("%s:%s" % (p, arch))
+
             if file_ == "control":
                 f = file("%s/%s" % (root,file_))
                 d = deb822.Deb822(f)
@@ -80,6 +98,8 @@ ap.add_argument("--build", help="Attempt to build local package if it exists.",
 ap.add_argument("--add-pkg", nargs='+', action='append', 
                 default=None, help="Install new package files and invalidate corresponding installs.")
 ap.add_argument("--list-all", action='store_true', help="List all available component packages"); 
+ap.add_argument("--force-build", help="Force rebuild from source.", 
+                action='store_true')
 
 ops = ap.parse_args()
 
@@ -92,7 +112,8 @@ if SWITCHLIGHT is None:
 if ops.list_all:
     all_ = find_all_packages(os.path.abspath("%s/components" % (SWITCHLIGHT)))
     for p in all_:
-        print p
+        if not ":any" in p:
+            print p
     sys.exit(0)
 
 if ops.add_pkg:
@@ -122,12 +143,16 @@ for pa in ops.packages[0]:
         print "invalid package specification: ", pa
         sys.exit(1)
 
-    packages = find_package(package_dir, package, arch)
+    packages = []
+    if not ops.force_build:
+        packages = find_package(package_dir, package, arch)
+    else:
+        ops.build = True
 
     if len(packages) == 0:
         print "No matching packages for %s (%s)" % (package, arch)
         # Look for package builder
-        buildpath = find_component_dir(os.path.abspath("%s/components" % (SWITCHLIGHT)), 
+        buildpath = find_component_dir(os.path.abspath("%s/components/%s" % (SWITCHLIGHT,arch)), 
                                        package)
         if buildpath is not None:
             print "Can be built locally at %s" % buildpath

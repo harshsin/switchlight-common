@@ -47,7 +47,7 @@ if __name__ == '__main__':
             int(opts[offset+x+1], 16),
             int(opts[offset+x+2], 16),
             int(opts[offset+x+3], 16))
-        con = Controller().setAddress(addr).setPort(6633).setProtocol("tcp").setDHCP(True)
+        con = Controller().setAddress(addr).setPort(6653).setProtocol("tcp").setDHCP(True)
         matched = False
         for c in controllers:
             if c.merge(con):

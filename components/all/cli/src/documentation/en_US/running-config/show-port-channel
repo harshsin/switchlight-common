@@ -1,0 +1,2 @@
+The 'port-channel' keyword filters the running-config output to only
+display port channel interface configuration.

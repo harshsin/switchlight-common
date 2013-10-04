@@ -5,7 +5,15 @@
 
 ifndef ARCH
 $(error $$ARCH must be specified before including this makefile.)
+else
+
+ifeq ($(ARCH),all)
+ARCH_OPTIONS :=
+else
+ARCH_OPTIONS := -a$(ARCH)
 endif
+endif
+
 
 ifndef SWITCHLIGHT
 $(error $$SWITCHLIGHT must be specified before including this makefile.)
@@ -17,7 +25,7 @@ endif
 
 include $(SWITCHLIGHT)/make/config.mk
 
-DEBUILD = debuild --prepend-path=/usr/lib/ccache -eSWITCHLIGHT $(DEBUILD_ARGS) -a$(ARCH) -b -us -uc
+DEBUILD = debuild --prepend-path=/usr/lib/ccache -eSWITCHLIGHT -eBUILD_DIR_BASE $(DEBUILD_ARGS) $(ARCH_OPTIONS) -b -us -uc
 
 PACKAGE_DIR := $(SWITCHLIGHT)/debian/repo
 

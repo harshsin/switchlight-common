@@ -1499,6 +1499,172 @@ class bsn_get_mirroring_request(Message):
             q.breakable()
         q.text('}')
 
+class bsn_hybrid_get_reply(Message):
+    version = 1
+    type = 4
+    experimenter = 6035143
+    subtype = 28
+
+    def __init__(self, xid=None, hybrid_enable=None, hybrid_version=None):
+        self.xid = xid
+        if hybrid_enable != None:
+            self.hybrid_enable = hybrid_enable
+        else:
+            self.hybrid_enable = 0
+        if hybrid_version != None:
+            self.hybrid_version = hybrid_version
+        else:
+            self.hybrid_version = 0
+
+    def pack(self):
+        packed = []
+        packed.append(struct.pack("!B", self.version))
+        packed.append(struct.pack("!B", self.type))
+        packed.append(struct.pack("!H", 0)) # placeholder for length at index 2
+        packed.append(struct.pack("!L", self.xid))
+        packed.append(struct.pack("!L", self.experimenter))
+        packed.append(struct.pack("!L", self.subtype))
+        packed.append(struct.pack("!B", self.hybrid_enable))
+        packed.append('\x00' * 1)
+        packed.append(struct.pack("!H", self.hybrid_version))
+        packed.append('\x00' * 4)
+        length = sum([len(x) for x in packed])
+        packed[2] = struct.pack("!H", length)
+        return ''.join(packed)
+
+    @staticmethod
+    def unpack(buf):
+        if len(buf) < 8: raise loxi.ProtocolError("buffer too short to contain an OpenFlow message")
+        obj = bsn_hybrid_get_reply()
+        if type(buf) == loxi.generic_util.OFReader:
+            reader = buf
+        else:
+            reader = loxi.generic_util.OFReader(buf)
+        _version = reader.read("!B")[0]
+        assert(_version == 1)
+        _type = reader.read("!B")[0]
+        assert(_type == 4)
+        _length = reader.read("!H")[0]
+        obj.xid = reader.read("!L")[0]
+        _experimenter = reader.read("!L")[0]
+        assert(_experimenter == 6035143)
+        _subtype = reader.read("!L")[0]
+        assert(_subtype == 28)
+        obj.hybrid_enable = reader.read("!B")[0]
+        reader.skip(1)
+        obj.hybrid_version = reader.read("!H")[0]
+        reader.skip(4)
+        return obj
+
+    def __eq__(self, other):
+        if type(self) != type(other): return False
+        if self.version != other.version: return False
+        if self.type != other.type: return False
+        if self.xid != other.xid: return False
+        if self.hybrid_enable != other.hybrid_enable: return False
+        if self.hybrid_version != other.hybrid_version: return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __str__(self):
+        return self.show()
+
+    def show(self):
+        import loxi.pp
+        return loxi.pp.pp(self)
+
+    def pretty_print(self, q):
+        q.text("bsn_hybrid_get_reply {")
+        with q.group():
+            with q.indent(2):
+                q.breakable()
+                q.text("xid = ");
+                if self.xid != None:
+                    q.text("%#x" % self.xid)
+                else:
+                    q.text('None')
+                q.text(","); q.breakable()
+                q.text("hybrid_enable = ");
+                q.text("%#x" % self.hybrid_enable)
+                q.text(","); q.breakable()
+                q.text("hybrid_version = ");
+                q.text("%#x" % self.hybrid_version)
+            q.breakable()
+        q.text('}')
+
+class bsn_hybrid_get_request(Message):
+    version = 1
+    type = 4
+    experimenter = 6035143
+    subtype = 27
+
+    def __init__(self, xid=None):
+        self.xid = xid
+
+    def pack(self):
+        packed = []
+        packed.append(struct.pack("!B", self.version))
+        packed.append(struct.pack("!B", self.type))
+        packed.append(struct.pack("!H", 0)) # placeholder for length at index 2
+        packed.append(struct.pack("!L", self.xid))
+        packed.append(struct.pack("!L", self.experimenter))
+        packed.append(struct.pack("!L", self.subtype))
+        length = sum([len(x) for x in packed])
+        packed[2] = struct.pack("!H", length)
+        return ''.join(packed)
+
+    @staticmethod
+    def unpack(buf):
+        if len(buf) < 8: raise loxi.ProtocolError("buffer too short to contain an OpenFlow message")
+        obj = bsn_hybrid_get_request()
+        if type(buf) == loxi.generic_util.OFReader:
+            reader = buf
+        else:
+            reader = loxi.generic_util.OFReader(buf)
+        _version = reader.read("!B")[0]
+        assert(_version == 1)
+        _type = reader.read("!B")[0]
+        assert(_type == 4)
+        _length = reader.read("!H")[0]
+        obj.xid = reader.read("!L")[0]
+        _experimenter = reader.read("!L")[0]
+        assert(_experimenter == 6035143)
+        _subtype = reader.read("!L")[0]
+        assert(_subtype == 27)
+        return obj
+
+    def __eq__(self, other):
+        if type(self) != type(other): return False
+        if self.version != other.version: return False
+        if self.type != other.type: return False
+        if self.xid != other.xid: return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __str__(self):
+        return self.show()
+
+    def show(self):
+        import loxi.pp
+        return loxi.pp.pp(self)
+
+    def pretty_print(self, q):
+        q.text("bsn_hybrid_get_request {")
+        with q.group():
+            with q.indent(2):
+                q.breakable()
+                q.text("xid = ");
+                if self.xid != None:
+                    q.text("%#x" % self.xid)
+                else:
+                    q.text('None')
+            q.breakable()
+        q.text('}')
+
 class bsn_set_ip_mask(Message):
     version = 1
     type = 4
@@ -6213,6 +6379,8 @@ experimenter_parsers = {
         13: bsn_get_l2_table_request.unpack,
         5: bsn_get_mirroring_reply.unpack,
         4: bsn_get_mirroring_request.unpack,
+        28: bsn_hybrid_get_reply.unpack,
+        27: bsn_hybrid_get_request.unpack,
         0: bsn_set_ip_mask.unpack,
         24: bsn_set_l2_table_reply.unpack,
         12: bsn_set_l2_table_request.unpack,
