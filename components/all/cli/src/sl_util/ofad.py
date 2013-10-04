@@ -99,7 +99,6 @@ class Controller(object):
                     changed = True
         return changed
 
-MGMT_PORT_TYPE = "management"
 PHY_PORT_TYPE = "physical"
 LAG_PORT_TYPE = "lag"
 LAG_BASE_PORT_NUM = 60
