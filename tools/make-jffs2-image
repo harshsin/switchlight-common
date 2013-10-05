@@ -1,0 +1,25 @@
+#!/bin/bash
+
+FLASHFS_SIZE_KB=$1; shift
+FLASHFS_ERASEBLOCK_KB=$1; shift
+SWI_URL=$1; shift
+JFFS2_IMAGE=$1; shift
+
+if [ ! "${JFFS2_IMAGE}" ]; then
+    echo "Usage: $0 FLASHFS_SIZE_KB FLASHFS_ERASEBLOCK_KB SWI_URL JFFS2_IMAGE" >&2
+    exit 1
+fi
+
+d=$(mktemp -d)
+trap "rm -fr $d" 0 1
+
+set -x
+
+# Create jffs2 filesystem image containing boot-config file
+mkdir $d/flash
+echo "SWI=${SWI_URL}" >$d/flash/boot-config
+mkfs.jffs2 --root=$d/flash --pad=$((${FLASHFS_SIZE_KB} * 1024)) --eraseblock=${FLASHFS_ERASEBLOCK_KB} --big-endian --output=$d/flash.jffs2
+cat $d/flash.jffs2 > $JFFS2_IMAGE
+
+exit 0
+
