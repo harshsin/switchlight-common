@@ -91,9 +91,19 @@ ifeq ("$(origin V)", "command line")
 VERBOSE := $(V)
 endif
 ifneq ($(VERBOSE),1)
+
+# quiet settings
+SL_V_P := false
 SL_V_at := @
+SL_V_GEN = @set -e; echo GEN $@;
+
+else
+
+# verbose settings
+SL_V_P := :
+SWITCHLIGHT_PKG_INSTALL := $(SWITCHLIGHT)/tools/spkg.py --verbose
+
 endif
-SL_V_GEN := @echo GEN $@
 
 ifndef SL_MAKEFLAGS
 ifeq ($(VERBOSE),1)
