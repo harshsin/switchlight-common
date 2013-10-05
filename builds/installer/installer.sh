@@ -138,7 +138,7 @@ sed -e '1,/^PAYLOAD_FOLLOWS$/d' "$0" | gzip -dc | ( cd /tmp/.installer && cpio -
 set -e
 
 if [ "${flash2dev}" ]; then
-    if [ -e "${flash2dev}" ]; then
+    if blockdev --getsize64 "$flash2dev" 1>/dev/null 2>&1; then
         say "Installing Switch Light software image"
 
         umount -l /tmp/.fs 2>/dev/null || :
