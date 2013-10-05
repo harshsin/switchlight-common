@@ -281,16 +281,16 @@ class PortManager(object):
         if name not in self.all_phys:
             raise error.ActionError("%s is not a valid interface" % name)
 
-    def disablePort (self, port_):
-        port = self.__getPort(port_)
+    def disablePort (self, port_name):
+        port = self.__getPort(port_name)
         if port is None:
-            raise error.ActionError("%s is not an existing interface" % port_)
+            raise error.ActionError("%s is not an existing interface" % port_name)
         port.setDisableOnAdd(True)
 
-    def enablePort (self, port_):
-        port = self.__getPort(port_)
+    def enablePort (self, port_name):
+        port = self.__getPort(port_name)
         if port is None:
-            raise error.ActionError("%s is not an existing interface" % port_)
+            raise error.ActionError("%s is not an existing interface" % port_name)
         # Setting it to either "False" or "None" would work
         # Setting it to "None" would result in a cleaner ofad.conf
         port.setDisableOnAdd(None)
