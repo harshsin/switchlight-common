@@ -374,7 +374,7 @@ interface_running_config_tuple = (
     ),
 )
 
-run_config.register_running_config('dp-interface', 5500,  None,
+run_config.register_running_config('dp-interface', 6500,  None,
                                    running_config_interface,
                                    interface_running_config_tuple)
 
