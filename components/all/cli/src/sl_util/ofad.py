@@ -229,11 +229,13 @@ class PortManager(object):
 
     @classmethod
     def setPhysicalBase (cls, base):
-        cls.phy_base = base
+        # str conversion is needed to strip "unicode"
+        cls.phy_base = str(base)
 
     @classmethod
     def setLAGBase (cls, base):
-        cls.lag_base = base
+        # str conversion is needed to strip "unicode"
+        cls.lag_base = str(base)
 
     @staticmethod
     def getPhysicalName (id_):
@@ -246,6 +248,16 @@ class PortManager(object):
     @staticmethod
     def getLAGId (name):
         return int(name[len(PortManager.lag_base):])
+
+    @staticmethod
+    def getAllPortBases ():
+        all_bases = [PortManager.phy_base, PortManager.lag_base]
+        return all_bases
+
+    def getExistingPorts (self):
+        all_dicts = [self.phys, self.lags]
+        all_ports = reduce(lambda x, y: x + y.keys(), all_dicts, [])
+        return all_ports
 
     def checkValidPhysicalPort (self, port):
         name = PortManager.getPhysicalName(port)

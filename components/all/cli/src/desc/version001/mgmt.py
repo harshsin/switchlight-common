@@ -10,6 +10,7 @@ import subprocess
 import sys
 
 from sl_util import shell
+from sl_util import const
 
 import command
 import run_config
@@ -38,10 +39,6 @@ if [ "$RUN" = "yes" ]; then
 fi
 """
 
-# FIXME move this to a platform-specific file?
-mgmt_if_choices = ( 'ma1', )
-
-
 def show_single_intf(ifname):
     try:
         intf = NetworkConfig.getInterface(ifname)
@@ -64,7 +61,7 @@ def show_mgmt_intf(data):
     if 'ifname' in data:
         show_single_intf(data['ifname'])
     else:
-        for ifname in mgmt_if_choices:
+        for ifname in const.MGMT_PORTS:
             show_single_intf(ifname)
 
 
@@ -515,7 +512,7 @@ def running_config_interface(context, runcfg, words):
     comp_runcfg = []
 
     # collect component-specific config
-    for ifname in mgmt_if_choices:
+    for ifname in const.MGMT_PORTS:
         intf = NetworkConfig.getInterface(ifname)
 
         if intf.dhcp_enabled:
