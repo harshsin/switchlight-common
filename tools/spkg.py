@@ -1,6 +1,6 @@
 #!/usr/bin/python
 ###############################################################################
-# 
+#
 # SwitchLight Build Package Manager
 #
 ###############################################################################
@@ -10,6 +10,8 @@ import argparse
 import shutil
 import re
 from debian import deb822
+import logging
+import subprocess
 
 def find_file_or_dir(basedir, filename=None, dirname=None):
     """Find and return the path to a given file or directory below the given root"""
@@ -30,15 +32,15 @@ def find_component_dir(basedir, package_name):
                 with open("%s/%s" % (root,file_), "r") as f:
                     data = f.read()
                     if "Package:%s" % package_name in data:
-                        # By convention - this is the component directory. 
+                        # By convention - this is the component directory.
                         return os.path.abspath(root)
             if file_ == "control":
                 with open("%s/%s" % (root,file_), "r") as f:
                     control = f.read()
                     if "Package: %s" % package_name in control:
                         # By convention - find the parent directory
-                        # That has a 'debian' directory in it. 
-                        print "Found at %s" % root
+                        # That has a 'debian' directory in it.
+                        logger.info("found at %s", root)
                         while not 'Makefile.comp' in os.listdir(root):
                             root += "/.."
                         return os.path.abspath(root)
@@ -47,11 +49,11 @@ def find_package(repo, package, arch):
     """Find a package by name and architecture in the given repo dir"""
     manifest = os.listdir(repo)
     return [ x for x in manifest if arch in x and "%s_" % package in x ]
-    
+
 
 def find_all_packages(basedir):
     """Find all local component packages."""
-    all_ = []; 
+    all_ = [];
 
     for root, dirs, files in os.walk(basedir):
         for file_ in files:
@@ -78,8 +80,14 @@ def find_all_packages(basedir):
                     d = deb822.Deb822(f)
 
     return all_
-                    
-                    
+
+def check_call(cmd, *args, **kwargs):
+    if type(cmd) == str:
+        logger.debug("+ " + cmd)
+    else:
+        logger.debug("+ " + " ".join(cmd))
+    subprocess.check_call(cmd, *args, **kwargs)
+
 ###############################################################################
 
 ap = argparse.ArgumentParser("SwitchLight Build Package Manager")
@@ -87,21 +95,32 @@ ap = argparse.ArgumentParser("SwitchLight Build Package Manager")
 ap.add_argument("packages", nargs='*', action='append',
                 help="package:arch", default=None)
 
-ap.add_argument("--force", help="Force reinstall", 
+ap.add_argument("--force", help="Force reinstall",
                 action='store_true')
-ap.add_argument("--find-file", help="Return path to given file.", 
+ap.add_argument("--find-file", help="Return path to given file.",
                 default=None)
-ap.add_argument("--find-dir", help="Return path to the given directory.", 
+ap.add_argument("--find-dir", help="Return path to the given directory.",
                 default=None)
-ap.add_argument("--build", help="Attempt to build local package if it exists.", 
+ap.add_argument("--build", help="Attempt to build local package if it exists.",
                 action='store_true')
-ap.add_argument("--add-pkg", nargs='+', action='append', 
+ap.add_argument("--add-pkg", nargs='+', action='append',
                 default=None, help="Install new package files and invalidate corresponding installs.")
-ap.add_argument("--list-all", action='store_true', help="List all available component packages"); 
-ap.add_argument("--force-build", help="Force rebuild from source.", 
+ap.add_argument("--list-all", action='store_true', help="List all available component packages");
+ap.add_argument("--force-build", help="Force rebuild from source.",
                 action='store_true')
+ap.add_argument("--verbose", action='store_true', help="verbose logging")
+ap.add_argument("--quiet", action='store_true', help="minimal logging")
 
 ops = ap.parse_args()
+
+logging.basicConfig()
+logger = logging.getLogger("spkg")
+if ops.verbose:
+    logger.setLevel(logging.DEBUG)
+elif ops.quiet:
+    logger.setLevel(logging.ERROR)
+else:
+    logger.setLevel(logging.INFO)
 
 SWITCHLIGHT = os.getenv('SWITCHLIGHT')
 package_dir = os.path.abspath("%s/debian/repo" % SWITCHLIGHT)
@@ -119,8 +138,9 @@ if ops.list_all:
 if ops.add_pkg:
     for pa in ops.add_pkg[0]:
         # Copy the package into the repo
-        print "Adding new package %s..." % pa
-        shutil.copy(pa, package_dir); 
+        logger.info("adding new package %s...", pa)
+        logger.debug("+ /bin/cp %s %s", pa, package_dir)
+        shutil.copy(pa, package_dir);
         # Determine package name and architecture
         underscores = pa.split('_')
         # Package name is the first entry
@@ -130,17 +150,18 @@ if ops.add_pkg:
         extract_dir = "%s/debian/installs/%s/%s" % (SWITCHLIGHT, arch, package)
         if os.path.exists(extract_dir):
             # Make sure the package gets reinstalled the next time it's needed
-            print "Removed previous install directory %s..." % extract_dir
+            logger.info("removed previous install directory %s...", extract_dir)
+            logger.debug("+ /bin/rm -fr %s", extract_dir)
             shutil.rmtree(extract_dir)
     sys.exit(0)
-        
+
 
 for pa in ops.packages[0]:
 
     try:
         (package, arch) = pa.split(":")
     except ValueError:
-        print "invalid package specification: ", pa
+        logger.error("invalid package specification: %s", pa)
         sys.exit(1)
 
     packages = []
@@ -150,23 +171,20 @@ for pa in ops.packages[0]:
         ops.build = True
 
     if len(packages) == 0:
-        print "No matching packages for %s (%s)" % (package, arch)
+        logger.warn("no matching packages for %s (%s)", package, arch)
         # Look for package builder
-        buildpath = find_component_dir(os.path.abspath("%s/components/%s" % (SWITCHLIGHT,arch)), 
+        buildpath = find_component_dir(os.path.abspath("%s/components/%s" % (SWITCHLIGHT,arch)),
                                        package)
         if buildpath is not None:
-            print "Can be built locally at %s" % buildpath
+            logger.info("can be built locally at %s", buildpath)
             if ops.build:
-                if os.system("make -C %s deb" % buildpath) != 0:
-                    print "Build failed."
-                    sys.exit(1)
-                else:
-                    packages = find_package(package_dir, package, arch)
+                check_call(('make', '-C', buildpath, 'deb',))
+                packages = find_package(package_dir, package, arch)
         if len(packages) == 0:
             sys.exit(1)
-        
+
     if len(packages) > 1:
-        print "Multiple packages found: %s" % packages
+        logger.error("multiple packages found: %s", packages)
         sys.exit(1)
 
     deb = packages[0]
@@ -174,38 +192,26 @@ for pa in ops.packages[0]:
     extract_dir = "%s/debian/installs/%s/%s" % (SWITCHLIGHT, arch, package)
 
     if os.path.exists("%s/PKG.TIMESTAMP" % extract_dir):
-        if (os.path.getmtime("%s/PKG.TIMESTAMP" % extract_dir) == 
+        if (os.path.getmtime("%s/PKG.TIMESTAMP" % extract_dir) ==
             os.path.getmtime("%s/%s" % (package_dir, deb))):
             # Existing extract is identical
-            sys.stderr.write("Existing extract for %s:%s matches the package file.\n" % (deb,arch))
+            logger.debug("existing extract for %s:%s matches the package file.", deb, arch)
         else:
-            # Extract must be updated. 
+            # Extract must be updated.
             ops.force = True
-            sys.stderr.write("Existing extract for %s:%s does not match the package file. Forcing extract.\n" % (deb,arch))
+            logger.warn("existing extract for %s:%s does not match the package file. Forcing extract.", deb, arch)
 
         if ops.force:
-            sys.stderr.write("Force removing %s...\n" % extract_dir)
+            logger.info("force removing %s...", extract_dir)
+            logger.debug("+ /bin/rm -fr %s", extract_dir)
             shutil.rmtree(extract_dir)
 
 
     if not os.path.exists(extract_dir):
-        sys.stderr.write("Extracting %s/%s...\n" % (package_dir, deb))
+        logger.info("extracting %s/%s...", package_dir, deb)
+        logger.debug("+ /bin/mkdir -p %s", extract_dir)
         os.makedirs(extract_dir)
-        os.system("dpkg -x %s/%s %s" % (package_dir, deb, extract_dir))
-        os.system("touch -r %s/%s %s/PKG.TIMESTAMP" % (package_dir, deb, extract_dir))
+        check_call(('dpkg', '-x', package_dir + '/' + deb, extract_dir,))
+        check_call(('touch', '-r', package_dir + '/' + deb, extract_dir + '/PKG.TIMESTAMP',))
 
-    find_file_or_dir(extract_dir, ops.find_file, ops.find_dir); 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    find_file_or_dir(extract_dir, ops.find_file, ops.find_dir);
