@@ -214,33 +214,18 @@ SHOW_INTERFACE_COMMAND_DESCRIPTION = {
 
 
 def shutdown_intf(no_command, port_list):
+    portMgr = PortManager(OFAgentConfig.port_list)
+
     # assumes port list has already been checked by caller
-    ports = get_port_info()
+    for port in port_list:
+        if no_command:
+            portMgr.enablePort(port)
+        else:
+            portMgr.disablePort(port)
 
-    conn = OFConnection.OFConnection('127.0.0.1', 6634)
-
-    for pname in port_list:
-        port = ports[pname]
-        req = of10.message.port_mod(xid=conn._gen_xid(),
-                                    port_no=port[0].port_no,
-                                    hw_addr=port[0].hw_addr,
-                                    config=0 if no_command \
-                                        else of10.OFPPC_PORT_DOWN,
-                                    mask=of10.OFPPC_PORT_DOWN, 
-                                    advertise=port[0].advertised)
-        conn.sendmsg(req)
-
-    # check for error messages
-    msg = None
-    try:
-        msg = conn.recvmsg(timeout=1)
-    except:
-        if msg and msg.type == of10.OFPT_ERROR \
-                and msg.err_type == OFPET_PORT_MOD_FAILED:
-            raise error.ActionError('Error changing port state')
-
-    conn.close()
-
+    OFAgentConfig.port_list = portMgr.toJSON()
+    OFAgentConfig.write(warn=True)
+    OFAgentConfig.reload()
 
 def config_intf(no_command, data):
     base, port_list = parse_port_list(data['intf-port-list'])
@@ -359,12 +344,17 @@ CLEAR_INTERFACE_COMMAND_DESCRIPTION = {
 
 def running_config_interface(context, runcfg, words):
     comp_runcfg = []
+    portMgr = PortManager(OFAgentConfig.port_list)
+
+    # get all dataplane ports
+    port_list = sorted(portMgr.getPhysicals(), key=lambda x: x.portName) + \
+                sorted(portMgr.getLAGs(), key=lambda x: x.portName)
 
     # collect component-specific config
-    ports = get_port_info()
-    for port in ports.itervalues():
-        if port[0].config & of10.OFPPC_PORT_DOWN:
-            comp_runcfg.append('interface %s shutdown\n' % port[0].name)
+    # FIXME: generate "compressed" interface lists (e.g. eth1-10,13)
+    for port in port_list:
+        if port.disableOnAdd:
+            comp_runcfg.append('interface %s shutdown\n' % port.portName)
 
     # attach component-specific config
     if len(comp_runcfg) > 0:

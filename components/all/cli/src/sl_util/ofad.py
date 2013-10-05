@@ -113,6 +113,7 @@ class Port(object):
         self.port_name = name
         self._port_type = type_
         self._port_number = None
+        self._disable_on_add = None
 
     def toJSON (self):
         d = {}
@@ -128,6 +129,14 @@ class Port(object):
 
     def setPortNumber (self, portNumber):
         self._port_number = portNumber
+
+    @property
+    def disableOnAdd (self):
+        return self._disable_on_add
+
+    # Takes True, False or None
+    def setDisableOnAdd (self, disable):
+        self._disable_on_add = disable
 
 class PhysicalPort(Port):
     def __init__ (self, name):
@@ -186,6 +195,7 @@ class PortManager(object):
 
             if port_type == PHY_PORT_TYPE:
                 port = PhysicalPort(k)
+                port.setDisableOnAdd(v.get("disable_on_add", None))
                 self.phys[k] = port
                 self.all_phys.append(k)
 
@@ -195,6 +205,7 @@ class PortManager(object):
                 port.setPortNumber(v["port_number"])
                 port.setHash(v.get("hash", None))
                 port.setMode(v.get("mode", None))
+                port.setDisableOnAdd(v.get("disable_on_add", None))
                 self.lags[k] = port
                 self.all_phys += [PortManager.getPhysicalName(p) for p in v["component_ports"]]
 
@@ -226,6 +237,12 @@ class PortManager(object):
         for p in port.componentPorts:
             phy_port = PortManager.getPhysicalName(p)
             self.__freePhysicalPort(phy_port)
+
+    def __getPort (self, name):
+        for d in [self.phys, self.lags]:
+            if name in d:
+                return d[name]
+        return None
 
     @classmethod
     def setPhysicalBase (cls, base):
@@ -259,10 +276,24 @@ class PortManager(object):
         all_ports = reduce(lambda x, y: x + y.keys(), all_dicts, [])
         return all_ports
 
-    def checkValidPhysicalPort (self, port):
-        name = PortManager.getPhysicalName(port)
+    def checkValidPhysicalPort (self, port_id):
+        name = PortManager.getPhysicalName(port_id)
         if name not in self.all_phys:
             raise error.ActionError("%s is not a valid interface" % name)
+
+    def disablePort (self, port_):
+        port = self.__getPort(port_)
+        if port is None:
+            raise error.ActionError("%s is not an existing interface" % port_)
+        port.setDisableOnAdd(True)
+
+    def enablePort (self, port_):
+        port = self.__getPort(port_)
+        if port is None:
+            raise error.ActionError("%s is not an existing interface" % port_)
+        # Setting it to either "False" or "None" would work
+        # Setting it to "None" would result in a cleaner ofad.conf
+        port.setDisableOnAdd(None)
 
     # FIXME: optimize on updating an existing LAG
     def configureLAGPort (self, id_, ports, hash_=None, mode=None):
@@ -288,6 +319,9 @@ class PortManager(object):
             raise error.ActionError("Port list specified does not match configured value")
 
         self.__removeLAGPort(name)
+
+    def getPhysicals (self):
+        return self.phys.values()
 
     def getLAGs (self):
         return self.lags.values()
