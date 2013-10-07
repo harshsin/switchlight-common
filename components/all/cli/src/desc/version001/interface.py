@@ -374,6 +374,12 @@ interface_running_config_tuple = (
     ),
 )
 
+# FIXME: running config of interface has to be after port-channel because the
+#        port-channel command has to run first to create a lag before the
+#        interface command (e.g. shutdown) can run against a lag.
+#
+#        the proper fix is to manage only phys with the interface command, and
+#        only lags with the port-channel command.
 run_config.register_running_config('dp-interface', 6500,  None,
                                    running_config_interface,
                                    interface_running_config_tuple)
