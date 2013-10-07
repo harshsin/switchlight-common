@@ -64,7 +64,7 @@ $(ROOTFS_NAME).sqsh: $(ROOTFS_DIR).sqsh
 $(ROOTFS_NAME).cpio: $(ROOTFS_DIR).cpio
 
 clean:
-	@sudo rm -rf $(ROOTFS_DIR)
-	@rm -f $(ROOTFS_DIR).sqsh
-	@rm -f $(ROOTFS_DIR).cpio
-	@rm -f $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done
+	$(SL_V_at)sudo rm -rf $(ROOTFS_DIR)
+	$(SL_V_at)rm -f $(ROOTFS_DIR).sqsh
+	$(SL_V_at)rm -f $(ROOTFS_DIR).cpio
+	$(SL_V_at)rm -f $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done

@@ -8,18 +8,18 @@
 include $(SWITCHLIGHT)/make/config.mk
 
 component: component-deps
-	@$(MAKE) -f Makefile.comp --no-print-directory
+	$(SL_V_at)$(MAKE) -f Makefile.comp $(SL_MAKEFLAGS)
 
 deb: component-deps
-	@$(MAKE) -f Makefile.comp deb --no-print-directory
+	$(SL_V_at)$(MAKE) -f Makefile.comp deb $(SL_MAKEFLAGS)
 clean:
-	@$(MAKE) -f Makefile.comp clean --no-print-directory
+	$(SL_V_at)$(MAKE) -f Makefile.comp clean $(SL_MAKEFLAGS)
 
 
 component-deps:
 ifdef SWITCHLIGHT_REQUIRED_SUBMODULES
-	@$(SWITCHLIGHT)/tools/submodules.py $(SWITCHLIGHT_REQUIRED_SUBMODULES) $(SWITCHLIGHT_LOCAL_SUBMODULES) $(SWITCHLIGHT)
+	$(SL_V_at)$(SWITCHLIGHT)/tools/submodules.py $(SWITCHLIGHT_REQUIRED_SUBMODULES) $(SWITCHLIGHT_LOCAL_SUBMODULES) $(SWITCHLIGHT)
 endif
 ifdef SWITCHLIGHT_REQUIRED_PACKAGES
-	@$(SWITCHLIGHT_PKG_INSTALL) $(SWITCHLIGHT_REQUIRED_PACKAGES) --build
+	$(SL_V_at)$(SWITCHLIGHT_PKG_INSTALL) $(SWITCHLIGHT_REQUIRED_PACKAGES) --build
 endif

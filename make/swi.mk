@@ -59,8 +59,8 @@ rootfs-$(ARCH).sqsh:
 	cp rootfs/$@ . 
 
 clean:
-	@rm -f $(KERNELS_LOCAL) $(INITRD_LOCAL) rootfs-$(ARCH).sqsh *.tmp
-	@rm -f *.swi
-	@$(MAKE) -C rootfs clean
+	$(SL_V_at)rm -f $(KERNELS_LOCAL) $(INITRD_LOCAL) rootfs-$(ARCH).sqsh *.tmp
+	$(SL_V_at)rm -f *.swi
+	$(SL_V_at)$(MAKE) -C rootfs clean
 
 

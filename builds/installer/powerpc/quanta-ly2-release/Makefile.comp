@@ -15,6 +15,6 @@ include platforms.mk
 
 # Use the powerpc-ly2-release SWI build.
 INSTALLER_SWI := $(SWITCHLIGHT)/builds/swi/powerpc/release/switchlight-powerpc-release.swi
-INSTALLER_NAME := switchlight-powerpc-release.quanta-lb9a.$(SWITCHLIGHT_BUILD_TIMESTAMP).installer
+INSTALLER_NAME := switchlight-powerpc-release.quanta-ly2.$(SWITCHLIGHT_BUILD_TIMESTAMP).installer
 
 include $(SWITCHLIGHT)/make/installer-ppc.mk

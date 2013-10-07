@@ -15,5 +15,5 @@ clean:
 override_dh_auto_install:
 	mkdir -p $(INSTALL_DIR)/usr/platforms/quanta-ly2
 	cp ../../switchlight.quanta-ly2.loader $(INSTALL_DIR)/usr/platforms/quanta-ly2/
-	cp ../../switchlight.quanta-ly2.flash $(INSTALL_DIR)/usr/platforms/quanta-ly2/
+	cp ../../switchlight.quanta-ly2.jffs2 $(INSTALL_DIR)/usr/platforms/quanta-ly2/
 

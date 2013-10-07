@@ -16,7 +16,7 @@ DTB := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx-dtbs:powerpc --find-file q
 PLATFORM_NAME := quanta-lb9
 
 LOADER_SIZE := 8192
-FLASHFS_SIZE_KB := 8192
+FLASHFS_SIZE_KB := 19840
 FLASH_ERASEBLOCK_KB := 128
 SWI_URL := flash2:switchlight-powerpc.swi
 
