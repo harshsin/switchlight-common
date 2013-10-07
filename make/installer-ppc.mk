@@ -23,25 +23,32 @@ ifndef INSTALLER_NAME
 $(error $$INSTALLER_NAME is not set)
 endif
 
-
-
 # Each platform flash template comes from the platform debian package:
-PLATFORM_FLASH_TEMPLATES := $(foreach p,$(INSTALLER_PLATFORMS),$(shell $(SWITCHLIGHT_PKG_INSTALL) platform-$p:powerpc --find-file switchlight.$(p).flash))
+# (not every platform includes every file)
+PLATFORM_FLASH_TEMPLATES := $(foreach p,$(INSTALLER_PLATFORMS),$(shell $(SWITCHLIGHT_PKG_INSTALL) platform-$p:powerpc --find-file switchlight.$(p).loader) $(shell $(SWITCHLIGHT_PKG_INSTALL) platform-$p:powerpc --find-file switchlight.$(p).flash) $(shell $(SWITCHLIGHT_PKG_INSTALL) platform-$p:powerpc --find-file switchlight.$(p).jffs2))
 
 # These are the basenames of the flash templates. 
-PLATFORM_FLASH_TEMPLATE_NAMES := $(foreach p,$(INSTALLER_PLATFORMS),switchlight.$(p).flash)
+PLATFORM_FLASH_TEMPLATE_NAMES := $(foreach p,$(PLATFORM_FLASH_TEMPLATES),$(notdir $(p)))
 
+$(INSTALLER_NAME): $(INSTALLER_NAME).cpio
+	$(SL_V_at)cp /dev/null $@
+	$(SL_V_at)cat $(SWITCHLIGHT)/builds/installer/installer.sh >> $@
+	$(SL_V_GEN)gzip -9 < $@.cpio >> $@
+	$(SL_V_at)rm $@.cpio
 
-$(INSTALLER_NAME): $(PLATFORM_FLASH_TEMPLATES) $(INSTALLER_SWI)
-	cp $(PLATFORM_FLASH_TEMPLATES) .
-	cp $(INSTALLER_SWI) switchlight-powerpc.swi
-	cat $(SWITCHLIGHT)/builds/installer/installer.sh <(tar zc $(PLATFORM_FLASH_TEMPLATE_NAMES) switchlight-powerpc.swi) > $@
-	@rm *.flash
-	@rm switchlight-powerpc.swi
+$(INSTALLER_NAME).cpio: $(PLATFORM_FLASH_TEMPLATES) $(INSTALLER_SWI)
+	$(SL_V_at)cp $(PLATFORM_FLASH_TEMPLATES) .
+	$(SL_V_at)cp $(INSTALLER_SWI) switchlight-powerpc.swi
+	$(SL_V_GEN)set -o pipefail ;\
+	if $(SL_V_P); then v="-v"; else v="--quiet"; fi ;\
+	find $(PLATFORM_FLASH_TEMPLATE_NAMES) switchlight-powerpc.swi \
+	| cpio $$v -H newc -o > $@
+	$(SL_V_at)rm -f *.jffs2 *.loader *.flash
+	$(SL_V_at)rm -f switchlight-powerpc.swi
 
 $(INSTALLER_SWI):
 	$(MAKE) -C $(dir $(INSTALLER_SWI))
 
 
 clean:
-	rm *.installer
+	rm -f *.cpio *.jffs2 *.loader *.swi *.installer
