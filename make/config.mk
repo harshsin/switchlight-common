@@ -9,6 +9,8 @@ SHELL := /bin/bash
 # These are the default submodule locations. 
 # These allow environment overrides for custom frankenbuilds. 
 #
+SWITCHLIGHT_LOCAL_SUBMODULES := none
+
 ifndef SWITCHLIGHT_SUBMODULE_LINUX
 SWITCHLIGHT_SUBMODULE_LINUX      := $(SWITCHLIGHT)/submodules/linux
 SWITCHLIGHT_LOCAL_SUBMODULES += linux
