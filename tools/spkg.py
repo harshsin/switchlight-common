@@ -47,8 +47,8 @@ def find_component_dir(basedir, package_name):
 
 def find_package(repo, package, arch):
     """Find a package by name and architecture in the given repo dir"""
-    manifest = os.listdir(repo)
-    return [ x for x in manifest if arch in x and "%s_" % package in x ]
+    manifest = os.listdir("%s/%s" % (repo, arch))
+    return [ arch + "/" + x for x in manifest if arch in x and "%s_" % package in x ]
 
 
 def find_all_packages(basedir):
@@ -139,14 +139,17 @@ if ops.add_pkg:
     for pa in ops.add_pkg[0]:
         # Copy the package into the repo
         logger.info("adding new package %s...", pa)
-        logger.debug("+ /bin/cp %s %s", pa, package_dir)
-        shutil.copy(pa, package_dir);
         # Determine package name and architecture
         underscores = pa.split('_')
         # Package name is the first entry
         package = underscores[0]
         # Architecture is the last entry (.deb)
         arch = underscores[-1].split('.')[0]
+        logger.debug("+ /bin/cp %s %s/%s", pa, package_dir, arch)
+        dstdir = "%s/%s" % (package_dir, arch)
+        if not os.path.exists(dstdir):
+            os.makedirs(dstdir)
+        shutil.copy(pa, dstdir)
         extract_dir = "%s/debian/installs/%s/%s" % (SWITCHLIGHT, arch, package)
         if os.path.exists(extract_dir):
             # Make sure the package gets reinstalled the next time it's needed
