@@ -5,7 +5,7 @@ PACKAGE_DIR := $(SWITCHLIGHT)/debian/repo
 all:
 	ln -snf ../debuild/debian src/debian
 	cd src; $(DEBUILD)
-	mv *.deb $(PACKAGE_DIR)
+	$(SWITCHLIGHT)/tools/spkg.py --add-pkg *.deb
 
 clean:
 	ln -snf ../build/debian src/debian
