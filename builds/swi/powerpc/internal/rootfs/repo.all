@@ -1,0 +1,6 @@
+[deb-all]
+packages=pcli 
+source=copy:__DIR__/all ./
+omitdebsrc=true
+
+
