@@ -22,12 +22,20 @@ include $(SWITCHLIGHT)/make/packages.mk
 ROOTFS_NAME=rootfs-$(ROOTFS_ARCH)
 ROOTFS_DIR=$(ROOTFS_BUILD_DIR)/$(ROOTFS_NAME)
 
-ifndef ROOTFS_REPO_NAME
-ROOTFS_REPO_NAME := repo
+ifndef ROOTFS_ARCH_REPO_NAME
+ROOTFS_ARCH_REPO_NAME := repo.$(ROOTFS_ARCH)
 endif
 
-ifndef ROOTFS_REPO_PATH
-ROOTFS_REPO_PATH := $(ROOTFS_BUILD_DIR)/$(ROOTFS_REPO_NAME)
+ifndef ROOTFS_ARCH_REPO_PATH
+ROOTFS_ARCH_REPO_PATH := $(ROOTFS_BUILD_DIR)/$(ROOTFS_ARCH_REPO_NAME)
+endif
+
+ifndef ROOTFS_ALL_REPO_NAME
+ROOTFS_ALL_REPO_NAME := repo.all
+endif
+
+ifndef ROOTFS_ALL_REPO_PATH
+ROOTFS_ALL_REPO_PATH := $(ROOTFS_BUILD_DIR)/$(ROOTFS_ALL_REPO_NAME)
 endif
 
 ifndef ROOTFS_CLEANUP_NAME
@@ -49,8 +57,7 @@ endif
 $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done: $(SWITCHLIGHT_PACKAGE_MANIFEST)
 	sudo update-binfmts --enable
 	sudo rm -rf $(ROOTFS_DIR)
-	f=$$(mktemp); sed "s%__DIR__%$(SWITCHLIGHT_REPO)%g" $(ROOTFS_REPO_PATH) >$$f; $(SWITCHLIGHT)/tools/mkws --apt-cache $(APT_CACHE) --nested -a $(ROOTFS_ARCH) --extra-repo $$f \
---extra-config $(ROOTFS_CLEANUP_PATH) $(ROOTFS_DIR)
+	arch_repo=$$(mktemp); echo $$arch_repo; sed "s%__DIR__%$(SWITCHLIGHT_REPO)%g" $(ROOTFS_ARCH_REPO_PATH) >$$arch_repo; all_repo=$$(mktemp); sed "s%__DIR__%$(SWITCHLIGHT_REPO)%g" $(ROOTFS_ALL_REPO_PATH) >$$all_repo; $(SWITCHLIGHT)/tools/mkws --apt-cache $(APT_CACHE) --nested -a $(ROOTFS_ARCH) --extra-repo $$arch_repo --extra-repo $$all_repo --extra-config $(ROOTFS_CLEANUP_PATH) $(ROOTFS_DIR) 
 	touch $@
 
 $(ROOTFS_DIR).sqsh: $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done
