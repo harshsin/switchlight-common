@@ -1,2 +1,4 @@
 switchlight.*.flash
 switchlight.*.loader
+*.jffs2
+
