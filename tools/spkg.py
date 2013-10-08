@@ -47,8 +47,12 @@ def find_component_dir(basedir, package_name):
 
 def find_package(repo, package, arch):
     """Find a package by name and architecture in the given repo dir"""
-    manifest = os.listdir("%s/%s" % (repo, arch))
-    return [ arch + "/" + x for x in manifest if arch in x and "%s_" % package in x ]
+    dirname = "%s/%s" % (repo, arch)
+    if os.path.exists(dirname):
+        manifest = os.listdir(dirname)
+        return [ arch + "/" + x for x in manifest if arch in x and "%s_" % package in x ]
+    else:
+        return []
 
 
 def find_all_packages(basedir):
