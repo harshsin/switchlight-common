@@ -5,3 +5,4 @@
 *.so*
 Manifest.mk
 version.o
+*.mk
