@@ -16,9 +16,29 @@ SWITCHLIGHT_SUBMODULE_LINUX      := $(SWITCHLIGHT)/submodules/linux
 SWITCHLIGHT_LOCAL_SUBMODULES += linux
 endif
 
+ifndef SWITCHLIGHT_SUBMODULE_INFRA
+SWITCHLIGHT_SUBMODULE_INFRA	:= $(SWITCHLIGHT)/submodules/infra
+SWITCHLIGHT_LOCAL_SUBMODULES += infra
+endif
+
+ifndef SWITCHLIGHT_SUBMODULE_INDIGO
+SWITCHLIGHT_SUBMODULE_INDIGO	:= $(SWITCHLIGHT)/submodules/indigo
+SWITCHLIGHT_LOCAL_SUBMODULES += indigo
+endif
+
 ifndef SWITCHLIGHT_SUBMODULE_BIGCODE
 SWITCHLIGHT_SUBMODULE_BIGCODE    := $(SWITCHLIGHT)/submodules/bigcode
 SWITCHLIGHT_LOCAL_SUBMODULES += bigcode
+endif
+
+ifndef SWITCHLIGHT_SUBMODULE_BIGCODE_INTERNAL
+SWITCHLIGHT_SUBMODULE_BIGCODE_INTERNAL := $(SWITCHLIGHT)/submodules/bigcode-internal
+SWITCHLIGHT_LOCAL_SUBMODULES += bigcode-internal
+endif
+
+ifndef SWITCHLIGHT_SUBMODULE_SL
+SWITCHLIGHT_SUBMODULE_SL := $(SWITCHLIGHT)/submodules/SL
+# Not actually a git submodule so not added to the local submodules variable
 endif
 
 ifndef SWITCHLIGHT_SUBMODULE_BROADCOM
@@ -49,10 +69,8 @@ endif
 #
 # These are the required derivations from the SWITCHLIGHT settings:
 #
-export BIGCODE := $(SWITCHLIGHT_SUBMODULE_BIGCODE)
-export BROADCOM := $(SWITCHLIGHT_SUBMODULE_BROADCOM)
 ifndef BUILDER
-export BUILDER := $(BIGCODE)/indigo/Builder/unix
+export BUILDER := $(SWITCHLIGHT_SUBMODULE_INFRA)/builder/unix
 endif
 
 #
@@ -113,3 +131,7 @@ else
 SL_MAKEFLAGS = --no-print-directory
 endif
 endif
+
+# Inherit MODULE_DIRs for all local builds
+MODULE_DIRS := $(foreach submodule,INFRA INDIGO BIGCODE BIGCODE_INTERNAL SL,$(SWITCHLIGHT_SUBMODULE_$(submodule))/modules) $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules
+
