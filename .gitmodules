@@ -1,6 +1,6 @@
 [submodule "submodules/bigcode"]
 	path = submodules/bigcode
-	url = git@github.com:bigswitch/BigCode
+	url = git@github.com:floodlight/bigcode
 [submodule "submodules/broadcom"]
 	path = submodules/broadcom
 	url = git@github.com:bigswitch/Broadcom
@@ -19,3 +19,12 @@
 [submodule "submodules/linux"]
 	path = submodules/linux
 	url = git@github.com:bigswitch/pandora-linux
+[submodule "submodules/infra"]
+	path = submodules/infra
+	url = git@github.com:floodlight/infra
+[submodule "submodules/indigo"]
+	path = submodules/indigo
+	url = git@github.com:floodlight/xindigo
+[submodule "submodules/bigcode-internal"]
+	path = submodules/bigcode-internal
+	url = git@github.com:bigswitch/bigcode-internal
