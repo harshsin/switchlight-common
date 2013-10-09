@@ -12,8 +12,8 @@ endif
 export TOOLCHAIN=powerpc-linux-gnu
 
 all:
-	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_BIGCODE)/targets/sofcon
-	cp $(SWITCHLIGHT_SUBMODULE_BIGCODE)/targets/sofcon/build/powerpc-linux-gnu/bin/sofcon .
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_SL)/targets/sofcon
+	cp $(SWITCHLIGHT_SUBMODULE_SL)/targets/sofcon/build/powerpc-linux-gnu/bin/sofcon .
 
 .PHONY: deb
 
