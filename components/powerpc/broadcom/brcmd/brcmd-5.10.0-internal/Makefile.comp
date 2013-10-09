@@ -19,7 +19,7 @@ SDK_LIB_DIR := $(SDK)/build/switchlight/powerpc/internal
 SDK_BUILD_TARGET := pandora-powerpc-2_6
 LIBBROADCOM_A := libbroadcom-5.10-internal.a
 LIBBROADCOM_SO := libbroadcom-internal.so.5.10
-include $(BROADCOM)/tools/sdk.mk
+include $(SWITCHLIGHT_SUBMODULE_BROADCOM)/tools/sdk.mk
 
 GLOBAL_CFLAGS += -DSDK_SIM_CONFIG_INCLUDE_SDK_$(SDK_UVERSION)=1
 
@@ -41,8 +41,6 @@ LIBRARY := brcmd-5.10.0-internal-lib
 $(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(BUILDER)/lib.mk
 
-
-MODULE_DIRS := $(BIGCODE)/Modules $(BIGCODE)/indigo/Modules $(BROADCOM)/Modules
 
 DEPENDMODULES := BRCM BRCMTest OS NSS AIM BigList uCli ELS IOF tagport cintm
 
