@@ -46,6 +46,7 @@ definitions:
         - memset
         - memcpy
         - strncpy
+        - strlen
 
   enum: &enum
     sl_shell_service_type: 

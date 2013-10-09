@@ -50,6 +50,16 @@
     #endif
 #endif
 
+#ifndef SL_STRLEN
+    #if defined(GLOBAL_STRLEN)
+        #define SL_STRLEN GLOBAL_STRLEN
+    #elif SL_CONFIG_PORTING_STDLIB == 1
+        #define SL_STRLEN strlen
+    #else
+        #error The macro SL_STRLEN is required but cannot be defined.
+    #endif
+#endif
+
 /* <auto.end.portingmacro(ALL).define> */
 
 
