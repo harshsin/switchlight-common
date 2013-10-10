@@ -132,6 +132,16 @@ SL_MAKEFLAGS = --no-print-directory
 endif
 endif
 
-# Inherit MODULE_DIRs for all local builds
-MODULE_DIRS := $(foreach submodule,INFRA INDIGO BIGCODE BIGCODE_INTERNAL SL,$(SWITCHLIGHT_SUBMODULE_$(submodule))/modules) $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules
+#
+# Inherit MODULE_DIRs for all local builds. 
+# This turns out to  be terribly hacky wrt the component makefiles. 
+# This should be a temporary solution. 
+#
+ALL_SUBMODULES = INFRA INDIGO BIGCODE BIGCODE_INTERNAL SL
+MODULE_DIRS := $(foreach submodule,$(ALL_SUBMODULES),$(SWITCHLIGHT_SUBMODULE_$(submodule))/modules) $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules
+MODULE_DIRS_TOUCH := $(foreach sd,$(MODULE_DIRS),$(shell mkdir -p $(sd) && touch $(sd)/Manifest.mk))
 
+override BROADCOM := $(SWITCHLIGHT_SUBMODULE_BROADCOM)
+export BROADCOM
+override BIGCODE := $(SWITCHLIGHT_SUBMODULE_BIGCODE)
+export BIGCODE
