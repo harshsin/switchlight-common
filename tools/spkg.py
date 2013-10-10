@@ -37,7 +37,7 @@ def find_component_dir(basedir, package_name):
             if file_ == "control":
                 with open("%s/%s" % (root,file_), "r") as f:
                     control = f.read()
-                    if "Package: %s" % package_name in control:
+                    if "Package: %s " % package_name in control or "Package: %s\n" % package_name in control:
                         # By convention - find the parent directory
                         # That has a 'debian' directory in it.
                         logger.info("found at %s", root)
