@@ -55,11 +55,11 @@ for module in required_submodules:
                 # Shudder. The makefiles touched the module manifest as a convenience. That change should be temporary, and so should this one:
                 shutil.rmtree("submodules/%s" % module)
 
-            recursive = ""
+	    args = [ 'git', 'submodule', 'update', '--init' ]
             if module in sm_settings and 'recursive' in sm_settings[module] and sm_settings[module]['recursive']:
-                recursive = "--recursive"
-
-            if subprocess.check_call(['git', 'submodule', 'update', '--init', recursive, 'submodules/%s' % module]) != 0:
+		args.append("--recursive")
+	    args.append('submodules/%s' % module)
+            if subprocess.check_call(args) != 0:
                 print "git error updating module '%s'. See the log in %s/submodules/%s.update.log" % (module, switchlight_root, module)
                 sys.exit(1)
 
