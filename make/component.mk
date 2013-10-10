@@ -7,11 +7,15 @@
 ###############################################################################
 include $(SWITCHLIGHT)/make/config.mk
 
+ifndef NOT_PARALLEL
+SL_MAKE_PARALLEL := -j
+endif
+
 component: component-deps
-	$(SL_V_at)$(MAKE) -f Makefile.comp $(SL_MAKEFLAGS)
+	$(SL_V_at)$(MAKE) -f Makefile.comp $(SL_MAKE_PARALLEL) $(SL_MAKEFLAGS)
 
 deb: component-deps
-	$(SL_V_at)$(MAKE) -f Makefile.comp deb $(SL_MAKEFLAGS)
+	$(SL_V_at)$(MAKE) -f Makefile.comp deb $(SL_MAKE_PARALLEL) $(SL_MAKEFLAGS)
 clean:
 	$(SL_V_at)$(MAKE) -f Makefile.comp clean $(SL_MAKEFLAGS)
 
