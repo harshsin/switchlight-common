@@ -236,6 +236,13 @@ Mon_Ops = {
     POWER_SENSORS       : '>'
 }
 
+Show_Trap_Type_Conv = {
+    'ctemp1' : TEMP_SENSORS,
+    'cfan1'  : CHASSIS_FAN_SENSORS,
+    'pwr-fan': POWER_FAN_SENSORS,
+    'power'  : POWER_SENSORS
+}
+
 def trap_set(no_cmd, trap, threshold):
 
     global Platform
@@ -246,16 +253,11 @@ def trap_set(no_cmd, trap, threshold):
         f.close()
 
     oids = OID_Table.get(Platform)
-    if oids == None:
-        # TODO: Need grateful error message
-        # raise error: The particular msg doesn't show
-        print "Trap unsupported on %s" % (Platform)
+    if oids is None:
         raise error.ActionError("Trap unsupported on %s", Platform)
 
     trapdict = oids.get(trap)
-    if trapdict == None:
-        # TODO: Need grateful error message
-        print "Trap %s unsupported on %s" % (trap, Platform)
+    if trapdict is None:
         raise error.ActionError("Trap %s unsupported on %s", trap, Platform)
 
     items = trapdict.items()
@@ -432,10 +434,9 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                     {
                         'field'           : 'threshold',
                         'tag'             : 'threshold',
-                        'short-help'      : 'Threashold value',
+                        'short-help'      : 'Threshold value',
                         'base-type'       : 'integer',
-                        #'range'           : (0, 100),
-                        #'doc'             : 'snmp|', #DO WE NEED IT
+                        #'doc'             : 'snmp|', #FIXME
                     },
                 ),
             ), # snmp choices: enable, host, location, trap
@@ -484,18 +485,9 @@ def running_config_snmp(context, runcfg, words):
                                )
             continue
         if w[0] == 'monitor':
-            trap_type = None
-            if w[-4] == 'ctemp1':
-                trap_type = TEMP_SENSORS
-            elif w[-4] == 'cfan1':
-                trap_type = CHASSIS_FAN_SENSORS
-            elif w[-4] == 'pwr-fan':
-                trap_type = POWER_FAN_SENSORS
-            elif w[-4] == 'power':
-                trap_type = POWER_SENSORS
-
-            if trap_type != None:
-                comp_runcfg.append('snmp-server trap trap-type %s threshold %s\n' %
+            trap_type = Show_Trap_Type_Conv.get(w[-4])
+            if trap_type is not None:
+                comp_runcfg.append('snmp-server trap %s threshold %s\n' %
                                    (trap_type, w[-1])
                                   )
             continue
