@@ -21,16 +21,9 @@ switchlight_root = sys.argv[3]
 
 def submodule_update(module, depth=None):
 
-    if depth is None or module == 'loader':
-        # Full update
-        args = [ 'git', 'submodule', 'update', '--init' ]
-        if module == 'loader':
-            args.append("--recursive")
-        args.append('submodules/%s' % module)
-        if subprocess.check_call(args) != 0:
-            print "git error updating module '%s'. See the log in %s/submodules/%s.update.log" % (module, switchlight_root, module)
-            sys.exit(1)
-    else:
+    if depth and module != 'loader':
+        print "shallow clone depth=%d" % int(depth)
+        # Shallow clone first
         url = subprocess.check_output(['git', 'config', '-f', '.gitmodules', '--get', 
                                        'submodule.submodules/%s.url' % module])
         url = url.rstrip('\n')
@@ -38,6 +31,16 @@ def submodule_update(module, depth=None):
         if subprocess.check_call(args) != 0:
             print "git error cloning module '%s'" % module
             sys.exit(1)
+
+    # full or partial update
+    args = [ 'git', 'submodule', 'update', '--init' ]
+    if module == 'loader':
+        args.append("--recursive")
+    args.append('submodules/%s' % module)
+    if subprocess.check_call(args) != 0:
+        print "git error updating module '%s'. See the log in %s/submodules/%s.update.log" % (module, switchlight_root, module)
+        sys.exit(1)
+
 
 
 # 
