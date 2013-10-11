@@ -192,7 +192,7 @@ def command_shell_command(script):
         print "Unknown debug choice %s" % script
 
 def command_ofad_ctl_command(command, data):
-    cmd = command if command != None else data.get("command", "")
+    cmd = command if command is not None else data.get("command", "")
     OFADCtl.run(cmd)
 
 def command_prompt_update():
