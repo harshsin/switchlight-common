@@ -22,6 +22,10 @@ SNMP_CONFIG_FILE = '/etc/snmp/snmpd.conf'
 # sysObjectID BSN_ENTERPRISE_OID_SWITCH
 # sysDescr SNMP_SYS_DESC
 
+TEMP_SENSORS        = 'temp_sensors'
+CHASSIS_FAN_SENSORS = 'chassis_fan_sensors'
+POWER_FAN_SENSORS    = 'power_fan_sensors'
+POWER_SENSORS        = 'power_sensors'
 
 class Snmp(Service):
     SVC_NAME = "snmpd"
@@ -170,7 +174,97 @@ def community(no_cmd, community, access):
     config_line(no_cmd,
                 "%scommunity %s\n" % (access, community)
                 )
-        
+
+Platform = None
+
+OID_Table = {
+    'quanta-lb9': {
+        TEMP_SENSORS : {
+            'ctemp1' : '.1.3.6.1.4.1.2021.13.16.2.1.3.1',
+            'ctemp2' : '.1.3.6.1.4.1.2021.13.16.2.1.3.5',
+            'ctemp3' : '.1.3.6.1.4.1.2021.13.16.2.1.3.9',
+            'ctemp4' : '.1.3.6.1.4.1.2021.13.16.2.1.3.13',
+            'ctemp5' : '.1.3.6.1.4.1.2021.13.16.2.1.3.17',
+            'pwr-temp1' : '.1.3.6.1.4.1.2021.13.16.2.1.3.41',
+            'pwr-temp2' : '.1.3.6.1.4.1.2021.13.16.2.1.3.44',
+            'pwr-temp3' : '.1.3.6.1.4.1.2021.13.16.2.1.3.46',
+        },
+        CHASSIS_FAN_SENSORS : {
+            'cfan1' : '.1.3.6.1.4.1.2021.13.16.3.1.3.1',
+            'cfan2' : '.1.3.6.1.4.1.2021.13.16.3.1.3.5',
+            'cfan3' : '.1.3.6.1.4.1.2021.13.16.3.1.3.9',
+            'cfan4' : '.1.3.6.1.4.1.2021.13.16.3.1.3.13',
+        },
+        POWER_FAN_SENSORS : {
+            'pwr-fan' : '.1.3.6.1.4.1.2021.13.16.3.1.3.33',
+        },
+        POWER_SENSORS : {
+            'power' : '.1.3.6.1.4.1.2021.13.16.5.1.3.8'
+        }
+    },
+
+    'quanta-ly2': {
+        TEMP_SENSORS : {
+            'ctemp1' : '.1.3.6.1.4.1.2021.13.16.2.1.3.1',
+            'ctemp2' : '.1.3.6.1.4.1.2021.13.16.2.1.3.2',
+            'ctemp3' : '.1.3.6.1.4.1.2021.13.16.2.1.3.3',
+            'ctemp4' : '.1.3.6.1.4.1.2021.13.16.2.1.3.4',
+            'ctemp5' : '.1.3.6.1.4.1.2021.13.16.2.1.3.5',
+            'pwr-temp6' : '.1.3.6.1.4.1.2021.13.16.2.1.3.6',
+            'pwr-temp7' : '.1.3.6.1.4.1.2021.13.16.2.1.3.9',
+            'pwr-temp8' : '.1.3.6.1.4.1.2021.13.16.2.1.3.14',
+        },
+        CHASSIS_FAN_SENSORS : {
+            'cfan1' : '.1.3.6.1.4.1.2021.13.16.3.1.3.1',
+            'cfan2' : '.1.3.6.1.4.1.2021.13.16.3.1.3.2',
+            'cfan3' : '.1.3.6.1.4.1.2021.13.16.3.1.3.3',
+            'cfan4' : '.1.3.6.1.4.1.2021.13.16.3.1.3.4',
+        },
+        POWER_FAN_SENSORS : {
+            'pwr-fan' : '.1.3.6.1.4.1.2021.13.16.3.1.3.5',
+        },
+        POWER_SENSORS : {
+            'power' : '.1.3.6.1.4.1.2021.13.16.5.1.3.1'
+        }
+    }
+}
+
+Mon_Ops = {
+    TEMP_SENSORS        : '>',
+    CHASSIS_FAN_SENSORS : '<',
+    POWER_FAN_SENSORS   : '<',
+    POWER_SENSORS       : '>'
+}
+
+Show_Trap_Type_Conv = {
+    'ctemp1' : TEMP_SENSORS,
+    'cfan1'  : CHASSIS_FAN_SENSORS,
+    'pwr-fan': POWER_FAN_SENSORS,
+    'power'  : POWER_SENSORS
+}
+
+def trap_set(no_cmd, trap, threshold):
+
+    global Platform
+
+    if Platform is None:
+        f = open("/etc/sl_platform")
+        Platform = f.readlines()[0].strip()
+        f.close()
+
+    oids = OID_Table.get(Platform)
+    if oids is None:
+        raise error.ActionError("Trap unsupported on %s", Platform)
+
+    trapdict = oids.get(trap)
+    if trapdict is None:
+        raise error.ActionError("Trap %s unsupported on %s", trap, Platform)
+
+    items = trapdict.items()
+    for item in items:
+        config_line(no_cmd,
+                "monitor -I %s %s %s %d\n" % (item[0], item[1], Mon_Ops[trap], threshold))
+
 
 def config_snmp(no_command, data):
     if 'host' in data:
@@ -180,6 +274,12 @@ def config_snmp(no_command, data):
                   data['community'],
                   data['port']
                   )
+
+    elif 'trap' in data:
+        trap_set(no_command,
+                  data['trap'],
+                  data['threshold']
+                  )    
 
     elif 'access' in data:
         community(no_command, data['community'], data['access'])
@@ -321,7 +421,25 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         'syntax-help'     : 'UDP port for notification',
                     },
                 ),
-            ),
+                (
+                    {
+                        'field'           : 'trap',
+                        'tag'             : 'trap',
+                        'short-help'      : 'Trap type',
+                        'type'            : 'enum',
+                        'values'          : (TEMP_SENSORS, CHASSIS_FAN_SENSORS,
+                                             POWER_FAN_SENSORS, POWER_SENSORS),
+                        'doc'             : 'snmp|+',
+                    },
+                    {
+                        'field'           : 'threshold',
+                        'tag'             : 'threshold',
+                        'short-help'      : 'Threshold value',
+                        'base-type'       : 'integer',
+                        #'doc'             : 'snmp|', #FIXME
+                    },
+                ),
+            ), # snmp choices: enable, host, location, trap
         },
     ),
 }
@@ -365,6 +483,13 @@ def running_config_snmp(context, runcfg, words):
             comp_runcfg.append('snmp-server host %s informs %s udp-port %s\n' %
                                (ww[0], w[2], ww[1])
                                )
+            continue
+        if w[0] == 'monitor':
+            trap_type = Show_Trap_Type_Conv.get(w[-4])
+            if trap_type is not None:
+                comp_runcfg.append('snmp-server trap %s threshold %s\n' %
+                                   (trap_type, w[-1])
+                                  )
             continue
 
     # attach component-specific config
