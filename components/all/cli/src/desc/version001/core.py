@@ -12,7 +12,6 @@ from datetime import timedelta
 
 from sl_util import shell
 
-
 VERSION_FILE = '/etc/sl_version'
 
 def show_version(data):
@@ -525,6 +524,20 @@ DEBUG_SHELL_CLI_COMMAND_DESCRIPTION = {
                 'short-help' : 'Enter a bash shell',
                 'doc'        : 'debug|bash',
             },
+            (
+                {
+                    'token'      : 'ofad',
+                    'action'     : 'ofad-ctl-command',
+                    'command'    : None,
+                    'short-help' : 'Run ofad-ctl command',
+                    'doc'        : 'debug|ofad',
+                },
+                {
+                    'field'       : 'command',
+                    'type'        : 'string',
+                    'syntax-help' : 'Command input. Use quotes if input has spaces',
+                },
+            ),
         )
     }
 }
