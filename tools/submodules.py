@@ -18,6 +18,28 @@ local_submodules = sys.argv[2].split(':')
 # The third argument is the switchlight root
 switchlight_root = sys.argv[3]
 
+
+def submodule_update(module, depth=None):
+
+    if depth is None or module == 'loader':
+        # Full update
+        args = [ 'git', 'submodule', 'update', '--init' ]
+        if module == 'loader':
+            args.append("--recursive")
+        args.append('submodules/%s' % module)
+        if subprocess.check_call(args) != 0:
+            print "git error updating module '%s'. See the log in %s/submodules/%s.update.log" % (module, switchlight_root, module)
+            sys.exit(1)
+    else:
+        url = subprocess.check_output(['git', 'config', '-f', '.gitmodules', '--get', 
+                                       'submodule.submodules/%s.url' % module])
+        url = url.rstrip('\n')
+        args = [ 'git', 'clone', '--depth', depth, url, 'submodules/%s' % module ]
+        if subprocess.check_call(args) != 0:
+            print "git error cloning module '%s'" % module
+            sys.exit(1)
+
+
 # 
 # Get the current submodule status
 #
@@ -40,12 +62,6 @@ except Exception as e:
 
 
 
-# Per-submodule settings. More hack. 
-sm_settings = {
-    'linux' : { 'recursive' : True }, 
-    'loader' : { 'recursive' : True }
-    }; 
-
 for module in required_submodules:
     if module in local_submodules:
         status = git_submodule_status[module]
@@ -55,14 +71,7 @@ for module in required_submodules:
                 # Shudder. The makefiles touched the module manifest as a convenience. That change should be temporary, and so should this one:
                 shutil.rmtree("submodules/%s" % module)
 
-	    args = [ 'git', 'submodule', 'update', '--init' ]
-            if module in sm_settings and 'recursive' in sm_settings[module] and sm_settings[module]['recursive']:
-		args.append("--recursive")
-	    args.append('submodules/%s' % module)
-            if subprocess.check_call(args) != 0:
-                print "git error updating module '%s'. See the log in %s/submodules/%s.update.log" % (module, switchlight_root, module)
-                sys.exit(1)
-
+            submodule_update(module, os.getenv("SUBMODULE_DEPTH"))
 
 
 
