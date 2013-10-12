@@ -20,6 +20,8 @@ import error
 import command
 import run_config
 
+from sl_util.ofad import OFADCtl
+
 #
 # ACTION PROCS
 #
@@ -189,6 +191,11 @@ def command_shell_command(script):
         # XXX possibly run the script directly?
         print "Unknown debug choice %s" % script
 
+# NOTE: The command arg takes precedence and is first checked.
+#       If it is None, we then check data["command"].
+def command_ofad_ctl_command(command, data):
+    cmd = command if command is not None else data.get("command", "")
+    OFADCtl.run(cmd)
 
 def command_prompt_update():
     """
@@ -232,6 +239,11 @@ def init_actions(bs):
     command.add_action('shell-command', command_shell_command,
                         {'kwargs': {'script' : '$command',
                                    }})
-    
+
+    command.add_action('ofad-ctl-command', command_ofad_ctl_command,
+                        {'kwargs': {'command' : '$command',
+                                    'data'    : '$data',
+                                   }})
+
     command.add_action('prompt-update', command_prompt_update,)
 

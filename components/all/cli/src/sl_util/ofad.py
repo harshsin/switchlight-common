@@ -351,6 +351,11 @@ class UnknownVersionError(Exception):
     def __str__ (self):
         "Unknown version: %d" % (self.version)
 
+class OFADCtl(object):
+    @staticmethod
+    def run(cmd, show_output=True):
+        shell.call("/usr/bin/ofad-ctl %s" % cmd, show_output=show_output)
+
 class OFADConfig(object):
     PATH = "/etc/ofad.conf"
     VERSION = 2
