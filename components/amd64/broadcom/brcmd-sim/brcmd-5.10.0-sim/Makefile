@@ -12,7 +12,7 @@
 ############################################################
 ARCH := amd64
 TOOLCHAIN := x86_64-linux-gnu
-ANYDIR := broadcom/brcmd-sim/brcmd-5.10.0-sim 
+ANYDIR := broadcom/brcmd-sim/brcmd-5.10.0-sim
 include $(SWITCHLIGHT)/make/any.mk
 
 

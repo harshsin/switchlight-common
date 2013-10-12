@@ -12,7 +12,7 @@
 ############################################################
 ARCH := amd64
 TOOLCHAIN := x86_64-linux-gnu
-ANYDIR := faultd 
+ANYDIR := faultd
 include $(SWITCHLIGHT)/make/any.mk
 
 
