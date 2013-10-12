@@ -33,6 +33,6 @@ all:
 deb:
 	rm -rf $(TARGET_DIR)/deb/$(DEBUILD_DIR)
 	cp -R $(TARGET_DIR)/deb/debuild $(TARGET_DIR)/deb/$(DEBUILD_DIR)
-	$(MAKE) -C $(TARGET_DIR) deb
+	$(MAKE) -C $(TARGET_DIR) deb DEBUILD_DIR=$(DEBUILD_DIR)
 
 
