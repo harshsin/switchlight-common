@@ -191,6 +191,8 @@ def command_shell_command(script):
         # XXX possibly run the script directly?
         print "Unknown debug choice %s" % script
 
+# NOTE: The command arg takes precedence and is first checked.
+#       If it is None, we then check data["command"].
 def command_ofad_ctl_command(command, data):
     cmd = command if command is not None else data.get("command", "")
     OFADCtl.run(cmd)
