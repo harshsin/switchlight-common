@@ -64,6 +64,10 @@ except Exception as e:
     raise
 
 
+if '__all__' in required_submodules:
+    required_submodules = git_submodule_status.keys()
+if '__all__' in local_submodules:
+    local_submodules = required_submodules
 
 for module in required_submodules:
     if module in local_submodules:
