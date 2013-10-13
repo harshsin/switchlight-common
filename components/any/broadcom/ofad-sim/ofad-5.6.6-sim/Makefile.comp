@@ -19,7 +19,7 @@ endif
 SDK := $(shell $(SWITCHLIGHT_PKG_INSTALL) libbroadcom-5.6-internal-src:all --find-dir libbroadcom-5.6-internal-sdk)
 
 SDK_BUILD_TARGET := none
-include $(BROADCOM)/tools/sdk.mk
+include $(SWITCHLIGHT_SUBMODULE_BROADCOM)/tools/sdk.mk
 GLOBAL_CFLAGS += -DBROADSIM_CONFIG_INCLUDE_SDK_$(SDK_UVERSION)=1
 
 MODULE := ofad-sim
@@ -29,7 +29,6 @@ LIBRARY := ofad-sim-main
 $(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(BUILDER)/lib.mk
 
-MODULE_DIRS := $(BIGCODE)/Modules $(BIGCODE)/indigo/Modules $(BROADCOM)/Modules
 
 DEPENDMODULES := SocketManager OFConnectionManager BRCM BRCMDriver \
     OFStateManager broadsim AET Configuration cjson \

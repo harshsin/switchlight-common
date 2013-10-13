@@ -1,0 +1,161 @@
+###############################################################################
+#
+#  /module/auto/IVS.yml
+#
+#  IVS Autogen Definitions
+#
+###############################################################################
+
+cdefs: &cdefs
+- IVS_CONFIG_INCLUDE_LOGGING:
+    doc: "Include or exclude logging."
+    default: 1
+- IVS_CONFIG_LOG_OPTIONS_DEFAULT:
+    doc: "Default enabled log options."
+    default: AIM_LOG_OPTIONS_DEFAULT
+- IVS_CONFIG_LOG_BITS_DEFAULT:
+    doc: "Default enabled log options."
+    default: AIM_LOG_BITS_DEFAULT
+- IVS_CONFIG_LOG_CUSTOM_BITS_DEFAULT:
+    doc: "Default enabled custom log options."
+    default: 0
+- IVS_CONFIG_PORTING_STDLIB:
+    doc: "Default all porting macros to use the C standard libraries."
+    default: 1
+- IVS_CONFIG_PORTING_INCLUDE_STDLIB_HEADERS:
+    doc: "Include standard library headers for stdlib porting macros."
+    default: IVS_CONFIG_PORTING_STDLIB
+- IVS_CONFIG_INCLUDE_CONTROLLER_DEFAULT:
+    doc: "Include the default controller at startup if no controllers were specified."
+    default: 1
+- IVS_CONFIG_CONTROLLER_IP_DEFAULT:
+    doc: "Default controller IP for initial connections."
+    default: '"127.0.0.1"'
+- IVS_CONFIG_CONTROLLER_PORT_DEFAULT:
+    doc: "Default controller port for initial connections."
+    default: 6633
+- IVS_CONFIG_CONTROLLER_LISTEN_PORT:
+    doc: "Default port to listen for controller connections."
+    default: 7000
+- IVS_CONFIG_INCLUDE_INTERFACE_VETH_DEFAULT:
+    doc: "Initialize with default veth interfaces."
+    default: 1
+- IVS_CONFIG_PORT_MAX_PORTS_DEFAULT:
+    doc: "Default maximum port count."
+    default: 24
+- IVS_CONFIG_FWD_MAX_FLOWS_DEFAULT:
+    doc: "Default value for the maximum number of flow table entries."
+    default: 16*1024
+- IVS_CONFIG_CORE_EXPIRE_FLOWS_DEFAULT:
+    doc: "Default setting for whether to expire flows in state manager."
+    default: 1
+- IVS_CONFIG_CORE_STATS_CHECK_MS_DEFAULT:
+    doc: "Default period for core statistics checks in milliseconds."
+    default: 900
+- IVS_CONFIG_DPID_DEFAULT:
+    doc: "Default datapath id."
+    default: 0x1
+- IVS_CONFIG_CXN_PERIODIC_ECHO_MS_DEFAULT:
+    doc: "Default value for the connection echo period in milliseconds."
+    default: 10000
+- IVS_CONFIG_CXN_RESET_ECHO_COUNT:
+    doc: "Default value for a connection's reset echo count."
+    default: 3
+- IVS_CONFIG_NSS_PORT_DEFAULT:
+    doc: "Default port for network cli connections."
+    default: 4454
+- IVS_CONFIG_CONSOLE_PROMPT_DEFAULT:
+    doc: "Default base prompt for the console cli if enabled."
+    default: '"ivs"'
+- IVS_CONFIG_INCLUDE_CONSOLE_CLI:
+    doc: "Include console CLI."
+    default: 1
+- IVS_CONFIG_INCLUDE_NETWORK_CLI:
+    doc: "Include network CLI."
+    default: 1
+- IVS_CONFIG_ASYNC_PACKET_IN_QUEUE_MAX_DEFAULT:
+    doc: "For async threaded pkt-in queue handling, max queue length"
+    default: 128
+- IVS_CONFIG_INCLUDE_WATCHDOG:
+    doc: "Include watchdog support."
+    default: 1
+- IVS_CONFIG_WATCHDOG_SECONDS:
+    doc: "Configure the default value for the watchdog timer (in seconds)."
+    default: 0
+- IVS_CONFIG_INCLUDE_CXN_LOG:
+    doc: "Include a connection log ring buffer."
+    default: 0
+- IVS_CONFIG_CXN_LOG_SIZE:
+    doc: "The number of connection log entries to maintain."
+    default: 0
+
+cxn_types: &cxn_types
+- CONNECT
+- LISTEN
+
+cxn_states: &cxn_states
+- DISCONNECTED : INDIGO_CXN_S_DISCONNECTED
+- CONNECTING : INDIGO_CXN_S_CONNECTING
+- CONNECTED : INDIGO_CXN_S_HANDSHAKE_COMPLETE
+- CLOSING : INDIGO_CXN_S_CLOSING
+
+cxn_roles: &cxn_roles
+- UNKNOWN : INDIGO_CXN_R_UNKNOWN
+- MASTER : INDIGO_CXN_R_MASTER
+- SLAVE : INDIGO_CXN_R_SLAVE
+- EQUAL : INDIGO_CXN_R_EQUAL
+
+
+definitions:
+  cdefs:
+    IVS_CONFIG_HEADER: 
+      defs: *cdefs
+      basename: ivs_config
+
+  logger:
+    ivs:
+   
+  portingmacro:
+    IVS:
+      macros:
+        - malloc
+        - free
+        - memset
+        - memcpy
+        - strncpy
+        - strcmp
+        - strncmp
+        - strcpy
+        - strlen
+        - vsnprintf
+        - snprintf
+        - printf
+  enum: &enums
+    ivs_cxn_type:
+      members: *cxn_types
+      desc: "IVS Connection Type"
+
+    ivs_cxn_state:
+      members: *cxn_states
+      desc: "IVS Connection States"
+
+    ivs_cxn_role:
+      members: *cxn_roles
+      desc: "IVS Connection Roles"
+
+  xmacro:
+    IVS_CXN_TYPE_ENTRY:
+      members: *cxn_types
+    
+  xenum:
+    IVS_ENUMERATION_ENTRY:
+      members: *enums
+
+  util:
+    ivs:
+      objects:
+        - zmalloc
+        - strlcpy
+
+
+

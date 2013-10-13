@@ -29,16 +29,20 @@ DEBUILD = debuild --prepend-path=/usr/lib/ccache -eSWITCHLIGHT -eBUILD_DIR_BASE 
 
 PACKAGE_DIR := $(SWITCHLIGHT)/debian/repo
 
+ifndef DEBUILD_DIR
+DEBUILD_DIR := debuild
+endif
+
 deb:
 	$(SL_V_at)$(MAKE) -C ../ $(SL_MAKEFLAGS)
-	cd debuild; $(DEBUILD)
-	$(SWITCHLIGHT_PKG_INSTALL) --add-pkg *.deb
-	rm *.deb 
-	rm -rf debuild/debian/tmp $(foreach p,$(PACKAGE_NAMES),debuild/debian/$(p)/ debuild/debian/$(p)-dbg)
+	cd $(DEBUILD_DIR); $(DEBUILD)
+	$(SWITCHLIGHT_PKG_INSTALL) --add-pkg *$(ARCH)*.deb
+	rm *$(ARCH)*.deb 
+	rm -rf $(DEBUILD_DIR)/debian/tmp $(foreach p,$(PACKAGE_NAMES),$(DEBUILD_DIR)/debian/$(p)/ $(DEBUILD_DIR)/debian/$(p)-dbg)
 
 clean:
-	cd debuild; $(DEBUILD) -Tclean
-	rm -f *.deb *.changes *.build
+	cd $(DEBUILD_DIR); $(DEBUILD) -Tclean
+	rm -f *$(ARCH)*.deb *.changes *.build
 dch:
 	cd build; EMAIL="$(USER)@bigswitch.com" dch -i
 

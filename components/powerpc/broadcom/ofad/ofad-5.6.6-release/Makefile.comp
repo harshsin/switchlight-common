@@ -13,7 +13,7 @@ SDK_BUILD_TARGET := pandora-powerpc-2_6
 export SDK_USE_RELEASE_BUILD := 1
 LIBBROADCOM_A := libbroadcom-5.6-release.a
 LIBBROADCOM_SO := libbroadcom-release.so.5.6
-include $(BROADCOM)/tools/sdk.mk
+include $(SWITCHLIGHT_SUBMODULE_BROADCOM)/tools/sdk.mk
 
 GLOBAL_CFLAGS += -DSDK_SIM_CONFIG_INCLUDE_SDK_$(SDK_UVERSION)=1
 
@@ -32,8 +32,6 @@ include $(BUILDER)/standardinit.mk
 LIBRARY := ofad-5.6.6-release-lib
 $(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(BUILDER)/lib.mk
-
-MODULE_DIRS := $(BIGCODE)/Modules $(BIGCODE)/indigo/Modules $(BROADCOM)/Modules
 
 DEPENDMODULES := SocketManager OFConnectionManager BRCM BRCMDriver \
 	OFStateManager snmp murmur NSS ELS AET Configuration cjson \
@@ -56,7 +54,7 @@ include $(BUILDER)/bin.mk
 $(BINARY)_EXTRA_LINK_LIBS += $(SDK_STATIC_LINK_LIBS)
 
 SCRIPT := brcm_lb9_gpio_init
-$(SCRIPT)_PARTS := $(BROADCOM)/Modules/BRCM/module/src/$(SCRIPT)
+$(SCRIPT)_PARTS := $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules/BRCM/module/src/$(SCRIPT)
 include $(BUILDER)/script.mk
 
 #

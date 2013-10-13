@@ -101,3 +101,78 @@ all: $(ALL_TARGETS)
 default: show-swis 
 
 
+###############################################################################
+#
+# Parallel Build Optimizations
+#
+###############################################################################
+# init all submodules
+submodules_init:
+	$(SWITCHLIGHT)/tools/submodules.py __all__ __all__ $(SWITCHLIGHT)
+
+define cbuild
+$(subst :,.,$(1)): $(subst :,.,$(2))
+	$(SWITCHLIGHT)/tools/spkg.py $(1) --build
+endef
+
+PARALLEL_0 := \
+kernel-x86-64:amd64 \
+kernel-85xx:powerpc \
+kernel-e500mc:powerpc \
+initrd-powerpc:powerpc \
+initrd-i386:i386
+$(foreach c,$(PARALLEL_0),$(eval $(call cbuild,$(c),submodules_init)))
+
+PARALLEL_1 := \
+platform-quanta-lb9a:powerpc \
+platform-quanta-ly2:powerpc \
+platform-quanta-lb9:powerpc \
+platform-quanta-ly5:powerpc \
+platform-celestica-redstone:powerpc \
+platform-delta-7448:powerpc \
+loader-i386:i386
+$(foreach c,$(PARALLEL_1),$(eval $(call cbuild,$(c),$(PARALLEL_0))))
+
+PARALLEL_2 := \
+libbroadcom-5.10-release:powerpc \
+libbroadcom-5.10-internal:powerpc \
+libbroadcom-5.6-internal:powerpc \
+libbroadcom-5.6-release:powerpc \
+libbroadcom-6.2-internal:powerpc \
+libbroadcom-6.2-release:powerpc \
+libbroadcom-6.2-internal-src:all \
+libbroadcom-5.6-internal-src:all \
+libbroadcom-5.10-internal-src:all 
+$(foreach c,$(PARALLEL_2),$(eval $(call cbuild,$(c),$(PARALLEL_1))))
+
+PARALLEL_3 := \
+faultd:amd64 \
+faultd:powerpc \
+sofcon:powerpc \
+brcmd-6.2.7-sim:amd64 \
+brcmd-5.10.0-sim:amd64 \
+brcmd-5.6.6-sim:amd64 \
+ofad-5.6.6-sim:amd64 \
+ofad-6.2.7-sim:amd64 \
+ofad-5.10.0-sim:amd64 \
+brcmd-5.10.0-internal:powerpc \
+brcmd-5.6.6-internal:powerpc \
+brcmd-6.2.7-internal:powerpc \
+ofad-5.10.0-release:powerpc \
+ofad-6.2.7-release:powerpc \
+ofad-5.10.0-internal:powerpc \
+ofad-5.6.6-release:powerpc \
+ofad-5.6.6-internal:powerpc \
+ofad-6.2.7-t5:powerpc \
+ofad-6.2.7-internal:powerpc \
+ofad-5.10.0-t5:powerpc \
+pcli:all
+$(foreach c,$(PARALLEL_3),$(eval $(call cbuild,$(c),$(PARALLEL_2))))
+
+parallel0: $(subst :,.,$(PARALLEL_0))
+parallel1: $(subst :,.,$(PARALLEL_1))
+parallel2: $(subst :,.,$(PARALLEL_2))
+parallel3: $(subst :,.,$(PARALLEL_3))
+
+
+

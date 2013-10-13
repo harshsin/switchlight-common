@@ -22,7 +22,6 @@ LIBRARY := faultd-main
 $(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(BUILDER)/lib.mk
 
-MODULE_DIRS := $(BIGCODE)/Modules $(BIGCODE)/indigo/Modules
 
 DEPENDMODULES := Faultd AIM
 

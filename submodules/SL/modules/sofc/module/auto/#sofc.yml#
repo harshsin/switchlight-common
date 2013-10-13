@@ -1,0 +1,49 @@
+###############################################################################
+#
+# sofc Autogeneration Definitions.
+#
+###############################################################################
+
+cdefs: &cdefs
+- SOFC_CONFIG_INCLUDE_LOGGING:
+    doc: "Include or exclude logging."
+    default: 1
+- SOFC_CONFIG_LOG_OPTIONS_DEFAULT:
+    doc: "Default enabled log options."
+    default: AIM_LOG_OPTIONS_DEFAULT
+- SOFC_CONFIG_LOG_BITS_DEFAULT:
+    doc: "Default enabled log bits."
+    default: AIM_LOG_BITS_DEFAULT
+- SOFC_CONFIG_LOG_CUSTOM_BITS_DEFAULT:
+    doc: "Default enabled custom log bits."
+    default: 0
+- SOFC_CONFIG_PORTING_STDLIB:
+    doc: "Default all porting macros to use the C standard libraries."
+    default: 1
+- SOFC_CONFIG_PORTING_INCLUDE_STDLIB_HEADERS:
+    doc: "Include standard library headers for stdlib porting macros."
+    default: SOFC_CONFIG_PORTING_STDLIB
+- SOFC_CONFIG_INCLUDE_UCLI:
+    doc: "Include generic uCli support."
+    default: 0
+- SOFC_CONFIG_CXN_COUNT:
+
+
+
+definitions:
+  cdefs:
+    SOFC_CONFIG_HEADER: 
+      defs: *cdefs
+      basename: sofc_config
+
+  portingmacro:
+    SOFC:
+      macros:
+        - malloc
+        - free
+        - memset
+        - memcpy
+        - strncpy
+        - vsnprintf
+        - snprintf
+        - strlen

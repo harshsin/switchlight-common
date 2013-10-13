@@ -12,6 +12,7 @@ import re
 from debian import deb822
 import logging
 import subprocess
+import fcntl
 
 def find_file_or_dir(basedir, filename=None, dirname=None):
     """Find and return the path to a given file or directory below the given root"""
@@ -37,7 +38,7 @@ def find_component_dir(basedir, package_name):
             if file_ == "control":
                 with open("%s/%s" % (root,file_), "r") as f:
                     control = f.read()
-                    if "Package: %s" % package_name in control:
+                    if "Package: %s " % package_name in control or "Package: %s\n" % package_name in control:
                         # By convention - find the parent directory
                         # That has a 'debian' directory in it.
                         logger.info("found at %s", root)
@@ -128,9 +129,30 @@ else:
 
 SWITCHLIGHT = os.getenv('SWITCHLIGHT')
 package_dir = os.path.abspath("%s/debian/repo" % SWITCHLIGHT)
+repo_lockf = "%s/.lock" % package_dir
 
 if SWITCHLIGHT is None:
     raise Exception("$SWITCHLIGHT is not defined.")
+
+
+class Lock:
+    def __init__(self, filename):
+        self.filename = filename
+        self.handle = open(filename, 'w')
+    
+    def acquire(self):
+        logger.debug("acquiring lock %s" % self.filename)
+        fcntl.flock(self.handle, fcntl.LOCK_EX)
+        logger.debug("acquired lock %s" % self.filename)
+        
+    def release(self):
+        fcntl.flock(self.handle, fcntl.LOCK_UN)
+        logger.debug("released lock %s" % self.filename)
+
+    def __del__(self):
+        self.handle.close()
+
+repoLock = Lock(repo_lockf)
 
 if ops.list_all:
     all_ = find_all_packages(os.path.abspath("%s/components" % (SWITCHLIGHT)))
@@ -140,6 +162,7 @@ if ops.list_all:
     sys.exit(0)
 
 if ops.add_pkg:
+    repoLock.acquire(); 
     for pa in ops.add_pkg[0]:
         # Copy the package into the repo
         logger.info("adding new package %s...", pa)
@@ -160,6 +183,7 @@ if ops.add_pkg:
             logger.info("removed previous install directory %s...", extract_dir)
             logger.debug("+ /bin/rm -fr %s", extract_dir)
             shutil.rmtree(extract_dir)
+    repoLock.release()
     sys.exit(0)
 
 
@@ -198,6 +222,7 @@ for pa in ops.packages[0]:
 
     extract_dir = "%s/debian/installs/%s/%s" % (SWITCHLIGHT, arch, package)
 
+    repoLock.acquire()
     if os.path.exists("%s/PKG.TIMESTAMP" % extract_dir):
         if (os.path.getmtime("%s/PKG.TIMESTAMP" % extract_dir) ==
             os.path.getmtime("%s/%s" % (package_dir, deb))):
@@ -221,4 +246,5 @@ for pa in ops.packages[0]:
         check_call(('dpkg', '-x', package_dir + '/' + deb, extract_dir,))
         check_call(('touch', '-r', package_dir + '/' + deb, extract_dir + '/PKG.TIMESTAMP',))
 
+    repoLock.release()
     find_file_or_dir(extract_dir, ops.find_file, ops.find_dir);
