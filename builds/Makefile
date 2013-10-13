@@ -119,7 +119,7 @@ PARALLEL_0 := \
 kernel-x86-64:amd64 \
 kernel-85xx:powerpc \
 kernel-e500mc:powerpc \
-initrd-powerpc:powerpc
+initrd-powerpc:powerpc \
 initrd-i386:i386
 $(foreach c,$(PARALLEL_0),$(eval $(call cbuild,$(c),submodules_init)))
 
@@ -169,9 +169,10 @@ ofad-5.10.0-t5:powerpc \
 pcli:all
 $(foreach c,$(PARALLEL_3),$(eval $(call cbuild,$(c),$(PARALLEL_2))))
 
-.parallel_build: $(subst :,.,$(PARALLEL_3))
+parallel0: $(subst :,.,$(PARALLEL_0))
+parallel1: $(subst :,.,$(PARALLEL_1))
+parallel2: $(subst :,.,$(PARALLEL_2))
+parallel3: $(subst :,.,$(PARALLEL_3))
 
-parallel_build: 
-	$(MAKE) -j 16 -l 5 .parallel_build
 
 
