@@ -172,6 +172,6 @@ $(foreach c,$(PARALLEL_3),$(eval $(call cbuild,$(c),$(PARALLEL_2))))
 .parallel_build: $(subst :,.,$(PARALLEL_3))
 
 parallel_build: 
-	$(MAKE) -j .parallel_build
+	$(MAKE) -j 16 -l 5 .parallel_build
 
 
