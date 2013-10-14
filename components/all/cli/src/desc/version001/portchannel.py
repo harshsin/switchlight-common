@@ -5,7 +5,7 @@ import error
 import utif
 import run_config
 
-from sl_util.ofad import OFADConfig, PortManager
+from sl_util.ofad import OFADConfig, OFADCtl, PortManager
 
 OFAgentConfig = OFADConfig()
 PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
@@ -80,6 +80,44 @@ CONFIG_PORTCHANNEL_COMMAND_DESCRIPTION = {
             'doc'               : 'port-channel|+',
             'optional'          : True,
             'optional-for-no'   : True,
+        },
+    ),
+}
+
+def show_port_channel(data):
+    portManager = PortManager(OFAgentConfig.port_list)
+
+    portId = data["port-channel-id"]
+    if portId < LAG_MIN_NUM or portId > LAG_MAX_NUM:
+        raise error.ActionError("Port channel ID must be from %d to %d" % \
+                                (LAG_MIN_NUM, LAG_MAX_NUM))
+
+    lagName = PortManager.getLAGName(portId)
+    if lagName not in portManager.getExistingPorts():
+        raise error.ActionError("%s is not an existing interface" % lagName)
+
+    OFADCtl.run("port %s" % lagName)
+
+command.add_action('implement-show-port-channel', show_port_channel,
+                   {'kwargs': {'data' : '$data',}})
+
+SHOW_PORTCHANNEL_COMMAND_DESCRIPTION = {
+    'name'          : 'show',
+    'mode'          : 'login',
+    'action'        : 'implement-show-port-channel',
+    'doc'           : 'port-channel|show',
+    'doc-example'   : 'port-channel|show-example',
+    'no-supported'  : False,
+    'args'          : (
+        {
+            'token'         : 'port-channel',
+            'short-help'    : 'Show Port Channel statistics',
+        },
+        {
+            'field'         : 'port-channel-id',
+            'type'          : 'integer',
+            'syntax-help'   : 'Port channel ID (between %d and %d)' % \
+                              (LAG_MIN_NUM, LAG_MAX_NUM),
         },
     ),
 }
