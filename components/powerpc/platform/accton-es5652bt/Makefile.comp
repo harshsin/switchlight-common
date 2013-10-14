@@ -1,0 +1,28 @@
+# -*- Makefile -*-
+################################################################################
+#
+# Accton ES5652BT
+#
+###############################################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not set)
+else
+include $(SWITCHLIGHT)/make/config.mk
+endif
+
+KERNEL.BIN.GZ := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx:powerpc --find-file kernel-85xx.bin.gz)
+INITRD := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
+DTB := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx-dtbs:powerpc --find-file es5652bt1-flf-zz.dtb)
+PLATFORM_NAME := accton-es5652bt
+
+# no loader size indicate, loader and jffs2 are not contiguous
+FLASHFS_SIZE_KB := 32768
+FLASH_ERASEBLOCK_KB := 128
+SWI_URL := flash2:switchlight-powerpc.swi
+
+include $(SWITCHLIGHT)/make/loader-ppc.mk
+
+.PHONY: deb
+
+deb:
+	$(MAKE) -C deb 
