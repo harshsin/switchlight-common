@@ -79,8 +79,6 @@ case "${platform}" in
         loaderaddr=0xee000000
         jffs2dev=/dev/mtd4
         jffs2image=switchlight.quanta-ly2.jffs2
-        jffs2dev=
-        jffs2image=
         swi=switchlight-powerpc.swi
         flash2dev=/dev/mmcblk0
         flash2fsdev=/dev/mmcblk0p1
@@ -161,9 +159,10 @@ say "Installing Switch Light loader (takes several minutes)"
 
 flashcp -v /tmp/.installer/${flashimage} ${flashdev}
 
-if [ test "$jffs2dev" ]; then
+if [ "$jffs2dev" ]; then
     if [ -e "$jffs2dev" ]; then
-        if [ -d "/tmp/.installer/$jffsimage" ]; then
+        say "Installing persistent /mnt/flash (takes several minutes)"
+        if [ -d "/tmp/.installer/$jffs2image" ]; then
             flash_erase -j ${jffs2dev} 0 0
             mkdir /tmp/.installer/mnt
             mount -t jffs2 ${jffs2dev} /tmp/.installer/mnt
