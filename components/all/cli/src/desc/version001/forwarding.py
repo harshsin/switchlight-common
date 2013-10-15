@@ -4,7 +4,7 @@ import command
 import run_config
 import error
 
-from sl_util.ofad import OFADConfig, OFADCtl, ForwardingConfig
+from sl_util.ofad import OFADConfig, ForwardingConfig
 
 OFAgentConfig = OFADConfig()
 
