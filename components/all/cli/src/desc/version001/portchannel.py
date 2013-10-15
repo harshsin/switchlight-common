@@ -18,9 +18,6 @@ def config_port_channel(no_command, data):
     portManager = PortManager(OFAgentConfig.port_list)
 
     portId = data["port-channel-id"]
-    if portId < LAG_MIN_NUM or portId > LAG_MAX_NUM:
-        raise error.ActionError("Port channel ID must be from %d to %d" % \
-                                (LAG_MIN_NUM, LAG_MAX_NUM))
 
     componentPorts = None
     if "interface-list" in data:
@@ -56,9 +53,9 @@ CONFIG_PORTCHANNEL_COMMAND_DESCRIPTION = {
     'args'          : (
         {
             'field'             : 'port-channel-id',
-            'type'              : 'integer',
-            'syntax-help'       : 'Port channel ID (between %d and %d)' % \
-                                  (LAG_MIN_NUM, LAG_MAX_NUM),
+            'base-type'         : 'integer',
+            'range'             : (LAG_MIN_NUM, LAG_MAX_NUM),
+            'syntax-help'       : 'Port channel ID',
         },
         {
             'field'             : 'interface-list',
@@ -88,9 +85,6 @@ def show_port_channel(data):
     portManager = PortManager(OFAgentConfig.port_list)
 
     portId = data["port-channel-id"]
-    if portId < LAG_MIN_NUM or portId > LAG_MAX_NUM:
-        raise error.ActionError("Port channel ID must be from %d to %d" % \
-                                (LAG_MIN_NUM, LAG_MAX_NUM))
 
     lagName = PortManager.getLAGName(portId)
     if lagName not in portManager.getExistingPorts():
@@ -115,9 +109,9 @@ SHOW_PORTCHANNEL_COMMAND_DESCRIPTION = {
         },
         {
             'field'         : 'port-channel-id',
-            'type'          : 'integer',
-            'syntax-help'   : 'Port channel ID (between %d and %d)' % \
-                              (LAG_MIN_NUM, LAG_MAX_NUM),
+            'base-type'     : 'integer',
+            'range'         : (LAG_MIN_NUM, LAG_MAX_NUM),
+            'syntax-help'   : 'Port channel ID',
         },
     ),
 }
