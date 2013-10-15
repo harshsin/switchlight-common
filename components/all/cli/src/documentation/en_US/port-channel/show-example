@@ -1,0 +1,12 @@
+show port-channel 1
+In first column, * means port up; X means disabled
+Flags:
+    TxE, RxE: Tx/Rx errors seen.
+    No-PI: no packet in.  No-Fwd: No forwarding
+
+           Name      TX Pkts     TX Bytes      RX Pkts     RX Bytes      Flags
+ *61       lag1            0            0            0            0
+
+LAG component data
+ *         eth1            0            0            0            0
+           eth5            0            0            0            0
