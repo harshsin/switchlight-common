@@ -516,7 +516,7 @@ class OFADConfig(object):
         if "forwarding" in self._data:
             return self._data["forwarding"]
         else:
-            return False
+            return {}
 
     @forwarding.setter
     def forwarding (self, val):
