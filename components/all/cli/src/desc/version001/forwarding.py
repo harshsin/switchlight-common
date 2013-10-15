@@ -41,31 +41,36 @@ CONFIG_FORWARDING_COMMAND_DESCRIPTION = {
     'short-help'    : 'Configure Forwarding Settings',
     'action'        : 'implement-config-forwarding',
     'no-action'     : 'implement-config-forwarding',
+    'doc'           : 'forwarding|forwarding',
     'args'          : (
         {
             'choices'   : (
                 (
                     {
-                        'token'     : 'crc',
+                        'token'         : 'crc',
+                        'short-help'    : 'Configure CRC error-checking',
                     },
                     {
-                        'choices'   : (
+                        'choices'       : (
                             {
                                 'token' : 'disable',
                                 'data'  : {'type' : 'crc'},
+                                'doc'   : 'forwarding|crc-disable',
                             },
                         ),
                     },
                 ),
                 (
                     {
-                        'token'     : 'pimu',
+                        'token'         : 'pimu',
+                        'short-help'    : 'Configure Packet-In Management Unit',
                     },
                     {
-                        'choices'   : (
+                        'choices'       : (
                             {
                                 'token' : 'disable',
                                 'data'  : {'type' : 'pimu'},
+                                'doc'   : 'forwarding|pimu-disable',
                             },
                         ),
                     },
@@ -80,6 +85,7 @@ SHOW_FORWARDING_COMMAND_DESCRIPTION = {
     'mode'          : 'login',
     'short-help'    : 'Show Forwarding Configuration Status',
     'no-supported'  : False,
+    'doc'           : 'forwarding|show',
     'args'          : (
         {
             'token'     : 'forwarding',
@@ -88,28 +94,32 @@ SHOW_FORWARDING_COMMAND_DESCRIPTION = {
             'choices'   : (
                 (
                     {
-                        'token'     : 'crc',
+                        'token'         : 'crc',
+                        'short-help'    : 'Show CRC configuration status',
                     },
                     {
-                        'choices'   : (
+                        'choices'       : (
                             {
-                                'token'     : 'status',
-                                'action'    : 'ofad-ctl-command',
-                                'command'   : 'crc status',
+                                'token'         : 'status',
+                                'action'        : 'ofad-ctl-command',
+                                'command'       : 'crc status',
+                                'doc'           : 'forwarding|show-crc-status',
                             },
                         ),
                     },
                 ),
                 (
                     {
-                        'token'     : 'pimu',
+                        'token'         : 'pimu',
+                        'short-help'    : 'Show Packet-In Management Unit configuration status',
                     },
                     {
-                        'choices'   : (
+                        'choices'       : (
                             {
-                                'token'     : 'status',
-                                'action'    : 'ofad-ctl-command',
-                                'command'   : 'pimu status',
+                                'token'         : 'status',
+                                'action'        : 'ofad-ctl-command',
+                                'command'       : 'pimu status',
+                                'doc'           : 'forwarding|show-pimu-status',
                             },
                         ),
                     },
@@ -141,6 +151,7 @@ forwarding_running_config_tuple = (
             'type'          : 'enum',
             'values'        : 'forwarding',
             'short-help'    : 'Configuration for forwarding',
+            'doc'           : 'running-config|show-forwarding',
         },
     ),
 )
