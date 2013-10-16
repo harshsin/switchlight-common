@@ -333,6 +333,50 @@ class PortManager(object):
                 port_list[k] = port.toJSON()
         return port_list
 
+class ForwardingConfig(object):
+    """
+    Forwarding config class.
+
+    Each object var that starts with "_" is processed by toJSON().
+    """
+    def __init__ (self, forwarding_dict):
+        self._crc = forwarding_dict.get("crc", None)
+        self._pimu = forwarding_dict.get("pimu", None)
+
+    def disableCRC (self):
+        self._crc = False
+
+    def enableCRC (self):
+        # "True" or "None would both work
+        # Setting to "None" would result in a cleaner ofad.conf
+        self._crc = None
+
+    def isCRCDisabled (self):
+        if self._crc is False or self._crc is None:
+            return True
+        return False
+
+    def disablePIMU (self):
+        self._pimu = False
+
+    def enablePIMU (self):
+        # "True" or "None would both work
+        # Setting to "None" would result in a cleaner ofad.conf
+        self._pimu = None
+
+    def isPIMUDisabled (self):
+        if self._pimu is False or self._pimu is None:
+            return True
+        return False
+
+    def toJSON (self):
+        d = {}
+        for k, v in self.__dict__.iteritems():
+            if not k.startswith("_") or v is None:
+                continue
+            d[k[1:]] = v
+        return d
+
 class ConfigChangedError(Exception):
     def __init__ (self, warn_count):
         self.woc = warn_count
@@ -466,6 +510,17 @@ class OFADConfig(object):
     @full_match_table.setter
     def full_match_table (self, val):
         self._data["full_match_table"] = val
+
+    @property
+    def forwarding (self):
+        if "forwarding" in self._data:
+            return self._data["forwarding"]
+        else:
+            return {}
+
+    @forwarding.setter
+    def forwarding (self, val):
+        self._data["forwarding"] = val
 
     @property
     def needs_update (self):

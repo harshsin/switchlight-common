@@ -1,0 +1,3 @@
+Disable Packet-In rate limiter.
+Identical packets received on the same port will not be dropped even if rate
+limit is exceeded.
