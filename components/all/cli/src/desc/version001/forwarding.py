@@ -10,6 +10,10 @@ OFAgentConfig = OFADConfig()
 
 def config_forwarding(no_command, data):
     fwdCfg = ForwardingConfig(OFAgentConfig.forwarding)
+
+    # NOTE: this command is negated:
+    #       when command is run w/o "no", it's a disable op.
+    #       when command is run w/ "no", it's an enable op.
     disabled = not no_command
 
     if data['type'] == 'crc':
@@ -51,13 +55,9 @@ CONFIG_FORWARDING_COMMAND_DESCRIPTION = {
                         'short-help'    : 'Configure CRC error-checking',
                     },
                     {
-                        'choices'       : (
-                            {
-                                'token' : 'disable',
-                                'data'  : {'type' : 'crc'},
-                                'doc'   : 'forwarding|crc-disable',
-                            },
-                        ),
+                        'token'         : 'disable',
+                        'data'          : {'type' : 'crc'},
+                        'doc'           : 'forwarding|crc-disable',
                     },
                 ),
                 (
@@ -66,13 +66,9 @@ CONFIG_FORWARDING_COMMAND_DESCRIPTION = {
                         'short-help'    : 'Configure Packet-In Management Unit',
                     },
                     {
-                        'choices'       : (
-                            {
-                                'token' : 'disable',
-                                'data'  : {'type' : 'pimu'},
-                                'doc'   : 'forwarding|pimu-disable',
-                            },
-                        ),
+                        'token'         : 'disable',
+                        'data'          : {'type' : 'pimu'},
+                        'doc'           : 'forwarding|pimu-disable',
                     },
                 ),
             ),
@@ -98,14 +94,10 @@ SHOW_FORWARDING_COMMAND_DESCRIPTION = {
                         'short-help'    : 'Show CRC configuration status',
                     },
                     {
-                        'choices'       : (
-                            {
-                                'token'         : 'status',
-                                'action'        : 'ofad-ctl-command',
-                                'command'       : 'crc status',
-                                'doc'           : 'forwarding|show-crc-status',
-                            },
-                        ),
+                        'token'         : 'status',
+                        'action'        : 'ofad-ctl-command',
+                        'command'       : 'crc status',
+                        'doc'           : 'forwarding|show-crc-status',
                     },
                 ),
                 (
@@ -114,14 +106,10 @@ SHOW_FORWARDING_COMMAND_DESCRIPTION = {
                         'short-help'    : 'Show Packet-In Management Unit configuration status',
                     },
                     {
-                        'choices'       : (
-                            {
-                                'token'         : 'status',
-                                'action'        : 'ofad-ctl-command',
-                                'command'       : 'pimu status',
-                                'doc'           : 'forwarding|show-pimu-status',
-                            },
-                        ),
+                        'token'         : 'status',
+                        'action'        : 'ofad-ctl-command',
+                        'command'       : 'pimu status',
+                        'doc'           : 'forwarding|show-pimu-status',
                     },
                 ),
             ),
