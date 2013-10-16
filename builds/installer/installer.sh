@@ -35,6 +35,9 @@ else
         quanta-ly2)
             platform=powerpc-quanta_ly2-r0
             ;;
+        quanta-ly2r)
+            platform=powerpc-quanta_ly2r-r0
+            ;;
         quanta-ly5)
             platform=powerpc-quanta_ly5-r0
             ;;
@@ -79,6 +82,17 @@ case "${platform}" in
         loaderaddr=0xee000000
         jffs2dev=/dev/mtd4
         jffs2image=switchlight.quanta-ly2.jffs2
+        swi=switchlight-powerpc.swi
+        flash2dev=/dev/mmcblk0
+        flash2fsdev=/dev/mmcblk0p1
+        ;;
+    powerpc-quanta_ly2r-r0)
+        flashimage=switchlight.quanta-ly2r.loader
+        flashdev=/dev/mtd0
+        loaderdev=mtd0
+        loaderaddr=0xee000000
+        jffs2dev=/dev/mtd4
+        jffs2image=switchlight.quanta-ly2r.jffs2
         swi=switchlight-powerpc.swi
         flash2dev=/dev/mmcblk0
         flash2fsdev=/dev/mmcblk0p1
