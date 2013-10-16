@@ -347,12 +347,14 @@ class ForwardingConfig(object):
         self._crc = False
 
     def enableCRC (self):
-        # "True" or "None would both work
+        # "True" or "None" would both work
         # Setting to "None" would result in a cleaner ofad.conf
         self._crc = None
 
     def isCRCDisabled (self):
-        if self._crc is False or self._crc is None:
+        # "True" or "None": enabled
+        # "False": disabled
+        if self._crc is False:
             return True
         return False
 
@@ -360,12 +362,14 @@ class ForwardingConfig(object):
         self._pimu = False
 
     def enablePIMU (self):
-        # "True" or "None would both work
+        # "True" or "None" would both work
         # Setting to "None" would result in a cleaner ofad.conf
         self._pimu = None
 
     def isPIMUDisabled (self):
-        if self._pimu is False or self._pimu is None:
+        # "True" or "None": enabled
+        # "False": disabled
+        if self._pimu is False:
             return True
         return False
 
