@@ -16,6 +16,7 @@ import os
 import sys
 import subprocess
 import shutil
+import logging
 
 # The first argument is the set of required modules
 required_submodules = sys.argv[1].split(':')
@@ -26,18 +27,44 @@ local_submodules = sys.argv[2].split(':')
 # The third argument is the switchlight root
 switchlight_root = sys.argv[3]
 
+logging.basicConfig()
+logger = logging.getLogger("submodules")
+try:
+    V = int(os.environ.get('V', '0'))
+except ValueError:
+    V = 0
+if V:
+    logger.setLevel(logging.DEBUG)
+else:
+    logger.setLevel(logging.INFO)
+
+def check_call(cmd, *args, **kwargs):
+    if type(cmd) == str:
+        logger.debug("+ " + cmd)
+    else:
+        logger.debug("+ " + " ".join(cmd))
+    return subprocess.check_call(cmd, *args, **kwargs)
+
+def check_output(cmd, *args, **kwargs):
+    if type(cmd) == str:
+        logger.debug("+ " + cmd)
+    else:
+        logger.debug("+ " + " ".join(cmd))
+    return subprocess.check_output(cmd, *args, **kwargs)
 
 def submodule_update(module, depth=None):
 
     if depth and module != 'loader':
-        print "shallow clone depth=%d" % int(depth)
+        logger.debug("shallow clone depth=%d", int(depth))
         # Shallow clone first
-        url = subprocess.check_output(['git', 'config', '-f', '.gitmodules', '--get',
-                                       'submodule.submodules/%s.url' % module])
+        url = check_output(['git', 'config', '-f', '.gitmodules', '--get',
+                            'submodule.submodules/%s.url' % module])
         url = url.rstrip('\n')
         args = [ 'git', 'clone', '--depth', depth, url, 'submodules/%s' % module ]
-        if subprocess.check_call(args) != 0:
-            print "git error cloning module '%s'" % module
+        try:
+            check_call(args)
+        except subprocess.CalledProcessError:
+            logger.error("git error cloning module '%s'", module)
             sys.exit(1)
 
     # full or partial update
@@ -45,8 +72,11 @@ def submodule_update(module, depth=None):
     if module == 'loader':
         args.append("--recursive")
     args.append('submodules/%s' % module)
-    if subprocess.check_call(args) != 0:
-        print "git error updating module '%s'. See the log in %s/submodules/%s.update.log" % (module, switchlight_root, module)
+    try:
+        check_call(args)
+    except subprocess.CalledProcessError:
+        logger.error("git error updating module '%s'. See the log in %s/submodules/%s.update.log",
+                     module, switchlight_root, module)
         sys.exit(1)
 
 
@@ -54,6 +84,7 @@ def submodule_update(module, depth=None):
 #
 # Get the current submodule status
 #
+logger.debug("+ cd %s", switchlight_root)
 os.chdir(switchlight_root)
 
 #
@@ -63,13 +94,13 @@ os.chdir(switchlight_root)
 #
 git_submodule_status = {}
 try:
-    for entry in subprocess.check_output(['git', 'submodule', 'status']).split("\n"):
+    for entry in check_output(['git', 'submodule', 'status']).split("\n"):
         data = entry.split()
         if len(data) >= 2:
             git_submodule_status[data[1].replace("submodules/", "")] = data[0]
-except Exception as e:
-    print repr(e)
-    raise
+except subprocess.CalledProcessError:
+    logger.error("git command(s) failed")
+    sys.exit(1)
 
 
 if '__all__' in required_submodules:
@@ -84,11 +115,7 @@ for module in required_submodules:
             # This submodule has not yet been updated
             if os.path.exists("submodules/%s/modules" % module) or os.path.exists("submodules/%s/Modules" % module):
                 # Shudder. The makefiles touched the module manifest as a convenience. That change should be temporary, and so should this one:
+                logger.debug("+ /bin/rm -r submodules/%s", module)
                 shutil.rmtree("submodules/%s" % module)
 
             submodule_update(module, os.getenv("SUBMODULE_DEPTH"))
-
-
-
-
-
