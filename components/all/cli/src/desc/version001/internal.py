@@ -126,7 +126,9 @@ INTERNAL_BIGWIKI_COMMAND_DESCRIPTION = {
         'type'     : 'string',
     }
 
-}# FORMATS
+}
+
+# FORMATS
 #
 
 import fmtcnv
