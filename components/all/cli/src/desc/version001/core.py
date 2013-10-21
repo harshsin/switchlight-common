@@ -129,6 +129,30 @@ SHOW_USERS_COMMAND_DESCRIPTION = {
 }
 
 
+def show_log(data):
+    try:
+        shell.call('cat /var/log/syslog', show_output=True)
+    except:
+        pass
+
+command.add_action('implement-show-log', show_log,
+                    {'kwargs': {'data'      : '$data',}})
+
+SHOW_USERS_COMMAND_DESCRIPTION = {
+    'name'         : 'show',
+    'mode'         : 'login',
+    'action'       : 'implement-show-log',
+    'no-supported' : False,
+    'args'         : (
+        {
+            'token'       : 'log',
+            'short-help'  : 'Show the log file',
+            'doc'         : 'core|show-log',
+        },
+    )
+}
+
+
 def ping(data):
     if 'count' in data:
         count = data['count']
