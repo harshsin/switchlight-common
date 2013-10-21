@@ -85,8 +85,48 @@ INTERNAL_QUALIFY_COMMAND_DESCRIPTION = {
 }
 
 
-#
-# FORMATS
+def bigdoc_action(data):
+    words = []
+    if 'command' in data:
+        words.append(data['command'])
+    return command.get_bigdoc(words)
+
+command.add_action('bigdoc-action',  bigdoc_action,
+                   {'kwargs' : { 'data' : '$data' }, } )
+
+INTERNAL_BIGDOC_COMMAND_DESCRIPTION = {
+    'name'         : 'bigdoc',
+    'mode'         : 'config-internal',
+    'no-supported' : False,
+    'action'       : 'bigdoc-action',
+    'args'         : {
+        'optional' : True,
+        'field'    : 'command',
+        'type'     : 'string',
+    }
+}
+
+def bigwiki_action(data):
+    words = []
+    if 'command' in data:
+        words.append(data['command'])
+    return command.get_bigwiki(words)
+
+command.add_action('bigwiki-action',  bigwiki_action,
+                   {'kwargs' : { 'data' : '$data' }, } )
+
+INTERNAL_BIGWIKI_COMMAND_DESCRIPTION = {
+    'name'         : 'bigwiki',
+    'mode'         : 'config-internal',
+    'no-supported' : False,
+    'action'       : 'bigwiki-action',
+    'args'         : {
+        'optional' : True,
+        'field'    : 'command',
+        'type'     : 'string',
+    }
+
+}# FORMATS
 #
 
 import fmtcnv

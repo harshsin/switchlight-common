@@ -2583,6 +2583,150 @@ class CommandDocumentor(CommandHandler):
 
         return '\n'.join(help_lines)
 
+    # FIXME: this function is ported from bigcli, should revise
+    def handle_command_results_wiki(self):
+        def handle_plaintext_wiki(inputstr):
+            inputstr = inputstr.replace("{","\{")
+            inputstr = inputstr.replace("}","\}")
+            inputstr = inputstr.replace("[","\[")
+            inputstr = inputstr.replace("]","\]")
+            inputstr = inputstr.replace("\\\\","<br>")
+            inputstr = inputstr.replace("\n\n", "\\@")
+            inputstr = inputstr.replace("\n"," ")
+            inputstr = inputstr.replace("\\@", "\n\n")
+            inputstr = inputstr.replace("<br>", "\n")
+            return inputstr
+
+        if len(self.commands) == 0:
+            if self.words:
+                return 'No applicable command: %s' % ' '.join(self.words)
+            else:
+                return '\nNo command for  ' + self.header
+        help_lines = []
+        help_lines.append('')
+        last_desc_name = None
+        last_syntax_name = None
+        # Keep track of paragraphs displayed to prevent repeated
+        # display of the same doc tags.
+        shown_items = []
+        for command in self.commands:
+            doc_tag = command.get('doc')
+            name = _get_command_title(command)
+            short_help = command.get('short-help')
+            if short_help:
+                if self.header:
+                    help_lines.append('\nh2. %s Command' % name.capitalize())
+                help_lines.append('\nh4. %s' % short_help.capitalize())
+                cmdmode = command.get('mode')
+                if isinstance(cmdmode,list):
+                    cmdmodestr = ''
+                    for cmdmodemem in cmdmode:
+                        if cmdmodemem[-1] == '*':
+                            cmdmodemem = cmdmodemem[:-1]
+                        cmdmodestr = cmdmodestr + ' ' + cmdmodemem
+                else:
+                    cmdmodestr = cmdmode
+                    if cmdmodestr[-1] == '*':
+                        cmdmodestr = cmdmodestr[:-1]
+                help_lines.append('\n*Command Mode:*          %s mode' % cmdmodestr)
+                last_syntax_name = None # display syntax header
+
+            help_strings = []
+            command_help_string = _get_command_syntax_help_string(command, self.prefix)
+            help_strings.append(command_help_string)
+            for h in sorted(help_strings):
+                if isinstance(h,list):
+                    h = handle_plaintext_wiki(h[0])
+                else:
+                    h = handle_plaintext_wiki(h)
+                if last_syntax_name != name:
+                    help_lines.append('\n*Command Syntax:*        {{%s}}' % h)
+                last_syntax_name = name
+                last_desc_name = None # print description header
+
+            if doc_tag:
+                text = doc.get_text(self, doc_tag)
+                if text != '' and doc_tag not in shown_items:
+                    shown_items.append(doc_tag)
+                    if last_desc_name != name:
+                        help_lines.append('\n*Command Description:*')
+                        last_desc_name = name
+                    text = handle_plaintext_wiki(text)
+                    help_lines.append(text)
+                    last_syntax_name = None # print 'Syntax' header
+        if len(self.commands) == 1:
+            short_help = None
+            if self.is_no_command:
+                #
+                # Cobble together a help string for a no command, build
+                # a default value for subcommand's, possibly other command
+                # descriptions
+                #
+                short_help = self.commands[0].get('no-help')
+                if not short_help:
+                    command_type = self.commands[0].get('command-type')
+                    action = self.commands[0].get('action')
+                    if ((command_type and command_type == 'config-submode') or
+                            (action and action == 'push-mode-stack')):
+                        mode_name = self.commands[0].get('name')
+                        short_help = 'Remove %s configuration' % mode_name
+            else:
+                short_help = self.commands[0].get('short-help')
+            for last_doc in self.docs_stack:
+                if command['self'] in last_doc:
+                    (keyword, last_doc) = last_doc[command['self']]
+                    text = doc.get_text(self, last_doc)
+                    if type(keyword) == tuple:
+                        keyword = keyword[0]
+                    if bigsh.description:
+                        help_lines.append("\t%s: %s %s" %
+                                          (command['self'], keyword, last_doc))
+                    if text != '' and last_doc not in shown_items:
+                        shown_items.append(last_doc)
+                        help_lines.append('\nKeyword %s Description:' %
+                                          keyword.capitalize())
+                        text = handle_plaintext_wiki(text)
+                        help_lines.append(text)
+
+            if len(self.docs) > 0:
+                help_lines.append('\n*Next Keyword Descriptions:*')
+                for (doc_name, doc_tags) in self.docs.items():
+                    if len(doc_tags) == 1 and doc_tags[0] == None:
+                        if bigsh.description:
+                            help_lines.append("\t%s: %s missing doc attribute" %
+                                              (command['self'], doc_name))
+                        help_lines.append('*  %s:' % doc_name)
+                    elif len(doc_tags) == 1 and doc_tags[0].split('|')[0] == 'types' and \
+                      not doc_name.startswith(doc_tags[0].split('|')[1]):
+                        type_name = doc_tags[0].split('|')[1].capitalize()
+                        help_lines.append('  %s: type %s' %
+                                          (doc_name, type_name))
+                    else:
+                        help_lines.append('*  %s:' % doc_name)
+                    for doc_tag in doc_tags:
+                        if bigsh.description:
+                            help_lines.append("\t%s: %s %s" %
+                                              (command['self'], doc_name, doc_tag))
+                        text = doc.get_text(self, doc_tag)
+                        if text == '':
+                            help_lines.append('')
+                        if text != '' and doc_tag not in shown_items:
+                            if len(doc_tags) > 1 and doc_tag.split('|')[0] == 'types':
+                                type_name = doc_tag.split('|')[1].capitalize()
+                                help_lines.append('\tType: %s' % type_name)
+                            shown_items.append(doc_tag)
+                            text = handle_plaintext_wiki(text)
+                            help_lines.append(text)
+            doc_example = command.get('doc-example')
+            if doc_example:
+                text = doc.get_text(self, doc_example)
+                if text != '':
+                    help_lines.append('\n*Command Examples:*')
+                    help_lines.append('{noformat}')
+                    help_lines.append(text)
+                    help_lines.append('{noformat}')
+        return '\n'.join(help_lines)
+
 
 def get_command_doc_tag(word):
     handler = CommandHandler()
@@ -2669,6 +2813,93 @@ def get_bigdoc(words):
             commands_for_mode(mode)
 
         return ''.join(bigdoc)
+
+# FIXME: this function is ported from bigcli and minor cleanup, should revise.
+def get_bigwiki(words):
+    def wiki_special_character_handling(inputstr):
+        inputstr = inputstr.replace('{','\{')
+        inputstr = inputstr.replace('}','\}')
+        inputstr = inputstr.replace('[','\[')
+        inputstr = inputstr.replace(']','\]')
+        return inputstr
+
+    bigwikifile=open('bigwiki.file', 'w')
+    if not bigwikifile:
+        print 'File creation failed \n'
+        return
+    bigwikifile.write('{toc:printable=true|style=disc|maxLevel=3|minLevel=1|class=bigpink|exclude=[1//2]|type=list|include=.*}')
+    str1='\nh1. CLI Commands'
+    bigwikifile.write(str1)
+
+    # generate all commands in login/enable mode except show and clear cmds
+    mode=['login','enable']
+    category=['show', 'clear']
+    for c in command_registry:
+        name = c['name']
+        if name not in category and c['mode'] in mode:
+            handler = CommandDocumentor(header = 'login')
+            handler.add_command(c)
+            str1 = handler.handle_command_results_wiki()
+            str1 = str1 + '\n'
+            bigwikifile.write(str1)
+            handler = CommandDocumentor(header = None)
+
+    # generate all configuration commands: exclude internal commands
+    mode=['config', 'config*']
+    category=['_internal']
+    str1='\nh2. Configuration Commands'
+    bigwikifile.write(str1)
+    for c in command_registry:
+        name = c['name']
+        if name not in category and c['mode'] in mode:
+            str1="%s" % name
+            str1=wiki_special_character_handling(str1)
+            str1="\nh3. %s Commands " % str1.capitalize()
+            bigwikifile.write(str1)
+            handler = CommandDocumentor(header = None)
+            handler.add_command(c)
+            str1 = handler.handle_command_results_wiki()
+            str1= str1 + '\n'
+            bigwikifile.write(str1)
+
+    # generate all show commands
+    str1='\nh2. Show Commands'
+    bigwikifile.write(str1)
+    mode=['login','enable']
+    for c in command_registry:
+        if c['name'] == 'show' and c['mode'] in mode:
+            # FIXME: take the first element in 'arg' tuple
+            #        assume element has the 'token' key
+            str1 = "%s" % c['args'][0]['token']
+            str1 = wiki_special_character_handling(str1)
+            str1 = "\nh3. Show %s Commands " % str1.capitalize()
+            bigwikifile.write(str1)
+            handler = CommandDocumentor(header = None)
+            handler.add_command(c)
+            str1 = handler.handle_command_results_wiki()
+            str1 = str1 + '\n'
+            bigwikifile.write(str1)
+
+    # generate all clear commands
+    str1='\nh2. Clear Commands'
+    bigwikifile.write(str1)
+    mode=['login','enable']
+    for c in command_registry:
+        if c['name'] == 'clear' and c['mode'] in mode:
+            # FIXME: take the first element in 'arg' tuple
+            #        assume element has the 'token' key
+            str1 = "%s" % c['args'][0]['token']
+            str1 = wiki_special_character_handling(str1)
+            str1 = "\nh3. Clear %s Commands " % str1.capitalize()
+            bigwikifile.write(str1)
+            handler = CommandDocumentor(header = None)
+            handler.add_command(c)
+            str1 = handler.handle_command_results_wiki()
+            str1 = str1 + '\n'
+            bigwikifile.write(str1)
+
+    bigwikifile.close()
+    print 'CLI reference wiki markup file is generated successfully at: bigcli/bikwiki.file.\n '
 
 
 #
