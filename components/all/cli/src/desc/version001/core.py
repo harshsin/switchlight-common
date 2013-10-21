@@ -280,10 +280,12 @@ tech_support_script = [
     'date',
     'cat /etc/sl_version',
     'cat /mnt/flash/boot-config',
+    'cat /mnt/flash/startup-config',
     'cat /var/log/dmesg',
     'cat /etc/network/interfaces',
     'ifconfig ma1',
     'cat /etc/resolv.conf',
+    'cat /etc/ntp.conf',
     'uptime',
     'cat /proc/meminfo',
     'lsmod',
@@ -301,7 +303,8 @@ tech_support_script = [
     'ofad-ctl core flowtable',
     'ofad-ctl core dump-flows',
     'ofad-ctl interface show',
-    'ofad-ctl modules brcmdriver show-snmp'
+    'ofad-ctl port',
+    'ofad-ctl show-snmp',
 ]
 
 def save_tech_support(data):
