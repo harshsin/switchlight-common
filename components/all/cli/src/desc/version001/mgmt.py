@@ -281,8 +281,8 @@ def config_mgmt_intf(no_command, data):
                     intf.dhcp_sticky = True
             elif data.has_key("ip-address"):
                 intf.operstate = Interface.UP
-                addrs.add(data["ip-address"])
-                intf.v4addrs = addrs
+                # allow only one IPv4 address for the interface
+                intf.v4addrs = [ data["ip-address"] ]
                 return
     except UnknownInterfaceError, e:
         raise error.ActionError('Bad interface %s' % data['ifname'])
