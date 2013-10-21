@@ -24,7 +24,7 @@
 	url = git@github.com:floodlight/infra
 [submodule "submodules/indigo"]
 	path = submodules/indigo
-	url = git@github.com:floodlight/xindigo
+	url = git@github.com:floodlight/indigo
 [submodule "submodules/bigcode-internal"]
 	path = submodules/bigcode-internal
 	url = git@github.com:bigswitch/bigcode-internal
