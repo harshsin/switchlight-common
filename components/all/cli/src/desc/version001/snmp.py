@@ -26,6 +26,8 @@ TEMP_SENSORS        = 'temp_sensors'
 CHASSIS_FAN_SENSORS = 'chassis_fan_sensors'
 POWER_FAN_SENSORS    = 'power_fan_sensors'
 POWER_SENSORS        = 'power_sensors'
+CPU_LOAD             = 'CPU_load'
+MEM_TOTAL_FREE       = 'mem_total_free'
 
 class Snmp(Service):
     SVC_NAME = "snmpd"
@@ -200,6 +202,12 @@ OID_Table = {
         },
         POWER_SENSORS : {
             'power' : '.1.3.6.1.4.1.2021.13.16.5.1.3.8'
+        },
+        CPU_LOAD : {
+            'cpuload' : '.1.3.6.1.4.1.2021.10.1.5.1'
+        },
+        MEM_TOTAL_FREE : {
+            'memtotalfree' : '.1.3.6.1.4.1.2021.4.11.0'
         }
     },
 
@@ -225,6 +233,12 @@ OID_Table = {
         },
         POWER_SENSORS : {
             'power' : '.1.3.6.1.4.1.2021.13.16.5.1.3.1'
+        },
+        CPU_LOAD : {
+            'cpuload' : '.1.3.6.1.4.1.2021.10.1.5.1'
+        },
+        MEM_TOTAL_FREE : {
+            'memtotalfree' : '.1.3.6.1.4.1.2021.4.11.0'
         }
     },
 
@@ -250,6 +264,12 @@ OID_Table = {
         },
         POWER_SENSORS : {
             'power' : '.1.3.6.1.4.1.2021.13.16.5.1.3.1'
+        },
+        CPU_LOAD : {
+            'cpuload' : '.1.3.6.1.4.1.2021.10.1.5.1'
+        },
+        MEM_TOTAL_FREE : {
+            'memtotalfree' : '.1.3.6.1.4.1.2021.4.11.0'
         }
     },
 }
@@ -258,14 +278,18 @@ Mon_Ops = {
     TEMP_SENSORS        : '>',
     CHASSIS_FAN_SENSORS : '<',
     POWER_FAN_SENSORS   : '<',
-    POWER_SENSORS       : '>'
+    POWER_SENSORS       : '>',
+    CPU_LOAD            : '>',
+    MEM_TOTAL_FREE      : '<'
 }
 
 Show_Trap_Type_Conv = {
     'ctemp1' : TEMP_SENSORS,
     'cfan1'  : CHASSIS_FAN_SENSORS,
     'pwr-fan': POWER_FAN_SENSORS,
-    'power'  : POWER_SENSORS
+    'power'  : POWER_SENSORS,
+    'cpuload': CPU_LOAD,
+    'memtotalfree' : MEM_TOTAL_FREE
 }
 
 def trap_set(no_cmd, trap, threshold):
@@ -453,7 +477,8 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         'short-help'      : 'Trap type',
                         'type'            : 'enum',
                         'values'          : (TEMP_SENSORS, CHASSIS_FAN_SENSORS,
-                                             POWER_FAN_SENSORS, POWER_SENSORS),
+                                             POWER_FAN_SENSORS, POWER_SENSORS,
+                                             CPU_LOAD, MEM_TOTAL_FREE),
                         'doc'             : 'snmp|+',
                     },
                     {
