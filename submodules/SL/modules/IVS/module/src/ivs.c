@@ -175,6 +175,11 @@ ivs_create(ivs_t** rv, char** string_options, char** argv_options)
     ivs->cxn_log_ring = bigring_create(IVS_CONFIG_CXN_LOG_SIZE, bigring_aim_free_entry); 
 #endif
 
+#if IVS_CONFIG_INCLUDE_STATUS_LOG == 1
+    ivs->status_log_ring = bigring_create(IVS_CONFIG_STATUS_LOG_SIZE,
+                                          bigring_aim_free_entry);
+#endif
+
     *rv = ivs; 
     return 0; 
 }
@@ -563,6 +568,10 @@ ivs_run(ivs_t* ivs, int ms)
     }
 #endif
 
+#if IVS_CONFIG_INCLUDE_STATUS_LOG == 1
+    ivs_status_log_enable(ivs);
+#endif
+
     rv = ind_soc_select_and_run(ms);
 
 #if IVS_CONFIG_INCLUDE_WATCHDOG == 1
@@ -650,6 +659,10 @@ ivs_destroy(ivs_t* ivs)
 
 #if IVS_CONFIG_INCLUDE_CXN_LOG == 1
     bigring_destroy(ivs->cxn_log_ring);
+#endif
+
+#if IVS_CONFIG_INCLUDE_STATUS_LOG == 1
+    bigring_destroy(ivs->status_log_ring);
 #endif
 
     IVS_FREE(ivs);
@@ -919,3 +932,78 @@ ivs_cxn_state_log__(indigo_cxn_id_t              cxn_id,
 
 #endif /* IVS_CONFIG_INCLUDE_CXN_LOG */
     
+
+#if IVS_CONFIG_INCLUDE_STATUS_LOG == 1
+
+uint64_t prev_drops = 0;
+
+static void
+status_log_callback__(void* cookie)
+{
+    indigo_cxn_info_t* cxn; 
+    indigo_cxn_info_t* list = NULL; 
+    time_t now;
+    struct tm nowtm; 
+    char timestamp[64]; 
+    ivs_t* ivs = (ivs_t*)(cookie); 
+    char* msg;
+    uint32_t total_flows, flow_mods, packet_ins, packet_outs;
+    uint64_t drops;
+
+    indigo_core_stats_get(&total_flows, &flow_mods,
+                          &packet_ins, &packet_outs);
+
+    indigo_cxn_list(&list); 
+    drops = 0;
+    for (cxn = list; cxn; cxn = cxn->next) { 
+        if (! (cxn->cxn_config_params.listen &&
+               cxn->cxn_config_params.local) ) {
+            drops += cxn->cxn_status.packet_in_drop;
+        }
+    }
+    indigo_cxn_list_destroy(list); 
+
+    time(&now);
+    strftime(timestamp, sizeof(timestamp), "%T", localtime_r(&now, &nowtm));
+
+    msg = aim_fstrdup("%10s %10u %10u %10u %10u %10u", timestamp,
+                      total_flows, flow_mods, packet_ins, packet_outs, 
+                      (int) (drops - prev_drops));
+    bigring_push(ivs->status_log_ring, msg);
+}
+
+int
+ivs_status_log_enable(ivs_t* ivs)
+{
+    TRY(ind_soc_timer_event_register_with_priority(status_log_callback__,
+                                                   ivs, 
+                                                   IVS_CONFIG_STATUS_LOG_PERIOD_S*1000,
+                                                   15));
+    return 0; 
+}
+
+int 
+ivs_status_log_show(ivs_t* ivs, aim_pvs_t* pvs)
+{
+    int iter; 
+    char* s;
+    int count = 0; 
+
+    aim_printf(pvs, "%10s %10s %10s %10s %10s %10s\n", "Time",
+               "Flows", "FlowMods", "PacketIns", "PacketOuts", "Drops");
+
+    bigring_lock(ivs->status_log_ring); 
+    bigring_iter_start(ivs->status_log_ring, &iter); 
+    while( (s = bigring_iter_next(ivs->status_log_ring, &iter)) ) { 
+        aim_printf(pvs, "%s\n", s); 
+        count++; 
+    }
+    bigring_unlock(ivs->status_log_ring); 
+    if(count == 0) { 
+        aim_printf(pvs, "None.\n"); 
+    }
+    return count;
+}
+
+#endif /* IVS_CONFIG_INCLUDE_STATUS_LOG */
+

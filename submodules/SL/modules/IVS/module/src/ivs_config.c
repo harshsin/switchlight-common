@@ -153,6 +153,21 @@ ivs_config_settings_t ivs_config_settings[] =
 #else
 { IVS_CONFIG_CXN_LOG_SIZE(__ivs_config_STRINGIFY_NAME), "__undefined__" },
 #endif
+#ifdef IVS_CONFIG_INCLUDE_STATUS_LOG
+    { __ivs_config_STRINGIFY_NAME(IVS_CONFIG_INCLUDE_STATUS_LOG), __ivs_config_STRINGIFY_VALUE(IVS_CONFIG_INCLUDE_STATUS_LOG) },
+#else
+{ IVS_CONFIG_INCLUDE_STATUS_LOG(__ivs_config_STRINGIFY_NAME), "__undefined__" },
+#endif
+#ifdef IVS_CONFIG_STATUS_LOG_SIZE
+    { __ivs_config_STRINGIFY_NAME(IVS_CONFIG_STATUS_LOG_SIZE), __ivs_config_STRINGIFY_VALUE(IVS_CONFIG_STATUS_LOG_SIZE) },
+#else
+{ IVS_CONFIG_STATUS_LOG_SIZE(__ivs_config_STRINGIFY_NAME), "__undefined__" },
+#endif
+#ifdef IVS_CONFIG_STATUS_LOG_PERIOD_S
+    { __ivs_config_STRINGIFY_NAME(IVS_CONFIG_STATUS_LOG_PERIOD_S), __ivs_config_STRINGIFY_VALUE(IVS_CONFIG_STATUS_LOG_PERIOD_S) },
+#else
+{ IVS_CONFIG_STATUS_LOG_PERIOD_S(__ivs_config_STRINGIFY_NAME), "__undefined__" },
+#endif
     { NULL, NULL }
 };
 #undef __ivs_config_STRINGIFY_VALUE

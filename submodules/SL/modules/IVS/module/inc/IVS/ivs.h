@@ -222,7 +222,11 @@ typedef struct ivs_s {
     int min; 
 
 #if IVS_CONFIG_INCLUDE_CXN_LOG == 1
-	bigring_t* cxn_log_ring; 
+    bigring_t* cxn_log_ring; 
+#endif
+
+#if IVS_CONFIG_INCLUDE_STATUS_LOG == 1
+    bigring_t* status_log_ring;
 #endif
 } ivs_t; 
 
