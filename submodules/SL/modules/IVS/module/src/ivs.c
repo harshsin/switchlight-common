@@ -127,11 +127,11 @@ ivs_create(ivs_t** rv, char** string_options, char** argv_options)
      * Initialize all defaults. 
      */
     memset(&ivs->port, 0, sizeof(ivs->port));
-    ivs->port.of_version = OF_VERSION_1_0; 
+    ivs->port.of_version = OF_VERSION_1_3; 
     ivs->port.max_ports = IVS_CONFIG_PORT_MAX_PORTS_DEFAULT; 
     
     memset(&ivs->fwd, 0, sizeof(ivs->fwd));
-    ivs->fwd.of_version = OF_VERSION_1_0; 
+    ivs->fwd.of_version = OF_VERSION_1_3; 
     ivs->fwd.max_flows = IVS_CONFIG_FWD_MAX_FLOWS_DEFAULT; 
     
     memset(&ivs->core, 0, sizeof(ivs->core));
