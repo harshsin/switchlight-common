@@ -26,7 +26,7 @@
 #include <AIM/aim.h>
 /**
  * IVS_CONFIG_INCLUDE_LOGGING
- * 
+ *
  * Include or exclude logging. */
 
 
@@ -36,7 +36,7 @@
 
 /**
  * IVS_CONFIG_LOG_OPTIONS_DEFAULT
- * 
+ *
  * Default enabled log options. */
 
 
@@ -46,7 +46,7 @@
 
 /**
  * IVS_CONFIG_LOG_BITS_DEFAULT
- * 
+ *
  * Default enabled log options. */
 
 
@@ -56,7 +56,7 @@
 
 /**
  * IVS_CONFIG_LOG_CUSTOM_BITS_DEFAULT
- * 
+ *
  * Default enabled custom log options. */
 
 
@@ -66,7 +66,7 @@
 
 /**
  * IVS_CONFIG_PORTING_STDLIB
- * 
+ *
  * Default all porting macros to use the C standard libraries. */
 
 
@@ -76,7 +76,7 @@
 
 /**
  * IVS_CONFIG_PORTING_INCLUDE_STDLIB_HEADERS
- * 
+ *
  * Include standard library headers for stdlib porting macros. */
 
 
@@ -86,7 +86,7 @@
 
 /**
  * IVS_CONFIG_INCLUDE_CONTROLLER_DEFAULT
- * 
+ *
  * Include the default controller at startup if no controllers were specified. */
 
 
@@ -96,7 +96,7 @@
 
 /**
  * IVS_CONFIG_CONTROLLER_IP_DEFAULT
- * 
+ *
  * Default controller IP for initial connections. */
 
 
@@ -106,7 +106,7 @@
 
 /**
  * IVS_CONFIG_CONTROLLER_PORT_DEFAULT
- * 
+ *
  * Default controller port for initial connections. */
 
 
@@ -116,7 +116,7 @@
 
 /**
  * IVS_CONFIG_CONTROLLER_LISTEN_PORT
- * 
+ *
  * Default port to listen for controller connections. */
 
 
@@ -126,7 +126,7 @@
 
 /**
  * IVS_CONFIG_INCLUDE_INTERFACE_VETH_DEFAULT
- * 
+ *
  * Initialize with default veth interfaces. */
 
 
@@ -136,7 +136,7 @@
 
 /**
  * IVS_CONFIG_PORT_MAX_PORTS_DEFAULT
- * 
+ *
  * Default maximum port count. */
 
 
@@ -146,7 +146,7 @@
 
 /**
  * IVS_CONFIG_FWD_MAX_FLOWS_DEFAULT
- * 
+ *
  * Default value for the maximum number of flow table entries. */
 
 
@@ -156,7 +156,7 @@
 
 /**
  * IVS_CONFIG_CORE_EXPIRE_FLOWS_DEFAULT
- * 
+ *
  * Default setting for whether to expire flows in state manager. */
 
 
@@ -166,7 +166,7 @@
 
 /**
  * IVS_CONFIG_CORE_STATS_CHECK_MS_DEFAULT
- * 
+ *
  * Default period for core statistics checks in milliseconds. */
 
 
@@ -176,7 +176,7 @@
 
 /**
  * IVS_CONFIG_DPID_DEFAULT
- * 
+ *
  * Default datapath id. */
 
 
@@ -186,7 +186,7 @@
 
 /**
  * IVS_CONFIG_CXN_PERIODIC_ECHO_MS_DEFAULT
- * 
+ *
  * Default value for the connection echo period in milliseconds. */
 
 
@@ -196,7 +196,7 @@
 
 /**
  * IVS_CONFIG_CXN_RESET_ECHO_COUNT
- * 
+ *
  * Default value for a connection's reset echo count. */
 
 
@@ -206,7 +206,7 @@
 
 /**
  * IVS_CONFIG_NSS_PORT_DEFAULT
- * 
+ *
  * Default port for network cli connections. */
 
 
@@ -216,7 +216,7 @@
 
 /**
  * IVS_CONFIG_CONSOLE_PROMPT_DEFAULT
- * 
+ *
  * Default base prompt for the console cli if enabled. */
 
 
@@ -226,7 +226,7 @@
 
 /**
  * IVS_CONFIG_INCLUDE_CONSOLE_CLI
- * 
+ *
  * Include console CLI. */
 
 
@@ -236,7 +236,7 @@
 
 /**
  * IVS_CONFIG_INCLUDE_NETWORK_CLI
- * 
+ *
  * Include network CLI. */
 
 
@@ -246,7 +246,7 @@
 
 /**
  * IVS_CONFIG_ASYNC_PACKET_IN_QUEUE_MAX_DEFAULT
- * 
+ *
  * For async threaded pkt-in queue handling, max queue length */
 
 
@@ -256,7 +256,7 @@
 
 /**
  * IVS_CONFIG_INCLUDE_WATCHDOG
- * 
+ *
  * Include watchdog support. */
 
 
@@ -266,7 +266,7 @@
 
 /**
  * IVS_CONFIG_WATCHDOG_SECONDS
- * 
+ *
  * Configure the default value for the watchdog timer (in seconds). */
 
 
@@ -276,7 +276,7 @@
 
 /**
  * IVS_CONFIG_INCLUDE_CXN_LOG
- * 
+ *
  * Include a connection log ring buffer. */
 
 
@@ -286,12 +286,42 @@
 
 /**
  * IVS_CONFIG_CXN_LOG_SIZE
- * 
+ *
  * The number of connection log entries to maintain. */
 
 
 #ifndef IVS_CONFIG_CXN_LOG_SIZE
 #define IVS_CONFIG_CXN_LOG_SIZE 0
+#endif
+
+/**
+ * IVS_CONFIG_INCLUDE_STATUS_LOG
+ *
+ * Include a status log ring buffer. */
+
+
+#ifndef IVS_CONFIG_INCLUDE_STATUS_LOG
+#define IVS_CONFIG_INCLUDE_STATUS_LOG 1
+#endif
+
+/**
+ * IVS_CONFIG_STATUS_LOG_SIZE
+ *
+ * The number of status log entries to maintain. */
+
+
+#ifndef IVS_CONFIG_STATUS_LOG_SIZE
+#define IVS_CONFIG_STATUS_LOG_SIZE 60
+#endif
+
+/**
+ * IVS_CONFIG_STATUS_LOG_PERIOD_S
+ *
+ * Time between successive status logs, in seconds. */
+
+
+#ifndef IVS_CONFIG_STATUS_LOG_PERIOD_S
+#define IVS_CONFIG_STATUS_LOG_PERIOD_S 5
 #endif
 
 
@@ -314,13 +344,13 @@ extern ivs_config_settings_t ivs_config_settings[];
 
 /**
  * @brief Lookup a configuration setting.
- * @param setting The name of the configuration option to lookup. 
+ * @param setting The name of the configuration option to lookup.
  */
 const char* ivs_config_lookup(const char* setting);
 
 /**
  * @brief Show the compile-time configuration.
- * @param pvs The output stream. 
+ * @param pvs The output stream.
  */
 int ivs_config_show(struct aim_pvs_s* pvs);
 

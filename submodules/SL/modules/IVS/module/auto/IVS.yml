@@ -88,6 +88,15 @@ cdefs: &cdefs
 - IVS_CONFIG_CXN_LOG_SIZE:
     doc: "The number of connection log entries to maintain."
     default: 0
+- IVS_CONFIG_INCLUDE_STATUS_LOG:
+    doc: "Include a status log ring buffer."
+    default: 1
+- IVS_CONFIG_STATUS_LOG_SIZE:
+    doc: "The number of status log entries to maintain."
+    default: 60
+- IVS_CONFIG_STATUS_LOG_PERIOD_S:
+    doc: "Time between successive status logs, in seconds."
+    default: 5
 
 cxn_types: &cxn_types
 - CONNECT

@@ -38,11 +38,11 @@ aim_map_si_t ivs_cxn_role_desc_map[] =
 const char*
 ivs_cxn_role_name(ivs_cxn_role_t e)
 {
-    const char* name; 
-    if(aim_map_si_i(&name, e, ivs_cxn_role_map, 0)) { 
-        return name; 
+    const char* name;
+    if(aim_map_si_i(&name, e, ivs_cxn_role_map, 0)) {
+        return name;
     }
-    else { 
+    else {
         return "-invalid value for enum type 'ivs_cxn_role'";
     }
 }
@@ -50,26 +50,26 @@ ivs_cxn_role_name(ivs_cxn_role_t e)
 int
 ivs_cxn_role_value(const char* str, ivs_cxn_role_t* e, int substr)
 {
-    int i; 
+    int i;
     AIM_REFERENCE(substr);
     if(aim_map_si_s(&i, str, ivs_cxn_role_map, 0)) {
         /* Enum Found */
-        *e = i; 
-        return 0; 
+        *e = i;
+        return 0;
     }
     else {
-        return -1; 
+        return -1;
     }
 }
 
 const char*
 ivs_cxn_role_desc(ivs_cxn_role_t e)
 {
-    const char* name; 
-    if(aim_map_si_i(&name, e, ivs_cxn_role_desc_map, 0)) { 
-        return name; 
+    const char* name;
+    if(aim_map_si_i(&name, e, ivs_cxn_role_desc_map, 0)) {
+        return name;
     }
-    else { 
+    else {
         return "-invalid value for enum type 'ivs_cxn_role'";
     }
 }
@@ -102,11 +102,11 @@ aim_map_si_t ivs_cxn_state_desc_map[] =
 const char*
 ivs_cxn_state_name(ivs_cxn_state_t e)
 {
-    const char* name; 
-    if(aim_map_si_i(&name, e, ivs_cxn_state_map, 0)) { 
-        return name; 
+    const char* name;
+    if(aim_map_si_i(&name, e, ivs_cxn_state_map, 0)) {
+        return name;
     }
-    else { 
+    else {
         return "-invalid value for enum type 'ivs_cxn_state'";
     }
 }
@@ -114,26 +114,26 @@ ivs_cxn_state_name(ivs_cxn_state_t e)
 int
 ivs_cxn_state_value(const char* str, ivs_cxn_state_t* e, int substr)
 {
-    int i; 
+    int i;
     AIM_REFERENCE(substr);
     if(aim_map_si_s(&i, str, ivs_cxn_state_map, 0)) {
         /* Enum Found */
-        *e = i; 
-        return 0; 
+        *e = i;
+        return 0;
     }
     else {
-        return -1; 
+        return -1;
     }
 }
 
 const char*
 ivs_cxn_state_desc(ivs_cxn_state_t e)
 {
-    const char* name; 
-    if(aim_map_si_i(&name, e, ivs_cxn_state_desc_map, 0)) { 
-        return name; 
+    const char* name;
+    if(aim_map_si_i(&name, e, ivs_cxn_state_desc_map, 0)) {
+        return name;
     }
-    else { 
+    else {
         return "-invalid value for enum type 'ivs_cxn_state'";
     }
 }
@@ -162,11 +162,11 @@ aim_map_si_t ivs_cxn_type_desc_map[] =
 const char*
 ivs_cxn_type_name(ivs_cxn_type_t e)
 {
-    const char* name; 
-    if(aim_map_si_i(&name, e, ivs_cxn_type_map, 0)) { 
-        return name; 
+    const char* name;
+    if(aim_map_si_i(&name, e, ivs_cxn_type_map, 0)) {
+        return name;
     }
-    else { 
+    else {
         return "-invalid value for enum type 'ivs_cxn_type'";
     }
 }
@@ -174,26 +174,26 @@ ivs_cxn_type_name(ivs_cxn_type_t e)
 int
 ivs_cxn_type_value(const char* str, ivs_cxn_type_t* e, int substr)
 {
-    int i; 
+    int i;
     AIM_REFERENCE(substr);
     if(aim_map_si_s(&i, str, ivs_cxn_type_map, 0)) {
         /* Enum Found */
-        *e = i; 
-        return 0; 
+        *e = i;
+        return 0;
     }
     else {
-        return -1; 
+        return -1;
     }
 }
 
 const char*
 ivs_cxn_type_desc(ivs_cxn_type_t e)
 {
-    const char* name; 
-    if(aim_map_si_i(&name, e, ivs_cxn_type_desc_map, 0)) { 
-        return name; 
+    const char* name;
+    if(aim_map_si_i(&name, e, ivs_cxn_type_desc_map, 0)) {
+        return name;
     }
-    else { 
+    else {
         return "-invalid value for enum type 'ivs_cxn_type'";
     }
 }

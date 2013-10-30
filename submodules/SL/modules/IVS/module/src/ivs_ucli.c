@@ -459,6 +459,18 @@ ivs_ucli_core__show_flows(ucli_context_t* uc)
     return UCLI_STATUS_OK; 
 }
 
+#if IVS_CONFIG_INCLUDE_STATUS_LOG == 1
+static ucli_status_t
+ivs_ucli_core__show_status__(ucli_context_t* uc)
+{
+    UCLI_COMMAND_INFO(uc, 
+                      "show-status", 0, 
+                      "$summary#Show status."); 
+    ivs_status_log_show(ivs, &uc->pvs); 
+    return UCLI_STATUS_OK; 
+}
+#endif /* IVS_CONFIG_INCLUDE_STATUS_LOG */
+
 static ucli_status_t
 ivs_ucli_config__min(ucli_context_t* uc)
 {
@@ -546,6 +558,9 @@ static ucli_command_handler_f ivs_ucli_core_handlers__[] =
     ivs_ucli_core__dump_flows, 
     ivs_ucli_core__flow_table, 
     ivs_ucli_core__show_flows, 
+#if IVS_CONFIG_INCLUDE_STATUS_LOG == 1
+    ivs_ucli_core__show_status__,
+#endif
     NULL
 };
 static ucli_command_handler_f ivs_ucli_interface_handlers__[] = 
