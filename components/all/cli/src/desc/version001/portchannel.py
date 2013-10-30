@@ -72,7 +72,8 @@ CONFIG_PORTCHANNEL_COMMAND_DESCRIPTION = {
             'tag'               : 'hash',
             'short-help'        : 'Hash type for port channel',
             'type'              : 'enum',
-            'values'            : ('L2', 'L3', 'MAX'),
+            # NOTE: See PAN-480. hash-max does not work.
+            'values'            : ('L2', 'L3'),
             # FIXME: syntax-help for each value doesn't work yet
             'doc'               : 'port-channel|+',
             'optional'          : True,
