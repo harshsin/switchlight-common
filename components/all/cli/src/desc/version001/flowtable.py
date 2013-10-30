@@ -127,9 +127,67 @@ def get_format_string(disp_config):
     else:
         return "{0.prio:<5} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.dip:<15} {0.sip:<15} {0.output:<16} {0.packets:<10} {0.duration:<10}"
 
+def of10_flow_entry_to_disp(entry):
+    """
+    Convert a 1.0 flow entry to a display object
+    """
+    rv = disp_flow_ob()
+    match = entry.match
+    if not (match.wildcards & of10.OFPFW_IN_PORT):
+        rv.inport = str(match.in_port)
+    if not (match.wildcards & of10.OFPFW_DL_VLAN):
+        rv.vid = str(match.vlan_vid)
+    if not (match.wildcards & of10.OFPFW_DL_VLAN_PCP):
+        rv.vpcp = str(match.vlan_pcp)
+    if not (match.wildcards & of10.OFPFW_DL_TYPE):
+        rv.eth_type = str(hex(match.eth_type))
+    if not (match.wildcards & of10.OFPFW_DL_SRC):
+        rv.smac = fmtcnv.convert_mac_in_byte_array_to_hex_string(match.eth_src)
+    if not (match.wildcards & of10.OFPFW_DL_DST):
+        rv.dmac = fmtcnv.convert_mac_in_byte_array_to_hex_string(match.eth_dst)
+    # FIXME mask or shift?
+    if not (match.wildcards & of10.OFPFW_NW_TOS):
+        rv.ipdscp = str(match.ip_dscp)
+    if not (match.wildcards & of10.OFPFW_NW_PROTO):
+        rv.ipproto = str(match.ip_proto)
+    if not (match.wildcards & of10.OFPFW_NW_SRC_MASK):
+        bits = 32-((match.wildcards & of10.OFPFW_NW_SRC_MASK) >> of10.OFPFW_NW_SRC_SHIFT)
+        rv.sip = fmtcnv.convert_ip_in_integer_to_dotted_decimal(match.ipv4_src) + "/" + str(bits)
+    if not (match.wildcards & of10.OFPFW_NW_DST_MASK):
+        bits = 32-((match.wildcards & of10.OFPFW_NW_SRC_MASK) >> of10.OFPFW_NW_SRC_SHIFT)
+        rv.dip = fmtcnv.convert_ip_in_integer_to_dotted_decimal(match.ipv4_dst) + "/" + str(bits)
+    if not (match.wildcards & of10.OFPFW_TP_SRC):
+        rv.l4_src = str(match.tcp_src)
+    if not (match.wildcards & of10.OFPFW_TP_DST):
+        rv.l4_dst = str(match.tcp_dst)
+
+    output_count = 0
+    for obj in entry.actions:
+        if (obj.type == of10.OFPAT_OUTPUT or obj.type == of10.OFPAT_ENQUEUE):
+            output_count += 1
+            if output_count < 3:
+                if rv.output == "-":
+                    rv.output = str(obj.port)
+                else:
+                    rv.output += " " + str(obj.port)
+        elif (obj.type >= of10.OFPAT_SET_VLAN_VID and
+              obj.type <= of10.OFPAT_SET_TP_DST):
+            rv.modifications = "yes"
+
+    if output_count >= 3:
+        rv.output += " + %d more" % (output_count - 2)
+
+    rv.prio = str(entry.priority)
+    rv.table_id = str(entry.table_id)
+    rv.duration = display(entry.duration_sec)
+    rv.hard_to = str(entry.hard_timeout)
+    rv.idle_to = str(entry.idle_timeout)
+    rv.packets = display(entry.packet_count)
+    return rv
+
 def of13_flow_entry_to_disp(entry):
     """
-    Convert a flow entry to a display object
+    Convert a 1.3 flow entry to a display object
     """
     mapper = {
         str(of13.oxm.in_port): ('inport', None),
@@ -217,43 +275,106 @@ def of13_flow_entry_to_disp(entry):
     rv.packets = display(entry.packet_count)
     return (rv, rv_mask)
 
+class FlowRequestFilter(object):
+    def __init__(self,
+                 in_port=None,
+                 src_mac=None,
+                 dst_mac=None,
+                 vlan_id=None,
+                 table_id=None,
+                 out_port=None):
+        self.in_port = in_port
+        self.src_mac = src_mac
+        self.dst_mac = dst_mac
+        self.vlan_id = vlan_id
+        self.table_id = table_id
+        self.out_port = out_port
+
+def show_of10_entries(rf, format_str):
+    req = of10.message.flow_stats_request()
+    req.match.wildcards = of10.OFPFW_ALL
+
+    if rf.in_port is not None:
+        req.match.in_port = rf.in_port
+        req.match.wildcards = req.match.wildcards & ~of10.OFPFW_IN_PORT
+
+    if rf.src_mac is not None:
+        req.match.eth_src = rf.src_mac
+        req.match.wildcards = req.match.wildcards & ~of10.OFPFW_DL_SRC
+
+    if rf.dst_mac is not None:
+        req.match.eth_dst = rf.dst_mac
+        req.match.wildcards = req.match.wildcards & ~of10.OFPFW_DL_DST
+
+    if rf.vlan_id is not None:
+        req.match.vlan_vid = rf.vlan_id
+        req.match.wildcards = req.match.wildcards & ~of10.OFPFW_DL_VLAN
+
+    req.table_id = rf.table_id if rf.table_id is not None else 0xff
+    req.out_port = rf.out_port if rf.out_port is not None else of10.OFPP_NONE
+
+    count = 0
+    with OFConnection.OFConnection('127.0.0.1', 6634) as conn:
+        for entrylist in conn.of10_request_stats_generator(req):
+            for entry in entrylist:
+                count += 1
+                if count % 20 == 0 or count == 1:
+                    if count != 1:
+                        print
+                    print format_str.format(flow_table_titles)
+                entry_disp = of10_flow_entry_to_disp(entry)
+                print format_str.format(entry_disp)
+
+def show_of13_entries(rf, format_str):
+    match = of13.match()
+
+    if rf.in_port is not None:
+        match.oxm_list.append(of13.oxm.in_port(value=rf.in_port))
+
+    if rf.src_mac is not None:
+        match.oxm_list.append(of13.oxm.eth_src(value=rf.src_mac))
+
+    if rf.dst_mac is not None:
+        match.oxm_list.append(of13.oxm.eth_dst(value=rf.dst_mac))
+
+    if rf.vlan_id is not None:
+        match.oxm_list.append(of13.oxm.vlan_vid(value=rf.vlan_id))
+
+    req = of13.message.flow_stats_request(
+        match=match,
+        table_id=rf.table_id if rf.table_id is not None else of13.OFPTT_ALL,
+        out_port=rf.out_port if rf.out_port is not None else of13.OFPP_ANY,
+        out_group=of13.OFPG_ANY)
+
+    count = 0
+    with OFConnection.OFConnection('127.0.0.1', 6634) as conn:
+        for entrylist in conn.of13_request_stats_generator(req):
+            for entry in entrylist:
+                count += 1
+                if count % 20 == 0 or count == 1:
+                    if count != 1:
+                        print
+                    print format_str.format(flow_table_titles)
+                (disp_val, disp_mask) = of13_flow_entry_to_disp(entry)
+                print format_str.format(disp_val)
+                if disp_mask:
+                    print format_str.format(disp_mask)
+
 def show_flowtable(data):
     if 'summary' not in data:
-        # query flow table with 1.3 flow mod
-        match = of13.match()
-        if 'in-port' in data:
-            match.oxm_list.append(of13.oxm.in_port(value=data['in-port']))
-        if 'src-mac' in data:
-            match.oxm_list.append(of13.oxm.eth_src(
-                    value=convert_mac_hex_string_to_byte_array(data['src-mac'])))
-        if 'dst-mac' in data:
-            match.oxm_list.append(of13.oxm.eth_dst(
-                    value=convert_mac_hex_string_to_byte_array(data['dst-mac'])))
-        if 'vlan-id' in data:
-            match.oxm_list.append(of13.oxm.vlan_vid(
-                    value=int(data['vlan-id'])))
-        req = of13.message.flow_stats_request(
-            match=match,
-            table_id=data.get('table-id', of13.OFPTT_ALL),
-            out_port=data.get('out-port', of13.OFPP_ANY),
-            out_group=of13.OFPG_ANY)
+        rf = FlowRequestFilter(
+            in_port=data.get('in-port', None),
+            src_mac=convert_mac_hex_string_to_byte_array(data['src-mac']) if 'src-mac' in data else None,
+            dst_mac=convert_mac_hex_string_to_byte_array(data['dst-mac']) if 'dst-mac' in data else None,
+            vlan_id=int(data['vlan-id']) if 'vlan-id' in data else None,
+            table_id=data.get('table-id', None),
+            out_port=data.get('out-port', None))
 
-        count = 0
         cfg = 'detail' if 'detail' in data else None
         format_str = get_format_string(cfg)
 
-        print format_str.format(flow_table_titles)
-        with OFConnection.OFConnection('127.0.0.1', 6634) as conn:
-            for entrylist in conn.of13_request_stats_generator(req):
-                for entry in entrylist:
-                    count += 1
-                    if count % 20 == 0:
-                        print
-                        print format_str.format(flow_table_titles)
-                    (disp_val, disp_mask) = of13_flow_entry_to_disp(entry)
-                    print format_str.format(disp_val)
-                    if disp_mask:
-                        print format_str.format(disp_mask)
+        show_of10_entries(rf, format_str)
+        show_of13_entries(rf, format_str)
     else:
         with OFConnection.OFConnection('127.0.0.1', 6634) as conn:
             for x in conn.of10_request_stats(
