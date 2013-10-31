@@ -29,16 +29,6 @@ agentSecName disman
 createUser disman MD5 "internal user for monitoring"
 rouser disman auth
 
-# Default settings for temperature traps
-monitor temp .1.3.6.1.4.1.2021.13.16.2.1.3 > 55000
-
-# Default settings for fan traps
-monitor -I fan1 .1.3.6.1.4.1.2021.13.16.3.1.3.1 < 2000
-monitor -I fan2 .1.3.6.1.4.1.2021.13.16.3.1.3.2 < 2000
-monitor -I fan3 .1.3.6.1.4.1.2021.13.16.3.1.3.3 < 2000
-monitor -I fan4 .1.3.6.1.4.1.2021.13.16.3.1.3.4 < 2000
-monitor -I fan5 .1.3.6.1.4.1.2021.13.16.3.1.3.13 < 1000
-
 # Enable sub-agents
 master agentx
 EOF
