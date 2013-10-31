@@ -25,6 +25,13 @@ OFPQ_ALL = 4294967295
 OFPQ_MIN_RATE_UNCFG = 65535
 OFPQ_MAX_RATE_UNCFG = 65535
 
+# Identifiers from group of_bsn_pdu_slot_num_t
+BSN_PDU_SLOT_NUM_ANY = 255
+
+of_bsn_pdu_slot_num_t_map = {
+    255: 'BSN_PDU_SLOT_NUM_ANY',
+}
+
 # Identifiers from group ofp_action_type
 OFPAT_OUTPUT = 0
 OFPAT_COPY_TTL_OUT = 11
@@ -64,7 +71,7 @@ ofp_action_type_map = {
 OFPBAC_BAD_TYPE = 0
 OFPBAC_BAD_LEN = 1
 OFPBAC_BAD_EXPERIMENTER = 2
-OFPBAC_BAD_EXP_TYPE = 3
+OFPBAC_BAD_EXPERIMENTER_TYPE = 3
 OFPBAC_BAD_OUT_PORT = 4
 OFPBAC_BAD_ARGUMENT = 5
 OFPBAC_EPERM = 6
@@ -82,7 +89,7 @@ ofp_bad_action_code_map = {
     0: 'OFPBAC_BAD_TYPE',
     1: 'OFPBAC_BAD_LEN',
     2: 'OFPBAC_BAD_EXPERIMENTER',
-    3: 'OFPBAC_BAD_EXP_TYPE',
+    3: 'OFPBAC_BAD_EXPERIMENTER_TYPE',
     4: 'OFPBAC_BAD_OUT_PORT',
     5: 'OFPBAC_BAD_ARGUMENT',
     6: 'OFPBAC_EPERM',
@@ -104,7 +111,7 @@ OFPBIC_BAD_TABLE_ID = 2
 OFPBIC_UNSUP_METADATA = 3
 OFPBIC_UNSUP_METADATA_MASK = 4
 OFPBIC_BAD_EXPERIMENTER = 5
-OFPBIC_BAD_EXP_TYPE = 6
+OFPBIC_BAD_EXPERIMENTER_TYPE = 6
 OFPBIC_BAD_LEN = 7
 OFPBIC_EPERM = 8
 
@@ -115,7 +122,7 @@ ofp_bad_instruction_code_map = {
     3: 'OFPBIC_UNSUP_METADATA',
     4: 'OFPBIC_UNSUP_METADATA_MASK',
     5: 'OFPBIC_BAD_EXPERIMENTER',
-    6: 'OFPBIC_BAD_EXP_TYPE',
+    6: 'OFPBIC_BAD_EXPERIMENTER_TYPE',
     7: 'OFPBIC_BAD_LEN',
     8: 'OFPBIC_EPERM',
 }
@@ -154,7 +161,7 @@ OFPBRC_BAD_VERSION = 0
 OFPBRC_BAD_TYPE = 1
 OFPBRC_BAD_STAT = 2
 OFPBRC_BAD_EXPERIMENTER = 3
-OFPBRC_BAD_EXP_TYPE = 4
+OFPBRC_BAD_EXPERIMENTER_TYPE = 4
 OFPBRC_EPERM = 5
 OFPBRC_BAD_LEN = 6
 OFPBRC_BUFFER_EMPTY = 7
@@ -169,7 +176,7 @@ ofp_bad_request_code_map = {
     1: 'OFPBRC_BAD_TYPE',
     2: 'OFPBRC_BAD_STAT',
     3: 'OFPBRC_BAD_EXPERIMENTER',
-    4: 'OFPBRC_BAD_EXP_TYPE',
+    4: 'OFPBRC_BAD_EXPERIMENTER_TYPE',
     5: 'OFPBRC_EPERM',
     6: 'OFPBRC_BAD_LEN',
     7: 'OFPBRC_BUFFER_EMPTY',
@@ -494,6 +501,7 @@ OFPP_FLOOD = 4294967291
 OFPP_ALL = 4294967292
 OFPP_CONTROLLER = 4294967293
 OFPP_LOCAL = 4294967294
+OFPP_ANY = 4294967295
 
 ofp_port_map = {
     4294967040: 'OFPP_MAX',
@@ -504,6 +512,7 @@ ofp_port_map = {
     4294967292: 'OFPP_ALL',
     4294967293: 'OFPP_CONTROLLER',
     4294967294: 'OFPP_LOCAL',
+    4294967295: 'OFPP_ANY',
 }
 
 # Identifiers from group ofp_port_config
@@ -511,12 +520,14 @@ OFPPC_PORT_DOWN = 1
 OFPPC_NO_RECV = 4
 OFPPC_NO_FWD = 32
 OFPPC_NO_PACKET_IN = 64
+OFPPC_BSN_MIRROR_DEST = 2147483648
 
 ofp_port_config_map = {
     1: 'OFPPC_PORT_DOWN',
     4: 'OFPPC_NO_RECV',
     32: 'OFPPC_NO_FWD',
     64: 'OFPPC_NO_PACKET_IN',
+    2147483648: 'OFPPC_BSN_MIRROR_DEST',
 }
 
 # Identifiers from group ofp_port_features
@@ -569,13 +580,6 @@ ofp_port_mod_failed_code_map = {
     2: 'OFPPMFC_BAD_CONFIG',
     3: 'OFPPMFC_BAD_ADVERTISE',
     4: 'OFPPMFC_EPERM',
-}
-
-# Identifiers from group ofp_port_no
-OFPP_ANY = 4294967295
-
-ofp_port_no_map = {
-    4294967295: 'OFPP_ANY',
 }
 
 # Identifiers from group ofp_port_reason
@@ -640,7 +644,12 @@ ofp_stats_reply_flags_map = {
     1: 'OFPSF_REPLY_MORE',
 }
 
-# Identifiers from group ofp_stats_types
+# Identifiers from group ofp_stats_request_flags
+
+ofp_stats_request_flags_map = {
+}
+
+# Identifiers from group ofp_stats_type
 OFPST_DESC = 0
 OFPST_FLOW = 1
 OFPST_AGGREGATE = 2
@@ -652,7 +661,7 @@ OFPST_GROUP_DESC = 7
 OFPST_GROUP_FEATURES = 8
 OFPST_EXPERIMENTER = 65535
 
-ofp_stats_types_map = {
+ofp_stats_type_map = {
     0: 'OFPST_DESC',
     1: 'OFPST_FLOW',
     2: 'OFPST_AGGREGATE',

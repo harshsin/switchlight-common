@@ -16,7 +16,6 @@ import fmtcnv
 max_port = 52
 max_table = 1
 
-
 def display(val):
     return str(val) if val != 0xffffffffffffffff else '-'
 
@@ -190,7 +189,6 @@ def of13_flow_entry_to_disp(entry):
     Convert a 1.3 flow entry to a display object
     """
     mapper = {
-        str(of13.oxm.in_port): ('inport', None),
         str(of13.oxm.eth_src):
             ('smac', fmtcnv.convert_mac_in_byte_array_to_hex_string),
         str(of13.oxm.eth_src_masked):
@@ -229,7 +227,20 @@ def of13_flow_entry_to_disp(entry):
 
     rv = disp_flow_ob()
     rv_mask = None
+    inport = None
+    bsn_inports_mask = None
     for field in entry.match.oxm_list:
+        if isinstance(field, of13.oxm.in_port):
+            inport = field
+            continue
+        if isinstance(field, of13.oxm.bsn_in_ports_128_masked):
+            bsn_inports_mask = field
+            continue
+        if isinstance(field, of13.oxm.in_port_masked) or \
+           isinstance(field, of13.oxm.bsn_in_ports_128):
+            # NOTE: these should really never be used or set
+            continue
+
         mapval = mapper.get(str(type(field)), None)
         if mapval:
             (name, formatter) = mapval
@@ -247,6 +258,19 @@ def of13_flow_entry_to_disp(entry):
                 rv.__setattr__(name, 
                                formatter(field.value) if formatter \
                                    else str(field.value))
+
+    rv_inports = None
+    if inport:
+        rv.inport = str(inport.value)
+    elif bsn_inports_mask:
+        # NOTE: We only care about the zero bits in the mask.
+        #       We should never get 0 ports.
+        ports = list(set(range(128)) - bsn_inports_mask.value_mask)
+        if len(ports) == 1:
+            rv.inport = str(ports[0])
+        elif len(ports) > 1:
+            rv.inport = "*"
+            rv_inports = sorted(ports)
 
     output_count = 0
     for inst in entry.instructions:
@@ -273,7 +297,7 @@ def of13_flow_entry_to_disp(entry):
     rv.hard_to = str(entry.hard_timeout)
     rv.idle_to = str(entry.idle_timeout)
     rv.packets = display(entry.packet_count)
-    return (rv, rv_mask)
+    return (rv, rv_mask, rv_inports)
 
 class FlowRequestFilter(object):
     def __init__(self,
@@ -355,10 +379,12 @@ def show_of13_entries(rf, format_str):
                     if count != 1:
                         print
                     print format_str.format(flow_table_titles)
-                (disp_val, disp_mask) = of13_flow_entry_to_disp(entry)
-                print format_str.format(disp_val)
-                if disp_mask:
-                    print format_str.format(disp_mask)
+                (display_val, display_mask, inports) = of13_flow_entry_to_disp(entry)
+                print format_str.format(display_val)
+                if display_mask:
+                    print format_str.format(display_mask)
+                if inports:
+                    print "  *In-ports: %s" % " ".join([str(p) for p in inports])
 
 def show_flowtable(data):
     if 'summary' not in data:
