@@ -18,8 +18,12 @@ BUILDDIR := BUILDS
 # These are the available SWI architectures
 SWI_ARCHS := $(filter-out swi/all,$(wildcard swi/*))
 
+#
 # These are the available platform builds per-architecture
-SWI_BUILD_PATHS := $(foreach arch,$(SWI_ARCHS),$(wildcard $(arch)/*))
+# SWI_BUILD_PATHS := $(foreach arch,$(SWI_ARCHS),$(wildcard $(arch)/*))
+#
+# These are the current default subset
+SWI_BUILD_PATHS := swi/powerpc/internal swi/powerpc/release swi/powerpc/internal-gus swi/i386/vm-internal
 
 #
 # Define a build template for each platform by name and build directory
