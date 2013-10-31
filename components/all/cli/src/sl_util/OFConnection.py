@@ -94,7 +94,7 @@ class OFConnection(object):
         while True:
             reply = self.recvmsg()
             yield reply.entries
-            if reply.flags & ofp13.OFPMPF_REPLY_MORE == 0:
+            if reply.flags & ofp13.OFPSF_REPLY_MORE == 0:
                 break
 
     def _read_exactly(self, n, timeout=None):
