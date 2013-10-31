@@ -263,8 +263,9 @@ def of13_flow_entry_to_disp(entry):
     if inport:
         rv.inport = str(inport.value)
     elif bsn_inports_mask:
+        # NOTE: We only care about the zero bits in the mask.
+        #       We should never get 0 ports.
         ports = list(set(range(128)) - bsn_inports_mask.value_mask)
-        # NOTE: we should never get 0 ports
         if len(ports) == 1:
             rv.inport = str(ports[0])
         elif len(ports) > 1:
