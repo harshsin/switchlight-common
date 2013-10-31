@@ -28,6 +28,13 @@ SERIAL_NUM_LEN = 32
 OFPQ_ALL = 4294967295
 OFPQ_MIN_RATE_UNCFG = 65535
 
+# Identifiers from group of_bsn_pdu_slot_num_t
+BSN_PDU_SLOT_NUM_ANY = 255
+
+of_bsn_pdu_slot_num_t_map = {
+    255: 'BSN_PDU_SLOT_NUM_ANY',
+}
+
 # Identifiers from group ofp_action_type
 OFPAT_OUTPUT = 0
 OFPAT_SET_VLAN_VID = 1
@@ -447,6 +454,7 @@ OFPP_FLOOD = 4294967291
 OFPP_ALL = 4294967292
 OFPP_CONTROLLER = 4294967293
 OFPP_LOCAL = 4294967294
+OFPP_ANY = 4294967295
 
 ofp_port_map = {
     4294967040: 'OFPP_MAX',
@@ -457,6 +465,7 @@ ofp_port_map = {
     4294967292: 'OFPP_ALL',
     4294967293: 'OFPP_CONTROLLER',
     4294967294: 'OFPP_LOCAL',
+    4294967295: 'OFPP_ANY',
 }
 
 # Identifiers from group ofp_port_config
@@ -464,12 +473,14 @@ OFPPC_PORT_DOWN = 1
 OFPPC_NO_RECV = 4
 OFPPC_NO_FWD = 32
 OFPPC_NO_PACKET_IN = 64
+OFPPC_BSN_MIRROR_DEST = 2147483648
 
 ofp_port_config_map = {
     1: 'OFPPC_PORT_DOWN',
     4: 'OFPPC_NO_RECV',
     32: 'OFPPC_NO_FWD',
     64: 'OFPPC_NO_PACKET_IN',
+    2147483648: 'OFPPC_BSN_MIRROR_DEST',
 }
 
 # Identifiers from group ofp_port_features
@@ -522,13 +533,6 @@ ofp_port_mod_failed_code_map = {
     3: 'OFPPMFC_BAD_ADVERTISE',
 }
 
-# Identifiers from group ofp_port_no
-OFPP_ANY = 4294967295
-
-ofp_port_no_map = {
-    4294967295: 'OFPP_ANY',
-}
-
 # Identifiers from group ofp_port_reason
 OFPPR_ADD = 0
 OFPPR_DELETE = 1
@@ -578,7 +582,12 @@ ofp_stats_reply_flags_map = {
     1: 'OFPSF_REPLY_MORE',
 }
 
-# Identifiers from group ofp_stats_types
+# Identifiers from group ofp_stats_request_flags
+
+ofp_stats_request_flags_map = {
+}
+
+# Identifiers from group ofp_stats_type
 OFPST_DESC = 0
 OFPST_FLOW = 1
 OFPST_AGGREGATE = 2
@@ -589,7 +598,7 @@ OFPST_GROUP = 6
 OFPST_GROUP_DESC = 7
 OFPST_EXPERIMENTER = 65535
 
-ofp_stats_types_map = {
+ofp_stats_type_map = {
     0: 'OFPST_DESC',
     1: 'OFPST_FLOW',
     2: 'OFPST_AGGREGATE',
