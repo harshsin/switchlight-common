@@ -4,6 +4,11 @@
 #
 ###############################################################################
 SHELL := /bin/bash
+empty:=
+space:= $(empty) $(empty)
+# The current release branch or number goes here. 
+SWITCHLIGHT_RELEASE_VERSION := $(shell git rev-parse --short HEAD)
+SWITCHLIGHT_RELEASE_BANNER := $(space)$(SWITCHLIGHT_RELEASE_VERSION)$(space)
 
 #
 # These are the default submodule locations. 
