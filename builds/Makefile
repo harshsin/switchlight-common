@@ -23,7 +23,7 @@ SWI_ARCHS := $(filter-out swi/all,$(wildcard swi/*))
 # SWI_BUILD_PATHS := $(foreach arch,$(SWI_ARCHS),$(wildcard $(arch)/*))
 #
 # These are the current default subset
-SWI_BUILD_PATHS := swi/powerpc/internal swi/powerpc/release swi/powerpc/internal-gus swi/i386/vm-internal
+SWI_BUILD_PATHS := swi/powerpc/internal swi/powerpc/release swi/powerpc/internal-gus swi/i386/vm-internal swi/powerpc/internal-t5
 
 #
 # Define a build template for each platform by name and build directory
