@@ -74,6 +74,18 @@ if [ ! -f "${WS_ROOT}${WS_ROOT}/.pandora-ws" ]; then
     mount -n --bind "$d" "${WS_ROOT}$d"
 fi
 
+function run_rc { 
+    if [ -f "$1" ]; then
+        echo "Running $1"
+        $1
+    fi
+}
+
+# Run optional host-system rc files, user home directory rc files, and workspace-specific rc files. 
+run_rc /etc/chws.d/chwsrc
+run_rc ${HOME}/.chwsrc
+run_rc ${WS_ROOT}/.chwsrc
+
 # Start an SSH server
 mkdir -p "${WS_ROOT}/var/run/sshd"
 chroot "${WS_ROOT}" /usr/sbin/sshd -4
