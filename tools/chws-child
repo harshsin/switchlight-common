@@ -74,17 +74,37 @@ if [ ! -f "${WS_ROOT}${WS_ROOT}/.pandora-ws" ]; then
     mount -n --bind "$d" "${WS_ROOT}$d"
 fi
 
-function run_rc { 
+function source_rc { 
     if [ -f "$1" ]; then
-        echo "Running $1"
-        $1
+        echo "Sourcing $1"
+        source $1
     fi
 }
 
-# Run optional host-system rc files, user home directory rc files, and workspace-specific rc files. 
-run_rc /etc/chws.d/chwsrc
-run_rc ${HOME}/.chwsrc
-run_rc ${WS_ROOT}/.chwsrc
+# external rc files can use these functions to simplify bind-mounting:
+#
+# bind_mount_dst local_src workspace_dst
+#
+# bind mount the given source directory at the given destination in the workspace
+function bind_mount_dst { 
+    if [ -d "$1" ]; then
+        mkdir -p "${WS_ROOT}$2"
+        echo "Mounting $1 -> $2"
+        mount -n --bind "$1" "${WS_ROOT}$2"
+    fi
+}
+#
+# bind_mount dir
+# 
+# bind mount the given local directory at the same location in the workspace. 
+function bind_mount { 
+    bind_mount_dst $1 $1
+}
+
+# Include optional system rc, user rc, and workspace rc:
+source_rc /etc/chws.d/chwsrc
+source_rc ${HOME}/.chwsrc
+source_rc ${WS_ROOT}/.chwsrc
 
 # Start an SSH server
 mkdir -p "${WS_ROOT}/var/run/sshd"
