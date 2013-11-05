@@ -32,11 +32,9 @@ def config_port_channel(no_command, data):
         platform = utils.get_platform()
         lagCompMax = LAG_COMPONENT_MAX.get(platform, None)
         if lagCompMax is None:
-            raise error.ActionError("Unable to determine the maximum number of component ports "
-                                    "supported per port-channel for this platform")
+            raise error.ActionError("Cannot determine max number of component ports supported")
         if len(componentPorts) > lagCompMax:
-            raise error.ActionError("Too many component ports. Maximum supported per port-channel "
-                                    "on this platform is %d" % lagCompMax)
+            raise error.ActionError("Too many component ports. Max supported is %d" % lagCompMax)
 
         for p in componentPorts:
             portManager.checkValidPhysicalPort(p)
