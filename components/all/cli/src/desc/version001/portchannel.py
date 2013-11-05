@@ -6,6 +6,7 @@ import utif
 import run_config
 
 from sl_util.ofad import OFADConfig, OFADCtl, PortManager
+from sl_util import utils
 
 OFAgentConfig = OFADConfig()
 PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
@@ -13,6 +14,11 @@ PortManager.setLAGBase(OFAgentConfig.lag_base_name)
 
 LAG_MIN_NUM = 1
 LAG_MAX_NUM = 30
+
+LAG_COMPONENT_MAX = {
+    'quanta-lb9': 8,
+    'quanta-ly2': 16
+}
 
 def config_port_channel(no_command, data):
     portManager = PortManager(OFAgentConfig.port_list)
@@ -22,6 +28,16 @@ def config_port_channel(no_command, data):
     componentPorts = None
     if "interface-list" in data:
         componentPorts = utif.resolve_port_list(data["interface-list"])
+
+        platform = utils.get_platform()
+        lagCompMax = LAG_COMPONENT_MAX.get(platform, None)
+        if lagCompMax is None:
+            raise error.ActionError("Unable to determine the maximum number of component ports "
+                                    "supported per port-channel for this platform")
+        if len(componentPorts) > lagCompMax:
+            raise error.ActionError("Too many component ports. Maximum supported per port-channel "
+                                    "on this platform is %d" % lagCompMax)
+
         for p in componentPorts:
             portManager.checkValidPhysicalPort(p)
 
