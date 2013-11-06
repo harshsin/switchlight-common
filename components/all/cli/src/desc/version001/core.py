@@ -444,13 +444,33 @@ VERSION_COMMAND_DESCRIPTION = {
 CLEARTERM_COMMAND_DESCRIPTION = {
     'name'                : 'clearterm',
     'no-supported'        : False,
-    'short-help'          : 'Clears and resets the terminal screen',
+    'short-help'          : 'Clear and reset the terminal screen',
     # no documentation, other than default
     #'doc'                 : 'clearterm',
     #'doc-example'         : 'clearterm-example',
     'mode'                : 'login',
     'action'              : 'clearterm',
     'args'                : {}
+}
+
+
+def top_command():
+    os.system('clear')
+    print '\nATTENTION:\n\n' + \
+          'You are about run the "top" program.\n' + \
+          'When in top, press <q> or <CTRL-C> to exit and return to CLI.\n'
+    raw_input('Press <Enter> to continue.\n')
+    os.system('top')
+
+command.add_action('top-command', top_command)
+
+TOP_COMMAND_DESCRIPTION = {
+    'name'                : 'top',
+    'mode'                : 'login',
+    'no-supported'        : False,
+    'short-help'          : 'Monitor process CPU and memory status',
+    'action'              : 'top-command',
+    'args'                : {},
 }
 
 
