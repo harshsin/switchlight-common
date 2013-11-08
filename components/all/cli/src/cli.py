@@ -1357,6 +1357,14 @@ class MainSh():
                         else:
                             if readline.get_completion_type() == question_mark:
                                 options = command.do_command_completion_help(words, text)
+                                # matches_hook only seems to be called when more than
+                                # one choice is available.  For two column mode, the
+                                # matches choices are disabled, but if there's a single
+                                # choice, an additinoal message will display.   Here, the
+                                # another choice is added, which causes matches_hook to g
+                                # called, and not print any additional data. BSC-3645
+                                if len(options) == 1:
+                                    options.append(' --forget this-- ' )
                             else:
                                 options = command.do_command_completion(words, text)
                             #else:
