@@ -4,6 +4,7 @@ import command
 import run_config
 import subprocess
 from sl_util import Service
+from sl_util import utils
 import utif
 import cfgfile
 import error
@@ -177,8 +178,6 @@ def community(no_cmd, community, access):
                 "%scommunity %s\n" % (access, community)
                 )
 
-Platform = None
-
 OID_Table = {
     'quanta-lb9': {
         TEMP_SENSORS : {
@@ -293,14 +292,7 @@ Show_Trap_Type_Conv = {
 }
 
 def trap_set(no_cmd, trap, threshold):
-
-    global Platform
-
-    if Platform is None:
-        f = open("/etc/sl_platform")
-        Platform = f.readlines()[0].strip()
-        f.close()
-
+    Platform = utils.get_platform()
     oids = OID_Table.get(Platform)
     if oids is None:
         raise error.ActionError("Trap unsupported on %s", Platform)
