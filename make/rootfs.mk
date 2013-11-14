@@ -55,13 +55,33 @@ APT_CACHE := 10.198.0.0:3142/
 endif
 
 $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done: $(SWITCHLIGHT_PACKAGE_MANIFEST)
-	sudo update-binfmts --enable
-	sudo rm -rf $(ROOTFS_DIR)
-	arch_repo=$$(mktemp); echo $$arch_repo; sed "s%__DIR__%$(SWITCHLIGHT_REPO)%g" $(ROOTFS_ARCH_REPO_PATH) >$$arch_repo; all_repo=$$(mktemp); sed "s%__DIR__%$(SWITCHLIGHT_REPO)%g" $(ROOTFS_ALL_REPO_PATH) >$$all_repo; $(SWITCHLIGHT)/tools/mkws --apt-cache $(APT_CACHE) --nested -a $(ROOTFS_ARCH) --extra-repo $$arch_repo --extra-repo $$all_repo --extra-config $(ROOTFS_CLEANUP_PATH) $(ROOTFS_DIR) 
-	touch $@
+	$(SL_V_at)sudo update-binfmts --enable
+	$(SL_V_at)sudo rm -rf $(ROOTFS_DIR)
+	$(SL_V_GEN)set -e ;\
+	if $(SL_V_P); then set -x; fi ;\
+	arch_repo=$$(mktemp) ;\
+	all_repo=$$(mktemp) ;\
+	trap "rm -f $$arch_repo $$all_repo" 0 1 ;\
+	echo $$arch_repo ;\
+	sed "s%__DIR__%$(SWITCHLIGHT_REPO)%g" $(ROOTFS_ARCH_REPO_PATH) >$$arch_repo ;\
+	sed "s%__DIR__%$(SWITCHLIGHT_REPO)%g" $(ROOTFS_ALL_REPO_PATH) >$$all_repo ;\
+	$(SWITCHLIGHT)/tools/mkws \
+	  --apt-cache $(APT_CACHE) \
+	  --nested \
+	  -a $(ROOTFS_ARCH) \
+	  --extra-repo $$arch_repo \
+	  --extra-repo $$all_repo \
+	  --extra-config $(ROOTFS_CLEANUP_PATH) \
+	  $(ROOTFS_DIR) 
+	$(SL_V_at)touch $@
 
 $(ROOTFS_DIR).sqsh: $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done
-	f=$$(mktemp); sudo mksquashfs $(ROOTFS_DIR) $$f -no-progress -noappend -comp xz && sudo cat $$f > $(ROOTFS_DIR).sqsh
+	$(SL_V_GEN)set -e ;\
+	if $(SL_V_P); then set -x; fi ;\
+	f=$$(mktemp) ;\
+	trap "rm -f $$f" 0 1 ;\
+	sudo mksquashfs $(ROOTFS_DIR) $$f -no-progress -noappend -comp xz ;\
+	sudo cat $$f > $(ROOTFS_DIR).sqsh
 
 $(ROOTFS_DIR).cpio: $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done
 	sudo -- /bin/sh -c "cd $(ROOTFS_DIR); find . -print0 | cpio -0 -H newc -o" > $@
