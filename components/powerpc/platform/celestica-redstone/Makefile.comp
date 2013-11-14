@@ -18,7 +18,7 @@ PLATFORM_NAME := celestica-redstone
 LOADER_SIZE := 16384
 FLASHFS_SIZE_KB := 16384
 FLASH_ERASEBLOCK_KB := 128
-SWI_URL := flash2:switchlight-powerpc.swi
+SWI_URL := flash2:.ztn-switchlight.swi
 
 include $(SWITCHLIGHT)/make/loader-ppc.mk
 
