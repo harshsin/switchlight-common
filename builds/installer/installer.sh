@@ -44,7 +44,10 @@ else
     esac
 fi
 
+sl_version="@SLVERSION@"
+
 say "Switch Light install for ${platform}"
+say "[from ${sl_version}]"
 
 case "${platform}" in
     powerpc-quanta_lb9-r0)
@@ -149,26 +152,6 @@ sed -e '1,/^PAYLOAD_FOLLOWS$/d' "$0" | gzip -dc | ( cd /tmp/.installer && cpio -
 
 set -e
 
-if [ "${flash2dev}" ]; then
-    if blockdev --getsize64 "$flash2dev" 1>/dev/null 2>&1; then
-        say "Installing Switch Light software image"
-
-        umount -l /tmp/.fs 2>/dev/null || :
-        umount -l ${flash2fsdev} 2>/dev/null || :
-        rm -rf /tmp/.fs
-        mkdir /tmp/.fs
-        dd if=/dev/zero of=${flash2dev} bs=16M count=1
-        echo -e 'o\nn\np\n1\n\n\nt\n83\np\nw\n' | fdisk ${flash2dev}
-        mdev -s # trigger re-creating partition device node
-        mkdosfs -F 32 -v ${flash2fsdev}
-        mount -t vfat ${flash2fsdev} /tmp/.fs
-        cp /tmp/.installer/${swi} /tmp/.fs/
-        umount /tmp/.fs
-    else
-        say "Flash device ${flash2dev} not found; skipping software image install"
-    fi
-fi
-
 say "Installing Switch Light loader (takes several minutes)"
 
 flashcp -v /tmp/.installer/${flashimage} ${flashdev}
@@ -190,11 +173,35 @@ if [ "$jffs2dev" ]; then
     fi
 fi
 
+if [ "${flash2dev}" ]; then
+    if blockdev --getsize64 "$flash2dev" 1>/dev/null 2>&1; then
+        say "Installing Switch Light software image"
+
+        umount -l /tmp/.fs 2>/dev/null || :
+        umount -l ${flash2fsdev} 2>/dev/null || :
+        rm -rf /tmp/.fs
+        mkdir /tmp/.fs
+        dd if=/dev/zero of=${flash2dev} bs=16M count=1
+        echo -e 'o\nn\np\n1\n\n\nt\n83\np\nw\n' | fdisk ${flash2dev}
+        mdev -s # trigger re-creating partition device node
+        mkdosfs -F 32 -v ${flash2fsdev}
+        mount -t vfat ${flash2fsdev} /tmp/.fs
+        cp /tmp/.installer/${swi} /tmp/.fs/.ztn-switchlight.swi
+        umount /tmp/.fs
+    else
+        say "Flash device ${flash2dev} not found; skipping software image install"
+    fi
+fi
+
 bootcmd="setenv bootargs console=\$consoledev,\$baudrate sl_loader=${loaderdev}; bootm ${loaderaddr}"
+installer_md5=$(md5sum "$0" | awk '{print $1}')
 
 if [ "${onie_platform}" ]; then
     say "Setting boot command to boot Switch Light"
-    echo "nos_bootcmd ${bootcmd}" >/tmp/.env
+    cp /dev/null /tmp/.env
+    echo "nos_bootcmd ${bootcmd}" >>/tmp/.env
+    echo "sl_installer_md5 ${installer_md5}" >>/tmp/.env
+    echo "sl_installer_version ${sl_version}" >> /tmp/.env
     fw_setenv -f -s /tmp/.env
     trap - EXIT
     say "Install finished.  Rebooting to Switch Light."
