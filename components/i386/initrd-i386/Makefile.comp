@@ -6,6 +6,13 @@ BUILD_INITRD_386 := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 include $(SWITCHLIGHT)/make/config.mk
 
+SWITCHLIGHT_BUILD_CONFIG := i386
+
+# Release string, copied from swi.mk
+ifndef RELEASE
+RELEASE := SwitchLight$(SWITCHLIGHT_RELEASE_BANNER)($(SWITCHLIGHT_BUILD_CONFIG),$(SWITCHLIGHT_BUILD_TIMESTAMP),$(SWITCHLIGHT_BUILD_SHA1))
+endif
+
 initrd-i386: $(BUILD_INITRD_386)/initrd-i386
 
 $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done:
@@ -13,7 +20,7 @@ $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done:
 	touch $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done
 
 $(BUILD_INITRD_386)/initrd-i386: $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done
-	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) buildroot-i386
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) SWITCHLIGHT_RELEASE="$(RELEASE)" buildroot-i386
 	cat $(SWITCHLIGHT_SUBMODULE_LOADER)/buildroot-i386/images/rootfs.cpio.gz >initrd-i386
 
 .PHONY: deb
