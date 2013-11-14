@@ -263,8 +263,18 @@ ivs_init(ivs_t* ivs)
 #endif
 
 #if IVS_CONFIG_INCLUDE_NETWORK_CLI == 1
-    nss_create(&ivs->netif.nss, IVS_CONFIG_NSS_PORT_DEFAULT, "0.0.0.0"); 
-    ivs->netif.ucli = ucli_copy(ivs->ucli); 
+    /* Backdoor for SwitchLight. Fixme with ZTN. */
+    {
+        FILE* fp; 
+        char* listenon = "127.0.0.1"; 
+        if((fp=fopen("/mnt/flash/promiscuous-internal-cli", "r"))) {
+	  AIM_LOG_WARN("promiscuous-cli mode."); 
+	  listenon = "0.0.0.0"; 
+	  fclose(fp); 
+        }    
+        nss_create(&ivs->netif.nss, IVS_CONFIG_NSS_PORT_DEFAULT, listenon); 
+        ivs->netif.ucli = ucli_copy(ivs->ucli); 
+    }
 #endif
 
 #if IVS_CONFIG_INCLUDE_CONSOLE_CLI == 1
