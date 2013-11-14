@@ -44,22 +44,14 @@ service_handler_complete__(of_experimenter_t* experimenter,
         goto finish; 
     }
     
-    if(indigo_cxn_send_controller_message(cxn_id, output) < 0) { 
-        AIM_LOG_ERROR("Error sending shell output response."); 
-        rv = INDIGO_ERROR_UNKNOWN; 
-        goto finish; 
-    }
+    indigo_cxn_send_controller_message(cxn_id, output);
                 
     /* Send the status code */
     status = of_bsn_shell_status_new(experimenter->version); 
     of_bsn_shell_status_xid_set(status, xid); 
     of_bsn_shell_status_status_set(status, rc); 
                 
-    if(indigo_cxn_send_controller_message(cxn_id, status) < 0) { 
-        AIM_LOG_ERROR("Error sending shell status response."); 
-        rv = INDIGO_ERROR_UNKNOWN; 
-        goto finish;
-    }
+    indigo_cxn_send_controller_message(cxn_id, status);
     
     rv = INDIGO_ERROR_NONE; 
 
