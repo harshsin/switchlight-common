@@ -45,6 +45,7 @@ switchlight.$(PLATFORM_NAME).loader: $(KERNEL.BIN.GZ) $(INITRD) $(DTB)
 	$(SL_V_GEN)set -e ;\
 	if $(SL_V_P); then set -x; fi ;\
 	f=$$(mktemp) ;\
+	trap "rm -f $$f" 0 1 ;\
 	$(SWITCHLIGHT)/tools/powerpc-linux-gnu-mkimage -A ppc -T multi -C gzip -d $(KERNEL.BIN.GZ):$(INITRD):$(DTB) $$f ;\
 	cat $$f > $@
 
@@ -53,6 +54,7 @@ switchlight.$(PLATFORM_NAME).jffs2:
 	$(SL_V_GEN)set -e ;\
 	if $(SL_V_P); then set -x; fi ;\
 	f=$$(mktemp) ;\
+	trap "rm -f $$f" 0 1 ;\
 	$(SWITCHLIGHT)/tools/make-jffs2-image $(FLASHFS_SIZE_KB) $(FLASH_ERASEBLOCK_KB) $(SWI_URL) $$f ;\
 	cat $$f > $@
 

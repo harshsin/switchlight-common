@@ -6,6 +6,13 @@ BUILD_INITRD_POWERPC := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 include $(SWITCHLIGHT)/make/config.mk
 
+SWITCHLIGHT_BUILD_CONFIG := powerpc
+
+# Release string, copied from swi.mk
+ifndef RELEASE
+RELEASE := SwitchLight$(SWITCHLIGHT_RELEASE_BANNER)($(SWITCHLIGHT_BUILD_CONFIG),$(SWITCHLIGHT_BUILD_TIMESTAMP),$(SWITCHLIGHT_BUILD_SHA1))
+endif
+
 initrd-powerpc: $(BUILD_INITRD_POWERPC)/initrd-powerpc
 
 $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done:
@@ -13,7 +20,7 @@ $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done:
 	touch $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done
 
 $(BUILD_INITRD_POWERPC)/initrd-powerpc: $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done
-	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) buildroot-powerpc
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) SWITCHLIGHT_RELEASE="$(RELEASE)" buildroot-powerpc
 	cat $(SWITCHLIGHT_SUBMODULE_LOADER)/buildroot-powerpc/images/rootfs.cpio.gz >initrd-powerpc
 
 .PHONY: deb

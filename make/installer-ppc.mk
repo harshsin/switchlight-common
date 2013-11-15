@@ -32,7 +32,10 @@ PLATFORM_FLASH_TEMPLATE_NAMES := $(foreach p,$(PLATFORM_FLASH_TEMPLATES),$(notdi
 
 $(INSTALLER_NAME): $(INSTALLER_NAME).cpio
 	$(SL_V_at)cp /dev/null $@
-	$(SL_V_at)cat $(SWITCHLIGHT)/builds/installer/installer.sh >> $@
+	$(SL_V_at)sed \
+	  -e 's^@SLVERSION@^$(RELEASE)^g' \
+	  $(SWITCHLIGHT)/builds/installer/installer.sh \
+	>> $@
 	$(SL_V_GEN)gzip -9 < $@.cpio >> $@
 	$(SL_V_at)rm $@.cpio
 
@@ -49,6 +52,15 @@ $(INSTALLER_NAME).cpio: $(PLATFORM_FLASH_TEMPLATES) $(INSTALLER_SWI)
 $(INSTALLER_SWI):
 	$(MAKE) -C $(dir $(INSTALLER_SWI))
 
+# Build config
+ifndef SWITCHLIGHT_BUILD_CONFIG
+$(error $$SWITCHLIGHT_BUILD_CONFIG is not defined.)
+endif
+
+# Release string, copied from swi.mk
+ifndef RELEASE
+RELEASE := SwitchLight$(SWITCHLIGHT_RELEASE_BANNER)($(SWITCHLIGHT_BUILD_CONFIG),$(SWITCHLIGHT_BUILD_TIMESTAMP),$(SWITCHLIGHT_BUILD_SHA1))
+endif
 
 clean:
 	rm -f *.cpio *.jffs2 *.loader *.swi *.installer
