@@ -14,6 +14,26 @@ import logging
 import subprocess
 import fcntl
 
+
+#
+# Hack
+# Disabled and/or deprecated packages
+#
+disabled_packages = [
+    'brcmd-5.6', 
+    'brcmd-5.10',
+    'ofad-5.6', 
+    'ofad-5.10', 
+    'libbroadcom-5.6',
+    'libbroadcom-5.10',
+]; 
+
+def package_enabled(p):
+    for dp in disabled_packages:
+        if dp in p:
+            return False
+    return True
+
 def find_file_or_dir(basedir, filename=None, dirname=None):
     """Find and return the path to a given file or directory below the given root"""
     for root, dirs, files in os.walk(basedir):
@@ -157,7 +177,7 @@ repoLock = Lock(repo_lockf)
 if ops.list_all:
     all_ = find_all_packages(os.path.abspath("%s/components" % (SWITCHLIGHT)))
     for p in all_:
-        if not ":any" in p:
+        if not ":any" in p and package_enabled(p):
             print p
     sys.exit(0)
 
