@@ -134,19 +134,14 @@ platform-quanta-lb9:powerpc \
 platform-quanta-ly5:powerpc \
 platform-celestica-redstone:powerpc \
 platform-delta-7448:powerpc \
+platform-accton-es5652bt:powerpc \
 loader-i386:i386
 $(foreach c,$(PARALLEL_1),$(eval $(call cbuild,$(c),$(PARALLEL_0))))
 
 PARALLEL_2 := \
-libbroadcom-5.10-release:powerpc \
-libbroadcom-5.10-internal:powerpc \
-libbroadcom-5.6-internal:powerpc \
-libbroadcom-5.6-release:powerpc \
 libbroadcom-6.2-internal:powerpc \
 libbroadcom-6.2-release:powerpc \
 libbroadcom-6.2-internal-src:all \
-libbroadcom-5.6-internal-src:all \
-libbroadcom-5.10-internal-src:all 
 $(foreach c,$(PARALLEL_2),$(eval $(call cbuild,$(c),$(PARALLEL_1))))
 
 PARALLEL_3 := \
@@ -154,22 +149,11 @@ faultd:amd64 \
 faultd:powerpc \
 sofcon:powerpc \
 brcmd-6.2.7-sim:amd64 \
-brcmd-5.10.0-sim:amd64 \
-brcmd-5.6.6-sim:amd64 \
-ofad-5.6.6-sim:amd64 \
 ofad-6.2.7-sim:amd64 \
-ofad-5.10.0-sim:amd64 \
-brcmd-5.10.0-internal:powerpc \
-brcmd-5.6.6-internal:powerpc \
 brcmd-6.2.7-internal:powerpc \
-ofad-5.10.0-release:powerpc \
 ofad-6.2.7-release:powerpc \
-ofad-5.10.0-internal:powerpc \
-ofad-5.6.6-release:powerpc \
-ofad-5.6.6-internal:powerpc \
 ofad-6.2.7-t5:powerpc \
 ofad-6.2.7-internal:powerpc \
-ofad-5.10.0-t5:powerpc \
 pcli:all
 $(foreach c,$(PARALLEL_3),$(eval $(call cbuild,$(c),$(PARALLEL_2))))
 
