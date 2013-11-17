@@ -1,0 +1,10 @@
+#!/bin/sh
+# Wait for a sys device to appear on $1, time out after 10 seconds
+
+i=10
+while [ $i -gt 0 ]; do
+    find /sys/devices | grep -q $1 && break
+    sleep 1
+    let i--
+done
+[ $i -gt 0 ] || { echo "Timed out waiting for $1"; exit 1; }

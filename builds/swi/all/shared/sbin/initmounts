@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e 
+exec 9<$0
+flock -x 9
+
+if [ -f /etc/sl_mounts ]; then
+    while read sysdev devpart mount; do
+        waitforsysdev $sysdev
+	mkdir -p /mnt/$mount
+        mount -o noatime /dev/$devpart /mnt/$mount 2>/dev/null
+    done</etc/sl_mounts
+fi
+
+
