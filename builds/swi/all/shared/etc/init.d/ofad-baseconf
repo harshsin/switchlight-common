@@ -19,6 +19,7 @@ PLAT_LB9A               = "quanta-lb9a"
 PLAT_LY2                = "quanta-ly2"
 PLAT_LY2R               = "quanta-ly2r"
 PLAT_CELESTICA_REDSTONE = "celestica-redstone"
+PLAT_ACCTON_5652        = "accton-5652"
 PLAT_UNKNOWN            = "unknown"
 
 PHY_BASE_NAME           = "eth"
@@ -31,6 +32,7 @@ NUM_PHY_PORTS = {
     PLAT_LY2                : 52,
     PLAT_LY2R               : 52,
     PLAT_CELESTICA_REDSTONE : 52,
+    PLAT_ACCTON_5652        : 52,
     PLAT_UNKNOWN            : 0
 }
 

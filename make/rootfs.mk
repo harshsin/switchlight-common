@@ -46,7 +46,7 @@ ifndef ROOTFS_CLEANUP_PATH
 ROOTFS_CLEANUP_PATH := $(ROOTFS_BUILD_DIR)/$(ROOTFS_CLEANUP_NAME)
 endif
 
-rootfs.all: $(ROOTFS_DIR).sqsh $(ROOTFS_DIR).cpio
+rootfs.all: $(ROOTFS_DIR).sqsh $(ROOTFS_DIR).cpio 
 
 export SWITCHLIGHT
 
@@ -54,7 +54,11 @@ ifndef APT_CACHE
 APT_CACHE := 10.198.0.0:3142/
 endif
 
-$(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done: $(SWITCHLIGHT_PACKAGE_MANIFEST)
+ifndef NO_PACKAGE_DEPENDENCY
+PACKAGE_DEPENDENCY = $(SWITCHLIGHT_PACKAGE_MANIFEST)
+endif
+
+$(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done: $(PACKAGE_DEPENDENCY) 
 	$(SL_V_at)sudo update-binfmts --enable
 	$(SL_V_at)sudo rm -rf $(ROOTFS_DIR)
 	$(SL_V_GEN)set -e ;\
@@ -73,6 +77,7 @@ $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done: $(SWITCHLIGHT_PACKAGE_MANIFEST)
 	  --extra-repo $$all_repo \
 	  --extra-config $(ROOTFS_CLEANUP_PATH) \
 	  $(ROOTFS_DIR) 
+	find $(ROOTFS_DIR)/etc/apt -name "*.list" -print0 | sudo xargs -0 sed -i 's/$(subst /,\/,$(APT_CACHE))//g'
 	$(SL_V_at)touch $@
 
 $(ROOTFS_DIR).sqsh: $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done
