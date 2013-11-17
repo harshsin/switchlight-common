@@ -1,5 +1,5 @@
 [deb-all]
-packages=pcli 
+packages=pcli python-flask
 source=copy:__DIR__/all ./
 omitdebsrc=true
 

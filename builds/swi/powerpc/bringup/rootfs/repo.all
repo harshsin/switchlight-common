@@ -1,5 +1,5 @@
 [deb-all]
-packages=
+packages= python-flask
 source=copy:__DIR__/all ./
 omitdebsrc=true
 
