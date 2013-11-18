@@ -4012,5 +4012,5 @@ def init_command(bs):
         'name'      : 'interface-list',
         'help-name' : 'comma-separated list of port ranges',
         'base-type' : 'string',
-        'pattern'   : r'^[A-Za-z]+(\d+(-\d+)?,)*\d+(-\d+)?$',
+        'pattern'   : r'^[A-Za-z-]+(\d+(-\d+)?,)*\d+(-\d+)?$',
     })

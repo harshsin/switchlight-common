@@ -23,7 +23,7 @@ PortManager.setLAGBase(OFAgentConfig.lag_base_name)
 def get_base_name(s):
     # given a string, return the base name of an interface; 
     # FIXME assumes it's all text...
-    match = re.match(r'([A-Za-z])+', s)
+    match = re.match(r'([A-Za-z-])+', s)
     return match.group() if match else ''
 
 def get_port_name(s):
@@ -118,7 +118,7 @@ def show_dp_intf_list(port_name_list, detail):
     ports = get_port_info()
 
     if not detail:
-        format_str = "%2s%s %-12s %-5s %20s %20s %7s"
+        format_str = "%2s%s %-14s %-5s %20s %20s %7s"
         print '* = Link up, D = Disabled'
         print format_str % ('#', ' ', 'Name', 'Speed', 'Rx', 'Tx', '  ')
 
