@@ -15,5 +15,5 @@ clean:
 override_dh_auto_install:
 	mkdir -p $(INSTALL_DIR)/usr/platforms/accton-es5652bt
 	cp ../../switchlight.accton-es5652bt.loader $(INSTALL_DIR)/usr/platforms/accton-es5652bt/
-	cp ../../switchlight.accton-es5652bt.jffs2 $(INSTALL_DIR)/usr/platforms/accton-es5652bt/
+
 

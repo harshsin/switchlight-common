@@ -34,7 +34,11 @@ ifndef FLASH_ERASEBLOCK_KB
 $(error $$(FLASH_ERASEBLOCK_KB)
 endif
 
-all: switchlight.$(PLATFORM_NAME).loader switchlight.$(PLATFORM_NAME).jffs2
+all: switchlight.$(PLATFORM_NAME).loader 
+
+ifneq ($(FLASHFS_SIZE_KB),0)
+all: switchlight.$(PLATFORM_NAME).jffs2
+endif
 
 ifdef LOADER_SIZE
 all: switchlight.$(PLATFORM_NAME).flash
