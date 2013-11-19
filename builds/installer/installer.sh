@@ -1,6 +1,15 @@
 #!/bin/sh
+set -e 
 
 cd $(dirname $0)
+
+# Installer debug option from the environment
+fw_printenv sl_installer_debug &> /dev/null && debug=1
+echo "debug=$debug"
+if [ "$debug" ]; then
+    set -x
+fi
+
 
 # Remount tmpfs larger
 mount -oremount,size=512M /tmp
@@ -40,6 +49,9 @@ else
             ;;
         quanta-ly5)
             platform=powerpc-quanta_ly5-r0
+	    ;;
+	accton-5651)
+	    platform=powerpc-es5652bt1-flf-zz-r0
             ;;
     esac
 fi
@@ -134,6 +146,16 @@ case "${platform}" in
         flash2dev=
         flash2fsdev=
         ;;
+    powerpc-es5652bt1-flf-zz-r0)
+	blockinstall=/dev/sda
+	partition1size=16M
+	partition2size=64M
+	partition3size=
+	loaderimage=switchlight.accton-es5652bt.loader
+	swi=switchlight-powerpc.swi
+	platform_bootcmd='usb start; fatload usb 0:1 0x10000000 switchlight-loader; bootm 0x10000000'
+	bootconfig='default'
+	;;
     *)
         say "This installer does not support platform ${platform}"
         exit 1
@@ -152,9 +174,43 @@ sed -e '1,/^PAYLOAD_FOLLOWS$/d' "$0" | gzip -dc | ( cd /tmp/.installer && cpio -
 
 set -e
 
+
 say "Installing Switch Light loader (takes several minutes)"
 
-flashcp -v /tmp/.installer/${flashimage} ${flashdev}
+if [ "$blockinstall" ]; then
+    # Standard 3 partition formatting
+    echo -e "o\nn\np\n1\n\n+${partition1size}\nn\np\n2\n\n+${partition2size}\nn\np\n3\n\n${partition3size}\np\nw\n" | fdisk ${blockinstall}
+    mkdosfs /dev/sda1
+    mkdosfs /dev/sda2
+    mkdosfs /dev/sda3
+    mkdir -p /tmp/.fs
+    mount /dev/sda1 /tmp/.fs
+    cp /tmp/.installer/${loaderimage} /tmp/.fs/switchlight-loader
+    umount /tmp/.fs
+    if [ "$swi" ]; then
+        say "Installing Switch Light software image"
+	mount /dev/sda3 /tmp/.fs
+        cp /tmp/.installer/${swi} /tmp/.fs/.ztn-switchlight.swi
+	umount /tmp/.fs
+    fi
+    if [ "$bootconfig" ]; then
+	say "Installing persistent /mnt/flash"
+	mount /dev/sda2 /tmp/.fs
+	if [ -f "/tmp/installer/${bootconfig}" ]; then
+	    cp /tmp/installer/${bootconfig} /tmp/.fs/boot-config
+	else
+	    if [ "${bootconfig}" = "default" ]; then
+		bootconfig='SWI=flash2:.ztn-switchlight.swi\nNETDEV=ma1\nNETAUTO=dhcp\n'
+	    fi
+	    echo -e "${bootconfig}" > /tmp/.fs/boot-config
+	fi
+	umount /dev/sda2
+    fi	  
+fi
+      
+if [ "$flashimage" ]; then
+    flashcp -v /tmp/.installer/${flashimage} ${flashdev}
+fi
 
 if [ "$jffs2dev" ]; then
     if [ -e "$jffs2dev" ]; then
@@ -193,7 +249,12 @@ if [ "${flash2dev}" ]; then
     fi
 fi
 
-bootcmd="setenv bootargs console=\$consoledev,\$baudrate sl_loader=${loaderdev}; bootm ${loaderaddr}"
+if [ "${platform_bootcmd}" ]; then
+    bootcmd=${platform_bootcmd}
+else
+    bootcmd="setenv bootargs console=\$consoledev,\$baudrate sl_loader=${loaderdev}; bootm ${loaderaddr}"
+fi
+
 installer_md5=$(md5sum "$0" | awk '{print $1}')
 
 if [ "${onie_platform}" ]; then
