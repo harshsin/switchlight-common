@@ -153,7 +153,7 @@ case "${platform}" in
 	partition3size=
 	loaderimage=switchlight.accton-es5652bt.loader
 	swi=switchlight-powerpc.swi
-	platform_bootcmd='usb start; fatload usb 0:1 0x10000000 switchlight-loader; bootm 0x10000000'
+	platform_bootcmd='usb start; fatload usb 0:1 0x10000000 switchlight-loader; setenv bootargs console=\$consoledev,\$baudrate ; bootm 0x10000000'
 	bootconfig='default'
 	;;
     *)
