@@ -5,7 +5,7 @@ cd $(dirname $0)
 
 # Installer debug option from the environment
 fw_printenv sl_installer_debug &> /dev/null && debug=1
-echo "debug=$debug"
+
 if [ "$debug" ]; then
     set -x
 fi
