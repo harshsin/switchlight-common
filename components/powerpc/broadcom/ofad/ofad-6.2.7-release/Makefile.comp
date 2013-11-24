@@ -58,6 +58,10 @@ SCRIPT := brcm_ly2_gpio_init
 $(SCRIPT)_PARTS := $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules/BRCM/module/src/$(SCRIPT)
 include $(BUILDER)/script.mk
 
+SCRIPT := brcm_ly2_phy_reset
+$(SCRIPT)_PARTS := $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules/BRCM/module/src/$(SCRIPT)
+include $(BUILDER)/script.mk
+
 #
 # Now that we've specified all the things we want to build, 
 # finalize with target definitions. 
