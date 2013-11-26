@@ -256,6 +256,9 @@ else
 fi
 
 installer_md5=$(md5sum "$0" | awk '{print $1}')
+if [ -f "$0.url" ]; then
+    installer_url=$(cat "$0.url")
+fi
 
 if [ "${onie_platform}" ]; then
     say "Setting boot command to boot Switch Light"
@@ -263,6 +266,11 @@ if [ "${onie_platform}" ]; then
     echo "nos_bootcmd ${bootcmd}" >>/tmp/.env
     echo "sl_installer_md5 ${installer_md5}" >>/tmp/.env
     echo "sl_installer_version ${sl_version}" >> /tmp/.env
+    if [ "$installer_url" ]; then
+        echo "sl_installer_url ${installer_url}" >> /tmp/.env
+    else
+        echo "sl_installer_url" >> /tmp/.env
+    fi
     fw_setenv -f -s /tmp/.env
     trap - EXIT
     say "Install finished.  Rebooting to Switch Light."
