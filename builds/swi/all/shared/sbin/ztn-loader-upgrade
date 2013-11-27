@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+######################################################################
+#
+# ztn-loader-upgrade
+#
+######################################################################
+
+echo "Rebooting to trigger an ONIE firmware install..."
+fw_setenv onie_boot_reason install
+reboot
