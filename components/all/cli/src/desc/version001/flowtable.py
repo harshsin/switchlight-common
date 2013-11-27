@@ -153,7 +153,7 @@ def of10_flow_entry_to_disp(entry):
         bits = 32-((match.wildcards & of10.OFPFW_NW_SRC_MASK) >> of10.OFPFW_NW_SRC_SHIFT)
         rv.sip = fmtcnv.convert_ip_in_integer_to_dotted_decimal(match.ipv4_src) + "/" + str(bits)
     if not (match.wildcards & of10.OFPFW_NW_DST_MASK):
-        bits = 32-((match.wildcards & of10.OFPFW_NW_SRC_MASK) >> of10.OFPFW_NW_SRC_SHIFT)
+        bits = 32-((match.wildcards & of10.OFPFW_NW_DST_MASK) >> of10.OFPFW_NW_DST_SHIFT)
         rv.dip = fmtcnv.convert_ip_in_integer_to_dotted_decimal(match.ipv4_dst) + "/" + str(bits)
     if not (match.wildcards & of10.OFPFW_TP_SRC):
         rv.l4_src = str(match.tcp_src)
