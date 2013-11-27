@@ -29,6 +29,8 @@ agentSecName disman
 createUser disman MD5 "internal user for monitoring"
 rouser disman auth
 
+override .1.3.6.1.2.1.2.1.0 integer 56
+
 # Enable sub-agents
 master agentx
 EOF
