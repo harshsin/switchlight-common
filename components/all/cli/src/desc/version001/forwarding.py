@@ -18,6 +18,7 @@ def config_forwarding(no_command, data):
 
     if data['type'] == 'crc':
         if disabled:
+            print "WARNING: CRC forwarding setting must be consistent on all Big Tap switches in the same forwarding domain."
             fwdCfg.disableCRC()
         else:
             fwdCfg.enableCRC()
