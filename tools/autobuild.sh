@@ -24,8 +24,10 @@ SHA1=`cd $SWITCHLIGHT_ROOT && git rev-list HEAD -1`
 if [ "$GITUSER" == "bigswitch" ]; then
     # Special case. 
     USERDIR=""
+    ABAT_SUFFIX=".$BRANCH"
 else
     USERDIR="$GITUSER/"
+    ABAT_SUFFIX=".$GITUSER.$BRANCH"
 fi
 
 if [ -z "$WS_ROOT" ]; then
@@ -91,7 +93,7 @@ function build_and_install {
 }
 
 # Build primary targets for testing
-build_and_install swi-internal swi-release installer-all-release installer-quanta-lb9a-release installer-quanta-lb9-release installer-quanta-ly2-release components
+build_and_install swi-internal swi-release installer-all-release installer-quanta-lb9a-release installer-quanta-lb9-release installer-quanta-ly2-release installer-accton-es5652bt-release 
 
 # Copy the loader binaries (hack)
 ssh $INSTALL_SERVER mkdir -p $INSTALL_DIR/loaders
@@ -112,7 +114,8 @@ if [ -n "$ABAT_SUFFIX" ]; then
 fi
 
 # Build remaining targets
-build_and_install all
+# Temporarily disabled until all builds are fixed. 
+# build_and_install all
 
 # Update build manifest
 ssh $INSTALL_SERVER $INSTALL_BASE_DIR/update-latest.py --update-manifest --dir $INSTALL_AUTOBUILD_DIR --force
