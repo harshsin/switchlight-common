@@ -23,7 +23,8 @@ SWI_ARCHS := $(filter-out swi/all,$(wildcard swi/*))
 # SWI_BUILD_PATHS := $(foreach arch,$(SWI_ARCHS),$(wildcard $(arch)/*))
 #
 # These are the current default subset
-SWI_BUILD_PATHS := swi/powerpc/internal swi/powerpc/release swi/i386/vm-internal swi/powerpc/internal-t5
+SWI_BUILD_PATHS := swi/powerpc/internal swi/powerpc/release swi/powerpc/internal-t5
+#swi/i386/vm-internal 
 
 #
 # Define a build template for each platform by name and build directory
@@ -119,12 +120,12 @@ $(subst :,.,$(1)): $(subst :,.,$(2))
 	$(SWITCHLIGHT)/tools/spkg.py $(1) --build
 endef
 
+
 PARALLEL_0 := \
-kernel-x86-64:amd64 \
 kernel-85xx:powerpc \
 kernel-e500mc:powerpc \
-initrd-powerpc:powerpc \
-initrd-i386:i386
+initrd-powerpc:powerpc 
+# kernel-x86-64:amd64 initrd-i386:i386
 $(foreach c,$(PARALLEL_0),$(eval $(call cbuild,$(c),submodules_init)))
 
 PARALLEL_1 := \
@@ -132,10 +133,8 @@ platform-quanta-lb9a:powerpc \
 platform-quanta-ly2:powerpc \
 platform-quanta-lb9:powerpc \
 platform-quanta-ly5:powerpc \
-platform-celestica-redstone:powerpc \
-platform-delta-7448:powerpc \
-platform-accton-es5652bt:powerpc \
-loader-i386:i386
+platform-accton-es5652bt:powerpc 
+# loader-i386:i386
 $(foreach c,$(PARALLEL_1),$(eval $(call cbuild,$(c),$(PARALLEL_0))))
 
 PARALLEL_2 := \
@@ -145,16 +144,15 @@ libbroadcom-6.2-internal-src:all \
 $(foreach c,$(PARALLEL_2),$(eval $(call cbuild,$(c),$(PARALLEL_1))))
 
 PARALLEL_3 := \
-faultd:amd64 \
 faultd:powerpc \
 sofcon:powerpc \
-brcmd-6.2.7-sim:amd64 \
-ofad-6.2.7-sim:amd64 \
 brcmd-6.2.7-internal:powerpc \
 ofad-6.2.7-release:powerpc \
 ofad-6.2.7-t5:powerpc \
 ofad-6.2.7-internal:powerpc \
 pcli:all
+# faultd:amd64 brcmd-6.2.7-sim:amd64 ofad-6.2.7-sim:amd64 \
+
 $(foreach c,$(PARALLEL_3),$(eval $(call cbuild,$(c),$(PARALLEL_2))))
 
 parallel0: $(subst :,.,$(PARALLEL_0))
