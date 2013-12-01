@@ -33,17 +33,14 @@
 #define LACP_LONG_TIMEOUT_MS            90000
 #define LACP_CHURN_DETECTION_TIMEOUT_MS 60000
 
-#define LACP_PKT_BUF_SIZE               128 //Per LACP specification
-                                            //802.3ad-2000, Max LACPDU size
-                                            //is 124 Bytes + 4 Byte FCS.
+#define LACP_PKT_BUF_SIZE               128  //Per LACP specification
+                                             //802.3ad-2000, Max LACPDU size
+                                             //is 124 Bytes + 4 Byte FCS.
 
 #define PHY_PORT_COUNT                  1024
 
 #define DEFAULT_ZERO                    0
 
-#define DEFAULT_LACP_ACTIVITY           1   //Active LACP
-#define DEFAULT_LACP_TIMEOUT            0   //Long Timeout
-#define DEFAULT_AGGREGATION             1   //Aggregateable
 #define DEFAULT_LACP_VERSION            1
 
 #define DEFAULT_ACTOR_INFO              0x01
@@ -129,6 +126,7 @@
  *****************************************************************************/
 extern void lacpa_machine (lacpa_port_t *port, lacpa_pdu_t *pdu);
 extern bool lacpa_transmit (lacpa_port_t *port);
+extern bool lacpa_receive (of_packet_in_t *packet_in, of_octets_t *octets);
 
 extern void lacpa_periodic_machine (lacpa_port_t *port, bool timer_enabled);
 extern void lacpa_churn_detection_machine (lacpa_port_t *port,

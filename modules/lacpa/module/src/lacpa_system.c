@@ -48,28 +48,47 @@ lacpa_is_system_initialized (void)
  * API to init the LACP System
  * This should only be done once at the beginning.
  */
-extern void
+extern indigo_error_t
 lacpa_init_system (lacpa_system_t *system)
 {
-    uint32_t  num_of_ports = 0;
+    uint32_t ports_size = 0;
 
-    if (lacpa_is_system_initialized() || !system) return;
+    if (lacpa_is_system_initialized()) return INDIGO_ERROR_NONE;
+
+	if (!system) return INDIGO_ERROR_PARAM;
 
 	AIM_LOG_TRACE("Initing the LACP System...");
 
-    num_of_ports = PHY_PORT_COUNT;
+    ports_size = sizeof(lacpa_port_t) * (PHY_PORT_COUNT+1);
     system->lacp_active_port_count = 0;
-    system->ports = (lacpa_port_t *) LACPA_MALLOC(
-                    sizeof(lacpa_port_t) * (num_of_ports+1));
+    system->ports = (lacpa_port_t *) LACPA_MALLOC(ports_size);
 
     if (!system->ports) {
 		AIM_LOG_ERROR("Failed to allocate resources for ports..");
-	    return;
+	    return INDIGO_ERROR_RESOURCE;
     }
 
     AIM_LOG_TRACE("Succesfully inited LACP System for %d ports...",
-                  num_of_ports);
+                  PHY_PORT_COUNT);
+    LACPA_MEMSET(system->ports, DEFAULT_ZERO, ports_size);
 	lacp_system_initialized = TRUE;
+
+	/*
+     * Register listerners for port packet_in and Controller msg's
+     */
+	if (ind_core_packet_in_listener_register((ind_core_packet_in_listener_f)
+                                             lacpa_packet_in_listner) < 0) {
+		AIM_LOG_FATAL("Failed to register for port packet_in in LACPA module");
+		return INDIGO_ERROR_INIT;
+    }
+
+	if (ind_core_message_listener_register((ind_core_message_listener_f)
+                                           lacpa_controller_msg_listner) < 0) {
+        AIM_LOG_FATAL("Failed to register for Controller msg in LACPA module");
+        return INDIGO_ERROR_INIT;
+    }
+
+	return INDIGO_ERROR_NONE;
 }
 
 /*

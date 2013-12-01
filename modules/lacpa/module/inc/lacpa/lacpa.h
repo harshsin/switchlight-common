@@ -22,6 +22,11 @@
 
 #include <lacpa/lacpa_config.h>
 #include <lacpa/lacpa_porting.h>
+#include <stdbool.h>
+#include <indigo/error.h>
+#include <loci/loci.h>
+#include <OFStateManager/ofstatemanager.h>
+#include <indigo/of_connection_manager.h>
 
 /* <auto.start.enum(ALL).header> */
 /** lacpa_error */
@@ -159,7 +164,8 @@ typedef enum lacpa_transmit_e {
     LACPA_TRANSMIT_COLLECTING_SET,
     LACPA_TRANSMIT_DISTRIBUTING_SET,
     LACPA_TRANSMIT_PERIODIC_TIMER_EXPIRED,
-    LACPA_TRANSMIT_LAST = LACPA_TRANSMIT_PERIODIC_TIMER_EXPIRED,
+    LACPA_TRANSMIT_CURRENT_TIMER_EXPIRED,
+    LACPA_TRANSMIT_LAST = LACPA_TRANSMIT_CURRENT_TIMER_EXPIRED,
     LACPA_TRANSMIT_COUNT,
     LACPA_TRANSMIT_INVALID = -1,
 } lacpa_transmit_t;
@@ -179,6 +185,7 @@ typedef enum lacpa_transmit_e {
     "COLLECTING_SET", \
     "DISTRIBUTING_SET", \
     "PERIODIC_TIMER_EXPIRED", \
+    "CURRENT_TIMER_EXPIRED", \
 }
 /** Enum names. */
 const char* lacpa_transmit_name(lacpa_transmit_t e);
@@ -191,7 +198,7 @@ const char* lacpa_transmit_desc(lacpa_transmit_t e);
 
 /** validator */
 #define LACPA_TRANSMIT_VALID(_e) \
-    ( (0 <= (_e)) && ((_e) <= LACPA_TRANSMIT_PERIODIC_TIMER_EXPIRED))
+    ( (0 <= (_e)) && ((_e) <= LACPA_TRANSMIT_CURRENT_TIMER_EXPIRED))
 
 /** lacpa_transmit_map table. */
 extern aim_map_si_t lacpa_transmit_map[];
@@ -204,25 +211,19 @@ extern aim_map_si_t lacpa_transmit_desc_map[];
  * LACP : LINK AGGREGATION CONTROL PROTOCOL : PROTOCOL DATA
  *
  *****************************************************************************/
-#define MAC_ADDRESS_BYTES      6
-
 #define FALSE                  0
 #define TRUE                   1
-
-typedef uint8_t  bool;
-
-typedef uint8_t  lacpa_mac_t[MAC_ADDRESS_BYTES];
 
 typedef uint8_t lacpa_state_t;
 
 typedef struct lacpa_info_e { /* lacpa_info */
     uint16_t         sys_priority;
-    lacpa_mac_t      sys_mac;
+    of_mac_addr_t    sys_mac;
     uint16_t         port_priority;
     uint16_t         port_num;
     uint16_t         key;
     lacpa_state_t    state;
-    uint32_t         port_no;
+    of_port_no_t     port_no;
 } lacpa_info_t;
 
 typedef struct lacp_pdu_e { /* lacpa_pdu */
@@ -237,7 +238,7 @@ typedef struct lacpa_system_e lacpa_system_t;
  * LACP : LINK AGGREGATION CONTROL PROTOCOL : PHYSICAL PORT INSTANCE
  *****************************************************************************/
 struct lacpa_port_e { /* lacpa_port */
-    lacpa_mac_t      src_mac;
+    of_mac_addr_t    src_mac;
     lacpa_info_t     actor;
     lacpa_info_t     partner;
     lacpa_machine_t  lacp_state;
@@ -251,20 +252,24 @@ struct lacpa_port_e { /* lacpa_port */
 
 /******************************************************************************
  * LACP : LINK AGGREGATION CONTROL PROTOCOL : SYSTEM DATA & API DECLARATIONS
- ******************************************************************************
- */
+ *****************************************************************************/
 struct lacpa_system_e { /* lacpa_system */
     uint32_t         lacp_active_port_count;
     lacpa_port_t     *ports;
 };
 
 extern lacpa_system_t lacp_system;
-
-extern void lacpa_init_system (lacpa_system_t *system);
+ 
+extern indigo_error_t lacpa_init_system (lacpa_system_t *system);
 extern void lacpa_deinit_system (lacpa_system_t *system);
 extern bool lacpa_is_system_initialized (void);
 extern lacpa_port_t *lacpa_find_port (lacpa_system_t *system, uint32_t port_no);
 
+extern ind_core_listener_result_t 
+lacpa_packet_in_listner (of_packet_in_t *packet_in);
+extern ind_core_listener_result_t 
+lacpa_controller_msg_listner (indigo_cxn_id_t cxn, of_object_t *obj);
+ 
 /******************************************************************************
  *
  * LACP : LINK AGGREGATION CONTROL PROTOCOL : LACPA EXTERNAL API DECLARATIONS
@@ -272,9 +277,11 @@ extern lacpa_port_t *lacpa_find_port (lacpa_system_t *system, uint32_t port_no);
  *****************************************************************************/
 extern void lacpa_init_port (lacpa_system_t *system, lacpa_info_t *port,
                              uint8_t lacp_enabled);
-extern bool lacpa_receive (lacpa_port_t *port, uint8_t *data, uint32_t bytes);
-extern void lacpa_send (lacpa_port_t *port, uint8_t *data, uint32_t bytes);
-
+extern bool lacpa_receive_utest (lacpa_port_t *port, uint8_t *data, 
+                                 uint32_t bytes);
+extern void lacpa_send_utest (lacpa_port_t *port, uint8_t *data,
+                              uint32_t bytes);
+extern void lacpa_send_packet_out (lacpa_port_t *port, of_octets_t *octets); 
 extern void lacpa_update_controller (lacpa_port_t *port);
 
 /******************************************************************************

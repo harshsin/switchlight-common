@@ -76,6 +76,7 @@ transmit: &transmit
 - COLLECTING_SET
 - DISTRIBUTING_SET
 - PERIODIC_TIMER_EXPIRED
+- CURRENT_TIMER_EXPIRED
 
 definitions:
   cdefs:
