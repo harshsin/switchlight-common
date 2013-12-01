@@ -20,7 +20,15 @@
 include ../../../init.mk
 MODULE := lacpa_utest
 TEST_MODULE := lacpa
-DEPENDMODULES := AIM PPE IOF
+DEPENDMODULES := AIM PPE IOF loci indigo SocketManager cjson Configuration \
+	BigList OFStateManager murmur OFConnectionManager
+
+GLOBAL_CFLAGS += -DINDIGO_LINUX_LOGGING
+GLOBAL_CFLAGS += -DINDIGO_LINUX_TIME
+GLOBAL_CFLAGS += -DINDIGO_FAULT_ON_ASSERT
+GLOBAL_CFLAGS += -DINDIGO_MEM_STDLIB
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MODULES_INIT=1
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MAIN=1
 include $(BUILDER)/build-unit-test.mk
+
+GLOBAL_LINK_LIBS += -lm -lncurses -rdynamic
