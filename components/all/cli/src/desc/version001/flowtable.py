@@ -122,9 +122,9 @@ def get_format_string(disp_config):
     this based on configuration
     """
     if disp_config == 'detail':
-        return "{0.prio:<5} {0.table_id:<1} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.eth_type:<6} {0.vid:<5} {0.vpcp:<3} {0.dip:<15} {0.sip:<15} {0.ipproto:<4} {0.ipdscp:<4} {0.l4_dst:<6} {0.l4_src:<6} {0.output:<16} {0.packets:<10} {0.hard_to:<6} {0.idle_to:<6} {0.duration:<10}"
+        return "{0.prio:<5} {0.table_id:<1} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.eth_type:<6} {0.vid:<5} {0.vpcp:<3} {0.dip:<40} {0.sip:<40} {0.ipproto:<4} {0.ipdscp:<4} {0.l4_dst:<6} {0.l4_src:<6} {0.output:<16} {0.packets:<10} {0.hard_to:<6} {0.idle_to:<6} {0.duration:<10}"
     else:
-        return "{0.prio:<5} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.dip:<15} {0.sip:<15} {0.output:<16} {0.packets:<10} {0.duration:<10}"
+        return "{0.prio:<5} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.dip:<40} {0.sip:<40} {0.output:<16} {0.packets:<10} {0.duration:<10}"
 
 def of10_flow_entry_to_disp(entry):
     """
@@ -215,6 +215,14 @@ def of13_flow_entry_to_disp(entry):
             ('dip', fmtcnv.convert_ip_in_integer_to_dotted_decimal),
         str(of13.oxm.ipv4_dst_masked):
             ('dip', fmtcnv.convert_ip_in_integer_to_dotted_decimal),
+        str(of13.oxm.ipv6_src):
+            ('sip', fmtcnv.convert_ipv6_in_byte_array_to_hex),
+        str(of13.oxm.ipv6_src_masked):
+            ('sip', fmtcnv.convert_ipv6_in_byte_array_to_hex),
+        str(of13.oxm.ipv6_dst):
+            ('dip', fmtcnv.convert_ipv6_in_byte_array_to_hex),
+        str(of13.oxm.ipv6_dst_masked):
+            ('dip', fmtcnv.convert_ipv6_in_byte_array_to_hex),
         str(of13.oxm.tcp_src): ('l4_src', None),
         str(of13.oxm.tcp_src_masked): ('l4_src', None),
         str(of13.oxm.tcp_dst): ('l4_dst', None),
