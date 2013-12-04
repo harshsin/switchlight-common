@@ -77,6 +77,12 @@ def convert_ip_in_integer_to_dotted_decimal(i, data=None):
     return '.'.join(reversed([ (str((i >> (8*x)) & 0xff)) for x in range(0,4)]))
 
 
+def convert_ipv6_in_byte_array_to_hex(i, data=None):
+    if i == "*" or i == "":
+        return "*"
+    return ':'.join(["%0.4x" % x for x in struct.unpack('HHHHHHHH', i)])
+
+
 def convert_integer_to_bitmask(i, data=None):
     if i == "*" or i == "": 
         return "*"
