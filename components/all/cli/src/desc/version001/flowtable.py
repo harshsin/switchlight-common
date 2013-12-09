@@ -359,9 +359,18 @@ def show_of10_entries(rf, format_str):
 
 def show_of13_entries(rf, format_str):
     match = of13.match()
+    match_inports = None
 
     if rf.in_port is not None:
         match.oxm_list.append(of13.oxm.in_port(value=rf.in_port))
+
+        # If in_port is specified as a filter, we need to make an additional
+        # query using oxm.bsn_in_ports.
+        match_inports = of13.match()
+        match_inports.oxm_list.append(
+            of13.oxm.bsn_in_ports_128_masked(
+                value=set(),
+                value_mask=set(range(128)) - set([rf.in_port])))
 
     if rf.src_mac is not None:
         match.oxm_list.append(of13.oxm.eth_src(value=rf.src_mac))
@@ -372,27 +381,32 @@ def show_of13_entries(rf, format_str):
     if rf.vlan_id is not None:
         match.oxm_list.append(of13.oxm.vlan_vid(value=rf.vlan_id))
 
-    req = of13.message.flow_stats_request(
-        match=match,
-        table_id=rf.table_id if rf.table_id is not None else of13.OFPTT_ALL,
-        out_port=rf.out_port if rf.out_port is not None else of13.OFPP_ANY,
-        out_group=of13.OFPG_ANY)
+    def get_and_display_flows(match_obj):
+        req = of13.message.flow_stats_request(
+            match=match_obj,
+            table_id=rf.table_id if rf.table_id is not None else of13.OFPTT_ALL,
+            out_port=rf.out_port if rf.out_port is not None else of13.OFPP_ANY,
+            out_group=of13.OFPG_ANY)
 
-    count = 0
-    with OFConnection.OFConnection('127.0.0.1', 6634) as conn:
-        for entrylist in conn.of13_request_stats_generator(req):
-            for entry in entrylist:
-                count += 1
-                if count % 20 == 0 or count == 1:
-                    if count != 1:
-                        print
-                    print format_str.format(flow_table_titles)
-                (display_val, display_mask, inports) = of13_flow_entry_to_disp(entry)
-                print format_str.format(display_val)
-                if display_mask:
-                    print format_str.format(display_mask)
-                if inports:
-                    print "  *In-ports: %s" % " ".join([str(p) for p in inports])
+        count = 0
+        with OFConnection.OFConnection('127.0.0.1', 6634) as conn:
+            for entrylist in conn.of13_request_stats_generator(req):
+                for entry in entrylist:
+                    count += 1
+                    if count % 20 == 0 or count == 1:
+                        if count != 1:
+                            print
+                        print format_str.format(flow_table_titles)
+                    (display_val, display_mask, inports) = of13_flow_entry_to_disp(entry)
+                    print format_str.format(display_val)
+                    if display_mask:
+                        print format_str.format(display_mask)
+                    if inports:
+                        print "  *In-ports: %s" % " ".join([str(p) for p in inports])
+
+    get_and_display_flows(match)
+    if match_inports is not None:
+        get_and_display_flows(match_inports)
 
 def show_flowtable(data):
     if 'summary' not in data:
