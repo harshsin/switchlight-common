@@ -33,6 +33,8 @@ chroot "${WS_ROOT}" /usr/sbin/update-rc.d mountnfs.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d lm-sensors remove
 
 chroot "${WS_ROOT}" passwd -d root
+chroot "${WS_ROOT}" chsh -s /bin/false root
+
 rm -f "${WS_ROOT}/etc/securetty" # allow root login via telnet
 sed -i "s/\(^[123456]:.*\)/#\1/" "${WS_ROOT}/etc/inittab"
 echo "T0:23:respawn:/sbin/pgetty ttyS0" >>"${WS_ROOT}/etc/inittab"
