@@ -359,15 +359,15 @@ def show_of10_entries(rf, format_str):
 
 def show_of13_entries(rf, format_str):
     match = of13.match()
-    match2 = None
+    match_inports = None
 
     if rf.in_port is not None:
         match.oxm_list.append(of13.oxm.in_port(value=rf.in_port))
 
         # If in_port is specified as a filter, we need to make an additional
         # query using oxm.bsn_in_ports.
-        match2 = of13.match()
-        match2.oxm_list.append(
+        match_inports = of13.match()
+        match_inports.oxm_list.append(
             of13.oxm.bsn_in_ports_128_masked(
                 value=set(),
                 value_mask=set(range(128)) - set([rf.in_port])))
@@ -405,8 +405,8 @@ def show_of13_entries(rf, format_str):
                         print "  *In-ports: %s" % " ".join([str(p) for p in inports])
 
     get_and_display_flows(match)
-    if match2 is not None:
-        get_and_display_flows(match2)
+    if match_inports is not None:
+        get_and_display_flows(match_inports)
 
 def show_flowtable(data):
     if 'summary' not in data:
