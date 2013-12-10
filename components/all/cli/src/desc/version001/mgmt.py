@@ -235,7 +235,7 @@ class _NetworkConfig(object):
                     if fields[1] == "Destination":
                         continue
                     if int(fields[1], 16) == 0:
-                        gw.append(socket.inet_ntoa(struct.pack('i', int(fields[2], 16))))
+                        gw.append(socket.inet_ntoa(struct.pack('I', int(fields[2], 16))))
         return gw
 
     def configGateway (self, no_command, data):
