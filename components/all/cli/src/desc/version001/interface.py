@@ -120,7 +120,8 @@ def show_dp_intf_list(port_name_list, detail):
     if not detail:
         format_str = "%2s%s %-14s %-5s %20s %20s %7s"
         print '* = Link up, D = Disabled'
-        print format_str % ('#', ' ', 'Name', 'Speed', 'Rx', 'Tx', '  ')
+        print format_str % ('#', ' ', 'Name', 'Speed', 
+                            'Rx Packets', 'Tx Packets', '  ')
 
     if port_name_list:
         filt = lambda p: get_port_name(p[0].name) in port_name_list
