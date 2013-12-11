@@ -6,13 +6,13 @@
 SHELL := /bin/bash
 empty:=
 space:= $(empty) $(empty)
-# The current release branch or number goes here. 
+# The current release branch or number goes here.
 SWITCHLIGHT_RELEASE_VERSION := $(shell git rev-parse --short HEAD)
 SWITCHLIGHT_RELEASE_BANNER := $(space)$(SWITCHLIGHT_RELEASE_VERSION)$(space)
 
 #
-# These are the default submodule locations. 
-# These allow environment overrides for custom frankenbuilds. 
+# These are the default submodule locations.
+# These allow environment overrides for custom frankenbuilds.
 #
 SWITCHLIGHT_LOCAL_SUBMODULES := none
 
@@ -61,14 +61,19 @@ SWITCHLIGHT_SUBMODULE_SDK_5_6_6  := $(SWITCHLIGHT)/submodules/lb9-sdk-5.6.6
 SWITCHLIGHT_LOCAL_SUBMODULES += lb9-sdk-5.6.6
 endif
 
-ifndef SWITCHLIGHT_SUBMODULE_SDK_6_2_7  
+ifndef SWITCHLIGHT_SUBMODULE_SDK_6_2_7
 SWITCHLIGHT_SUBMODULE_SDK_6_2_7  := $(SWITCHLIGHT)/submodules/sdk-6.2.7
 SWITCHLIGHT_LOCAL_SUBMODULES += sdk-6.2.7
 endif
 
-ifndef SWITCHLIGHT_SUBMODULE_SDK_5_10_0 
+ifndef SWITCHLIGHT_SUBMODULE_SDK_5_10_0
 SWITCHLIGHT_SUBMODULE_SDK_5_10_0 := $(SWITCHLIGHT)/submodules/ly2-sdk-5.10.0
 SWITCHLIGHT_LOCAL_SUBMODULES += ly2-sdk-5.10.0
+endif
+
+ifndef SWITCHLIGHT_SUBMODULE_SWITCHLIGHT_COMMON
+SWITCHLIGHT_SUBMODULE_SWITCHLIGHT_COMMON := $(SWITCHLIGHT)/submodules/switchlight-common
+SWITCHLIGHT_LOCAL_SUBMODULES += switchlight-common
 endif
 
 #
@@ -87,7 +92,7 @@ SWITCHLIGHT_REPO := $(SWITCHLIGHT)/debian/repo
 SWITCHLIGHT_PKG_INSTALL := $(SWITCHLIGHT)/tools/spkg.py
 
 #
-# Make sure the required local submodules have been updated. 
+# Make sure the required local submodules have been updated.
 #
 ifdef SWITCHLIGHT_REQUIRED_SUBMODULES
 space :=
@@ -138,9 +143,9 @@ endif
 endif
 
 #
-# Inherit MODULE_DIRs for all local builds. 
-# This turns out to  be terribly hacky wrt the component makefiles. 
-# This should be a temporary solution. 
+# Inherit MODULE_DIRs for all local builds.
+# This turns out to  be terribly hacky wrt the component makefiles.
+# This should be a temporary solution.
 #
 ALL_SUBMODULES = INFRA INDIGO BIGCODE BIGCODE_INTERNAL SL
 MODULE_DIRS := $(foreach submodule,$(ALL_SUBMODULES),$(SWITCHLIGHT_SUBMODULE_$(submodule))/modules) $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules
