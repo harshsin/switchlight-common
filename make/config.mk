@@ -147,7 +147,7 @@ endif
 # This turns out to  be terribly hacky wrt the component makefiles.
 # This should be a temporary solution.
 #
-ALL_SUBMODULES = INFRA INDIGO BIGCODE BIGCODE_INTERNAL SL
+ALL_SUBMODULES = INFRA INDIGO BIGCODE BIGCODE_INTERNAL SL SWITCHLIGHT_COMMON
 MODULE_DIRS := $(foreach submodule,$(ALL_SUBMODULES),$(SWITCHLIGHT_SUBMODULE_$(submodule))/modules) $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules
 MODULE_DIRS_TOUCH := $(foreach sd,$(MODULE_DIRS),$(shell mkdir -p $(sd) && touch $(sd)/Manifest.mk))
 

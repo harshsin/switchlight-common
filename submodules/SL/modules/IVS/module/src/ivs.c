@@ -17,6 +17,10 @@
 
 #include <signal.h>
 
+#ifdef DEPENDMODULE_INCLUDE_LACPA
+#include <lacpa/lacpa.h>
+#endif
+
 /**
  * Try an operation and return the error code on failure.
  */
@@ -208,6 +212,10 @@ ivs_init(ivs_t* ivs)
     TRY(ind_port_init(&ivs->port));
     TRY(ind_fwd_init(&ivs->fwd));
     TRY(ind_core_init(&ivs->core));
+
+#ifdef DEPENDMODULE_INCLUDE_LACPA
+    TRY(lacpa_init());
+#endif
 
     TRY(ind_cfg_install_sighup_handler());
 

@@ -37,7 +37,7 @@ include $(BUILDER)/lib.mk
 DEPENDMODULES := SocketManager OFConnectionManager BRCM BRCMDriver3 \
 	OFStateManager snmp murmur NSS ELS AET Configuration cjson \
 	loci indigo Faultd IOF PPE IVS uCli BigList BigRing OS AIM \
-	tagport pimu nwac cintm sl ofadm BigHash
+	tagport pimu nwac cintm sl ofadm BigHash lacpa
 
 #
 # Resolve module dependencies
