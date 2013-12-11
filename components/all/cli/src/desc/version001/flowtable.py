@@ -4,17 +4,13 @@ import command
 import error
 
 import subprocess
+from sl_util import const
 from sl_util import shell
 from sl_util import OFConnection
 
 import loxi.of10 as of10
 import loxi.of13 as of13
 import fmtcnv
-
-
-# FIXME move this to a common place
-max_port = 52
-max_table = 1
 
 def display(val):
     return str(val) if val != 0xffffffffffffffff else '-'
@@ -444,7 +440,7 @@ TABLE_ID = {
     'tag'          : 'table-id',
     'short-help'   : 'Filter on table identifier',
     'base-type'    : 'integer',
-    'range'        : (0, max_table),
+    'range'        : (0, const.OF_MAX_TABLE),
     'optional'     : True,
     'doc'          : 'flowtable|table-id',
 }
@@ -454,7 +450,7 @@ IN_PORT = {
     'tag'          : 'in-port',
     'short-help'   : 'Filter on input port',
     'base-type'    : 'integer',
-    'range'        : (1, max_port),
+    'range'        : (1, const.OF_MAX_PORT),
     'optional'     : True,
     'doc'          : 'flowtable|in-port',
 }
@@ -464,7 +460,7 @@ OUT_PORT = {
     'tag'          : 'out-port',
     'short-help'   : 'Filter on output port',
     'base-type'    : 'integer',
-    'range'        : (1, max_port),
+    'range'        : (1, const.OF_MAX_PORT),
     'optional'     : True,
     'doc'          : 'flowtable|out-port',
 }

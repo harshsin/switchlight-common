@@ -7,13 +7,11 @@ import run_config
 
 from sl_util.ofad import OFADConfig, OFADCtl, PortManager
 from sl_util import utils
+from sl_util import const
 
 OFAgentConfig = OFADConfig()
 PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
 PortManager.setLAGBase(OFAgentConfig.lag_base_name)
-
-LAG_MIN_NUM = 1
-LAG_MAX_NUM = 30
 
 LAG_COMPONENT_MAX = {
     'quanta-lb9': 8,
@@ -68,7 +66,7 @@ CONFIG_PORTCHANNEL_COMMAND_DESCRIPTION = {
         {
             'field'             : 'port-channel-id',
             'base-type'         : 'integer',
-            'range'             : (LAG_MIN_NUM, LAG_MAX_NUM),
+            'range'             : (const.LAG_MIN_NUM, const.LAG_MAX_NUM),
             'syntax-help'       : 'Port channel ID',
         },
         {
@@ -125,7 +123,7 @@ SHOW_PORTCHANNEL_COMMAND_DESCRIPTION = {
         {
             'field'         : 'port-channel-id',
             'base-type'     : 'integer',
-            'range'         : (LAG_MIN_NUM, LAG_MAX_NUM),
+            'range'         : (const.LAG_MIN_NUM, const.LAG_MAX_NUM),
             'syntax-help'   : 'Port channel ID',
         },
     ),

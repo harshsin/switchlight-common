@@ -9,6 +9,7 @@ import copy
 import error
 import subprocess
 
+from sl_util import const
 from sl_util import shell
 from sl_util.types import DPID
 
@@ -101,7 +102,6 @@ class Controller(object):
 
 PHY_PORT_TYPE = "physical"
 LAG_PORT_TYPE = "lag"
-LAG_BASE_PORT_NUM = 60
 
 class Port(object):
     """
@@ -298,7 +298,7 @@ class PortManager(object):
     # FIXME: optimize on updating an existing LAG
     def configureLAGPort (self, id_, ports, hash_=None, mode=None):
         name = PortManager.getLAGName(id_)
-        port_num = LAG_BASE_PORT_NUM + id_
+        port_num = const.LAG_BASE_OF_PORT_NUM + id_
         if name in self.lags:
             self.__removeLAGPort(name)
 
