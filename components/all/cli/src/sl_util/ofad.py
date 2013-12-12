@@ -342,6 +342,7 @@ class ForwardingConfig(object):
     def __init__ (self, forwarding_dict):
         self._crc = forwarding_dict.get("crc", None)
         self._pimu = forwarding_dict.get("pimu", None)
+        self._l2cache = forwarding_dict.get("l2cache", False)
 
     def disableCRC (self):
         self._crc = False
@@ -373,6 +374,17 @@ class ForwardingConfig(object):
             return True
         return False
 
+    def enableL2CACHE (self):
+        self._l2cache = True
+        
+    def disableL2CACHE (self):
+        self._l2cache = False
+
+    def isL2CACHEDisabled (self):
+        if self._l2cache is False:
+            return True
+        return False
+            
     def toJSON (self):
         d = {}
         for k, v in self.__dict__.iteritems():
