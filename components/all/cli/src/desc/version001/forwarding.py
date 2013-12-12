@@ -11,22 +11,24 @@ OFAgentConfig = OFADConfig()
 def config_forwarding(no_command, data):
     fwdCfg = ForwardingConfig(OFAgentConfig.forwarding)
 
-    # NOTE: this command is negated:
-    #       when command is run w/o "no", it's a disable op.
-    #       when command is run w/ "no", it's an enable op.
-    disabled = not no_command
-
     if data['type'] == 'crc':
-        if disabled:
+        if no_command: # when run with a 'no' its an enable op
+            fwdCfg.enableCRC()
+        else:
             print "WARNING: CRC forwarding setting must be consistent on all Big Tap switches in the same forwarding domain."
             fwdCfg.disableCRC()
-        else:
-            fwdCfg.enableCRC()
+
     elif data['type'] == 'pimu':
-        if disabled:
-            fwdCfg.disablePIMU()
-        else:
+        if no_command: # when run with a 'no' its an enable op
             fwdCfg.enablePIMU()
+        else:
+            fwdCfg.disablePIMU()
+
+    elif data['type'] == 'l2cache':
+        if no_command: # when run with a 'no' its a disable op
+            fwdCfg.disableL2CACHE()
+        else:
+            fwdCfg.enableL2CACHE()
     else:
         raise error.ActionError('Unspported forwarding config type: %s' % data['type'])
 
@@ -72,6 +74,17 @@ CONFIG_FORWARDING_COMMAND_DESCRIPTION = {
                         'doc'           : 'forwarding|pimu-disable',
                     },
                 ),
+                (  
+                    {
+                        'token'         : 'l2cache', 
+                        'short-help'    : 'Configurare L2 Cache',
+                    }, 
+                    {
+                        'token'         : 'enable', 
+                        'data'          : {'type' : 'l2cache'}, 
+                        'doc'           : 'forwarding|l2cache-enable',
+                    }, 
+                ),
             ),
         },
     ),
@@ -113,6 +126,18 @@ SHOW_FORWARDING_COMMAND_DESCRIPTION = {
                         'doc'           : 'forwarding|show-pimu-status',
                     },
                 ),
+                (
+                    {
+                        'token'         : 'l2cache',
+                        'short-help'    :'Show L2 cache configuration status', 
+                    },
+                    {
+                        'token'         : 'status', 
+                        'action'        : 'ofad-ctl-command', 
+                        'command'       : 'l2cache status', 
+                        'doc'           : 'forwarding|show-l2cache-status',
+                    }, 
+                ), 
             ),
         },
 
@@ -127,6 +152,8 @@ def running_config_forwarding(context, runcfg, words):
         cfg.append('forwarding crc disable\n')
     if fwdCfg.isPIMUDisabled():
         cfg.append('forwarding pimu disable\n')
+    if not fwdCfg.isL2CACHEDisabled():
+        cfg.append('forwarding l2cache enable\n')
 
     if cfg:
         runcfg.append('!\n')
