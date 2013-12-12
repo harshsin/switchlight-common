@@ -11,8 +11,8 @@ if [ "$debug" ]; then
 fi
 
 
-# Remount tmpfs larger
-mount -oremount,size=512M /tmp
+# Remount tmpfs larger if possible
+mount -oremount,size=512M /tmp || true
 
 # Pick up defines for this machine.
 [ -r /etc/machine.conf ] && . /etc/machine.conf
