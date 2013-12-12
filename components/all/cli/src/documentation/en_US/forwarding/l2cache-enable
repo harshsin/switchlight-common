@@ -1,5 +1,5 @@
 Enable PDU forwarding via the L2 cache. 
 When enabled, PDUs with well-known multicast destination addresses will
-automatically forwared to the controller, regardless of the state 
+be automatically forwarded to the controller, regardless of the state 
 of the flow table. 
 
