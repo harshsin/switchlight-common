@@ -1,0 +1,45 @@
+#!/usr/bin/make -f
+
+DEB_DH_INSTALL_SOURCEDIR = debian/tmp
+INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
+
+include $(SWITCHLIGHT)/make/config.mk
+
+SDKBUILD=$(SWITCHLIGHT)/components/powerpc/broadcom/sdk/sdk-6.3.3/sdk-6.3.3-internal
+
+%:
+	dh $@
+
+build-arch: 
+	dh build-arch
+	$(MAKE) -C $(SDKBUILD) libbroadcom-internal.so.6.3 
+
+clean:
+	dh clean
+
+
+SDK_DEV_INSTALL_DIR := $(INSTALL_DIR)/usr/src/libbroadcom-6.3-internal-sdk
+
+override_dh_auto_install:
+	mkdir -p $(INSTALL_DIR)/lib/modules $(INSTALL_DIR)/lib/$(DEB_HOST_GNU_TYPE)
+	cp $(SDKBUILD)/linux-kernel-bde-6.3.ko $(INSTALL_DIR)/lib/modules
+	cp $(SDKBUILD)/linux-user-bde-6.3.ko $(INSTALL_DIR)/lib/modules
+	cp $(SDKBUILD)/libbroadcom-internal.so.6.3 $(INSTALL_DIR)/lib/$(DEB_HOST_GNU_TYPE)/
+	mkdir -p $(SDK_DEV_INSTALL_DIR)
+	cp -R $(SDK)/include $(SDK_DEV_INSTALL_DIR)
+	cp -R $(SDK)/systems/bde $(SDK_DEV_INSTALL_DIR)
+	cp $(SDK)/RELEASE $(SDK_DEV_INSTALL_DIR)
+	mkdir -p $(SDK_DEV_INSTALL_DIR)/src/appl
+	cp -R $(SDK)/src/appl/cint $(SDK_DEV_INSTALL_DIR)/src/appl
+	mkdir -p $(SDK_DEV_INSTALL_DIR)/build/switchlight/powerpc/internal
+	cp $(SDKBUILD)/libbroadcom-internal.so.6.3 $(SDK_DEV_INSTALL_DIR)/build/switchlight/powerpc/internal
+	cp $(SDKBUILD)/libbroadcom-6.3-internal.a $(SDK_DEV_INSTALL_DIR)/build/switchlight/powerpc/internal
+	cp $(SDKBUILD)/version.o $(SDK_DEV_INSTALL_DIR)/build/switchlight/powerpc/internal
+
+.PHONY: override_dh_strip override_dh_link
+override_dh_strip:
+	dh_strip -plibbroadcom-6.3-internal --dbg-package=libbroadcom-6.3-internal-dbg
+
+override_dh_link:
+	dh_link lib/$(DEB_HOST_GNU_TYPE)/libbroadcom-internal.so.6.3 lib/$(DEB_HOST_GNU_TYPE)/libbroadcom.so.6.3
+
