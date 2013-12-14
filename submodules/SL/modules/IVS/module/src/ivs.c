@@ -21,6 +21,10 @@
 #include <lacpa/lacpa.h>
 #endif
 
+#ifdef DEPENDMODULE_INCLUDE_LLDPA
+#include <lldpa/lldpa.h>
+#endif
+
 /**
  * Try an operation and return the error code on failure.
  */
@@ -215,6 +219,10 @@ ivs_init(ivs_t* ivs)
 
 #ifdef DEPENDMODULE_INCLUDE_LACPA
     TRY(lacpa_init());
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_LLDPA
+    TRY(lldpa_system_init());
 #endif
 
     TRY(ind_cfg_install_sighup_handler());
@@ -595,7 +603,12 @@ ivs_run(ivs_t* ivs, int ms)
 int 
 ivs_denit(ivs_t* ivs)
 {
-    int rv; 
+    int rv;
+
+#ifdef DEPENDMODULE_INCLUDE_LLDPA
+    lldpa_system_finish();
+#endif
+
     if ((rv = ind_core_finish()) < 0) {
         AIM_LOG_ERROR("Error in ind_core_finish");
     }
