@@ -1,0 +1,21 @@
+#!/usr/bin/make -f
+
+DEB_DH_INSTALL_SOURCEDIR = debian/tmp
+INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
+PLATFORM=powerpc-quanta-ly2-r0
+
+%:
+	dh $@
+
+build-arch:
+	dh build-arch
+
+clean:
+	dh clean
+
+override_dh_auto_install:
+	mkdir -p $(INSTALL_DIR)/usr/platforms
+	cp -R ../../$(PLATFORM) $(INSTALL_DIR)/usr/platforms/
+	cp ../../switchlight.$(PLATFORM).loader $(INSTALL_DIR)/usr/platforms/$(PLATFORM)/switchlight.$(PLATFORM).loader
+
+

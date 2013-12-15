@@ -1,0 +1,23 @@
+# -*- Makefile -*-
+################################################################################
+#
+# Quanta LY2
+#
+###############################################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not set)
+else
+include $(SWITCHLIGHT)/make/config.mk
+endif
+
+KERNEL.BIN.GZ := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx:powerpc --find-file kernel-85xx.bin.gz)
+INITRD := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
+DTB := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx-dtbs:powerpc --find-file quanta_ly2.dtb)
+PLATFORM_NAME := powerpc-quanta-ly2-r0
+
+include $(SWITCHLIGHT)/make/platform-ppc.mk
+
+.PHONY: deb
+
+deb:
+	$(MAKE) -C deb 
