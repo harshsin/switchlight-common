@@ -15,8 +15,11 @@ sys.stderr.write("Setting up base ofad configuration...")
 sys.stderr.flush()
 
 PLAT_LB9                = "quanta-lb9"
+PLAT_LB9_R0             = "powerpc-quanta-lb9-r0"
 PLAT_LB9A               = "quanta-lb9a"
+PLAT_LB9A_R0            = "powerpc-quanta-lb9a-r0"
 PLAT_LY2                = "quanta-ly2"
+PLAT_LY2_R0             = "powerpc-quanta-ly2-r0"
 PLAT_LY2R               = "quanta-ly2r"
 PLAT_CELESTICA_REDSTONE = "celestica-redstone"
 PLAT_ACCTON_5652        = "accton-5652"
@@ -28,8 +31,11 @@ LAG_BASE_NAME           = "port-channel"
 # define number of ether ports for each platform
 NUM_PHY_PORTS = {
     PLAT_LB9                : 52,
+    PLAT_LB9_R0             : 52,
     PLAT_LB9A               : 52,
+    PLAT_LB9A_R0            : 52,
     PLAT_LY2                : 52,
+    PLAT_LY2_R0             : 52,
     PLAT_LY2R               : 52,
     PLAT_CELESTICA_REDSTONE : 52,
     PLAT_ACCTON_5652        : 52,
@@ -107,9 +113,9 @@ except Exception:
     os.symlink("linux-kernel-bde-6.2.ko", "/lib/modules/linux-kernel-bde.ko")
     os.symlink("linux-user-bde-6.2.ko", "/lib/modules/linux-user-bde.ko")
     
-if plat == PLAT_LB9:
+if plat == PLAT_LB9 or plat == PLAT_LB9_R0:
     subprocess.call("/usr/bin/brcm_lb9_gpio_init")
-if plat == PLAT_LY2:
+if plat == PLAT_LY2 or plat == PLAT_LY2_R0:
     subprocess.call("/usr/bin/brcm_ly2_gpio_init")
 if plat == PLAT_LY2R:
     subprocess.call("/usr/bin/brcm_ly2r_gpio_init")
