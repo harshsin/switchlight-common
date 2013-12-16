@@ -1,0 +1,12 @@
+# -*- Makefile -*-
+###############################################################################
+#
+# SDK 6.3.3 Release Build Configuration
+#
+###############################################################################
+SDK_CONFIG=release
+BUILD_SDK_6_3_3_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+include ../sdk-6.3.3.mk
+
+
+

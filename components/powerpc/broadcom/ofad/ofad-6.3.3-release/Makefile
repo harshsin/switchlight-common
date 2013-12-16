@@ -1,0 +1,11 @@
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is undefined.)
+endif
+
+SWITCHLIGHT_REQUIRED_SUBMODULES := broadcom bigcode bigcode-internal indigo infra switchlight-common
+SWITCHLIGHT_REQUIRED_PACKAGES := libbroadcom-6.3-release-dev:powerpc
+include $(SWITCHLIGHT)/make/component.mk
+
+
+
+
