@@ -300,7 +300,7 @@ installer_platform_swi() {
 
 ######################################################################
 #
-# installer_standard_install <blockdev> <p1size> <p2size> <p3size>
+# installer_standard_blockdev_install <blockdev> <p1size> <p2size> <p3size>
 #
 #    <blockdev> The block device name.
 #    <p1size>   The size of the loader partition.
@@ -311,7 +311,7 @@ installer_platform_swi() {
 # Most platform installers will just call this function with the appropriate arguments.
 #
 ######################################################################
-installer_standard_install () {
+installer_standard_blockdev_install () {
     local blockdev=$1
     local p1size=$2
     local p2size=$3
