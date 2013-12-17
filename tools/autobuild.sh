@@ -107,10 +107,7 @@ ssh $INSTALL_SERVER rm $INSTALL_DIR/repo/update.sh $INSTALL_DIR/repo/.lock $INST
 
 # Kick off automated tests here for primary targets
 if [ -n "$ABAT_SUFFIX" ]; then 
-    abat task t.sl.lb9.oftest"$ABAT_SUFFIX" --enable || true
-    abat task t.sl.lb9a.oftest"$ABAT_SUFFIX" --enable || true
-    abat task t.sl.ly2.oftest"$ABAT_SUFFIX" --enable || true
-    abat task t.sl.accton5652.oftest"$ABAT_SUFFIX" --enable || true
+    $SWITCHLIGHT_ROOT/tools/autotests.sh "$ABAT_SUFFIX" || true
 fi
 
 # Build remaining targets
