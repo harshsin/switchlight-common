@@ -320,7 +320,8 @@ class FlowRequestFilter(object):
                  table_id=None,
                  out_port=None):
         for k, v in locals().iteritems():
-            self.__setattr__(k, v)
+            if k != "self":
+                self.__setattr__(k, v)
 
 def show_of10_entries(rf, format_str):
     req = of10.message.flow_stats_request()
