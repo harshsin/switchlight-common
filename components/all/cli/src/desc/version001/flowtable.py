@@ -4,6 +4,8 @@ import command
 import error
 
 import subprocess
+import socket
+
 from sl_util import const
 from sl_util import shell
 from sl_util import OFConnection
@@ -18,14 +20,15 @@ def display(val):
 def convert_mac_hex_string_to_byte_array(mac):
     return [ int(x,16) for x in mac.split(':') ]
 
-def convert_ip_in_dotted_decimal_to_integer(i, data=None):
-    if i == "*" or i == "":
-        return 0
+def convert_ip_in_dotted_decimal_to_integer(ip):
     val = 0
-    for octet in i.split("."):
+    for octet in ip.split("."):
         val <<= 8
         val += int(octet)
     return val
+
+def convert_ip6_address_to_binary_string(ip6):
+    return socket.inet_pton(socket.AF_INET6, ip6)
 
 class disp_flow_ob(object):
     """
@@ -318,17 +321,13 @@ class FlowRequestFilter(object):
                  dst_mac=None,
                  src_ip=None,
                  dst_ip=None,
+                 src_ip6=None,
+                 dst_ip6=None,
                  vlan_id=None,
                  table_id=None,
                  out_port=None):
-        self.in_port = in_port
-        self.src_mac = src_mac
-        self.dst_mac = dst_mac
-        self.src_ip = src_ip
-        self.dst_ip = dst_ip
-        self.vlan_id = vlan_id
-        self.table_id = table_id
-        self.out_port = out_port
+        for k, v in locals().iteritems():
+            self.__setattr__(k, v)
 
 def show_of10_entries(rf, format_str):
     req = of10.message.flow_stats_request()
@@ -400,6 +399,12 @@ def show_of13_entries(rf, format_str):
     if rf.dst_ip is not None:
         match.oxm_list.append(of13.oxm.ipv4_dst(value=rf.dst_ip))
 
+    if rf.src_ip6 is not None:
+        match.oxm_list.append(of13.oxm.ipv6_src(value=rf.src_ip6))
+
+    if rf.dst_ip6 is not None:
+        match.oxm_list.append(of13.oxm.ipv6_dst(value=rf.dst_ip6))
+
     if rf.vlan_id is not None:
         match.oxm_list.append(of13.oxm.vlan_vid(value=rf.vlan_id))
 
@@ -438,6 +443,8 @@ def show_flowtable(data):
             dst_mac=convert_mac_hex_string_to_byte_array(data['dst-mac']) if 'dst-mac' in data else None,
             src_ip=convert_ip_in_dotted_decimal_to_integer(data['src-ip']) if 'src-ip' in data else None,
             dst_ip=convert_ip_in_dotted_decimal_to_integer(data['dst-ip']) if 'dst-ip' in data else None,
+            src_ip6=convert_ip6_address_to_binary_string(data['src-ip6']) if 'src-ip6' in data else None,
+            dst_ip6=convert_ip6_address_to_binary_string(data['dst-ip6']) if 'dst-ip6' in data else None,
             vlan_id=int(data['vlan-id']) if 'vlan-id' in data else None,
             table_id=data.get('table-id', None),
             out_port=data.get('out-port', None))
@@ -529,6 +536,24 @@ DST_IP = {
     'doc'          : 'flowtable|dst-ip',
 }
 
+SRC_IP6 = {
+    'field'        : 'src-ip6',
+    'tag'          : 'src-ip6',
+    'short-help'   : 'Filter on source IPv6',
+    'type'         : 'ip6-address',
+    'optional'     : True,
+    'doc'          : 'flowtable|src-ip6',
+}
+
+DST_IP6 = {
+    'field'        : 'dst-ip6',
+    'tag'          : 'dst-ip6',
+    'short-help'   : 'Filter on destination IPv6',
+    'type'         : 'ip6-address',
+    'optional'     : True,
+    'doc'          : 'flowtable|dst-ip6',
+}
+
 VLAN_ID = {
     'field'        : 'vlan-id',
     'tag'          : 'vlan-id',
@@ -570,6 +595,8 @@ SHOW_FLOWTABLE_COMMAND_DESCRIPTION = {
                     DST_MAC,
                     SRC_IP,
                     DST_IP,
+                    SRC_IP6,
+                    DST_IP6,
                     VLAN_ID,
                     {
                         'token'      : 'detail',
