@@ -112,7 +112,7 @@ flow_table_titles = disp_flow_ob(
     ipproto="Prot",
     ipdscp="DSCP",
     output="Output",
-    modifications="Modifications",
+    modifications="Mod",
     packets="Packets",
     bytes="Bytes",
     eth_type="EType",
@@ -129,7 +129,7 @@ def get_format_string(disp_config):
     this based on configuration
     """
     if disp_config == 'detail':
-        return "{0.prio:<5} {0.table_id:<1} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.eth_type:<6} {0.vid:<5} {0.vpcp:<3} {0.dip:<40} {0.sip:<40} {0.ipproto:<4} {0.ipdscp:<4} {0.l4_dst:<6} {0.l4_src:<6} {0.output:<16} {0.packets:<10} {0.hard_to:<6} {0.idle_to:<6} {0.duration:<10}"
+        return "{0.prio:<5} {0.table_id:<1} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.eth_type:<6} {0.vid:<5} {0.vpcp:<3} {0.dip:<40} {0.sip:<40} {0.ipproto:<4} {0.ipdscp:<4} {0.l4_dst:<6} {0.l4_src:<6} {0.output:<16} {0.modifications:<3} {0.packets:<10} {0.hard_to:<6} {0.idle_to:<6} {0.duration:<10}"
     else:
         return "{0.prio:<5} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.dip:<40} {0.sip:<40} {0.output:<16} {0.packets:<10} {0.duration:<10}"
 
@@ -169,15 +169,15 @@ def of10_flow_entry_to_disp(entry):
 
     output_count = 0
     for obj in entry.actions:
-        if (obj.type == of10.OFPAT_OUTPUT or obj.type == of10.OFPAT_ENQUEUE):
+        if (obj.type == of10.OFPAT_OUTPUT or \
+            obj.type == of10.OFPAT_ENQUEUE):
             output_count += 1
             if output_count < 3:
                 if rv.output == "-":
                     rv.output = str(obj.port)
                 else:
                     rv.output += " " + str(obj.port)
-        elif (obj.type >= of10.OFPAT_SET_VLAN_VID and
-              obj.type <= of10.OFPAT_SET_TP_DST):
+        else: # any action other than OUTPUT or ENQUEUE is a mod
             rv.modifications = "yes"
 
     if output_count >= 3:
@@ -292,15 +292,14 @@ def of13_flow_entry_to_disp(entry):
         if inst.type == of13.OFPIT_APPLY_ACTIONS:
             for act in inst.actions:
                 if (act.type == of13.OFPAT_OUTPUT or \
-                        act.type == of13.OFPAT_ENQUEUE):
+                    act.type == of13.OFPAT_SET_QUEUE):
                     output_count += 1
                     if output_count < 3:
                         if rv.output == "-":
                             rv.output = str(act.port)
                         else:
                             rv.output += " " + str(act.port)
-                elif (act.type >= of13.OFPAT_SET_VLAN_VID and \
-                          act.type <= of13.OFPAT_SET_TP_DST):
+                else: # any action other than OUTPUT or SET_QUEUE is a mod
                     rv.modifications = "yes"
 
     if output_count >= 3:
