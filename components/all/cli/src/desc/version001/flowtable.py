@@ -13,19 +13,13 @@ from sl_util import OFConnection
 import loxi.of10 as of10
 import loxi.of13 as of13
 import fmtcnv
+import utif
 
 def display(val):
     return str(val) if val != 0xffffffffffffffff else '-'
 
 def convert_mac_hex_string_to_byte_array(mac):
     return [ int(x,16) for x in mac.split(':') ]
-
-def convert_ip_in_dotted_decimal_to_integer(ip):
-    val = 0
-    for octet in ip.split("."):
-        val <<= 8
-        val += int(octet)
-    return val
 
 def convert_ip6_address_to_binary_string(ip6):
     return socket.inet_pton(socket.AF_INET6, ip6)
@@ -440,8 +434,8 @@ def show_flowtable(data):
             in_port=data.get('in-port', None),
             src_mac=convert_mac_hex_string_to_byte_array(data['src-mac']) if 'src-mac' in data else None,
             dst_mac=convert_mac_hex_string_to_byte_array(data['dst-mac']) if 'dst-mac' in data else None,
-            src_ip=convert_ip_in_dotted_decimal_to_integer(data['src-ip']) if 'src-ip' in data else None,
-            dst_ip=convert_ip_in_dotted_decimal_to_integer(data['dst-ip']) if 'dst-ip' in data else None,
+            src_ip=utif.inet_aton(data['src-ip']) if 'src-ip' in data else None,
+            dst_ip=utif.inet_aton(data['dst-ip']) if 'dst-ip' in data else None,
             src_ip6=convert_ip6_address_to_binary_string(data['src-ip6']) if 'src-ip6' in data else None,
             dst_ip6=convert_ip6_address_to_binary_string(data['dst-ip6']) if 'dst-ip6' in data else None,
             vlan_id=int(data['vlan-id']) if 'vlan-id' in data else None,
