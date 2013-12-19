@@ -18,6 +18,14 @@ def display(val):
 def convert_mac_hex_string_to_byte_array(mac):
     return [ int(x,16) for x in mac.split(':') ]
 
+def convert_ip_in_dotted_decimal_to_integer(i, data=None):
+    if i == "*" or i == "":
+        return 0
+    val = 0
+    for octet in i.split("."):
+        val <<= 8
+        val += int(octet)
+    return val
 
 class disp_flow_ob(object):
     """
@@ -308,12 +316,16 @@ class FlowRequestFilter(object):
                  in_port=None,
                  src_mac=None,
                  dst_mac=None,
+                 src_ip=None,
+                 dst_ip=None,
                  vlan_id=None,
                  table_id=None,
                  out_port=None):
         self.in_port = in_port
         self.src_mac = src_mac
         self.dst_mac = dst_mac
+        self.src_ip = src_ip
+        self.dst_ip = dst_ip
         self.vlan_id = vlan_id
         self.table_id = table_id
         self.out_port = out_port
@@ -333,6 +345,14 @@ def show_of10_entries(rf, format_str):
     if rf.dst_mac is not None:
         req.match.eth_dst = rf.dst_mac
         req.match.wildcards = req.match.wildcards & ~of10.OFPFW_DL_DST
+
+    if rf.src_ip is not None:
+        req.match.ipv4_src = rf.src_ip
+        req.match.wildcards = req.match.wildcards & ~of10.OFPFW_NW_SRC_MASK
+
+    if rf.dst_ip is not None:
+        req.match.ipv4_dst = rf.dst_ip
+        req.match.wildcards = req.match.wildcards & ~of10.OFPFW_NW_DST_MASK
 
     if rf.vlan_id is not None:
         req.match.vlan_vid = rf.vlan_id
@@ -374,6 +394,12 @@ def show_of13_entries(rf, format_str):
     if rf.dst_mac is not None:
         match.oxm_list.append(of13.oxm.eth_dst(value=rf.dst_mac))
 
+    if rf.src_ip is not None:
+        match.oxm_list.append(of13.oxm.ipv4_src(value=rf.src_ip))
+
+    if rf.dst_ip is not None:
+        match.oxm_list.append(of13.oxm.ipv4_dst(value=rf.dst_ip))
+
     if rf.vlan_id is not None:
         match.oxm_list.append(of13.oxm.vlan_vid(value=rf.vlan_id))
 
@@ -410,6 +436,8 @@ def show_flowtable(data):
             in_port=data.get('in-port', None),
             src_mac=convert_mac_hex_string_to_byte_array(data['src-mac']) if 'src-mac' in data else None,
             dst_mac=convert_mac_hex_string_to_byte_array(data['dst-mac']) if 'dst-mac' in data else None,
+            src_ip=convert_ip_in_dotted_decimal_to_integer(data['src-ip']) if 'src-ip' in data else None,
+            dst_ip=convert_ip_in_dotted_decimal_to_integer(data['dst-ip']) if 'dst-ip' in data else None,
             vlan_id=int(data['vlan-id']) if 'vlan-id' in data else None,
             table_id=data.get('table-id', None),
             out_port=data.get('out-port', None))
@@ -483,6 +511,24 @@ DST_MAC = {
     'doc'          : 'flowtable|dst-mac',
 }
 
+SRC_IP = {
+    'field'        : 'src-ip',
+    'tag'          : 'src-ip',
+    'short-help'   : 'Filter on source IP',
+    'type'         : 'ip-address',
+    'optional'     : True,
+    'doc'          : 'flowtable|src-ip',
+}
+
+DST_IP = {
+    'field'        : 'dst-ip',
+    'tag'          : 'dst-ip',
+    'short-help'   : 'Filter on destination IP',
+    'type'         : 'ip-address',
+    'optional'     : True,
+    'doc'          : 'flowtable|dst-ip',
+}
+
 VLAN_ID = {
     'field'        : 'vlan-id',
     'tag'          : 'vlan-id',
@@ -522,6 +568,8 @@ SHOW_FLOWTABLE_COMMAND_DESCRIPTION = {
                     OUT_PORT,
                     SRC_MAC,
                     DST_MAC,
+                    SRC_IP,
+                    DST_IP,
                     VLAN_ID,
                     {
                         'token'      : 'detail',
