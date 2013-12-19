@@ -166,8 +166,7 @@ def of10_flow_entry_to_disp(entry):
                     rv.output = str(obj.port)
                 else:
                     rv.output += " " + str(obj.port)
-        elif (obj.type >= of10.OFPAT_SET_VLAN_VID and \
-              obj.type <= of10.OFPAT_SET_TP_DST):
+        else: # any action other than OUTPUT or ENQUEUE is a mod
             rv.modifications = "yes"
 
     if output_count >= 3:
@@ -289,8 +288,7 @@ def of13_flow_entry_to_disp(entry):
                             rv.output = str(act.port)
                         else:
                             rv.output += " " + str(act.port)
-                elif (act.type >= of13.OFPAT_COPY_TTL_OUT and \
-                      act.type <= of13.OFPAT_POP_PBB):
+                else: # any action other than OUTPUT or SET_QUEUE is a mod
                     rv.modifications = "yes"
 
     if output_count >= 3:
