@@ -4,6 +4,8 @@ import command
 import error
 
 import subprocess
+import socket
+
 from sl_util import const
 from sl_util import shell
 from sl_util import OFConnection
@@ -11,6 +13,7 @@ from sl_util import OFConnection
 import loxi.of10 as of10
 import loxi.of13 as of13
 import fmtcnv
+import utif
 
 def display(val):
     return str(val) if val != 0xffffffffffffffff else '-'
@@ -18,6 +21,8 @@ def display(val):
 def convert_mac_hex_string_to_byte_array(mac):
     return [ int(x,16) for x in mac.split(':') ]
 
+def convert_ip6_address_to_binary_string(ip6):
+    return socket.inet_pton(socket.AF_INET6, ip6)
 
 class disp_flow_ob(object):
     """
@@ -307,15 +312,16 @@ class FlowRequestFilter(object):
                  in_port=None,
                  src_mac=None,
                  dst_mac=None,
+                 src_ip=None,
+                 dst_ip=None,
+                 src_ip6=None,
+                 dst_ip6=None,
                  vlan_id=None,
                  table_id=None,
                  out_port=None):
-        self.in_port = in_port
-        self.src_mac = src_mac
-        self.dst_mac = dst_mac
-        self.vlan_id = vlan_id
-        self.table_id = table_id
-        self.out_port = out_port
+        for k, v in locals().iteritems():
+            if k != "self":
+                self.__setattr__(k, v)
 
 def show_of10_entries(rf, format_str):
     req = of10.message.flow_stats_request()
@@ -332,6 +338,14 @@ def show_of10_entries(rf, format_str):
     if rf.dst_mac is not None:
         req.match.eth_dst = rf.dst_mac
         req.match.wildcards = req.match.wildcards & ~of10.OFPFW_DL_DST
+
+    if rf.src_ip is not None:
+        req.match.ipv4_src = rf.src_ip
+        req.match.wildcards = req.match.wildcards & ~of10.OFPFW_NW_SRC_MASK
+
+    if rf.dst_ip is not None:
+        req.match.ipv4_dst = rf.dst_ip
+        req.match.wildcards = req.match.wildcards & ~of10.OFPFW_NW_DST_MASK
 
     if rf.vlan_id is not None:
         req.match.vlan_vid = rf.vlan_id
@@ -373,6 +387,18 @@ def show_of13_entries(rf, format_str):
     if rf.dst_mac is not None:
         match.oxm_list.append(of13.oxm.eth_dst(value=rf.dst_mac))
 
+    if rf.src_ip is not None:
+        match.oxm_list.append(of13.oxm.ipv4_src(value=rf.src_ip))
+
+    if rf.dst_ip is not None:
+        match.oxm_list.append(of13.oxm.ipv4_dst(value=rf.dst_ip))
+
+    if rf.src_ip6 is not None:
+        match.oxm_list.append(of13.oxm.ipv6_src(value=rf.src_ip6))
+
+    if rf.dst_ip6 is not None:
+        match.oxm_list.append(of13.oxm.ipv6_dst(value=rf.dst_ip6))
+
     if rf.vlan_id is not None:
         match.oxm_list.append(of13.oxm.vlan_vid(value=rf.vlan_id))
 
@@ -409,6 +435,10 @@ def show_flowtable(data):
             in_port=data.get('in-port', None),
             src_mac=convert_mac_hex_string_to_byte_array(data['src-mac']) if 'src-mac' in data else None,
             dst_mac=convert_mac_hex_string_to_byte_array(data['dst-mac']) if 'dst-mac' in data else None,
+            src_ip=utif.inet_aton(data['src-ip']) if 'src-ip' in data else None,
+            dst_ip=utif.inet_aton(data['dst-ip']) if 'dst-ip' in data else None,
+            src_ip6=convert_ip6_address_to_binary_string(data['src-ip6']) if 'src-ip6' in data else None,
+            dst_ip6=convert_ip6_address_to_binary_string(data['dst-ip6']) if 'dst-ip6' in data else None,
             vlan_id=int(data['vlan-id']) if 'vlan-id' in data else None,
             table_id=data.get('table-id', None),
             out_port=data.get('out-port', None))
@@ -482,6 +512,42 @@ DST_MAC = {
     'doc'          : 'flowtable|dst-mac',
 }
 
+SRC_IP = {
+    'field'        : 'src-ip',
+    'tag'          : 'src-ip',
+    'short-help'   : 'Filter on source IP',
+    'type'         : 'ip-address',
+    'optional'     : True,
+    'doc'          : 'flowtable|src-ip',
+}
+
+DST_IP = {
+    'field'        : 'dst-ip',
+    'tag'          : 'dst-ip',
+    'short-help'   : 'Filter on destination IP',
+    'type'         : 'ip-address',
+    'optional'     : True,
+    'doc'          : 'flowtable|dst-ip',
+}
+
+SRC_IP6 = {
+    'field'        : 'src-ip6',
+    'tag'          : 'src-ip6',
+    'short-help'   : 'Filter on source IPv6',
+    'type'         : 'ip6-address',
+    'optional'     : True,
+    'doc'          : 'flowtable|src-ip6',
+}
+
+DST_IP6 = {
+    'field'        : 'dst-ip6',
+    'tag'          : 'dst-ip6',
+    'short-help'   : 'Filter on destination IPv6',
+    'type'         : 'ip6-address',
+    'optional'     : True,
+    'doc'          : 'flowtable|dst-ip6',
+}
+
 VLAN_ID = {
     'field'        : 'vlan-id',
     'tag'          : 'vlan-id',
@@ -521,6 +587,10 @@ SHOW_FLOWTABLE_COMMAND_DESCRIPTION = {
                     OUT_PORT,
                     SRC_MAC,
                     DST_MAC,
+                    SRC_IP,
+                    DST_IP,
+                    SRC_IP6,
+                    DST_IP6,
                     VLAN_ID,
                     {
                         'token'      : 'detail',
