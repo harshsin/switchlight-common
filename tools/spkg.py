@@ -135,6 +135,7 @@ ap.add_argument("--force-build", help="Force rebuild from source.",
                 action='store_true')
 ap.add_argument("--verbose", action='store_true', help="verbose logging")
 ap.add_argument("--quiet", action='store_true', help="minimal logging")
+ap.add_argument("--extract", help="Extract package to the given directory.")
 
 ops = ap.parse_args()
 
@@ -239,6 +240,13 @@ for pa in ops.packages[0]:
         sys.exit(1)
 
     deb = packages[0]
+
+    if ops.extract:
+        # Just extract the contents into the given directory. 
+        if not os.path.exists(ops.extract):
+            os.makedirs(ops.extract)
+        check_call(('dpkg', '-x', "%s/%s" % (package_dir, deb), ops.extract))
+        sys.exit(0)
 
     extract_dir = "%s/debian/installs/%s/%s" % (SWITCHLIGHT, arch, package)
 
