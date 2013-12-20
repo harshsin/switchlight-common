@@ -18,32 +18,46 @@ class PlatformConfigGenerator(ComponentGenerator):
     def _makefile_dot_comp_all_rules(self):
         return "\t@echo Run 'make deb'"
 
-    def _dh_auto_install(self):
-        return """\tmkdir -p $(INSTALL_DIR)/usr/platform-config/
-\tcp -R ../../src $(INSTALL_DIR)/usr/platform-config/"""
+
+    def _rules(self):
+        return """#!/usr/bin/make -f
+PLATFORM_NAME=%(platform)s
+include $(SWITCHLIGHT)/make/platform-config-rules.mk
+""" % (self.__dict__)
 
     def __generate_file(self, path, name, contents):
         with open("%s/%s" % (path, name), "w") as f:
             f.write(contents)
             
     def _install(self):
-        return "/usr/platform-config/*"
+        return "/lib/platform-config/*"
 
     def generate(self, path):
         # Generate the entire component:
         ComponentGenerator.generate(self, path)
         self.path = "%s/%s" % (path, self.platform)
         # the platform directory layout is this
-        os.makedirs('%(path)s/src/installer/%(platform)s' % (self.__dict__))
-        os.makedirs('%(path)s/src/loader' % (self.__dict__))
+        os.makedirs('%(path)s/src/install' % (self.__dict__))
+        os.makedirs('%(path)s/src/boot' % (self.__dict__))
 
         self.__generate_file('%(path)s/src' % self.__dict__, 'name', self.platform+'\n')
-        self.__generate_file('%(path)s/src/installer/%(platform)s' % self.__dict__, 
+        self.__generate_file('%(path)s/src/install' % self.__dict__, 
                              '%(platform)s.sh' % self.__dict__,
                              "# Platform data goes here.")
-        self.__generate_file('%(path)s/src/loader' % self.__dict__, 
+        self.__generate_file('%(path)s/src/boot' % self.__dict__, 
                              self.platform, 
                              "# Platform data goes here.")
+        self.__generate_file('%(path)s/src/boot' % self.__dict__, 
+                             'detect.sh', 
+                             """# Default platform detection.
+if grep -q "^model.*: %(platform)s$" /proc/cpuinfo; then
+    echo "%(platform)s" >/etc/sl_platform
+    exit 0
+else
+    exit 1
+fi
+
+""" % self.__dict__)
         
 
 if __name__ == '__main__':
