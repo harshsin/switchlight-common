@@ -14,6 +14,7 @@ import subprocess
 
 class DebianGenerator(object):
     def __init__(self, package, arch, summary, desc):
+        self.packages = []
         self.package = package
         self.arch = arch
         self.summary = summary
@@ -21,6 +22,10 @@ class DebianGenerator(object):
         self.copyright = 'Copyright 2013 Big Switch Networks';
         # The date string must be rfc-3339. 
         self.date = subprocess.check_output(['date', '-R'])
+    
+    def add_package(self, package, summary, desc):
+        """Add an additional package specification."""
+        self.packages.append((package,summary,desc))
 
     def _gitignore(self):
         """Return the contents of the .gitignore file."""
@@ -70,14 +75,20 @@ Description: %(summary)s
         """Return the rules for the dh_auto_install section of the rules file."""
         return "\t@echo \"Fill me out.\""
 
+    def _dh_rules_header(self):
+        return ""
+
     def _rules(self):
         """Return the contents of the rules file."""
         self.dh_auto_install_rules=self._dh_auto_install()
+        self.rules_header=self._dh_rules_header()
         return """#!/usr/bin/make -f
 
 DEB_DH_INSTALL_SOURCEDIR = debian/tmp
 INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
 PACKAGE_NAME = %(package)s
+
+%(rules_header)s
 
 %%:
 \tdh $@
