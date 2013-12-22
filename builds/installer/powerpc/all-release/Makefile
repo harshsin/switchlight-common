@@ -7,7 +7,7 @@ endif
 # for this SWI configuration, based on the required platforms. 
 #
 include platforms.mk
-SWITCHLIGHT_REQUIRED_PACKAGES := $(foreach p,$(INSTALLER_PLATFORMS),platform-$p:powerpc)
+SWITCHLIGHT_REQUIRED_PACKAGES := $(foreach p,$(INSTALLER_PLATFORMS),platform-$(p):powerpc) $(foreach p,$(INSTALLER_PLATFORMS),platform-config-$(p):all)
 
 include $(SWITCHLIGHT)/make/component.mk
 
