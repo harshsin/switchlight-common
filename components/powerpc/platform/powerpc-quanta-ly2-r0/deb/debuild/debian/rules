@@ -14,8 +14,7 @@ clean:
 	dh clean
 
 override_dh_auto_install:
-	mkdir -p $(INSTALL_DIR)/usr/platforms
-	cp -R ../../$(PLATFORM) $(INSTALL_DIR)/usr/platforms/
+	mkdir -p $(INSTALL_DIR)/usr/platforms/$(PLATFORM)
 	cp ../../switchlight.$(PLATFORM).loader $(INSTALL_DIR)/usr/platforms/$(PLATFORM)/switchlight.$(PLATFORM).loader
 
 
