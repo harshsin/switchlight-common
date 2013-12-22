@@ -1,0 +1,21 @@
+# -*- Makefile -*-
+###############################################################################
+#
+# Build SwitchLight installer for the Quanta LY2
+#
+###############################################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not set.)
+else
+include $(SWITCHLIGHT)/make/config.mk
+endif
+
+# Support these platforms. 
+include platforms.mk
+
+# Use the powerpc-release SWI build.
+INSTALLER_SWI := $(SWITCHLIGHT)/builds/swi/powerpc/release/switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-release.swi
+INSTALLER_NAME := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-release.quanta-ly2.$(SWITCHLIGHT_BUILD_TIMESTAMP).installer
+SWITCHLIGHT_BUILD_CONFIG := powerpc.release
+
+include $(SWITCHLIGHT)/make/installer-ppc.mk

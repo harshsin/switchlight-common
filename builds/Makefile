@@ -134,11 +134,9 @@ initrd-powerpc:powerpc
 $(foreach c,$(PARALLEL_0),$(eval $(call cbuild,$(c),submodules_init)))
 
 PARALLEL_1 := \
-platform-quanta-lb9a:powerpc \
-platform-quanta-ly2:powerpc \
-platform-quanta-lb9:powerpc \
-platform-quanta-ly5:powerpc \
-platform-accton-es5652bt:powerpc
+platform-powerpc-quanta-lb9a-r0:powerpc \
+platform-powerpc-quanta-lb9-r0:powerpc \
+platform-powerpc-quanta-ly2-r0:powerpc
 # loader-i386:i386
 $(foreach c,$(PARALLEL_1),$(eval $(call cbuild,$(c),$(PARALLEL_0))))
 

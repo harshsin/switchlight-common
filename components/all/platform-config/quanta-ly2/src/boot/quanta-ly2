@@ -1,0 +1,19 @@
+echo "soc.0/ffe24000.ethernet ma1" >/etc/sl_net
+
+# switchlight loader layout (loader kernel 3.9.0 enumeration style)
+echo "virtual/mtd/mtd2 flash" >/etc/sl_block
+
+# ONIE layout (/mnt/flash goes on 2nd 32MiB flash part)
+# 3.9.6 kernel does not enumerate using '/sys/devices/virtual/mtd'
+echo "virtual/mtd/mtd4 flash" >/etc/sl_block
+echo "ffe05000.localbus/ec000000.flash/mtd/mtd4 flash" >>/etc/sl_block
+
+echo "soc.0/ffe2e000.sdhci/mmc_host/mmc0 flash2" >>/etc/sl_block
+echo "kernel-85xx" >/etc/sl_kernel
+echo "initrd-powerpc" >/etc/sl_initrd
+echo "rootfs-powerpc" >/etc/sl_rootfs
+echo "" >/etc/sl_crashkernel
+
+cp /dev/null /etc/fw_env.config
+echo "# MTD device name       Device offset   Env. size       Flash sector size" >> /etc/fw_env.config
+echo "/dev/mtd2               0x00000000      0x00002000         0x00020000" >> /etc/fw_env.config
