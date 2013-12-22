@@ -93,7 +93,7 @@ function build_and_install {
 }
 
 # Build primary targets for testing
-build_and_install swi-internal swi-release swi-internal-t5 installer-all-release installer-quanta-lb9a-release installer-quanta-lb9-release installer-quanta-ly2-release installer-accton-es5652bt-release 
+build_and_install swi-internal swi-release swi-internal-t5 swi-internal-6.3 swi-internal-6.3-t5 installer-all-release installer-quanta-lb9a-release installer-quanta-lb9-release installer-quanta-ly2-release installer-accton-es5652bt-release 
 
 # Copy the loader binaries (hack)
 ssh $INSTALL_SERVER mkdir -p $INSTALL_DIR/loaders
@@ -107,10 +107,7 @@ ssh $INSTALL_SERVER rm $INSTALL_DIR/repo/update.sh $INSTALL_DIR/repo/.lock $INST
 
 # Kick off automated tests here for primary targets
 if [ -n "$ABAT_SUFFIX" ]; then 
-    abat task t.sl.lb9.oftest"$ABAT_SUFFIX" --enable || true
-    abat task t.sl.lb9a.oftest"$ABAT_SUFFIX" --enable || true
-    abat task t.sl.ly2.oftest"$ABAT_SUFFIX" --enable || true
-    abat task t.sl.accton5652.oftest"$ABAT_SUFFIX" --enable || true
+    $SWITCHLIGHT_ROOT/tools/autotests.sh "$ABAT_SUFFIX" || true
 fi
 
 # Build remaining targets

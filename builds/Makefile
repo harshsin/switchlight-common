@@ -23,8 +23,13 @@ SWI_ARCHS := $(filter-out swi/all,$(wildcard swi/*))
 # SWI_BUILD_PATHS := $(foreach arch,$(SWI_ARCHS),$(wildcard $(arch)/*))
 #
 # These are the current default subset
-SWI_BUILD_PATHS := swi/powerpc/internal swi/powerpc/release swi/powerpc/internal-t5
-#swi/i386/vm-internal 
+SWI_BUILD_PATHS := \
+	swi/powerpc/internal \
+	swi/powerpc/release \
+	swi/powerpc/internal-t5 \
+	swi/powerpc/internal-6.3 \
+	swi/powerpc/internal-6.3-t5 
+#swi/i386/vm-internal
 
 #
 # Define a build template for each platform by name and build directory
@@ -46,7 +51,7 @@ ALL_TARGETS := $(ALL_TARGETS) $(ALL_SWI)
 # Build all SWI
 swi-all: $(ALL_SWI)
 
-show-swis:	
+show-swis:
 	@echo $(SWI_BUILD_PATHS)
 
 
@@ -62,7 +67,7 @@ INST_ARCHS := $(filter-out installer/all,$(wildcard installer/*))
 # These are the available installer builds per-architecture
 INST_BUILD_PATHS := $(foreach arch,$(INST_ARCHS),$(wildcard $(arch)/*))
 
-# 
+#
 # Define a build template for each installer by name and build directory
 #
 define installer_build_template
@@ -88,7 +93,7 @@ show-installers:
 
 
 ###############################################################################
-# 
+#
 # Components directory
 #
 ###############################################################################
@@ -100,10 +105,10 @@ components:
 ALL_TARGETS := $(ALL_TARGETS) components
 
 
-# All you can eat. 
+# All you can eat.
 all: $(ALL_TARGETS)
 
-default: show-swis 
+default: show-swis
 
 
 ###############################################################################
@@ -124,7 +129,7 @@ endef
 PARALLEL_0 := \
 kernel-85xx:powerpc \
 kernel-e500mc:powerpc \
-initrd-powerpc:powerpc 
+initrd-powerpc:powerpc
 # kernel-x86-64:amd64 initrd-i386:i386
 $(foreach c,$(PARALLEL_0),$(eval $(call cbuild,$(c),submodules_init)))
 
@@ -133,7 +138,7 @@ platform-quanta-lb9a:powerpc \
 platform-quanta-ly2:powerpc \
 platform-quanta-lb9:powerpc \
 platform-quanta-ly5:powerpc \
-platform-accton-es5652bt:powerpc 
+platform-accton-es5652bt:powerpc
 # loader-i386:i386
 $(foreach c,$(PARALLEL_1),$(eval $(call cbuild,$(c),$(PARALLEL_0))))
 
@@ -141,15 +146,22 @@ PARALLEL_2 := \
 libbroadcom-6.2-internal:powerpc \
 libbroadcom-6.2-release:powerpc \
 libbroadcom-6.2-internal-src:all \
+libbroadcom-6.3-internal:powerpc \
+libbroadcom-6.3-release:powerpc \
+libbroadcom-6.3-internal-src:all 
 $(foreach c,$(PARALLEL_2),$(eval $(call cbuild,$(c),$(PARALLEL_1))))
 
 PARALLEL_3 := \
 faultd:powerpc \
 sofcon:powerpc \
 brcmd-6.2.7-internal:powerpc \
+brcmd-6.3.3-internal:powerpc \
 ofad-6.2.7-release:powerpc \
-ofad-6.2.7-t5:powerpc \
 ofad-6.2.7-internal:powerpc \
+ofad-6.3.3-release:powerpc \
+ofad-6.3.3-internal:powerpc \
+ofad-6.2.7-t5:powerpc \
+ofad-6.3.3-t5:powerpc \
 pcli:all
 # faultd:amd64 brcmd-6.2.7-sim:amd64 ofad-6.2.7-sim:amd64 \
 
