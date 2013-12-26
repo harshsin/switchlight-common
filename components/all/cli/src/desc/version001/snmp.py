@@ -8,7 +8,7 @@ from sl_util import utils
 import utif
 import cfgfile
 import error
-
+from switchlight.platform import SwitchLightPlatform
 
 # FIXME STUB
 SNMP_CONFIG_FILE = '/etc/snmp/snmpd.conf'
@@ -135,12 +135,12 @@ command.add_action('implement-enable-snmp', enable_snmp,
                                } } )
 
 
-# Add or remove the given line from the config file    
+# Add or remove the given line from the config file
 def config_line(no_cmd, li):
     try:
         with cfgfile.FileLock(SNMP_CONFIG_FILE) as f:
             lines = cfgfile.get_line_list_from_file(f)
-        
+
             if no_cmd:
                 # Remove matching line, if present
 
@@ -178,100 +178,6 @@ def community(no_cmd, community, access):
                 "%scommunity %s\n" % (access, community)
                 )
 
-OID_Table = {
-    'quanta-lb9': {
-        TEMP_SENSORS : {
-            'ctemp1' : '.1.3.6.1.4.1.2021.13.16.2.1.3.1',
-            'ctemp2' : '.1.3.6.1.4.1.2021.13.16.2.1.3.5',
-            'ctemp3' : '.1.3.6.1.4.1.2021.13.16.2.1.3.9',
-            'ctemp4' : '.1.3.6.1.4.1.2021.13.16.2.1.3.13',
-            'ctemp5' : '.1.3.6.1.4.1.2021.13.16.2.1.3.17',
-            'pwr-temp1' : '.1.3.6.1.4.1.2021.13.16.2.1.3.41',
-            'pwr-temp2' : '.1.3.6.1.4.1.2021.13.16.2.1.3.44',
-            'pwr-temp3' : '.1.3.6.1.4.1.2021.13.16.2.1.3.46',
-        },
-        CHASSIS_FAN_SENSORS : {
-            'cfan1' : '.1.3.6.1.4.1.2021.13.16.3.1.3.1',
-            'cfan2' : '.1.3.6.1.4.1.2021.13.16.3.1.3.5',
-            'cfan3' : '.1.3.6.1.4.1.2021.13.16.3.1.3.9',
-            'cfan4' : '.1.3.6.1.4.1.2021.13.16.3.1.3.13',
-        },
-        POWER_FAN_SENSORS : {
-            'pwr-fan' : '.1.3.6.1.4.1.2021.13.16.3.1.3.33',
-        },
-        POWER_SENSORS : {
-            'power' : '.1.3.6.1.4.1.2021.13.16.5.1.3.8'
-        },
-        CPU_LOAD : {
-            'cpuload' : '.1.3.6.1.4.1.2021.10.1.5.1'
-        },
-        MEM_TOTAL_FREE : {
-            'memtotalfree' : '.1.3.6.1.4.1.2021.4.11.0'
-        }
-    },
-
-    'quanta-ly2': {
-        TEMP_SENSORS : {
-            'ctemp1' : '.1.3.6.1.4.1.2021.13.16.2.1.3.1',
-            'ctemp2' : '.1.3.6.1.4.1.2021.13.16.2.1.3.2',
-            'ctemp3' : '.1.3.6.1.4.1.2021.13.16.2.1.3.3',
-            'ctemp4' : '.1.3.6.1.4.1.2021.13.16.2.1.3.4',
-            'ctemp5' : '.1.3.6.1.4.1.2021.13.16.2.1.3.5',
-            'pwr-temp6' : '.1.3.6.1.4.1.2021.13.16.2.1.3.6',
-            'pwr-temp7' : '.1.3.6.1.4.1.2021.13.16.2.1.3.9',
-            'pwr-temp8' : '.1.3.6.1.4.1.2021.13.16.2.1.3.14',
-        },
-        CHASSIS_FAN_SENSORS : {
-            'cfan1' : '.1.3.6.1.4.1.2021.13.16.3.1.3.1',
-            'cfan2' : '.1.3.6.1.4.1.2021.13.16.3.1.3.2',
-            'cfan3' : '.1.3.6.1.4.1.2021.13.16.3.1.3.3',
-            'cfan4' : '.1.3.6.1.4.1.2021.13.16.3.1.3.4',
-        },
-        POWER_FAN_SENSORS : {
-            'pwr-fan' : '.1.3.6.1.4.1.2021.13.16.3.1.3.5',
-        },
-        POWER_SENSORS : {
-            'power' : '.1.3.6.1.4.1.2021.13.16.5.1.3.1'
-        },
-        CPU_LOAD : {
-            'cpuload' : '.1.3.6.1.4.1.2021.10.1.5.1'
-        },
-        MEM_TOTAL_FREE : {
-            'memtotalfree' : '.1.3.6.1.4.1.2021.4.11.0'
-        }
-    },
-
-    'quanta-ly2r': {
-        TEMP_SENSORS : {
-            'ctemp1' : '.1.3.6.1.4.1.2021.13.16.2.1.3.1',
-            'ctemp2' : '.1.3.6.1.4.1.2021.13.16.2.1.3.2',
-            'ctemp3' : '.1.3.6.1.4.1.2021.13.16.2.1.3.3',
-            'ctemp4' : '.1.3.6.1.4.1.2021.13.16.2.1.3.4',
-            'ctemp5' : '.1.3.6.1.4.1.2021.13.16.2.1.3.5',
-            'pwr-temp6' : '.1.3.6.1.4.1.2021.13.16.2.1.3.6',
-            'pwr-temp7' : '.1.3.6.1.4.1.2021.13.16.2.1.3.9',
-            'pwr-temp8' : '.1.3.6.1.4.1.2021.13.16.2.1.3.14',
-        },
-        CHASSIS_FAN_SENSORS : {
-            'cfan1' : '.1.3.6.1.4.1.2021.13.16.3.1.3.1',
-            'cfan2' : '.1.3.6.1.4.1.2021.13.16.3.1.3.2',
-            'cfan3' : '.1.3.6.1.4.1.2021.13.16.3.1.3.3',
-            'cfan4' : '.1.3.6.1.4.1.2021.13.16.3.1.3.4',
-        },
-        POWER_FAN_SENSORS : {
-            'pwr-fan' : '.1.3.6.1.4.1.2021.13.16.3.1.3.5',
-        },
-        POWER_SENSORS : {
-            'power' : '.1.3.6.1.4.1.2021.13.16.5.1.3.1'
-        },
-        CPU_LOAD : {
-            'cpuload' : '.1.3.6.1.4.1.2021.10.1.5.1'
-        },
-        MEM_TOTAL_FREE : {
-            'memtotalfree' : '.1.3.6.1.4.1.2021.4.11.0'
-        }
-    },
-}
 
 Mon_Ops = {
     TEMP_SENSORS        : '>',
@@ -293,7 +199,7 @@ Show_Trap_Type_Conv = {
 
 def trap_set(no_cmd, trap, threshold):
     Platform = utils.get_platform()
-    oids = OID_Table.get(Platform)
+    oids = SwitchLightPlatform.oid_table()
     if oids is None:
         raise error.ActionError("Trap unsupported on %s", Platform)
 
@@ -320,7 +226,7 @@ def config_snmp(no_command, data):
         trap_set(no_command,
                   data['trap'],
                   data['threshold']
-                  )    
+                  )
 
     elif 'access' in data:
         community(no_command, data['community'], data['access'])
@@ -334,7 +240,7 @@ def config_snmp(no_command, data):
                 for key in datakeywords:
                     if key in data:
                         if no_command:
-                            if (key in cfg and 
+                            if (key in cfg and
                                 (data[key] == '' or data[key] == cfg[key][0])):
                                 del lines[cfg[key][1]]
                         else:

@@ -9,14 +9,11 @@ from sl_util.ofad import OFADConfig, OFADCtl, PortManager
 from sl_util import utils
 from sl_util import const
 
+from switchlight.platform import SwitchLightPlatform
+
 OFAgentConfig = OFADConfig()
 PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
 PortManager.setLAGBase(OFAgentConfig.lag_base_name)
-
-LAG_COMPONENT_MAX = {
-    'quanta-lb9': 8,
-    'quanta-ly2': 16
-}
 
 def config_port_channel(no_command, data):
     portManager = PortManager(OFAgentConfig.port_list)
@@ -28,7 +25,7 @@ def config_port_channel(no_command, data):
         componentPorts = utif.resolve_port_list(data["interface-list"])
 
         platform = utils.get_platform()
-        lagCompMax = LAG_COMPONENT_MAX.get(platform, None)
+        lagCompMax = SwitchLightPlatform.lag_component_max;
         if lagCompMax is None:
             raise error.ActionError("Cannot determine max number of component ports supported")
         if len(componentPorts) > lagCompMax:
