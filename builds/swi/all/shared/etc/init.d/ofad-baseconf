@@ -85,11 +85,4 @@ except Exception:
 
 SwitchLightPlatform.sys_hw_init();
 
-#if plat == PLAT_LB9 or plat == PLAT_LB9_R0:
-#    subprocess.call("/usr/bin/brcm_lb9_gpio_init")
-#if plat == PLAT_LY2 or plat == PLAT_LY2_R0:
-#    subprocess.call("/usr/bin/brcm_ly2_gpio_init")
-#if plat == PLAT_LY2R:
-#    subprocess.call("/usr/bin/brcm_ly2r_gpio_init")
-
 sys.stderr.write("done.\n")
