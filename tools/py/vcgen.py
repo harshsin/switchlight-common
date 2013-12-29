@@ -18,6 +18,8 @@ class VendorConfigGenerator(ComponentGenerator):
     def _makefile_dot_comp_all_rules(self):
         return "\t@echo Run 'make deb'"
 
+    def _required_packages(self):
+        return "vendor-config-switchlight:all"
 
     def _rules(self):
         return """#!/usr/bin/make -f
