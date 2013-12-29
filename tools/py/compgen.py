@@ -1,7 +1,7 @@
 #!/usr/bin/python
 ############################################################
 #
-# Generate a new SwitchLight component directory. 
+# Generate a new SwitchLight component directory.
 #
 
 import time
@@ -11,18 +11,29 @@ from debgen import DebianGenerator
 
 class ComponentGenerator(DebianGenerator):
     def __init__(self, name, package, arch, summary, desc):
-        DebianGenerator.__init__(self, package, arch, summary, desc); 
+        DebianGenerator.__init__(self, package, arch, summary, desc);
         self.name = name
 
+    def _required_submodules(self):
+        return None
+    def _required_packages(self):
+        return None
+
     def _makefile(self):
+        self.required_submodules = "# SWITCHLIGHT_REQUIRED_SUBMODULES := "
+        self.required_packages = "# SWITCHLIGHT_REQUIRED_PACKAGES := "
+        if self._required_submodules():
+            self.required_submodules = self.required_submodules[2:] + self._required_submodules()
+        if self._required_packages():
+            self.required_packages = self.required_packages[2:] + self._required_packages()
+
         """Return the contents of the top-level makefile for the component."""
         return """ifndef SWITCHLIGHT
 $(error $$SWITCHLIGHT is undefined.)
 endif
 
-# Fill me out if necessary
-# SWITCHLIGHT_REQUIRED_SUBMODULES :=
-# SWITCHLIGHT_REQUIRED_PACKAGES :=
+%(required_submodules)s
+%(required_packages)s
 
 include $(SWITCHLIGHT)/make/component.mk
 """ % (self.__dict__)
@@ -41,7 +52,7 @@ endif
 
 include $(SWITCHLIGHT)/make/config.mk
 
-all: 
+all:
 %(comp_all_rules)s
 
 .PHONY: deb
@@ -58,7 +69,7 @@ include %(relpath)s/../make/debuild.mk
     def __generate_file(self, path, name, contents):
         with open("%s/%s" % (path, name), "w") as f:
             f.write(contents)
-    
+
     def generate(self, path):
         # Relative path to the SwitchLight root from the target package
         # directory
@@ -91,8 +102,8 @@ if __name__ == "__main__":
         ops.package = ops.name
     if ops.desc is None:
         ops.desc = ops.summary
-        
-    cg = ComponentGenerator(ops.name, ops.package, ops.arch, ops.summary, 
+
+    cg = ComponentGenerator(ops.name, ops.package, ops.arch, ops.summary,
                             ops.desc)
 
     cg.generate(".")
