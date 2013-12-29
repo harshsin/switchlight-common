@@ -8,7 +8,10 @@ from sl_util import utils
 import utif
 import cfgfile
 import error
-from switchlight.platform import SwitchLightPlatform
+from switchlight.platform.base import *
+from switchlight.platform.current import SwitchLightPlatform
+
+Platform=SwitchLightPlatform()
 
 # FIXME STUB
 SNMP_CONFIG_FILE = '/etc/snmp/snmpd.conf'
@@ -22,13 +25,6 @@ SNMP_CONFIG_FILE = '/etc/snmp/snmpd.conf'
 #BSN_ENTERPRISE_OID_SWITCH = BSN_ENTERPRISE_OID + '.2'
 # sysObjectID BSN_ENTERPRISE_OID_SWITCH
 # sysDescr SNMP_SYS_DESC
-
-TEMP_SENSORS        = 'temp_sensors'
-CHASSIS_FAN_SENSORS = 'chassis_fan_sensors'
-POWER_FAN_SENSORS    = 'power_fan_sensors'
-POWER_SENSORS        = 'power_sensors'
-CPU_LOAD             = 'CPU_load'
-MEM_TOTAL_FREE       = 'mem_total_free'
 
 class Snmp(Service):
     SVC_NAME = "snmpd"
@@ -180,32 +176,31 @@ def community(no_cmd, community, access):
 
 
 Mon_Ops = {
-    TEMP_SENSORS        : '>',
-    CHASSIS_FAN_SENSORS : '<',
-    POWER_FAN_SENSORS   : '<',
-    POWER_SENSORS       : '>',
-    CPU_LOAD            : '>',
-    MEM_TOTAL_FREE      : '<'
+    oids.TEMP_SENSORS        : '>',
+    oids.CHASSIS_FAN_SENSORS : '<',
+    oids.POWER_FAN_SENSORS   : '<',
+    oids.POWER_SENSORS       : '>',
+    oids.CPU_LOAD            : '>',
+    oids.MEM_TOTAL_FREE      : '<'
 }
 
 Show_Trap_Type_Conv = {
-    'ctemp1' : TEMP_SENSORS,
-    'cfan1'  : CHASSIS_FAN_SENSORS,
-    'pwr-fan': POWER_FAN_SENSORS,
-    'power'  : POWER_SENSORS,
-    'cpuload': CPU_LOAD,
-    'memtotalfree' : MEM_TOTAL_FREE
+    'ctemp1' : oids.TEMP_SENSORS,
+    'cfan1'  : oids.CHASSIS_FAN_SENSORS,
+    'pwr-fan': oids.POWER_FAN_SENSORS,
+    'power'  : oids.POWER_SENSORS,
+    'cpuload': oids.CPU_LOAD,
+    'memtotalfree' : oids.MEM_TOTAL_FREE
 }
 
 def trap_set(no_cmd, trap, threshold):
-    Platform = utils.get_platform()
-    oids = SwitchLightPlatform.oid_table()
+    oids = Platform.oid_table()
     if oids is None:
-        raise error.ActionError("Trap unsupported on %s", Platform)
+        raise error.ActionError("Trap unsupported on %s", Platform.platform())
 
     trapdict = oids.get(trap)
     if trapdict is None:
-        raise error.ActionError("Trap %s unsupported on %s", trap, Platform)
+        raise error.ActionError("Trap %s unsupported on %s", trap, Platform.platform())
 
     items = trapdict.items()
     for item in items:
@@ -374,9 +369,9 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         'tag'             : 'trap',
                         'short-help'      : 'Trap type',
                         'type'            : 'enum',
-                        'values'          : (TEMP_SENSORS, CHASSIS_FAN_SENSORS,
-                                             POWER_FAN_SENSORS, POWER_SENSORS,
-                                             CPU_LOAD, MEM_TOTAL_FREE),
+                        'values'          : (oids.TEMP_SENSORS, oids.CHASSIS_FAN_SENSORS,
+                                             oids.POWER_FAN_SENSORS, oids.POWER_SENSORS,
+                                             oids.CPU_LOAD, oids.MEM_TOTAL_FREE),
                         'doc'             : 'snmp|+',
                     },
                     {
