@@ -10,13 +10,14 @@
 ### END INIT INFO
 
 import hashlib, json, os, re, subprocess, sys
-from switchlight.platform import SwitchLightPlatform
+
+from switchlight.platform.base import *
+from switchlight.platform.current import SwitchLightPlatform
+
+platform=SwitchLightPlatform()
 
 sys.stderr.write("Setting up base ofad configuration...")
 sys.stderr.flush()
-
-PHY_BASE_NAME           = "ethernet"
-LAG_BASE_NAME           = "port-channel"
 
 conf = {}
 
@@ -25,10 +26,9 @@ conf["of_hw_desc"] = ""
 conf["of_serial_num"] = ""
 
 
-conf["of_mfr_desc"] = SwitchLightPlatform.manufacturer
-si = SwitchLightPlatform.sys_info
-conf["of_hw_desc"] = "%s (%s)" % (si("product_name"), si("part_num"))
-conf["of_serial_num"] = si("serial_num")
+conf["of_mfr_desc"] = platform.manufacturer()
+conf["of_hw_desc"] = platform.hw_description()
+conf["of_serial_num"] = platform.sysinfo.SERIAL_NUMBER
 
 conf["of_mac_addr_base"] = "00:00:00:00:00:00"
 conf["of_datapath_id"] = "0x0000000000000000"
@@ -62,10 +62,10 @@ conf["full_match_table"] = "all"
 
 conf["version"] = 1
 
-conf["physical_base_name"] = PHY_BASE_NAME
-conf["lag_base_name"] = LAG_BASE_NAME
-conf["port_list"] = dict([("%s%d" % (PHY_BASE_NAME, i+1), {}) \
-                          for i in range(SwitchLightPlatform.num_phy_ports)])
+conf["physical_base_name"] = basenames.PHY
+conf["lag_base_name"] = basenames.LAG
+conf["port_list"] = dict([("%s%d" % (basenames.PHY, i+1), {}) \
+                          for i in range(platform.platinfo.PORT_COUNT)])
 
 json.dump(conf, file("/etc/ofad.conf", "w"), indent=4, sort_keys=True)
 
@@ -83,6 +83,6 @@ except Exception:
     os.symlink("linux-kernel-bde-6.2.ko", "/lib/modules/linux-kernel-bde.ko")
     os.symlink("linux-user-bde-6.2.ko", "/lib/modules/linux-user-bde.ko")
 
-SwitchLightPlatform.sys_hw_init();
+platform.sys_init();
 
 sys.stderr.write("done.\n")
