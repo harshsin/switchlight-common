@@ -11,28 +11,68 @@ import cfgfile
 from datetime import timedelta
 
 from sl_util import shell
+from switchlight.platform.current import SwitchLightPlatform
+import re
+
+Platform=SwitchLightPlatform()
+FW_PRINTENV = '/usr/bin/fw_printenv'
+
+def fw_getenv(var):
+    if os.path.exists(FW_PRINTENV):
+        value=subprocess.check_output([FW_PRINTENV, var]);
+        if value.startswith("%s=" % var):
+            value = value[len(var)+1:]
+        return value
+    return None
+
+def parse_sl_version(ver):
+    try:
+        m = re.match(r"(SwitchLight) (.*?) (\(.*?\))", ver)
+        return m.group(1,2,3)
+    except Exception, e:
+        return (ver, "", "")
 
 VERSION_FILE = '/etc/sl_version'
 
 def show_version(data):
     out = []
 
-    # Marketing data from the software image
-    try:
-        fh = open(VERSION_FILE)
-        fs_ver = fh.readline().rstrip()
-        fh.close()
-    except IOError, e:
-         fs_ver = "Switch Light - internal release"
-    out.append(fs_ver)
+    with open(VERSION_FILE, "r") as f:
+        sl_version = f.readline().strip()
 
-    if 'full' in data:
+    if not 'full' in data:
+        # Single line version
+        out.append(sl_version)
+    else:
+        # Full version information
+
+        # UBoot version, if appliable
+        uver=fw_getenv('ver')
+        if uver:
+            out.append("UBoot Version: %s" % uver)
+
+        # Platform Information
+        out.append(str(Platform))
+
+        # Loader/Installer information
+        sli=fw_getenv('sl_installer_version')
+        if sli:
+            fs_ver = parse_sl_version(sli)
+            out.append("SwitchLight Loader Version: %s %s" % (fs_ver[0], fs_ver[1]))
+            out.append("SwitchLight Loader Build: %s" % (fs_ver[2]))
+            out.append("")
+
+        fs_ver = parse_sl_version(sl_version);
+        out.append("Software Image Version: %s %s" % (fs_ver[0], fs_ver[1]))
+        out.append("Internal Build Version: %s " % (fs_ver[2]))
+        out.append("")
+
         # Uptime
         out.append("")
         try:
             with open('/proc/uptime', 'r') as data:
                 secs = float(data.readline().split()[0])
-                out.append("Uptime is %s" % 
+                out.append("Uptime is %s" %
                            (str(timedelta(seconds = secs))[:-7]))
         except Exception, e:
             pass
@@ -158,7 +198,7 @@ def ping(data):
         count = data['count']
     else:
         count = 4
-    
+
     shell.call("ping %s -b -c %d -i0.25" % (data['target'], count),
                show_output = True)
 
@@ -344,7 +384,7 @@ def save_tech_support(data):
         p.stdin.write('%s >>%s\n' % (li, tech_support_tmpfile))
     p.stdin.write('gzip -c %s >/mnt/flash2/tech-support_`date +%%y%%m%%d%%H%%M%%S`.gz\n' % tech_support_tmpfile)
     p.stdin.write('rm -f %s*\n' % tech_support_tmpfile)
-    
+
 
 command.add_action('implement-tech-support', save_tech_support,
                     {'kwargs': {'data'      : '$data',}})
@@ -653,7 +693,7 @@ LOCATE_COMMAND_DESCRIPTION = {
 def running_config_hostname(context, runcfg, words):
     comp_runcfg = []
 
-    # collect component-specific config    
+    # collect component-specific config
     hostname = socket.gethostname()
     if hostname != 'localhost':
         comp_runcfg.append('hostname %s\n' % hostname)
