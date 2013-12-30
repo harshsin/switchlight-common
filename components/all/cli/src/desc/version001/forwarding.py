@@ -29,6 +29,11 @@ def config_forwarding(no_command, data):
             fwdCfg.disableL2CACHE()
         else:
             fwdCfg.enableL2CACHE()
+    elif data['type'] == 'pause':
+        if no_command: # When run with a 'no' its an enable op
+            fwdCfg.enablePause()
+        else:
+            fwdCfg.disablePause()
     else:
         raise error.ActionError('Unspported forwarding config type: %s' % data['type'])
 
@@ -74,17 +79,29 @@ CONFIG_FORWARDING_COMMAND_DESCRIPTION = {
                         'doc'           : 'forwarding|pimu-disable',
                     },
                 ),
-                (  
+                (
                     {
-                        'token'         : 'l2cache', 
+                        'token'         : 'l2cache',
                         'short-help'    : 'Configurare L2 Cache',
-                    }, 
+                    },
                     {
-                        'token'         : 'enable', 
-                        'data'          : {'type' : 'l2cache'}, 
+                        'token'         : 'enable',
+                        'data'          : {'type' : 'l2cache'},
                         'doc'           : 'forwarding|l2cache-enable',
-                    }, 
+                    },
                 ),
+                (
+                    {
+                        'token'         : 'pause',
+                        'short-help'    : 'Configure port pause settings',
+                    },
+                    {
+                        'token'         : 'disable',
+                        'data'          : {'type' : 'pause'},
+                        'doc'           : 'forwarding|pause-disable',
+                    },
+                ),
+
             ),
         },
     ),
@@ -128,16 +145,28 @@ SHOW_FORWARDING_COMMAND_DESCRIPTION = {
                 ),
                 (
                     {
-                        'token'         : 'l2cache',
-                        'short-help'    :'Show L2 cache configuration status', 
+                        'token'         : 'pause',
+                        'short-help'    : 'Show the port pause configuration status',
                     },
                     {
-                        'token'         : 'status', 
-                        'action'        : 'ofad-ctl-command', 
-                        'command'       : 'l2cache status', 
+                        'token'         : 'status',
+                        'action'        : 'ofad-ctl-command',
+                        'command'       : 'pause status',
+                        'doc'           : 'forwarding|show-pause-status',
+                    },
+                ),
+                (
+                    {
+                        'token'         : 'l2cache',
+                        'short-help'    :'Show L2 cache configuration status',
+                    },
+                    {
+                        'token'         : 'status',
+                        'action'        : 'ofad-ctl-command',
+                        'command'       : 'l2cache status',
                         'doc'           : 'forwarding|show-l2cache-status',
-                    }, 
-                ), 
+                    },
+                ),
             ),
         },
 
@@ -154,7 +183,8 @@ def running_config_forwarding(context, runcfg, words):
         cfg.append('forwarding pimu disable\n')
     if not fwdCfg.isL2CACHEDisabled():
         cfg.append('forwarding l2cache enable\n')
-
+    if fwdCfg.isPauseDisabled():
+        cfg.append('forwarding pause disable\n')
     if cfg:
         runcfg.append('!\n')
         runcfg += cfg
