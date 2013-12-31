@@ -20,13 +20,7 @@ import fcntl
 # Disabled and/or deprecated packages
 #
 disabled_packages = [
-    'brcmd-5.6', 
-    'brcmd-5.10',
-    'ofad-5.6', 
-    'ofad-5.10', 
-    'libbroadcom-5.6',
-    'libbroadcom-5.10',
-]; 
+];
 
 def package_enabled(p):
     for dp in disabled_packages:
@@ -160,12 +154,12 @@ class Lock:
     def __init__(self, filename):
         self.filename = filename
         self.handle = open(filename, 'w')
-    
+
     def acquire(self):
         logger.debug("acquiring lock %s" % self.filename)
         fcntl.flock(self.handle, fcntl.LOCK_EX)
         logger.debug("acquired lock %s" % self.filename)
-        
+
     def release(self):
         fcntl.flock(self.handle, fcntl.LOCK_UN)
         logger.debug("released lock %s" % self.filename)
@@ -183,7 +177,7 @@ if ops.list_all:
     sys.exit(0)
 
 if ops.add_pkg:
-    repoLock.acquire(); 
+    repoLock.acquire();
     for pa in ops.add_pkg[0]:
         # Copy the package into the repo
         logger.info("adding new package %s...", pa)
@@ -242,7 +236,7 @@ for pa in ops.packages[0]:
     deb = packages[0]
 
     if ops.extract:
-        # Just extract the contents into the given directory. 
+        # Just extract the contents into the given directory.
         if not os.path.exists(ops.extract):
             os.makedirs(ops.extract)
         check_call(('dpkg', '-x', "%s/%s" % (package_dir, deb), ops.extract))
