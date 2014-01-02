@@ -21,6 +21,9 @@ def display(val):
 def convert_mac_hex_string_to_byte_array(mac):
     return [ int(x,16) for x in mac.split(':') ]
 
+def convert_ip6_address_to_binary_string(ip6):
+    return socket.inet_pton(socket.AF_INET6, ip6)
+
 # FIXME: we need to figure out how to display various match cases for vlan:
 #        (1) don't care
 #        (2) match untagged
