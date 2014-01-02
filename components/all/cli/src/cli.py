@@ -1880,9 +1880,12 @@ class MainSh():
                 print "\nExiting."
                 return
             except Exception, e:
-                print "\nError running command '%s'.\n" % line
+                print "\nError running command '%s'." % line
                 if self.debug or self.debug_backtrace:
+                    print
                     traceback.print_exc()
+                else:
+                    print "For additional debug information, use 'debug cli'.\n"
 
 
 #
@@ -1949,7 +1952,17 @@ def main():
 
     # Start CLI
     cli = MainSh()
-    cli.init()
+    try:
+        cli.init()
+    except Exception, e:
+        traceback.print_exc()
+        if not loading_startup:
+            # start bash to allow admin user to recover the device
+            sys.stdout.write("\nError initializing cli; dropping to bash.\n")
+            p = subprocess.Popen("/bin/bash", stdout=sys.stdout, 
+                                 stdin=sys.stdin, env=os.environ)
+            p.wait()
+            sys.exit()
     cli.loop()
 
     if loading_startup:
