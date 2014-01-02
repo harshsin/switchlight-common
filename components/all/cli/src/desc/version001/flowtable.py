@@ -29,6 +29,8 @@ def convert_ip6_address_to_binary_string(ip6):
 #        (2) match untagged
 #        (3) match tagged (any vlan ID)
 #        (4) match tagged (specific vlan ID(s))
+#
+#        currently we are just handling (1) and (4).
 
 # NOTE: strip OFPVID_PRESENT from vlan ID field
 def get_vid(val):
