@@ -1,3 +1,4 @@
 #!/usr/bin/make -f
 PLATFORM_NAME=quanta-lb9
+BRCM_PLATFORM_NAME=powerpc-quanta-lb9-r0
 include $(SWITCHLIGHT)/make/platform-config-rules.mk
