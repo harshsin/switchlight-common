@@ -3,60 +3,36 @@
 ### BEGIN INIT INFO
 # Provides:        ofad-baseconf
 # Required-Start:  initdev
-# Required-Stop:   
+# Required-Stop:
 # Default-Start:   S
-# Default-Stop:    
+# Default-Stop:
 # Short-Description: Set up ofad.conf
 ### END INIT INFO
 
 import hashlib, json, os, re, subprocess, sys
 
+from switchlight.platform.base import *
+from switchlight.platform.current import SwitchLightPlatform
+
+platform=SwitchLightPlatform()
+
 sys.stderr.write("Setting up base ofad configuration...")
 sys.stderr.flush()
 
-PLAT_LB9                = "quanta-lb9"
-PLAT_LB9A               = "quanta-lb9a"
-PLAT_LY2                = "quanta-ly2"
-PLAT_LY2R               = "quanta-ly2r"
-PLAT_CELESTICA_REDSTONE = "celestica-redstone"
-PLAT_ACCTON_5652        = "accton-5652"
-PLAT_UNKNOWN            = "unknown"
-
-PHY_BASE_NAME           = "ethernet"
-LAG_BASE_NAME           = "port-channel"
-
-# define number of ether ports for each platform
-NUM_PHY_PORTS = {
-    PLAT_LB9                : 52,
-    PLAT_LB9A               : 52,
-    PLAT_LY2                : 52,
-    PLAT_LY2R               : 52,
-    PLAT_CELESTICA_REDSTONE : 52,
-    PLAT_ACCTON_5652        : 52,
-    PLAT_UNKNOWN            : 0
-}
-
 conf = {}
-
-try:
-    plat = file("/etc/sl_platform").read().strip()
-except IOError:
-    plat = PLAT_UNKNOWN
 
 conf["of_mfr_desc"] = "Big Switch Networks"
 conf["of_hw_desc"] = ""
 conf["of_serial_num"] = ""
-if plat.startswith("quanta-"):
-    import pandora.quanta
-    conf["of_mfr_desc"] = "Quanta"
-    bi = pandora.quanta.board_info
-    conf["of_hw_desc"] = "%s (%s)" % (bi("product_name"), bi("part_num"))
-    conf["of_serial_num"] = bi("serial_num")
-else:
-    pass
+
+
+conf["of_mfr_desc"] = platform.manufacturer()
+conf["of_hw_desc"] = platform.hw_description()
+conf["of_serial_num"] = platform.sysinfo.SERIAL_NUMBER
 
 conf["of_mac_addr_base"] = "00:00:00:00:00:00"
 conf["of_datapath_id"] = "0x0000000000000000"
+
 try:
     x = subprocess.check_output(["/sbin/ip", "link", "show", "ma1"])
     m = re.search("link/ether ([0-9a-f:]*)", x)
@@ -86,10 +62,10 @@ conf["full_match_table"] = "all"
 
 conf["version"] = 1
 
-conf["physical_base_name"] = PHY_BASE_NAME
-conf["lag_base_name"] = LAG_BASE_NAME
-conf["port_list"] = dict([("%s%d" % (PHY_BASE_NAME, i+1), {}) \
-                          for i in range(NUM_PHY_PORTS.get(plat))])
+conf["physical_base_name"] = basenames.PHY
+conf["lag_base_name"] = basenames.LAG
+conf["port_list"] = dict([("%s%d" % (basenames.PHY, i+1), {}) \
+                          for i in range(platform.platinfo.PORT_COUNT)])
 
 json.dump(conf, file("/etc/ofad.conf", "w"), indent=4, sort_keys=True)
 
@@ -106,12 +82,7 @@ except Exception:
     os.symlink("ofad-6.2", "/usr/bin/ofad")
     os.symlink("linux-kernel-bde-6.2.ko", "/lib/modules/linux-kernel-bde.ko")
     os.symlink("linux-user-bde-6.2.ko", "/lib/modules/linux-user-bde.ko")
-    
-if plat == PLAT_LB9:
-    subprocess.call("/usr/bin/brcm_lb9_gpio_init")
-if plat == PLAT_LY2:
-    subprocess.call("/usr/bin/brcm_ly2_gpio_init")
-if plat == PLAT_LY2R:
-    subprocess.call("/usr/bin/brcm_ly2r_gpio_init")
+
+platform.sys_init();
 
 sys.stderr.write("done.\n")

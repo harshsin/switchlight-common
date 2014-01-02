@@ -1,0 +1,4 @@
+#!/bin/bash
+echo -e "\r"
+cat /etc/sl_version
+echo -e "\r"

@@ -1,0 +1,3 @@
+#!/usr/bin/make -f
+PLATFORM_NAME=quanta-lb9
+include $(SWITCHLIGHT)/make/platform-config-rules.mk

@@ -1,4 +1,4 @@
-###############################################################################
+##############################################################################
 #
 # SwitchLight Build Products
 #
@@ -28,7 +28,7 @@ SWI_BUILD_PATHS := \
 	swi/powerpc/release \
 	swi/powerpc/internal-t5 \
 	swi/powerpc/internal-6.3 \
-	swi/powerpc/internal-6.3-t5 
+	swi/powerpc/internal-6.3-t5
 #swi/i386/vm-internal
 
 #
@@ -125,7 +125,6 @@ $(subst :,.,$(1)): $(subst :,.,$(2))
 	$(SWITCHLIGHT)/tools/spkg.py $(1) --build
 endef
 
-
 PARALLEL_0 := \
 kernel-85xx:powerpc \
 kernel-e500mc:powerpc \
@@ -134,11 +133,9 @@ initrd-powerpc:powerpc
 $(foreach c,$(PARALLEL_0),$(eval $(call cbuild,$(c),submodules_init)))
 
 PARALLEL_1 := \
-platform-quanta-lb9a:powerpc \
-platform-quanta-ly2:powerpc \
-platform-quanta-lb9:powerpc \
-platform-quanta-ly5:powerpc \
-platform-accton-es5652bt:powerpc
+platform-powerpc-quanta-lb9a-r0:powerpc \
+platform-powerpc-quanta-lb9-r0:powerpc \
+platform-powerpc-quanta-ly2-r0:powerpc
 # loader-i386:i386
 $(foreach c,$(PARALLEL_1),$(eval $(call cbuild,$(c),$(PARALLEL_0))))
 
@@ -148,7 +145,7 @@ libbroadcom-6.2-release:powerpc \
 libbroadcom-6.2-internal-src:all \
 libbroadcom-6.3-internal:powerpc \
 libbroadcom-6.3-release:powerpc \
-libbroadcom-6.3-internal-src:all 
+libbroadcom-6.3-internal-src:all
 $(foreach c,$(PARALLEL_2),$(eval $(call cbuild,$(c),$(PARALLEL_1))))
 
 PARALLEL_3 := \

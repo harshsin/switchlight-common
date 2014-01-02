@@ -1,1 +1,0 @@
-INSTALLER_PLATFORMS := quanta-lb9a 
