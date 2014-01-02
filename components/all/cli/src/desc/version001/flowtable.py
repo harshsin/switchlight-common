@@ -24,6 +24,18 @@ def convert_mac_hex_string_to_byte_array(mac):
 def convert_ip6_address_to_binary_string(ip6):
     return socket.inet_pton(socket.AF_INET6, ip6)
 
+# FIXME: we need to figure out how to display various match cases for vlan:
+#        (1) don't care
+#        (2) match untagged
+#        (3) match tagged (any vlan ID)
+#        (4) match tagged (specific vlan ID(s))
+#
+#        currently we are just handling (1) and (4).
+
+# NOTE: strip OFPVID_PRESENT from vlan ID field
+def get_vid(val):
+    return (0x0fff & val)
+
 class disp_flow_ob(object):
     """
     Defines the attributes of a printable flow
@@ -136,7 +148,7 @@ def of10_flow_entry_to_disp(entry):
     if not (match.wildcards & of10.OFPFW_IN_PORT):
         rv.inport = str(match.in_port)
     if not (match.wildcards & of10.OFPFW_DL_VLAN):
-        rv.vid = str(match.vlan_vid)
+        rv.vid = str(get_vid(match.vlan_vid))
     if not (match.wildcards & of10.OFPFW_DL_VLAN_PCP):
         rv.vpcp = str(match.vlan_pcp)
     if not (match.wildcards & of10.OFPFW_DL_TYPE):
@@ -200,8 +212,8 @@ def of13_flow_entry_to_disp(entry):
             ('dmac', fmtcnv.convert_mac_in_byte_array_to_hex_string),
         str(of13.oxm.eth_type): ('eth_type', None),
         str(of13.oxm.eth_type_masked): ('eth_type', None),
-        str(of13.oxm.vlan_vid): ('vid', None),
-        str(of13.oxm.vlan_vid_masked): ('vid', None),
+        str(of13.oxm.vlan_vid): ('vid', get_vid),
+        str(of13.oxm.vlan_vid_masked): ('vid', get_vid),
         str(of13.oxm.vlan_pcp): ('vpcp', None),
         str(of13.oxm.vlan_pcp_masked): ('vpcp', None),
         str(of13.oxm.ip_dscp): ('ipdscp', None),
