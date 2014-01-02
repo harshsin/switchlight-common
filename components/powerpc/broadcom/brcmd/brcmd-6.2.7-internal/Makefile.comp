@@ -1,4 +1,4 @@
-# -*- Makefile -*- 
+# -*- Makefile -*-
 ###############################################################################
 #
 #  Makefile
@@ -45,24 +45,24 @@ include $(BUILDER)/dependmodules.mk
 
 
 BINARY := brcmd.shared
-$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS) 
+$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS)
 include $(BUILDER)/bin.mk
 $(BINARY)_EXTRA_LINK_LIBS += $(SDK_SHARED_LINK_LIBS)
 
 BINARY := brcmd.static
-$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS) 
+$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS)
 include $(BUILDER)/bin.mk
 $(BINARY)_EXTRA_LINK_LIBS += $(SDK_STATIC_LINK_LIBS)
 
 
 #
-# Now that we've specified all the things we want to build, 
-# finalize with target definitions. 
+# Now that we've specified all the things we want to build,
+# finalize with target definitions.
 #
 include $(BUILDER)/targets.mk
 
 #
-# Include UCLI support for all modules by default. 
+# Include UCLI support for all modules by default.
 #
 GLOBAL_CFLAGS += $(foreach mod,$(DEPENDMODULES_UPPER),-D$(mod)_CONFIG_INCLUDE_UCLI=1)
 
@@ -76,18 +76,16 @@ GLOBAL_CFLAGS += -DUCLI_CONFIG_INCLUDE_ELS_LOOP=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_RPC_SERVER=0
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_RPC_CLIENT=0
 GLOBAL_CFLAGS += -DBRCM_CONFIG_TARGET_LINUX_USER=1
-GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_QUANTA_LB9=1
-GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_QUANTA_LB9A=1
-GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_QUANTA_LY2=1
-GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_DELTA_7448=1
-GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_ACCTON_5652=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LB9_R0=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LB9A_R0=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LY2_R0=1
 GLOBAL_CFLAGS += -DCINT_CONFIG_INCLUDE_STDLIB=1
-GLOBAL_LINK_LIBS += -ledit -lncurses 
+GLOBAL_LINK_LIBS += -ledit -lncurses
 
 
 .PHONY: deb
 
-deb: 
+deb:
 	$(MAKE) -C deb
 
 

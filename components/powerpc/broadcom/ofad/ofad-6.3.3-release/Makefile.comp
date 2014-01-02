@@ -1,7 +1,7 @@
-# -*- Makefile -*- 
+# -*- Makefile -*-
 #############################################################################
 #
-#  Makefile 
+#  Makefile
 #
 ###############################################################################
 include $(SWITCHLIGHT)/make/config.mk
@@ -41,35 +41,23 @@ DEPENDMODULES := SocketManager OFConnectionManager BRCM BRCMDriver \
 include $(BUILDER)/dependmodules.mk
 
 BINARY := ofad.shared
-$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS) 
+$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS)
 include $(BUILDER)/bin.mk
 $(BINARY)_EXTRA_LINK_LIBS += $(SDK_SHARED_LINK_LIBS)
 
 BINARY := ofad.static
-$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS) 
+$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS)
 include $(BUILDER)/bin.mk
 $(BINARY)_EXTRA_LINK_LIBS += $(SDK_STATIC_LINK_LIBS)
 
-SCRIPT := brcm_lb9_gpio_init
-$(SCRIPT)_PARTS := $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules/BRCM/module/src/$(SCRIPT)
-include $(BUILDER)/script.mk
-
-SCRIPT := brcm_ly2_gpio_init
-$(SCRIPT)_PARTS := $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules/BRCM/module/src/$(SCRIPT)
-include $(BUILDER)/script.mk
-
-SCRIPT := brcm_ly2_phy_reset
-$(SCRIPT)_PARTS := $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules/BRCM/module/src/$(SCRIPT)
-include $(BUILDER)/script.mk
-
 #
-# Now that we've specified all the things we want to build, 
-# finalize with target definitions. 
+# Now that we've specified all the things we want to build,
+# finalize with target definitions.
 #
 include $(BUILDER)/targets.mk
 
 #
-# Include UCLI support for all modules by default. 
+# Include UCLI support for all modules by default.
 #
 GLOBAL_CFLAGS += $(foreach mod,$(DEPENDMODULES_UPPER),-D$(mod)_CONFIG_INCLUDE_UCLI=1)
 
@@ -102,10 +90,9 @@ GLOBAL_CFLAGS += -DBRCM_CONFIG_TARGET_LINUX_USER=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_RATE_LIMIT_DEFAULT=0
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_RPC_CLIENT=0
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_RPC_SERVER=0
-GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_QUANTA_LB9=1
-GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_QUANTA_LB9A=1
-GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_QUANTA_LY2=1
-GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_ACCTON_5652=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LB9_R0=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LB9A_R0=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LY2_R0=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_DIAG_SHELL=0
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_PVS_SYSLOG=1
 GLOBAL_CFLAGS += -DAIM_CONFIG_PVS_SYSLOG_IDENT_DEFAULT="\"ofad\""
@@ -128,7 +115,7 @@ ifdef OF_CXN_DUMP_ALL_OBJECTS
 GLOBAL_CFLAGS += -DOF_CXN_DUMP_ALL_OBJECTS
 endif
 
-GLOBAL_LINK_LIBS += -ledit -lncurses -rdynamic 
+GLOBAL_LINK_LIBS += -ledit -lncurses -rdynamic
 
 .PHONY: deb
 deb:
