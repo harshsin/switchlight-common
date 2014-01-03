@@ -1,5 +1,5 @@
 [deb-all]
-packages=pcli python-flask platform-config-quanta-ly2 platform-config-quanta-lb9 platform-config-powerpc-quanta-lb9-r0 platform-config-powerpc-quanta-ly2-r0 platform-config-powerpc-quanta-lb9a-r0 vendor-config-switchlight vendor-config-quanta
+packages= pcli python-flask platform-config-quanta-ly2 platform-config-quanta-lb9 platform-config-powerpc-quanta-lb9-r0 platform-config-powerpc-quanta-ly2-r0 platform-config-powerpc-quanta-lb9a-r0 vendor-config-switchlight vendor-config-quanta vendor-config-accton platform-config-powerpc-as5610-52x
 source=copy:__DIR__/all ./
 omitdebsrc=true
 
