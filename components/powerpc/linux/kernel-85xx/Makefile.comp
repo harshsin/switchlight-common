@@ -36,7 +36,7 @@ $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers/.done: $(SWITCHLIGHT_SUBMODULE_LI
 $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers: $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-headers/.done
 
 # These are the dtb files built for this kernel configuration:
-DTS_LIST := powerpc-quanta-lb9-r0 powerpc-quanta-lb9a-r0 powerpc-quanta-ly2-r0
+DTS_LIST := powerpc-quanta-lb9-r0 powerpc-quanta-lb9a-r0 powerpc-quanta-ly2-r0 powerpc-as4600-54t powerpc-as5610-52x
 DTB_LIST := $(foreach dts,$(DTS_LIST),$(BUILD_POWERPC_LINUX_85XX)/linux-85xx-dtbs/$(dts).dtb)
 
 $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-dtbs/%.dtb: $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/powerpc/boot/dts/%.dts kernel-85xx | $(shell mkdir -p $(BUILD_POWERPC_LINUX_85XX)/linux-85xx-dtbs)
