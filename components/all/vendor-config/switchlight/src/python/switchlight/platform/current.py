@@ -13,7 +13,8 @@ with open("/etc/sl_platform", 'r') as f:
 
 # Append platform-specific paths for import
 import sys
-sys.path.append("/lib/platform-config/%s/python" % platform)
+platform_basedir="/lib/platform-config/%s" % platform
+sys.path.append("%s/python" % platform_basedir)
 
 # Import the platform-specific class
 from slpc import SwitchLightPlatformImplementation

@@ -61,7 +61,7 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformQuanta):
             }
 
     def sys_init(self):
-        subprocess.call("/usr/bin/brcm_lb9_gpio_init")
+        subprocess.call("%s/sbin/gpio_init" % self.platform_basedir())
 
 
 if __name__ == "__main__":
