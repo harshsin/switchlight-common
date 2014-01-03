@@ -1,3 +1,7 @@
+############################################################
+# powerpc-quanta-lb9a-r0
+############################################################
+
 echo "e0000000.soc8541/e0024000.ethernet ma1" >/etc/sl_net
 echo "e0000000.soc8541/e0025000.ethernet ma2" >>/etc/sl_net
 echo "kernel-85xx" >/etc/sl_kernel

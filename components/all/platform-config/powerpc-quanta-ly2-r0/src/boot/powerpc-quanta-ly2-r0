@@ -1,3 +1,7 @@
+############################################################
+# powerpc-quanta-ly2-r0
+############################################################
+
 echo "soc.0/ffe24000.ethernet ma1" >/etc/sl_net
 echo "kernel-85xx" >/etc/sl_kernel
 echo "initrd-powerpc" >/etc/sl_initrd
