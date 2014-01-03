@@ -88,7 +88,7 @@ import struct
 import time
 import subprocess
 from switchlight.platform.base import *
-from switchlight.vendor.quanta import *
+from switchlight.vendor.%(vendor)s import *
 
 class SwitchLightPlatformImplementation(SwitchLightPlatform%(Vendor)s):
 
