@@ -18,11 +18,13 @@ Platform=SwitchLightPlatform()
 FW_PRINTENV = '/usr/bin/fw_printenv'
 
 def fw_getenv(var):
-    if os.path.exists(FW_PRINTENV):
+    try:
         value=subprocess.check_output([FW_PRINTENV, var]);
         if value.startswith("%s=" % var):
             value = value[len(var)+1:]
         return value
+    except Exception, e:
+        pass
     return None
 
 def parse_sl_version(ver):
@@ -48,8 +50,7 @@ def show_version(data):
 
         # UBoot version, if appliable
         uver=fw_getenv('ver')
-        if uver:
-            out.append("UBoot Version: %s" % uver)
+        out.append("UBoot Version: %s" % (uver if uver else "Not available on this platform."))
 
         # Platform Information
         out.append(str(Platform))
@@ -60,7 +61,10 @@ def show_version(data):
             fs_ver = parse_sl_version(sli)
             out.append("SwitchLight Loader Version: %s %s" % (fs_ver[0], fs_ver[1]))
             out.append("SwitchLight Loader Build: %s" % (fs_ver[2]))
-            out.append("")
+        else:
+            out.append("SwitchLight Loader Version: Not available on this platform.")
+            out.append("SwitchLight Loader Build: Not available on this platform.")
+        out.append("")
 
         fs_ver = parse_sl_version(sl_version);
         out.append("Software Image Version: %s %s" % (fs_ver[0], fs_ver[1]))
