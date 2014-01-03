@@ -1,4 +1,6 @@
 # This file is included by the debian/rules file for all platform-config packages.
+include $(SWITCHLIGHT)/make/config.mk
+
 DEB_DH_INSTALL_SOURCEDIR=debian/tmp
 INSTALL_DIR=$(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
 
@@ -6,6 +8,10 @@ BASEDIR=/lib/platform-config
 
 ifndef BRCM_PLATFORM_NAME
 BRCM_PLATFORM_NAME=$(PLATFORM_NAME)
+endif
+
+ifndef SWITCHLIGHT_SUBMODULE_BROADCOM
+$(error $$SWITCHLIGHT_SUBMODULE_BROADCOM is not set.)
 endif
 
 %:
