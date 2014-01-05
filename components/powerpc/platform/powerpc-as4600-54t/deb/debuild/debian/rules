@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+
+DEB_DH_INSTALL_SOURCEDIR = debian/tmp
+INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
+PLATFORM=powerpc-as4600-54t
+
+%:
+	dh $@
+
+build-arch:
+	dh build-arch
+
+clean:
+	dh clean
+
+override_dh_auto_install:
+	mkdir -p $(INSTALL_DIR)/usr/platforms/$(PLATFORM)
+	cp ../../switchlight.$(PLATFORM).loader $(INSTALL_DIR)/usr/platforms/$(PLATFORM)/switchlight.$(PLATFORM).loader
+
+
