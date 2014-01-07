@@ -27,8 +27,8 @@ def gen_salt():
 
 def config_user(no_command, data):
     # FIXME handle adding or removing a user
-    if data['username'] != 'admin':
-        raise error.ActionError('Only admin user can be configured')
+    if data['username'] != 'admin' and data['username'] != 'recovery':
+        raise error.ActionError('Only the admin or recovery user can be configured')
 
     if no_command:
         hashedpw = spwd.getspnam(data['username'])[1]
@@ -135,10 +135,15 @@ def running_config_username(context, runcfg, words):
     if len(hashedpw) > 0:
         comp_runcfg.append('username admin secret hash %s\n' % hashedpw)
 
+    hashedpw = spwd.getspnam('recovery')[1]
+    if len(hashedpw) > 0:
+        comp_runcfg.append('username recovery secret hash %s\n' % hashedpw)
+
     # attach component-specific config
     if len(comp_runcfg) > 0:
         runcfg.append('!\n')
         runcfg += comp_runcfg
+            
 
 username_running_config_tuple = (
     (
