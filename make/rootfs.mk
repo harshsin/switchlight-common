@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# Common rootfs build rules. 
+# Common rootfs build rules.
 #
 ###############################################################################
 
@@ -46,7 +46,7 @@ ifndef ROOTFS_CLEANUP_PATH
 ROOTFS_CLEANUP_PATH := $(ROOTFS_BUILD_DIR)/$(ROOTFS_CLEANUP_NAME)
 endif
 
-rootfs.all: $(ROOTFS_DIR).sqsh $(ROOTFS_DIR).cpio 
+rootfs.all: $(ROOTFS_DIR).sqsh $(ROOTFS_DIR).cpio
 
 export SWITCHLIGHT
 
@@ -58,7 +58,7 @@ ifndef NO_PACKAGE_DEPENDENCY
 PACKAGE_DEPENDENCY = $(SWITCHLIGHT_PACKAGE_MANIFEST)
 endif
 
-$(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done: $(PACKAGE_DEPENDENCY) 
+$(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done: $(PACKAGE_DEPENDENCY)
 	$(SL_V_at)sudo update-binfmts --enable
 	$(SL_V_at)sudo rm -rf $(ROOTFS_DIR)
 	$(SL_V_GEN)set -e ;\
@@ -70,13 +70,14 @@ $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done: $(PACKAGE_DEPENDENCY)
 	sed "s%__DIR__%$(SWITCHLIGHT_REPO)%g" $(ROOTFS_ARCH_REPO_PATH) >$$arch_repo ;\
 	sed "s%__DIR__%$(SWITCHLIGHT_REPO)%g" $(ROOTFS_ALL_REPO_PATH) >$$all_repo ;\
 	$(SWITCHLIGHT)/tools/mkws \
+	  -e SWITCHLIGHT=$(SWITCHLIGHT) \
 	  --apt-cache $(APT_CACHE) \
 	  --nested \
 	  -a $(ROOTFS_ARCH) \
 	  --extra-repo $$arch_repo \
 	  --extra-repo $$all_repo \
 	  --extra-config $(ROOTFS_CLEANUP_PATH) \
-	  $(ROOTFS_DIR) 
+	  $(ROOTFS_DIR)
 	find $(ROOTFS_DIR)/etc/apt -name "*.list" -print0 | sudo xargs -0 sed -i 's/$(subst /,\/,$(APT_CACHE))//g'
 	$(SL_V_at)touch $@
 
