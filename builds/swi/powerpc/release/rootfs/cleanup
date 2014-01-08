@@ -2,9 +2,11 @@
 LOCALDIR=$(dirname "$0")
 SHARED_DIR=${LOCALDIR}/../../../all/shared
 WS_ROOT=$1
-tar -C "${SHARED_DIR}" -c --exclude "*~" . | tar -C "${WS_ROOT}" -x -v --no-same-owner
-RFSTOOL="python ${SWITCHLIGHT}/tools/py/rfstool.py --chroot ${WS_ROOT}"
 
+HRFSTOOL="python ${SWITCHLIGHT}/tools/py/rfstool.py"
+RFSTOOL="${HRFSTOOL} --chroot ${WS_ROOT}"
+
+${HRFSTOOL} -c overlay "${SHARED_DIR}" "${WS_ROOT}"
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d initdev defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d restorepersist defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d rc.boot defaults
