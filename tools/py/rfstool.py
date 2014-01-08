@@ -13,6 +13,8 @@ import md5
 import crypt
 import subprocess
 import fileinput
+import string
+import random
 
 logging.basicConfig()
 logger = logging.getLogger("rfstool");
@@ -20,50 +22,44 @@ logger.setLevel(logging.INFO)
 dry=False
 chroot=None
 
+def gen_salt():
+    # return an eight character salt value
+    salt_map = './' + string.digits + string.ascii_uppercase + \
+        string.ascii_lowercase
+    rand = random.SystemRandom()
+    salt = ''
+    for i in range(0, 8):
+        salt += salt_map[rand.randint(0, 63)]
+    return salt
+
 ############################################################
 #
 # Log and execute
 #
-def cc_(args, shell=False):
-    if chroot:
-        args = ['chroot', chroot ] + args
+def cc(args, shell=False):
 
-    logger.info("cc:%s" % args)
+    if type(args) is str:
+        # Must be executed through the shell
+        shell=True
+
+    if chroot:
+        if type(args) is str:
+            args = "chroot %s %s" % (chroot, args)
+        elif type(args) in (list,tuple):
+            args = ['chroot', chroot] + list(args)
+
+    logger.info("cc:%s", args)
+
     if not dry:
         subprocess.check_call(args, shell=shell)
 
-############################################################
-#
-# Parse, log, and execute
-#
-def cc(cmdline, shell=False):
-    if type(cmdline) is str:
-        return cc_(cmdline.split(' '))
-    elif type(cmdline) is list:
-        return cc_(cmdline, shell=shell)
-    else:
-        raise Exception("bad args to checkcall type=%s" % (type(cmdline)))
 
-############################################################
-# 
-# Execute via os.system(). 
-#
-def ccs(cmdline):
-    if chroot:
-        cmdline = "chroot " + chroot + " " + cmdline
-
-    logger.info("ccs:%s" % cmdline)
-    if not dry:
-        if os.system(cmdline) != 0:
-            raise Exception("command failed.")
-
-        
 ############################################################
 #
 # Delete a user
 #
 def userdel(username):
-    # Can't user the userdel command because of potential uid 0 in-user problems while running ourselves
+    # Can't use the userdel command because of potential uid 0 in-user problems while running ourselves
     for line in fileinput.input('/etc/passwd', inplace=True):
         if not line.startswith('%s:' % username):
             print line,
@@ -83,18 +79,18 @@ def useradd(username, uid, password, shell, deleteFirst=True):
         userdel(username)
 
     if password:
-        epassword=crypt.crypt(password, 'zz');
+        epassword=crypt.crypt(password, '$1$%s$' % gen_salt());
         args = args + ['-p', epassword]
 
     args.append(username)
 
-    cc_(args);
+    cc(args);
 
     if password is None:
-        cc('passwd -d %s' % username)
+        cc(('passwd', '-d', username))
 
-    logger.info("user %s password %s" % (username, password))
-                    
+    logger.info("user %s password %s", username, password)
+
 
 ############################################################
 #
@@ -106,11 +102,11 @@ def user_recovery_add(password):
         # of the md5sum of the string 'slrecovery@[sha1]'
         sha1 = subprocess.check_output(['git', 'rev-list', 'HEAD', '-1']).strip()
         password="slrecovery@[%s]" % sha1
-        logger.info("Recovery password input is '%s'" % password)
+        logger.info("Recovery password input is '%s'", password)
         hash_=md5.new(password).hexdigest()
-        logger.info("Recovery password hash is '%s'" % hash_)
+        logger.info("Recovery password hash is '%s'", hash_)
         password=hash_[0:8]
-        logger.info("Recovery password is %s" % password)
+        logger.info("Recovery password is %s", password)
 
     useradd(username='recovery', uid=0, password=password,
             shell='/bin/sh')
@@ -135,8 +131,8 @@ def user_password_remove(username):
 # Set a user password.
 #
 def user_password_set(username, password):
-    logger.info("user %s password now %s" % (username, password))
-    epassword=crypt.crypt(password, 'zz');
+    logger.info("user %s password now %s", username, password)
+    epassword=crypt.crypt(password, '$1$%s$' % gen_salt());
     cc('usermod -p %s %s' % (epassword, username))
 
 ############################################################
@@ -157,7 +153,7 @@ def user_disable(username):
 # Overlay
 #
 def overlay(src, dst):
-    ccs('tar -C %s -c --exclude "*~" . | tar -C %s -x -v --no-same-owner' % (src, dst))
+    cc('tar -C %s -c --exclude "*~" . | tar -C %s -x -v --no-same-owner' % (src, dst))
 
 ############################################################
 #
@@ -210,15 +206,9 @@ def fsclean():
         pass
     cc('/usr/bin/apt-get clean')
     cc('/usr/sbin/localepurge')
-    ccs('find /usr/share/doc -type f | xargs rm -rf')
-    ccs('find /usr/share/man -type f | xargs rm -rf')
+    cc('find /usr/share/doc -type f | xargs rm -rf', shell=True)
+    cc('find /usr/share/man -type f | xargs rm -rf', shell=True)
 
-def inittab():
-    ccs('sed -i "s/\(^[123456]:.*\)/#\1/" "/etc/inittab"')
-    ccs('echo "T0:23:respawn:/sbin/pgetty ttyS0" >>/etc/inittab')
-
-def sttydisable():
-    cc('rm -f /etc/securetty')
 
 if __name__ == '__main__':
 
@@ -227,7 +217,7 @@ if __name__ == '__main__':
     ap.add_argument('--dry', help='Dry run only.',
                     action='store_true')
     ap.add_argument('--execute', help='Execute python call.')
-    ap.add_argument('-c', help='evaluate', 
+    ap.add_argument('-c', help='evaluate',
                     nargs='+')
 
     ops = ap.parse_args()
@@ -235,12 +225,12 @@ if __name__ == '__main__':
     dry = ops.dry
 
     if ops.chroot:
-        # The whole command must be invoked under chroot. 
+        # The whole command must be invoked under chroot.
         chroot=ops.chroot
 
     if ops.execute:
         exec(ops.execute)
-        
+
     if ops.c:
         f = ops.c[0]
         args = ','.join([ "'%s'" % a for a in ops.c[1:]])
