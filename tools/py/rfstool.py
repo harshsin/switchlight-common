@@ -133,7 +133,7 @@ def user_password_remove(username):
 def user_password_set(username, password):
     logger.info("user %s password now %s", username, password)
     epassword=crypt.crypt(password, '$1$%s$' % gen_salt());
-    cc('usermod -p %s %s' % (epassword, username))
+    cc(['usermod', '-p', epassword, username])
 
 ############################################################
 #
