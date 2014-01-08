@@ -150,6 +150,33 @@ ntpd_running_config_tuple = (
 run_config.register_running_config('ntpd', 2000, None,
                                    NTPConfig.cli_running_config,
                                    ntpd_running_config_tuple)
+
+
+def show_ntp(data):
+    if NTP.status() == Service.RUNNING:
+        try:
+            shell.call('ntpdc -p', show_output=True)
+        except:
+            pass
+    else:
+        print "NTP disabled"
+
+command.add_action('implement-show-ntp', show_ntp,
+                    {'kwargs': {'data'      : '$data',}})
+
+SHOW_NTP_COMMAND_DESCRIPTION = {
+    'name'          : 'show',
+    'mode'          : 'login',
+    'no-supported'  : False,
+    'args'          : (
+        {
+            'token'         : 'ntp',
+            'action'        : 'implement-show-ntp',
+            'short-help'    : 'Show current NTP status',
+            'doc'           : 'clock|show',
+        },
+    )
+}
     
 
 command.add_action('implement-config-ntp', NTPConfig.cli_config,
