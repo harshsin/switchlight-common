@@ -1,4 +1,5 @@
 #!/bin/bash -ex
+WS_ROOT=$1
 
 # Custom ofad symlinks
 cp ofadsymlinks.py ${WS_ROOT}/etc/init.d
