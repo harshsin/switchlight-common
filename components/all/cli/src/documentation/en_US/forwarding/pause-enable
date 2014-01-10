@@ -1,0 +1,2 @@
+Enable TX and RX Pause on all ports.
+Pause frame processing will be enabled on all ports.

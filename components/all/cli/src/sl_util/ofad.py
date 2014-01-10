@@ -343,17 +343,17 @@ class ForwardingConfig(object):
         self._crc = forwarding_dict.get("crc", None)
         self._pimu = forwarding_dict.get("pimu", None)
         self._l2cache = forwarding_dict.get("l2cache", False)
-        self._pause = forwarding_dict.get("pause", True)
+        self._pause = forwarding_dict.get("pause", False)
 
     def disablePause(self):
-        self._pause = False
-
-    def enablePause(self):
-        # True or None: enabled
+        # True or None: disabled
         self._pause = None
 
-    def isPauseDisabled(self):
-        if self._pause is False:
+    def enablePause(self):
+        self._pause = True
+
+    def isPauseEnabled(self):
+        if self._pause is True:
             return True
         return False
 
