@@ -1,0 +1,23 @@
+# -*- Makefile -*-
+################################################################################
+#
+# powerpc-as6700-32x-r0
+#
+###############################################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not set)
+else
+include $(SWITCHLIGHT)/make/config.mk
+endif
+
+KERNEL.BIN.GZ := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-e500mc:powerpc --find-file kernel-e500mc.bin.gz)
+INITRD := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
+DTB := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx-dtbs:powerpc --find-file powerpc-as6700-32x-r0.dtb)
+PLATFORM_NAME := powerpc-as6700-32x-r0
+
+include $(SWITCHLIGHT)/make/platform-ppc.mk
+
+.PHONY: deb
+
+deb:
+	$(MAKE) -C deb
