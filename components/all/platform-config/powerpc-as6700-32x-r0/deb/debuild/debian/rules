@@ -1,0 +1,4 @@
+#!/usr/bin/make -f
+PLATFORM_NAME=powerpc-as6700-32x-r0
+BRCM_PLATFORM_NAME=none
+include $(SWITCHLIGHT)/make/platform-config-rules.mk
