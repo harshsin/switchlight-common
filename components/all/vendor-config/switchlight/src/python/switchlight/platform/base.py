@@ -99,12 +99,16 @@ class SwitchLightPlatformBase(object):
     def __getattr__(self, key):
         class __InfoContainer(object):
             def __init__(self, d, klass):
-                for (k,v) in d.iteritems():
-                    for (m,n) in klass.__dict__.iteritems():
-                        if n == k:
-                            setattr(self, m, v);
-                            break
-
+                # Set all known info keys to None
+                for (m,n) in klass.__dict__.iteritems():
+                    if m == m.upper():
+                        setattr(self, m, None)
+                if d:
+                    for (k,v) in d.iteritems():
+                        for (m,n) in klass.__dict__.iteritems():
+                            if n == k:
+                                setattr(self, m, v);
+                                break
         if key == "platinfo":
             return __InfoContainer(self.plat_info_get(), platinfo)
         if key == "sysinfo":
@@ -131,7 +135,7 @@ class SwitchLightPlatformBase(object):
             else:
                 return self.sys_info
         else:
-            return None
+            return {}
 
     def plat_info_get(self, field=None):
         """Provide the value of a platinfo key or the entire dict"""

@@ -26,7 +26,8 @@ clean:
 override_dh_auto_install:
 	mkdir -p $(INSTALL_DIR)$(BASEDIR)/
 	cp -R ../../src $(INSTALL_DIR)$(BASEDIR)/$(PLATFORM_NAME)
+ifneq ($(BRCM_PLATFORM_NAME),none)
 	cp -R $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules/BRCM/module/src/platforms/$(BRCM_PLATFORM_NAME)/sbin/* $(INSTALL_DIR)$(BASEDIR)/$(PLATFORM_NAME)/sbin
-
+endif
 
 
