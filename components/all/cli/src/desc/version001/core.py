@@ -19,7 +19,7 @@ FW_PRINTENV = '/usr/bin/fw_printenv'
 
 def fw_getenv(var):
     try:
-        value=subprocess.check_output([FW_PRINTENV, var]);
+        value=subprocess.check_output([FW_PRINTENV, var], stderr=subprocess.STDOUT);
         if value.startswith("%s=" % var):
             value = value[len(var)+1:]
         return value
@@ -48,7 +48,7 @@ def show_version(data):
     else:
         # Full version information
 
-        # UBoot version, if appliable
+        # UBoot version, if available.
         uver=fw_getenv('ver')
         out.append("UBoot Version: %s" % (uver if uver else "Not available on this platform."))
 
