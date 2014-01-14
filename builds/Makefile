@@ -127,15 +127,17 @@ endef
 
 PARALLEL_0 := \
 kernel-85xx:powerpc \
-kernel-e500mc:powerpc \
+kernel-as6700:powerpc \
 initrd-powerpc:powerpc
-# kernel-x86-64:amd64 initrd-i386:i386
+
+# kernel-x86-64:amd64 initrd-i386:i386 kernel-e500mc:powerpc 
 $(foreach c,$(PARALLEL_0),$(eval $(call cbuild,$(c),submodules_init)))
 
 PARALLEL_1 := \
 platform-powerpc-quanta-lb9a-r0:powerpc \
 platform-powerpc-quanta-lb9-r0:powerpc \
-platform-powerpc-quanta-ly2-r0:powerpc
+platform-powerpc-quanta-ly2-r0:powerpc \
+platform-powerpc-as6700-32x-r0:powerpc
 # loader-i386:i386
 $(foreach c,$(PARALLEL_1),$(eval $(call cbuild,$(c),$(PARALLEL_0))))
 

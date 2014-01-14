@@ -20,6 +20,7 @@ import fcntl
 # Disabled and/or deprecated packages
 #
 disabled_packages = [
+    kernel-e500mc:powerpc
 ];
 
 def package_enabled(p):
