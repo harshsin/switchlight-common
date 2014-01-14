@@ -86,7 +86,7 @@ $(ROOTFS_DIR).sqsh: $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done
 	if $(SL_V_P); then set -x; fi ;\
 	f=$$(mktemp) ;\
 	trap "rm -f $$f" 0 1 ;\
-	sudo mksquashfs $(ROOTFS_DIR) $$f -no-progress -noappend -comp xz ;\
+	sudo mksquashfs $(ROOTFS_DIR) $$f -no-progress -noappend -comp gzip;\
 	sudo cat $$f > $(ROOTFS_DIR).sqsh
 
 $(ROOTFS_DIR).cpio: $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done

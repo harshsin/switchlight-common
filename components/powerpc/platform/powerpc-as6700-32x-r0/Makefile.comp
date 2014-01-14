@@ -10,10 +10,12 @@ else
 include $(SWITCHLIGHT)/make/config.mk
 endif
 
-KERNEL.BIN.GZ := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-e500mc:powerpc --find-file kernel-e500mc.bin.gz)
+KERNEL.BIN.GZ := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-as6700:powerpc --find-file kernel-as6700.bin.gz)
 INITRD := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
-DTB := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx-dtbs:powerpc --find-file powerpc-as6700-32x-r0.dtb)
+DTB := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-as6700-dtbs:powerpc --find-file powerpc-as6700-32x-r0.dtb)
 PLATFORM_NAME := powerpc-as6700-32x-r0
+
+$(info $(KERNEL.BIN.GZ) $(DTB))
 
 include $(SWITCHLIGHT)/make/platform-ppc.mk
 

@@ -1,3 +1,4 @@
 #!/usr/bin/make -f
 PLATFORM_NAME=qemu
+BRCM_PLATFORM_NAME=none
 include $(SWITCHLIGHT)/make/platform-config-rules.mk

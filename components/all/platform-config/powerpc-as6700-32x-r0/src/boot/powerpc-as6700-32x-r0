@@ -2,12 +2,15 @@
 # powerpc-as6700-32x-r0
 ############################################################
 
-echo "./ffe000000.soc/ffe400000.fman/ffe4e0000.ethernet ma1" > /etc/sl_net
-echo "./ffe000000.soc/ffe400000.fman/ffe4e4000.ethernet ma2" >> /etc/sl_net
-echo "./ffe000000.soc/ffe400000.fman/ffe4e6000.ethernet ma3" >> /etc/sl_net
+echo "fsl,dpaa.16/ethernet.18 ma1" > /etc/sl_net
 
-echo "kernel-e500mc" >/etc/sl_kernel
+echo "kernel-as6700" >/etc/sl_kernel
 echo "initrd-powerpc" >/etc/sl_initrd
 echo "rootfs-powerpc" >/etc/sl_rootfs
+touch /etc/sl_nokexec
 echo "" >/etc/sl_crashkernel
+
+echo "block/sda sda2 flash" > /etc/sl_mounts
+echo "block/sda sda3 flash2" >> /etc/sl_mounts
+
 
