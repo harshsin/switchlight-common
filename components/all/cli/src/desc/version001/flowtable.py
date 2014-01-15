@@ -412,7 +412,9 @@ def show_of13_entries(rf, format_str):
         match.oxm_list.append(of13.oxm.ipv6_dst(value=rf.dst_ip6))
 
     if rf.vlan_id is not None:
-        match.oxm_list.append(of13.oxm.vlan_vid(value=rf.vlan_id))
+        match.oxm_list.append(of13.oxm.vlan_vid_masked(
+                value=rf.vlan_id|of13.const.OFPVID_PRESENT,
+                value_mask=0xfff|of13.const.OFPVID_PRESENT))
 
     def get_and_display_flows(match_obj):
         req = of13.message.flow_stats_request(
