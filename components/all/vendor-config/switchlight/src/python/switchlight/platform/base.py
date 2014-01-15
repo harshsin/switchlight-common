@@ -46,6 +46,9 @@ class oids(object):
     POWER_SENSORS='power_sensors'
     CPU_LOAD='CPU_load'
     MEM_TOTAL_FREE='mem_total_free'
+    LINK_UTILIZATION='link_utilization'
+    FLOW_UTILIZATION='flow_utilization'
+    INTERFACES='interfaces'
 
 
 ############################################################
@@ -121,8 +124,35 @@ class SwitchLightPlatformBase(object):
     def _plat_info_dict(self):
         raise Exception("Must be provided by the deriving class.")
 
-    def oid_table(self):
+    def _plat_oid_table(self):
         raise Exception("Must be provided by the deriving class.")
+
+    def oid_table(self):
+        # Fixme -- all of this
+        common = {
+            oids.CPU_LOAD : {
+                'cpuload' : '.1.3.6.1.4.1.2021.10.1.5.1'
+                },
+
+            oids.MEM_TOTAL_FREE : {
+                'memtotalfree' : '.1.3.6.1.4.1.2021.4.11.0'
+                },
+
+            oids.FLOW_UTILIZATION : {
+                'flowutilization' : '.1.3.6.1.4.1.2021.10.1.5.1'
+                },
+
+            oids.LINK_UTILIZATION: {
+                'linkutilization' : '.1.3.6.1.4.1.2021.4.11.0'
+                },
+
+            oids.INTERFACES: {
+                'interfaces' : '.1.3.6.1.2.1.2'
+                },
+            }
+        common.update(self._plat_oid_table())
+        return common
+
 
     def sys_info_get(self, field=None):
         """Provide the value of a sysinfo key or the entire dict"""
