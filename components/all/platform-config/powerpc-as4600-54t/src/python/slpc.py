@@ -22,7 +22,7 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformAccton):
     def _plat_info_dict(self):
         raise Exception()
 
-    def oid_table(self):
+    def _plat_oid_table(self):
         raise Exception()
 
 

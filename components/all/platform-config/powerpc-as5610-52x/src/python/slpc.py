@@ -25,7 +25,7 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformAccton):
             platinfo.PORT_COUNT : 52,
             }
 
-    def oid_table(self):
+    def _plat_oid_table(self):
         raise Exception()
 
 

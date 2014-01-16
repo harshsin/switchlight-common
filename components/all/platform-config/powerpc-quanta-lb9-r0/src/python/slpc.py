@@ -28,7 +28,7 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformQuanta):
             platinfo.PORT_COUNT : 52
             }
 
-    def oid_table(self):
+    def _plat_oid_table(self):
         return {
             oids.TEMP_SENSORS : {
                 'ctemp1' : '.1.3.6.1.4.1.2021.13.16.2.1.3.1',
@@ -52,12 +52,6 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformQuanta):
             oids.POWER_SENSORS : {
                 'power' : '.1.3.6.1.4.1.2021.13.16.5.1.3.8'
                 },
-            oids.CPU_LOAD : {
-                'cpuload' : '.1.3.6.1.4.1.2021.10.1.5.1'
-                },
-            oids.MEM_TOTAL_FREE : {
-                'memtotalfree' : '.1.3.6.1.4.1.2021.4.11.0'
-                }
             }
 
     def sys_init(self):
