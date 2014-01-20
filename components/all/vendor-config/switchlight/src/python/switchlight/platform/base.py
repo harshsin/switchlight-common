@@ -47,9 +47,9 @@ class oids(object):
     CPU_LOAD='CPU_load'
     MEM_TOTAL_FREE='mem_total_free'
     INTERFACES='interfaces'
-    FLOW_TABLE_L2='flow_table_l2'
-    FLOW_TABLE_TCAM='flow_table_tcam'
-    LINK_TABLE='link_table'
+    FLOW_TABLE_L2_UTILIZATION='flow_table_l2_util'
+    FLOW_TABLE_TCAM_FM_UTILIZATION='flow_table_tcam_fm_util'
+    LINK_TABLE_UTILIZATION='link_table_util'
 
 
 
@@ -144,25 +144,16 @@ class SwitchLightPlatformBase(object):
                 'interfaces'     : '.1.3.6.1.2.1.2',
                 },
 
-            oids.FLOW_TABLE_L2 : {
-                'table'          : '.1.3.6.1.4.1.37538.2.1.1',
-                'max'            : '.1.3.6.1.4.1.37538.2.1.1.1',
-                'free'           : '.1.3.6.1.4.1.37538.2.1.1.2',
-                'utilization'    : '.1.3.6.1.4.1.37538.2.1.1.3',
+            oids.FLOW_TABLE_L2_UTILIZATION : {
+                'ft_l2_utilization'    : '.1.3.6.1.4.1.37538.2.1.1.3',
                 },
 
-            oids.FLOW_TABLE_TCAM : {
-                'table'          : '.1.3.6.1.4.1.37538.2.1.2',
-                'max'            : '.1.3.6.1.4.1.37538.2.1.2.1',
-                'free'           : '.1.3.6.1.4.1.37538.2.1.2.2',
-                'utilization'    : '.1.3.6.1.4.1.37538.2.1.2.3',
+            oids.FLOW_TABLE_TCAM_FM_UTILIZATION : {
+                'ft_tcam_fm_utilization'    : '.1.3.6.1.4.1.37538.2.1.2.3',
                 },
 
-            oids.LINK_TABLE : {
-                'table'          : '.1.3.6.1.4.1.37538.2.2.1',
-                'max'            : '.1.3.6.1.4.1.37538.2.2.1.1',
-                'free'           : '.1.3.6.1.4.1.37538.2.2.1.2',
-                'utilization'    : '.1.3.6.1.4.1.37538.2.2.1.3',
+            oids.LINK_TABLE_UTILIZATION : {
+                'ft_link_utilization'    : '.1.3.6.1.4.1.37538.2.2.1.3',
                 },
 
             }

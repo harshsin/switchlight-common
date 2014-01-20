@@ -33,8 +33,8 @@ LIBRARY := ofad-6.2.7-internal-lib
 $(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(BUILDER)/lib.mk
 
-DEPENDMODULES := SocketManager OFConnectionManager BRCM BRCMDriver \
-	OFStateManager snmp murmur NSS ELS AET Configuration cjson \
+DEPENDMODULES := snmp SocketManager OFConnectionManager BRCM BRCMDriver \
+	OFStateManager murmur NSS ELS AET Configuration cjson \
 	indigo loci Faultd IOF PPE IVS uCli BigList BigRing OS AIM \
 	BigHash tagport pimu nwac cintm sl ofadm
 
