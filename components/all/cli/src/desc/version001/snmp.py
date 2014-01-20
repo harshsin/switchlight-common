@@ -181,16 +181,23 @@ Mon_Ops = {
     oids.POWER_FAN_SENSORS   : '<',
     oids.POWER_SENSORS       : '>',
     oids.CPU_LOAD            : '>',
-    oids.MEM_TOTAL_FREE      : '<'
+    oids.MEM_TOTAL_FREE      : '<',
+    oids.FLOW_TABLE_L2_UTILIZATION      : '>',
+    oids.FLOW_TABLE_TCAM_FM_UTILIZATION : '>',
+    oids.LINK_TABLE_UTILIZATION         : '>'
 }
 
+# Key must be matched to Platform.oid_table's
 Show_Trap_Type_Conv = {
     'ctemp1' : oids.TEMP_SENSORS,
     'cfan1'  : oids.CHASSIS_FAN_SENSORS,
     'pwr-fan': oids.POWER_FAN_SENSORS,
     'power'  : oids.POWER_SENSORS,
     'cpuload': oids.CPU_LOAD,
-    'memtotalfree' : oids.MEM_TOTAL_FREE
+    'memtotalfree' : oids.MEM_TOTAL_FREE,
+    'ft_l2_utilization'      : oids.FLOW_TABLE_L2_UTILIZATION,
+    'ft_tcam_fm_utilization' : oids.FLOW_TABLE_TCAM_FM_UTILIZATION,
+    'ft_link_utilization'    : oids.LINK_TABLE_UTILIZATION
 }
 
 def trap_set(no_cmd, trap, threshold):
@@ -371,7 +378,10 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         'type'            : 'enum',
                         'values'          : (oids.TEMP_SENSORS, oids.CHASSIS_FAN_SENSORS,
                                              oids.POWER_FAN_SENSORS, oids.POWER_SENSORS,
-                                             oids.CPU_LOAD, oids.MEM_TOTAL_FREE),
+                                             oids.CPU_LOAD, oids.MEM_TOTAL_FREE,
+                                             oids.FLOW_TABLE_L2_UTILIZATION,
+                                             oids.FLOW_TABLE_TCAM_FM_UTILIZATION,
+                                             oids.LINK_TABLE_UTILIZATION),
                         'doc'             : 'snmp|+',
                     },
                     {
