@@ -380,8 +380,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                                              oids.POWER_FAN_SENSORS, oids.POWER_SENSORS,
                                              oids.CPU_LOAD, oids.MEM_TOTAL_FREE,
                                              oids.FLOW_TABLE_L2_UTILIZATION,
-                                             oids.FLOW_TABLE_TCAM_FM_UTILIZATION,
-                                             oids.LINK_TABLE_UTILIZATION),
+                                             oids.FLOW_TABLE_TCAM_FM_UTILIZATION),
                         'doc'             : 'snmp|+',
                     },
                     {
