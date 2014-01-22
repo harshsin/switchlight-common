@@ -1,7 +1,15 @@
 #!/usr/bin/python
+###########################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
 ############################################################
 #
-# Generate a generic ebian package directory. 
+# Generate a generic debian package directory.
 #
 # This class can be subclassed to insert package details. 
 #

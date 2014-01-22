@@ -1,9 +1,17 @@
 #!/usr/bin/python
-###############################################################################
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
 #
-# Submodule management. 
+# Submodule management.
 #
-###############################################################################
+############################################################
 import os
 import sys
 import subprocess
@@ -24,7 +32,7 @@ def submodule_update(module, depth=None):
     if depth and module != 'loader':
         print "shallow clone depth=%d" % int(depth)
         # Shallow clone first
-        url = subprocess.check_output(['git', 'config', '-f', '.gitmodules', '--get', 
+        url = subprocess.check_output(['git', 'config', '-f', '.gitmodules', '--get',
                                        'submodule.submodules/%s.url' % module])
         url = url.rstrip('\n')
         args = [ 'git', 'clone', '--depth', depth, url, 'submodules/%s' % module ]
@@ -43,7 +51,7 @@ def submodule_update(module, depth=None):
 
 
 
-# 
+#
 # Get the current submodule status
 #
 os.chdir(switchlight_root)
@@ -51,7 +59,7 @@ os.chdir(switchlight_root)
 #
 # We only operate on the required modules that are also
 # defined as local. Any other custom module paths
-# are just assumed to be up to the user to manage and instantiate. 
+# are just assumed to be up to the user to manage and instantiate.
 #
 git_submodule_status = {}
 try:

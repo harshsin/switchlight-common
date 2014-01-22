@@ -1,3 +1,17 @@
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
+#
+# Builds a debian package for the SwitchLight tools.
+#
+############################################################
+
 DEBUILD = debuild --prepend-path=/usr/lib/ccache -b -us -uc
 
 all:
