@@ -26,6 +26,8 @@ SNMP_CONFIG_FILE = '/etc/snmp/snmpd.conf'
 # sysObjectID BSN_ENTERPRISE_OID_SWITCH
 # sysDescr SNMP_SYS_DESC
 
+LINK_UP_DOWN_NOTIFICATION_CMD = 'linkUpDownNotifications'
+LINK_UP_DOWN_CLI              = 'linkUpDown'
 class Snmp(Service):
     SVC_NAME = "snmpd"
 
@@ -225,10 +227,14 @@ def config_snmp(no_command, data):
                   )
 
     elif 'trap' in data:
-        trap_set(no_command,
-                  data['trap'],
-                  data['threshold']
-                  )
+        if data['trap'] is LINK_UP_DOWN_CLI:
+            config_line(no_command,
+                        "%s yes\n" % LINK_UP_DOWN_NOTIFICATION_CMD)
+        else:
+            trap_set(no_command,
+                     data['trap'],
+                     data['threshold']
+                     )
 
     elif 'access' in data:
         community(no_command, data['community'], data['access'])
@@ -385,10 +391,23 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                     },
                     {
                         'field'           : 'threshold',
-                        'tag'             : 'threshold',
+                        'tag'             : 'threshold', #tag makes it 'as if' token
                         'short-help'      : 'Threshold value',
                         'base-type'       : 'integer',
                         #'doc'             : 'snmp|', #FIXME
+                    },
+                ),
+                (
+                    {
+                        'token'           : 'trap',
+                        'short-help'      : 'Enable trap',
+                        'doc'             : 'snmp|+',
+                    },
+                    {
+                        'token'           : LINK_UP_DOWN_CLI,
+                        'short-help'      : 'Link up/down notification',
+                        'data'            : { 'trap' : LINK_UP_DOWN_CLI }, #set data['trap']
+                        'doc'             : 'snmp|+',
                     },
                 ),
             ), # snmp choices: enable, host, location, trap
@@ -443,7 +462,11 @@ def running_config_snmp(context, runcfg, words):
                                    (trap_type, w[-1])
                                   )
             continue
-
+        if w[0] == LINK_UP_DOWN_NOTIFICATION_CMD:
+            comp_runcfg.append('snmp-server trap %s\n' %
+                               LINK_UP_DOWN_CLI
+                               )
+            continue
     # attach component-specific config
     if len(comp_runcfg) > 0:
         runcfg.append('!\n')
