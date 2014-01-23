@@ -1,5 +1,14 @@
 #!/bin/sh
-######################################################################
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
+############################################################
 #
 # SwitchLight Installation Script. 
 #
@@ -12,17 +21,17 @@
 # Loader as the execution environment for platforms that do not 
 # support ONIE. 
 # 
-######################################################################
+############################################################
 
 
-######################################################################
+############################################################
 #
 # Installation Utility Functions
 # 
-######################################################################
+############################################################
 
 
-######################################################################
+############################################################
 #
 # installer_create_device_file <blockdev> <partno>
 #     <blockdev> The block device name
@@ -52,7 +61,7 @@ installer_create_device_file() {
     mknod "${installer_df}" b "${major}" "${partno}"
 }
 
-######################################################################
+############################################################
 #
 # installer_partition_cp <blockdev> <partno> <src> <dst>
 #
@@ -64,7 +73,7 @@ installer_create_device_file() {
 # Copy the source file to the given partition. 
 # The partition must be formatted/mountable. 
 #
-######################################################################
+############################################################
 
 installer_partition_cp() { 
     local blockdev=$1
@@ -82,7 +91,7 @@ installer_partition_cp() {
 }
 
 
-######################################################################
+############################################################
 #
 # installer_partition_dd <blockdev> <partno> <src>
 #
@@ -92,7 +101,7 @@ installer_partition_cp() {
 #
 # 'dd' the contents of the src file directly to the given partition.
 #
-######################################################################
+############################################################
 
 installer_partition_dd() {
     local blockdev=$1
@@ -105,7 +114,7 @@ installer_partition_dd() {
     rm "${installer_df}"
 }
 
-######################################################################
+############################################################
 #
 # installer_partition_format <blockdev> <partno> <mkfs>
 #
@@ -113,7 +122,7 @@ installer_partition_dd() {
 #    <partno>   The partition number.
 #    <mkfs>     The formatting tool.
 # 
-######################################################################
+############################################################
 
 installer_partition_format() {
     local blockdev=$1
@@ -128,7 +137,7 @@ installer_partition_format() {
     rm "${installer_df}"
 }
 
-######################################################################
+############################################################
 #
 # installer_umount_blockdev <blockdev>
 #
@@ -139,7 +148,7 @@ installer_partition_format() {
 # Required to avoid errors when repartitioning block
 # devices that are currently mounted. 
 #
-######################################################################
+############################################################
 
 installer_umount_blockdev() { 
     local blockdev=$1
@@ -147,7 +156,7 @@ installer_umount_blockdev() {
 }
 
 
-######################################################################
+############################################################
 #
 # installer_blockdev_format <blockdev> <p1size> <p2size> <p3size>
 # 
@@ -158,7 +167,7 @@ installer_umount_blockdev() {
 #               If p3size is unset, the remainder of the device will be used
 #               for the third partition.
 #
-######################################################################
+############################################################
 
 installer_blockdev_format() {
     local blockdev=$1
@@ -174,7 +183,7 @@ installer_blockdev_format() {
     installer_partition_format ${blockdev} 3 mkdosfs
 }
 
-######################################################################
+############################################################
 #
 # installer_platform_loader <blockdev> <partno>
 #
@@ -187,7 +196,7 @@ installer_blockdev_format() {
 #  If 'platform_loader_raw' is specified by the platform, the
 #  loader will be written directly to the partition instead. 
 #
-######################################################################
+############################################################
 installer_platform_loader() {
     local blockdev=$1
     local partno=$2
@@ -221,7 +230,7 @@ installer_platform_loader() {
     fi
 }
 
-######################################################################
+############################################################
 #
 # installer_platform_bootconfig <blockdev> <partno>
 #
@@ -231,7 +240,7 @@ installer_platform_loader() {
 # Generate and write the platform boot-config file
 # into the given partition. 
 #
-######################################################################
+############################################################
 
 installer_platform_bootconfig() {
     local blockdev=$1
@@ -258,7 +267,7 @@ installer_platform_bootconfig() {
     rm /tmp/boot-config
 }
 
-######################################################################
+############################################################
 #
 # installer_platform_swi <blockdev> <partno>
 #
@@ -267,7 +276,7 @@ installer_platform_bootconfig() {
 #
 # Install the SWI to the given partition.
 #
-######################################################################
+############################################################
 
 installer_platform_swi() { 
     local blockdev=$1
@@ -298,7 +307,7 @@ installer_platform_swi() {
     fi
 }
 
-######################################################################
+############################################################
 #
 # installer_standard_blockdev_install <blockdev> <p1size> <p2size> <p3size>
 #
@@ -310,7 +319,7 @@ installer_platform_swi() {
 # Performs a standard installation for the platform. 
 # Most platform installers will just call this function with the appropriate arguments.
 #
-######################################################################
+############################################################
 installer_standard_blockdev_install () {
     local blockdev=$1
     local p1size=$2
@@ -334,7 +343,7 @@ installer_standard_blockdev_install () {
 }
 
 
-######################################################################
+############################################################
 #
 # Installation Main
 #
@@ -354,7 +363,7 @@ installer_standard_blockdev_install () {
 # Most platforms will just call the installation
 # utilities in this script with the approprate platform settings. 
 #
-######################################################################
+############################################################
 set -e
 cd $(dirname $0)
 
