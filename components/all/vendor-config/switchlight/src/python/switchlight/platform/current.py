@@ -1,5 +1,14 @@
 #!/usr/bin/python
 ############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
+############################################################
 #
 # This file provides the container for the
 # platform-specific class provided by the files in the
