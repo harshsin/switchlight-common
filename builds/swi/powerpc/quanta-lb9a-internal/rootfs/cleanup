@@ -1,4 +1,13 @@
 #!/bin/bash -ex
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
 LOCALDIR=$(dirname "$0")
 SHARED_DIR=${LOCALDIR}/../../../all/shared
 WS_ROOT=$1
