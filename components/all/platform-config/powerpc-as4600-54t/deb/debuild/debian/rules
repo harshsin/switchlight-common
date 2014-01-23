@@ -1,4 +1,13 @@
 #!/usr/bin/make -f
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
 PLATFORM_NAME=powerpc-as4600-54t
 BRCM_PLATFORM_NAME=none
 include $(SWITCHLIGHT)/make/platform-config-rules.mk

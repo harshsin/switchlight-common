@@ -1,4 +1,13 @@
 #!/usr/bin/make -f
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
 PLATFORM_NAME=quanta-ly2
 BRCM_PLATFORM_NAME=powerpc-quanta-ly2-r0
 include $(SWITCHLIGHT)/make/platform-config-rules.mk
