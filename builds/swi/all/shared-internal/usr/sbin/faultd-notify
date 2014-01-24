@@ -1,0 +1,74 @@
+#!/usr/bin/python
+############################################################
+# <bsn.cl fy=2014 v=sl>
+# </bsn.cl>
+############################################################
+#
+# This script is included in all internal build images. 
+#
+# When a fault occurs the fault information and 
+# the current contents of syslog are emailed to the 
+# development support address. 
+#
+############################################################
+import sys
+import os
+import smtplib
+import subprocess
+import smtplib
+import platform
+
+# smtp.bigswitch.com
+SERVER="192.168.2.148"
+
+def mail(data):
+    sender = 'root@%(node)s' % data
+    receivers = [ 'jeff@bigswitch.com' ]
+    message = """From: Fault Reporting <root@%(node)s>
+To: Support <jeff@bigswitch.com>
+Subject: Fault Report
+
+A fault occured on %(node)s
+
+IP:
+%(ip)s
+
+Platform Information:
+%(plat)s
+
+Fault Information:
+%(fault)s
+
+Current Syslog:
+%(syslog)s
+""" % data
+
+    try:
+        s = smtplib.SMTP(SERVER)
+        s.sendmail(sender, receivers, message)
+    except smtplib.SMTPException, e:
+        print "Error: unable to send email: %s" % e
+
+
+############################################################
+from switchlight.platform.current import SwitchLightPlatform
+
+slplatform = SwitchLightPlatform()
+try:
+    ipInfo = subprocess.check_output(['/bin/ip', 'address', 'show', 'ma1'])
+except Exception, e:
+    ipInfo = str(e)
+
+data=dict(plat=str(slplatform), 
+	  node=platform.node(),
+          fault=open(sys.argv[1]).read(), 
+          syslog=open('/var/log/syslog').read(), 
+          ip=ipInfo)
+
+mail(data)
+
+
+
+
+
+
