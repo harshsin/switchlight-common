@@ -11,11 +11,17 @@ import cfgfile
 from datetime import timedelta
 
 from sl_util import shell
+from sl_util.ofad import OFADConfig, PortManager
+
 from switchlight.platform.current import SwitchLightPlatform
 import re
 
 Platform=SwitchLightPlatform()
 FW_PRINTENV = '/usr/bin/fw_printenv'
+
+OFAgentConfig = OFADConfig()
+PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
+PortManager.setLAGBase(OFAgentConfig.lag_base_name)
 
 def fw_getenv(var):
     try:
@@ -344,7 +350,7 @@ command.add_action('implement-save', save_config,
 # Perform 'copy tech-support' command
 
 tech_support_tmpfile = 'tech-support.tmp'
-tech_support_script = [
+tech_support_scripts = [
     'date',
     'cat /etc/sl_version',
     'cat /mnt/flash/boot-config',
@@ -360,6 +366,7 @@ tech_support_script = [
     'ps auxww',
     'df',
     'sensors',
+    'ntpdc -p',
     'cat /etc/rsyslog.conf',
     'cat /etc/ofad.conf',
     'cat /etc/snmp/snmpd.conf',
@@ -373,9 +380,27 @@ tech_support_script = [
     'ofad-ctl interface show',
     'ofad-ctl port',
     'ofad-ctl show-snmp',
+    'ofad-ctl inventory',
+    'ofad-ctl portcfg',
+    'ofad-ctl crc status',
+    'ofad-ctl l2cache status',
+    'ofad-ctl pause status',
+    'ofad-ctl pimu status',
+    'ofad-ctl flow-stats',
+    'ofad-ctl stats',
+    'ofad-ctl bigwire summary',
+    'ofad-ctl bigwire tenant',
+    'ofad-ctl bigwire uplink',
+    'ofad-ctl bigwire l2',
+    'ofad-ctl bigwire qinq',
 ]
 
 def save_tech_support(data):
+    portManager = PortManager(OFAgentConfig.port_list)
+    scripts = list(tech_support_scripts)
+    for lag in portManager.getLAGs():
+        scripts.append('ofad-ctl port %s' % lag.portName)
+
     p = subprocess.Popen(args=['/bin/bash'],
                          bufsize=1,
                          stdin=subprocess.PIPE,
@@ -383,9 +408,9 @@ def save_tech_support(data):
                          )
     p.stdin.write('cd /tmp\n')
     p.stdin.write('rm -f %s*\n' % tech_support_tmpfile)
-    for li in tech_support_script:
+    for li in scripts:
         p.stdin.write("echo ===== '%s' >>%s\n" % (li, tech_support_tmpfile))
-        p.stdin.write('%s >>%s\n' % (li, tech_support_tmpfile))
+        p.stdin.write('%s &>>%s\n' % (li, tech_support_tmpfile))
     p.stdin.write('gzip -c %s >/mnt/flash2/tech-support_`date +%%y%%m%%d%%H%%M%%S`.gz\n' % tech_support_tmpfile)
     p.stdin.write('rm -f %s*\n' % tech_support_tmpfile)
 
