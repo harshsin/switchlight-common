@@ -1,0 +1,40 @@
+#!/usr/bin/python
+############################################################
+# <bsn.cl fy=2014 v=sl>
+# </bsn.cl>
+############################################################
+#
+# This script is called by the faultd agent for each
+# fault.
+#
+# This script just looks for other system-specific scripts
+# to further process the information.
+#
+############################################################
+import sys
+import os
+import subprocess
+
+# These directories are searched for fault handlers.
+directories = [
+    "/mnt/flash",
+    "/mnt/flash2",
+    "/usr/bin", 
+    "/usr/sbin",
+    "/sbin", 
+    "/bin", 
+]
+
+for d in directories:
+    path = d + "/faultd-notify"
+    if os.path.exists(path):
+        args = [ path ] + sys.argv[1:]
+        subprocess.call(args)
+
+
+
+
+
+
+
+
