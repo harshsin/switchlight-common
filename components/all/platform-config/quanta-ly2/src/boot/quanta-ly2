@@ -5,8 +5,8 @@ echo "virtual/mtd/mtd2 flash" >/etc/sl_block
 
 # ONIE layout (/mnt/flash goes on 2nd 32MiB flash part)
 # 3.9.6 kernel does not enumerate using '/sys/devices/virtual/mtd'
-echo "virtual/mtd/mtd4 flash" >/etc/sl_block
-echo "ffe05000.localbus/ec000000.flash/mtd/mtd4 flash" >>/etc/sl_block
+echo "virtual/mtd/mtd2 flash" >/etc/sl_block
+echo "ffe05000.localbus/ec000000.flash/mtd/mtd2 flash" >>/etc/sl_block
 
 echo "soc.0/ffe2e000.sdhci/mmc_host/mmc0 flash2" >>/etc/sl_block
 echo "kernel-85xx" >/etc/sl_kernel
