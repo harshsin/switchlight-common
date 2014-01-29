@@ -1,11 +1,11 @@
 # -*- Makefile -*-
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 ############################################################
@@ -25,7 +25,7 @@ else
 export TOOLCHAIN
 endif
 
-SDK := $(shell $(SWITCHLIGHT_PKG_INSTALL) libbroadcom-6.2-internal-src:all --find-dir libbroadcom-6.2-internal-sdk)
+SDK := $(shell $(SWITCHLIGHT_PKG_INSTALL) libbroadcom-6.3-internal-src:all --find-dir libbroadcom-6.3-internal-sdk)
 
 SDK_BUILD_TARGET := none
 include $(SWITCHLIGHT_SUBMODULE_BROADCOM)/tools/sdk.mk
@@ -40,7 +40,7 @@ BROADSIM_CONFIG_INCLUDE_CINT := 1
 include $(BUILDER)/dependmodules.mk
 
 BINARY := brcmd
-$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS) 
+$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS)
 include $(BUILDER)/bin.mk
 
 include $(BUILDER)/targets.mk

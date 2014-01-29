@@ -1,10 +1,10 @@
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 ifndef SWITCHLIGHT
@@ -12,7 +12,7 @@ $(error $$SWITCHLIGHT is undefined.)
 endif
 
 SWITCHLIGHT_REQUIRED_SUBMODULES := infra sl broadcom bigcode indigo bigcode-internal
-SWITCHLIGHT_REQUIRED_PACKAGES := libbroadcom-6.2-internal-src:all
+SWITCHLIGHT_REQUIRED_PACKAGES := libbroadcom-6.3-internal-src:all
 include $(SWITCHLIGHT)/make/component.mk
 
 

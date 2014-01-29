@@ -1,18 +1,14 @@
 # -*- Makefile -*-
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
-############################################################
-#
-#
-#
-############################################################
+
 ifndef SWITCHLIGHT
 $(error $$SWITCHLIGHT is undefined.)
 else
@@ -25,7 +21,7 @@ else
 export TOOLCHAIN
 endif
 
-SDK := $(shell $(SWITCHLIGHT_PKG_INSTALL) libbroadcom-6.2-internal-src:all --find-dir libbroadcom-6.2-internal-sdk)
+SDK := $(shell $(SWITCHLIGHT_PKG_INSTALL) libbroadcom-6.3-internal-src:all --find-dir libbroadcom-6.3-internal-sdk)
 
 SDK_BUILD_TARGET := none
 include $(SWITCHLIGHT_SUBMODULE_BROADCOM)/tools/sdk.mk
@@ -49,7 +45,7 @@ BROADSIM_CONFIG_INCLUDE_CINT := 1
 include $(BUILDER)/dependmodules.mk
 
 BINARY := ofad
-$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS) 
+$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS)
 include $(BUILDER)/bin.mk
 
 include $(BUILDER)/targets.mk
@@ -89,7 +85,7 @@ GLOBAL_CFLAGS += -DIVS_CONFIG_CXN_LOG_SIZE=240
 GLOBAL_CFLAGS += -DSDK_CONFIG_INCLUDE_SWITCHLIGHT_MODIFICATIONS=1
 GLOBAL_CFLAGS += -DCINT_PRINTF=switchlight_cint_printf_hook -DCINT_VPRINTF=switchlight_cint_vprintf_hook
 GLOBAL_CFLAGS += -DBRCMDRIVER_CONFIG_INCLUDE_BIGWIRE_SUPPORT=0
-# enable once 6.2 lag support is integrated
+# enable once 6.3 lag support is integrated
 GLOBAL_CFLAGS += -DBRCMDRIVER_CONFIG_INCLUDE_PORT_TYPE_LAG=0
 
 # @fixme Should this be added conditionally?

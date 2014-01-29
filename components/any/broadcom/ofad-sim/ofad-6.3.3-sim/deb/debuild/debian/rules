@@ -35,4 +35,4 @@ override_dh_shlibdeps:
 	@echo "warning: ignoring shlibdeps due to libbroadcom.so dependency."
 
 override_dh_strip:
-	dh_strip --dbg-package=ofad-6.2.7-sim-dbg
+	dh_strip --dbg-package=ofad-6.3.3-sim-dbg
