@@ -1,10 +1,10 @@
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 ifndef SWITCHLIGHT
@@ -18,7 +18,6 @@ endif
 SWITCHLIGHT_REQUIRED_PACKAGES := kernel-85xx:powerpc \
 				 kernel-e500mc:powerpc \
 				 initrd-powerpc:powerpc \
-				 brcmd-6.2.7-internal:powerpc \
 				 brcmd-6.3.3-internal:powerpc
 
 include $(SWITCHLIGHT)/make/component.mk

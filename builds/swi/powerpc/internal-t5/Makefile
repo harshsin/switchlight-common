@@ -21,8 +21,8 @@ SWITCHLIGHT_REQUIRED_PACKAGES := kernel-85xx:powerpc \
 				 pcli:all \
 				 faultd:powerpc \
 				 sofcon:powerpc \
-				 ofad-6.2.7-t5:powerpc \
-				 brcmd-6.2.7-internal:powerpc 
+				 ofad-6.3.3-t5:powerpc \
+				 brcmd-6.3.3-internal:powerpc 
 
 include $(SWITCHLIGHT)/make/component.mk
 

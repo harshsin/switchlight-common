@@ -1,7 +1,0 @@
-[deb-powerpc]
-packages=brcmd-6.3.3-internal ofad-6.3.3-t5 snmpd sofcon lm-sensors fancontrol pciutils usbutils mtd-utils kexec-tools i2c-tools module-init-tools isc-dhcp-client ntp wget ethtool localepurge tcpdump telnetd python-pyinotify cpio util-linux dosfstools gnu-fdisk rssh u-boot-tools file gdb binutils
-source=copy:__DIR__/powerpc/ ./
-omitdebsrc=true
-
-
-
