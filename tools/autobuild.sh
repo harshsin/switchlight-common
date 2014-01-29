@@ -1,17 +1,17 @@
 #!/bin/bash
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 ############################################################
 #
-#  autobuild.sh 
-# 
+#  autobuild.sh
+#
 ############################################################
 set -e
 set -x
@@ -25,13 +25,13 @@ SWITCHLIGHT_ROOT=`realpath $(dirname $(readlink -f $0))/../`
 # The current branch
 BRANCH=`cd $SWITCHLIGHT_ROOT && git symbolic-ref --short -q HEAD`
 
-# The repository origin. 
+# The repository origin.
 : ${GITUSER:=`cd $SWITCHLIGHT_ROOT && git remote -v | grep origin | grep fetch | tr ':/' ' ' | awk '{print $3}'`}
 
 SHA1=`cd $SWITCHLIGHT_ROOT && git rev-list HEAD -1`
 
 if [ "$GITUSER" == "bigswitch" ]; then
-    # Special case. 
+    # Special case.
     USERDIR=""
     ABAT_SUFFIX=".$BRANCH"
 else
@@ -48,7 +48,7 @@ fi
 MAILSUBJECT="autobuild: pid=$$ branch=$BRANCH user=$GITUSER"
 
 
-if [ -n "$MAILTO" ]; then 
+if [ -n "$MAILTO" ]; then
     NOW=`date`
     mail -s "$MAILSUBJECT time=`date` : start" $MAILTO < /dev/null
 fi
@@ -94,7 +94,7 @@ function build_and_install {
 
     # Update latest and build manifest
     ssh $INSTALL_SERVER $INSTALL_BASE_DIR/update-latest.py --dir $INSTALL_AUTOBUILD_DIR --force
-    
+
     if [ -n "$MAILTO" ]; then
         ARGS="$@"
 	mail -s "$MAILSUBJECT time=`date` : built and installed $ARGS" $MAILTO < /dev/null
@@ -102,7 +102,7 @@ function build_and_install {
 }
 
 # Build primary targets for testing
-build_and_install swi-internal swi-release swi-internal-t5 swi-internal-6.3 swi-internal-6.3-t5 installer-all-release installer-powerpc-quanta-lb9a-r0-release  installer-powerpc-quanta-ly2-r0-release installer-powerpc-quanta-lb9-r0-release
+build_and_install swi-internal swi-release swi-internal-t5 installer-all-release installer-powerpc-quanta-lb9a-r0-release  installer-powerpc-quanta-ly2-r0-release installer-powerpc-quanta-lb9-r0-release
 
 # Copy the loader binaries (hack)
 ssh $INSTALL_SERVER mkdir -p $INSTALL_DIR/loaders
@@ -115,18 +115,18 @@ scp -r $SWITCHLIGHT_ROOT/debian/repo $INSTALL_SERVER:$INSTALL_DIR
 ssh $INSTALL_SERVER rm $INSTALL_DIR/repo/update.sh $INSTALL_DIR/repo/.lock $INSTALL_DIR/repo/.gitignore || true
 
 # Kick off automated tests here for primary targets
-if [ -n "$ABAT_SUFFIX" ]; then 
+if [ -n "$ABAT_SUFFIX" ]; then
     $SWITCHLIGHT_ROOT/tools/autotests.sh "$ABAT_SUFFIX" || true
 fi
 
 # Build remaining targets
-# Temporarily disabled until all builds are fixed. 
+# Temporarily disabled until all builds are fixed.
 # build_and_install all
 
 # Update build manifest
 ssh $INSTALL_SERVER $INSTALL_BASE_DIR/update-latest.py --update-manifest --dir $INSTALL_AUTOBUILD_DIR --force
 
-if [ -n "$MAILTO" ]; then 
+if [ -n "$MAILTO" ]; then
     NOW=`date`
     mail -s "$MAILSUBJECT time=`date`: finished" $MAILTO < /dev/null
 fi

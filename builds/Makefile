@@ -1,12 +1,11 @@
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
-############################################################
 ############################################################
 #
 # SwitchLight Build Products
@@ -35,9 +34,7 @@ SWI_ARCHS := $(filter-out swi/all,$(wildcard swi/*))
 SWI_BUILD_PATHS := \
 	swi/powerpc/internal \
 	swi/powerpc/release \
-	swi/powerpc/internal-t5 \
-	swi/powerpc/internal-6.3 \
-	swi/powerpc/internal-6.3-t5
+	swi/powerpc/internal-t5
 #swi/i386/vm-internal
 
 #
@@ -139,7 +136,7 @@ kernel-85xx:powerpc \
 kernel-as6700:powerpc \
 initrd-powerpc:powerpc
 
-# kernel-x86-64:amd64 initrd-i386:i386 kernel-e500mc:powerpc 
+# kernel-x86-64:amd64 initrd-i386:i386 kernel-e500mc:powerpc
 $(foreach c,$(PARALLEL_0),$(eval $(call cbuild,$(c),submodules_init)))
 
 PARALLEL_1 := \
@@ -151,9 +148,6 @@ platform-powerpc-as6700-32x-r0:powerpc
 $(foreach c,$(PARALLEL_1),$(eval $(call cbuild,$(c),$(PARALLEL_0))))
 
 PARALLEL_2 := \
-libbroadcom-6.2-internal:powerpc \
-libbroadcom-6.2-release:powerpc \
-libbroadcom-6.2-internal-src:all \
 libbroadcom-6.3-internal:powerpc \
 libbroadcom-6.3-release:powerpc \
 libbroadcom-6.3-internal-src:all
@@ -162,16 +156,12 @@ $(foreach c,$(PARALLEL_2),$(eval $(call cbuild,$(c),$(PARALLEL_1))))
 PARALLEL_3 := \
 faultd:powerpc \
 sofcon:powerpc \
-brcmd-6.2.7-internal:powerpc \
 brcmd-6.3.3-internal:powerpc \
-ofad-6.2.7-release:powerpc \
-ofad-6.2.7-internal:powerpc \
 ofad-6.3.3-release:powerpc \
 ofad-6.3.3-internal:powerpc \
-ofad-6.2.7-t5:powerpc \
 ofad-6.3.3-t5:powerpc \
 pcli:all
-# faultd:amd64 brcmd-6.2.7-sim:amd64 ofad-6.2.7-sim:amd64 \
+# faultd:amd64 brcmd-6.3.3-sim:amd64 ofad-6.3.3-sim:amd64 \
 
 $(foreach c,$(PARALLEL_3),$(eval $(call cbuild,$(c),$(PARALLEL_2))))
 
