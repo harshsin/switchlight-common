@@ -4,9 +4,6 @@
 [submodule "submodules/broadcom"]
 	path = submodules/broadcom
 	url = git@github.com:bigswitch/Broadcom
-[submodule "submodules/sdk-6.2.7"]
-	path = submodules/sdk-6.2.7
-	url = git@github.com:bigswitch/sdk-6.2.7
 [submodule "submodules/loader"]
 	path = submodules/loader
 	url = git@github.com:bigswitch/pandora-loader
