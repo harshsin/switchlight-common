@@ -1,7 +1,0 @@
-/files
-/*.debhelper.log
-/*.debhelper
-/*.substvars
-/libbroadcom-6.2-release/
-/libbroadcom-6.2-release-dbg/
-/tmp/
