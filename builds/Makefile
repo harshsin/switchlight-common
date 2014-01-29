@@ -34,9 +34,7 @@ SWI_ARCHS := $(filter-out swi/all,$(wildcard swi/*))
 SWI_BUILD_PATHS := \
 	swi/powerpc/internal \
 	swi/powerpc/release \
-	swi/powerpc/internal-t5 \
-	swi/powerpc/internal-6.3 \
-	swi/powerpc/internal-6.3-t5
+	swi/powerpc/internal-t5
 #swi/i386/vm-internal
 
 #
