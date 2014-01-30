@@ -314,9 +314,14 @@ OPENFLOW_LOGGING_COMMAND_DESCRIPTION = {
 }
 
 
+TABLE_MISS_ACTION_DEFAULT = 'drop'
+
 def config_table_miss_action(no_command, data):
     if no_command:
-        OFAgentConfig.table_miss_action = "packet-in"
+        if 'table-miss-action' in data and \
+                OFAgentConfig.table_miss_action != data['table-miss-action']:
+            raise error.ActionError('Does not match configured value')
+        OFAgentConfig.table_miss_action = TABLE_MISS_ACTION_DEFAULT
     else:
         OFAgentConfig.table_miss_action = data['table-miss-action']
 
@@ -410,7 +415,7 @@ def running_config_openflow(context, runcfg, words):
     for (module, loglevel) in OFAgentConfig.logging.iteritems():
         comp_runcfg.append('logging %s %s\n' % (module, loglevel))
 
-    if OFAgentConfig.table_miss_action != 'packet-in':
+    if OFAgentConfig.table_miss_action != TABLE_MISS_ACTION_DEFAULT:
         comp_runcfg.append('table-miss-action %s\n' % 
                            OFAgentConfig.table_miss_action)
 
