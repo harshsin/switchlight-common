@@ -1,13 +1,12 @@
 #!/usr/bin/python
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
-############################################################
 ############################################################
 #
 # Platform Driver for the Quanta LB9
@@ -19,6 +18,7 @@ import time
 import subprocess
 from switchlight.platform.base import *
 from switchlight.vendor.quanta import *
+from switchlight.platform.sensors import *
 
 class SwitchLightPlatformImplementation(SwitchLightPlatformQuanta):
 
@@ -67,6 +67,82 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformQuanta):
         subprocess.call("%s/sbin/gpio_init" % self.platform_basedir())
 
 
+    def get_environment(self):
+        
+        def filter_(f, info):
+            if info['value'] in ['N/A', "FAULT" ]:
+                return None
+
+            if info['field'] == 'vout1':
+                info['value'] = sensor_scale(info['value'], 500)
+            
+            return info
+
+        s = ''
+
+        s += 'System:\n'
+        s += sensor_values('adt7470-i2c-5-2c', 
+                           dict(fan1= 'Fan  1', 
+                                fan2= 'Fan  2', 
+                                fan3= 'Fan  3', 
+                                fan4= 'Fan  4', 
+                                temp1='Temp 1', 
+                                temp2='Temp 2', 
+                                temp3='Temp 3',
+                                temp4='Temp 4', 
+                                temp5='Temp 5'), 
+                           filter_=filter_, 
+                           indent='    ')
+        
+        psu1 = sensor_values('pmbus-i2c-7-58', 
+                             dict(fan1= 'Fan  1', 
+                                  temp1='Temp 1', 
+                                  temp2='Temp 2', 
+                                  temp3='Temp 3', 
+                                  pin=  'Pin   ', 
+                                  pout1='Pout  ', 
+                                  iin=  'Iin   ', 
+                                  iout1='Iout  ', 
+                                  vin=  'Vin   ', 
+                                  vout1='Vout  '), 
+                             filter_=filter_, 
+                             indent='    ')
+        if psu1 is None or len(psu1) == 0:
+            s += 'PSU 1: Not Present\n'
+        else:
+            s += 'PSU 1:\n' + psu1
+
+        psu2 = sensor_values('pmbus-i2c-8-59', 
+                             dict(fan1= 'Fan  1', 
+                                  temp1='Temp 1', 
+                                  temp2='Temp 2', 
+                                  temp3='Temp 3', 
+                                  pin=  'Pin   ', 
+                                  pout1='Pout  ', 
+                                  iin=  'Iin   ', 
+                                  iout1='Iout  ', 
+                                  vin=  'Vin   ',
+                                  vout1='Vout  '), 
+                             filter_=filter_, 
+                             indent='    ')
+        if psu2 is None or len(psu2) == 0:
+            s += 'PSU 2: Not Present\n'
+        else:
+            s += 'PSU 2:\n' + psu2
+
+        return s
+
+        
+        
+
+
+
 if __name__ == "__main__":
-    print SwitchLightPlatformImplementation()
+    import sys
+
+    p = SwitchLightPlatformImplementation()
+    if len(sys.argv) == 1 or sys.argv[1] == 'info':
+        print p
+    elif sys.argv[1] == 'env':
+        print p.get_environment()
 
