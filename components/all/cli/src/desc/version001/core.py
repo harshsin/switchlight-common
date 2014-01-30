@@ -129,10 +129,7 @@ SHOW_VERSION_COMMAND_DESCRIPTION = {
 
 def show_environment(data):
     try:
-        (sout, serr, rc) = shell.call('sensors')
-        # filter out text in parens, blank lines, "Adapter: i2c-0-mux", etc
-        print "\n".join([line.split('(',1)[0] for line in sout.split('\n') \
-                             if ':' in line and 'Adapter' not in line])
+        print Platform.get_environment()
     except:
         pass
 
