@@ -1,11 +1,11 @@
 #!/usr/bin/python
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 
@@ -137,6 +137,11 @@ class SwitchLightPlatformBase(object):
 
     def _plat_oid_table(self):
         raise Exception("Must be provided by the deriving class.")
+
+
+    def get_environment(self):
+        raise Exception("Must be provided by the deriving class.")
+
 
     def oid_table(self):
         # Fixme -- all of this
