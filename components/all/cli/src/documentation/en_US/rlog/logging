@@ -1,2 +1,2 @@
 Configure this device to generate logs.
-Logs can be received locally or remotely.
+Logs can be received locally or remotely to the syslog server in your management network.
