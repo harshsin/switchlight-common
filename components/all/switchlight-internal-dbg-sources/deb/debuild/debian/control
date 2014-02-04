@@ -1,0 +1,13 @@
+Source: switchlight-internal-dbg-sources
+Section: misc
+Priority: optional
+Maintainer: Support <support@bigswitch.com>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.8.4
+
+Package: switchlight-internal-dbg-sources
+Architecture: all
+Depends: 
+Description: SwitchLight Source Package
+ This package provides the SwitchLight source package.
+

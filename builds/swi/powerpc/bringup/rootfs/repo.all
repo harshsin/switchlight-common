@@ -1,6 +1,9 @@
 [deb-all]
-packages= python-flask platform-config-quanta-ly2 platform-config-quanta-lb9 platform-config-powerpc-quanta-lb9-r0 platform-config-powerpc-quanta-ly2-r0 platform-config-powerpc-quanta-lb9a-r0 vendor-config-switchlight vendor-config-quanta vendor-config-accton platform-config-powerpc-as5610-52x platform-config-powerpc-as4600-54t
+packages=platform-config-quanta-ly2 platform-config-quanta-lb9 platform-config-powerpc-quanta-lb9-r0 platform-config-powerpc-quanta-ly2-r0 platform-config-powerpc-quanta-lb9a-r0 vendor-config-switchlight vendor-config-quanta platform-config-powerpc-as5610-52x platform-config-powerpc-as4600-54t vendor-config-accton switchlight-internal-dbg-sources
+
 source=copy:__DIR__/all ./
 omitdebsrc=true
+
+
 
 
