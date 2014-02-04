@@ -152,7 +152,7 @@ done
 
 export OPENSSL_ppccap=0
 
-multistrap -d "${WS_ROOT}" -f "${CONF}" || true
+multistrap -d "${WS_ROOT}" -f "${CONF}"
 
 rm -f "${CONF}"
 
