@@ -160,7 +160,9 @@ brcmd-6.3.3-internal:powerpc \
 ofad-6.3.3-release:powerpc \
 ofad-6.3.3-internal:powerpc \
 ofad-6.3.3-t5:powerpc \
-pcli:all
+pcli:all \
+switchlight-internal-dbg-sources:all
+
 # faultd:amd64 brcmd-6.3.3-sim:amd64 ofad-6.3.3-sim:amd64 \
 
 $(foreach c,$(PARALLEL_3),$(eval $(call cbuild,$(c),$(PARALLEL_2))))
