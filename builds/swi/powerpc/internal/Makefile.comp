@@ -1,11 +1,11 @@
-# -*- Makefile -*- 
+# -*- Makefile -*-
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 ############################################################
@@ -24,10 +24,10 @@ SWI := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-internal
 
 # We need the following package binaries
 kernel-85xx    := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx:powerpc --find-file kernel-85xx)
-kernel-e500mc  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-e500mc:powerpc --find-file kernel-e500mc)
+kernel-as6700  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-as6700:powerpc --find-file kernel-as6700)
 initrd-powerpc := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
 
-KERNELS := $(kernel-85xx) $(kernel-e500mc)
+KERNELS := $(kernel-85xx) $(kernel-as6700)
 INITRD := $(initrd-powerpc)
 ARCH := powerpc
 SWITCHLIGHT_BUILD_CONFIG := powerpc.internal
