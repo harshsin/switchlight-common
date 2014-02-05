@@ -1,11 +1,11 @@
 # -*- Makefile -*-
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 ############################################################
@@ -107,6 +107,9 @@ GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LB9_R0=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LB9A_R0=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LY2_R0=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_AS5610_52X=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_MODULES_INIT=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_MODULES_INIT_SCRIPT="\"/usr/sbin/brcm-modules-init.sh\""
+GLOBAL_CFLAGS += -DBRCM_CONFIG_MODULES_INIT_SCRIPT_ARGS="\"6.3\""
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_PVS_SYSLOG=1
 GLOBAL_CFLAGS += -DAIM_CONFIG_PVS_SYSLOG_IDENT_DEFAULT="\"ofad\""
 GLOBAL_CFLAGS += -DIVS_CONFIG_INCLUDE_CXN_LOG=1
