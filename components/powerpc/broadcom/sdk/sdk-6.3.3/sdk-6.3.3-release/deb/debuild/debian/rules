@@ -1,11 +1,11 @@
 #!/usr/bin/make -f
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 
@@ -19,9 +19,9 @@ SDKBUILD=$(SWITCHLIGHT)/components/powerpc/broadcom/sdk/sdk-6.3.3/sdk-6.3.3-rele
 %:
 	dh $@
 
-build-arch: 
+build-arch:
 	dh build-arch
-	$(MAKE) -C $(SDKBUILD) libbroadcom-release.so.6.3 
+	$(MAKE) -C $(SDKBUILD) libbroadcom-release.so.6.3
 
 clean:
 	dh clean
@@ -30,9 +30,7 @@ clean:
 SDK_DEV_INSTALL_DIR := $(INSTALL_DIR)/usr/src/libbroadcom-6.3-release-sdk
 
 override_dh_auto_install:
-	mkdir -p $(INSTALL_DIR)/lib/modules $(INSTALL_DIR)/lib/$(DEB_HOST_GNU_TYPE)
-	cp $(SDKBUILD)/linux-kernel-bde-6.3.ko $(INSTALL_DIR)/lib/modules
-	cp $(SDKBUILD)/linux-user-bde-6.3.ko $(INSTALL_DIR)/lib/modules
+	mkdir -p $(INSTALL_DIR)/lib/$(DEB_HOST_GNU_TYPE)
 	cp $(SDKBUILD)/libbroadcom-release.so.6.3 $(INSTALL_DIR)/lib/$(DEB_HOST_GNU_TYPE)/
 	mkdir -p $(SDK_DEV_INSTALL_DIR)
 	cp -R $(SDK)/include $(SDK_DEV_INSTALL_DIR)
