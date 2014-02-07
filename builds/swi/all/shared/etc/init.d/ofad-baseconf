@@ -71,17 +71,10 @@ json.dump(conf, file("/etc/ofad.conf", "w"), indent=4, sort_keys=True)
 
 if os.path.exists("/usr/bin/ofad"):
     os.unlink("/usr/bin/ofad")
-if os.path.exists("/lib/modules/linux-kernel-bde.ko"):
-    os.unlink("/lib/modules/linux-kernel-bde.ko")
-if os.path.exists("/lib/modules/linux-user-bde.ko"):
-    os.unlink("/lib/modules/linux-user-bde.ko")
-
 try:
     import ofadsymlinks
 except Exception:
     os.symlink("ofad-6.3", "/usr/bin/ofad")
-    os.symlink("linux-kernel-bde-6.3.ko", "/lib/modules/linux-kernel-bde.ko")
-    os.symlink("linux-user-bde-6.3.ko", "/lib/modules/linux-user-bde.ko")
 
 platform.sys_init();
 

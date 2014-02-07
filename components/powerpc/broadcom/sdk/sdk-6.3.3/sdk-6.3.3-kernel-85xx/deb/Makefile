@@ -7,15 +7,10 @@
 #
 # </bsn.cl>
 ############################################################
-ifndef SWITCHLIGHT
-$(error $$SWITCHLIGHT is undefined.)
-endif
-
-SWITCHLIGHT_REQUIRED_SUBMODULES := sdk-6.3.3
-# SWITCHLIGHT_REQUIRED_PACKAGES :=
-
-include $(SWITCHLIGHT)/make/component.mk
-
+ARCH=powerpc
+PACKAGE_NAMES=libbroadcom-6.3-kernel-85xx-modules
+DEBUILD_ARGS=-eSDK
+include ../../../../../../../make/debuild.mk
 
 
 

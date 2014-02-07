@@ -1,0 +1,29 @@
+#!/usr/bin/make -f
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
+
+DEB_DH_INSTALL_SOURCEDIR = debian/tmp
+INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
+
+include $(SWITCHLIGHT)/make/config.mk
+
+SDKBUILD=$(SWITCHLIGHT)/components/powerpc/broadcom/sdk/sdk-6.3.3/sdk-6.3.3-kernel-as6700
+
+%:
+	dh $@
+
+clean:
+	dh clean
+
+
+override_dh_auto_install:
+	mkdir -p $(INSTALL_DIR)/lib/modules
+	$(SWITCHLIGHT)/tools/kmodcopy.sh $(SDKBUILD)/linux-kernel-bde-6.3.ko $(INSTALL_DIR)/lib/modules
+	$(SWITCHLIGHT)/tools/kmodcopy.sh $(SDKBUILD)/linux-user-bde-6.3.ko $(INSTALL_DIR)/lib/modules

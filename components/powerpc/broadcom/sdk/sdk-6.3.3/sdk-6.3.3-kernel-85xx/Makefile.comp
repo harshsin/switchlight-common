@@ -9,20 +9,18 @@
 # </bsn.cl>
 ############################################################
 #
-# SDK 6.3.3 Internal Build Configuration
+# SDK 6.3.3 Kernel Module Build for the kernel-85xx package.
 #
 ############################################################
-
-LIBRARY_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+MODULE_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 include $(SWITCHLIGHT)/make/config.mk
 
-SDK_LIB_VERSION := 6.3
-SDK_CONFIG := internal
+SDK_KMOD_VERSION := 6.3
+SDK_CONFIG := release
 SDK := $(SWITCHLIGHT_SUBMODULE_SDK_6_3_3)
-
-include ../../make/sdk-user-libraries.mk
-
+KERNEL_HEADERS := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx-headers:powerpc --find-dir linux-85xx-headers)
+include ../../make/sdk-kernel-modules.mk
 
 
 
