@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 ############################################################
 #
 # The only argument is the SDK version suffix for the
@@ -18,11 +18,18 @@ fi
 [ -e /proc/linux-user-bde ] && rmmod linux-user-bde
 [ -e /proc/linux-kernel-bde ] && rmmod linux-kernel-bde
 
-# Install new modules
-insmod /lib/modules/`uname -r`/linux-kernel-bde-${version}.ko
-insmod /lib/modules/`uname -r`/linux-user-bde-${version}.ko
+# Is there a platform-specific installation script?
+PLATFORM_SCRIPT=/lib/platform-config/$(cat /etc/sl_platform)/sbin/brcm-modules-init.sh
+if [ -e "$PLATFORM_SCRIPT" ]; then
+    "$PLATFORM_SCRIPT" "$@"
+else
+# Default to standard insertion
+    insmod /lib/modules/`uname -r`/linux-kernel-bde-${version}.ko
+    insmod /lib/modules/`uname -r`/linux-user-bde-${version}.ko
+fi
 
-# Verify existance of the device file
+# Verify existance of the device files
+[ -e /dev/linux-kernel-bde ] || mknod /dev/linux-kernel-bde c 127 0
 [ -e /dev/linux-user-bde ] || mknod /dev/linux-user-bde c 126 0
 
 
