@@ -1,4 +1,4 @@
 [deb-powerpc]
-packages=ofad-6.3.3-release libbroadcom-6.3-kernel-85xx-modules libbroadcom-6.3-kernel-as6700-modules snmpd lm-sensors fancontrol pciutils usbutils mtd-utils kexec-tools i2c-tools module-init-tools isc-dhcp-client ntp wget ethtool localepurge tcpdump telnetd python-pyinotify cpio util-linux dosfstools gnu-fdisk rssh u-boot-tools
+packages=ofad-6.3.3-release libbroadcom-6.3-kernel-85xx-modules libbroadcom-6.3-kernel-as-e500mc-modules snmpd lm-sensors fancontrol pciutils usbutils mtd-utils kexec-tools i2c-tools module-init-tools isc-dhcp-client ntp wget ethtool localepurge tcpdump telnetd python-pyinotify cpio util-linux dosfstools gnu-fdisk rssh u-boot-tools
 source=copy:__DIR__/powerpc/ ./
 omitdebsrc=true

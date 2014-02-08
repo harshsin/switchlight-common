@@ -24,10 +24,10 @@ SWI := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-release
 
 # We need the following package binaries
 kernel-85xx    := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx:powerpc --find-file kernel-85xx)
-kernel-as6700  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-as6700:powerpc --find-file kernel-as6700)
+kernel-as-e500mc  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-as-e500mc:powerpc --find-file kernel-as-e500mc)
 initrd-powerpc := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
 
-KERNELS := $(kernel-85xx) $(kernel-as6700)
+KERNELS := $(kernel-85xx) $(kernel-as-e500mc)
 INITRD := $(initrd-powerpc)
 ARCH := powerpc
 SWITCHLIGHT_BUILD_CONFIG := powerpc.release
