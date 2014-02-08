@@ -1,0 +1,28 @@
+# -*- Makefile -*-
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
+#
+# SDK 6.3.3 Kernel Module Build for the kernel-as-e500mc package.
+#
+############################################################
+MODULE_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+include $(SWITCHLIGHT)/make/config.mk
+
+SDK_KMOD_VERSION := 6.3
+SDK_CONFIG := release
+SDK := $(SWITCHLIGHT_SUBMODULE_SDK_6_3_3)
+KERNEL_HEADERS := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-as-e500mc-headers:powerpc --find-dir linux-as-e500mc-headers)
+include ../../make/sdk-kernel-modules.mk
+
+
+
+
+

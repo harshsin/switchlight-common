@@ -1,0 +1,73 @@
+# -*- Makefile -*-
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
+#
+# Powerpc Linux for the Accton P2041-based platforms
+#
+############################################################
+
+COMPDIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+include $(SWITCHLIGHT)/make/config.mk
+
+all: kernel-as-e500mc linux-as-e500mc-headers dtbs
+
+kernel-as-e500mc: $(COMPDIR)/kernel-as-e500mc
+linux-as-e500mc-headers: $(COMPDIR)/linux-as-e500mc-headers
+
+KERNEL_AS_E500MC := $(COMPDIR)/kernel-as-e500mc
+KERNEL_AS_E500MC_HEADERS := $(COMPDIR)/linux-as-e500mc-headers
+DEFCONFIG := sl_as_e500mc_defconfig
+
+$(COMPDIR)/kernel-as-e500mc: $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/arch/powerpc/configs/$(DEFCONFIG)
+	mkdir -p $(COMPDIR)/linux-build-as-e500mc
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON) $(DEFCONFIG) ARCH=powerpc O=$(COMPDIR)/linux-build-as-e500mc
+	PATH=$$PATH:$(SWITCHLIGHT)/tools $(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON) uImage ARCH=powerpc O=$(COMPDIR)/linux-build-as-e500mc
+	powerpc-linux-gnu-strip -o $(COMPDIR)/kernel-as-e500mc $(COMPDIR)/linux-build-as-e500mc/vmlinux
+	cp $(COMPDIR)/linux-build-as-e500mc/vmlinux.bin.gz $(COMPDIR)/kernel-as-e500mc.bin.gz
+
+$(COMPDIR)/linux-as-e500mc-headers/.done: $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/arch/powerpc/configs/$(DEFCONFIG)
+	mkdir -p $(COMPDIR)/linux-as-e500mc-headers
+	cp -a $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/include $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/arch/powerpc/include $(COMPDIR)/linux-as-e500mc-headers
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON) ARCH=powerpc O=$(COMPDIR)/linux-as-e500mc-headers $(DEFCONFIG)
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON) ARCH=powerpc O=$(COMPDIR)/linux-as-e500mc-headers headers_install modules_prepare arch/powerpc/lib/crtsavres.o
+	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/scripts $(COMPDIR)/linux-as-e500mc-headers
+	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/Makefile $(COMPDIR)/linux-as-e500mc-headers
+	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/arch/powerpc/Makefile $(COMPDIR)/linux-as-e500mc-headers/arch/powerpc
+	touch $@
+
+$(COMPDIR)/linux-as-e500mc-headers: $(COMPDIR)/linux-as-e500mc-headers/.done
+
+
+# These are the dtb files built for this kernel configuration:
+DTS_LIST := powerpc-as6700-32x-r0 powerpc-as5710-54x-r0a
+DTB_LIST := $(foreach dts,$(DTS_LIST),$(COMPDIR)/linux-as-e500mc-dtbs/$(dts).dtb)
+
+$(COMPDIR)/linux-as-e500mc-dtbs/%.dtb: $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/arch/powerpc/boot/dts/%.dts kernel-as-e500mc | $(shell mkdir -p $(COMPDIR)/linux-as-e500mc-dtbs)
+	linux-build-as-e500mc/scripts/dtc/dtc -I dts -O dtb -o $@ $<
+
+dtbs: $(DTB_LIST)
+
+.PHONY: deb
+
+deb:
+	$(MAKE) -C deb
+
+
+
+
+
+
+
+
+
+
+
+
