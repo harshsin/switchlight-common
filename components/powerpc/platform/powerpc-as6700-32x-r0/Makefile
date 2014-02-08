@@ -11,8 +11,8 @@ ifndef SWITCHLIGHT
 $(error $$SWITCHLIGHT is undefined.)
 endif
 
-SWITCHLIGHT_REQUIRED_PACKAGES := kernel-as6700:powerpc \
-				 kernel-as6700-dtbs:powerpc \
+SWITCHLIGHT_REQUIRED_PACKAGES := kernel-as-e500mc:powerpc \
+				 kernel-as-e500mc-dtbs:powerpc \
 				 initrd-powerpc:powerpc
 
 include $(SWITCHLIGHT)/make/component.mk
