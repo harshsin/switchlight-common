@@ -16,7 +16,7 @@ endif
 # for this SWI configuration.
 #
 SWITCHLIGHT_REQUIRED_PACKAGES := kernel-85xx:powerpc \
-				 kernel-as6700:powerpc \
+				 kernel-as-e500mc:powerpc \
 				 initrd-powerpc:powerpc \
 				 pcli:all \
 				 faultd:powerpc \
@@ -24,7 +24,7 @@ SWITCHLIGHT_REQUIRED_PACKAGES := kernel-85xx:powerpc \
 				 ofad-6.3.3-internal:powerpc \
 				 brcmd-6.3.3-internal:powerpc \
 				 libbroadcom-6.3-kernel-85xx-modules:powerpc \
-	          		 libbroadcom-6.3-kernel-as6700-modules:powerpc
+	          		 libbroadcom-6.3-kernel-as-e500mc-modules:powerpc
 
 include $(SWITCHLIGHT)/make/component.mk
 
