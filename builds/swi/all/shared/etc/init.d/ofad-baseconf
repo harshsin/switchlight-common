@@ -28,7 +28,7 @@ conf["of_serial_num"] = ""
 
 conf["of_mfr_desc"] = platform.manufacturer()
 conf["of_hw_desc"] = platform.hw_description()
-conf["of_serial_num"] = platform.sysinfo.SERIAL_NUMBER
+conf["of_serial_num"] = platform.sysinfo.SERIAL_NUMBER if platform.sysinfo.SERIAL_NUMBER else "NO.SERIAL.NUMBER"
 
 conf["of_mac_addr_base"] = "00:00:00:00:00:00"
 conf["of_datapath_id"] = "0x0000000000000000"
