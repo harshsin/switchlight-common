@@ -20,12 +20,26 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformAccton):
         return 'powerpc-as5710-54x-r0a'
 
     def _plat_info_dict(self):
-        raise Exception()
+        return {
+            platinfo.LAG_COMPONENT_MAX : 16,
+            platinfo.PORT_COUNT : 54
+            }
 
-    def oid_table(self):
-        raise Exception()
+    def _plat_oid_table(self):
+        return None
+
+    def get_environment(self):
+        return "Not implemented."
+
 
 
 if __name__ == "__main__":
-    print SwitchLightPlatformImplementation()
+    import sys
+
+    p = SwitchLightPlatformImplementation()
+    if len(sys.argv) == 1 or sys.argv[1] == 'info':
+        print p
+    elif sys.argv[1] == 'env':
+        print p.get_environment()
+
 
