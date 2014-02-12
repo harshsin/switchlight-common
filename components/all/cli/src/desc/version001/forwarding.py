@@ -11,14 +11,7 @@ OFAgentConfig = OFADConfig()
 def config_forwarding(no_command, data):
     fwdCfg = ForwardingConfig(OFAgentConfig.forwarding)
 
-    if data['type'] == 'crc':
-        if no_command: # when run with a 'no' its an enable op
-            fwdCfg.enableCRC()
-        else:
-            print "WARNING: CRC forwarding setting must be consistent on all Big Tap switches in the same forwarding domain."
-            fwdCfg.disableCRC()
-
-    elif data['type'] == 'pimu':
+    if data['type'] == 'pimu':
         if no_command: # when run with a 'no' its an enable op
             fwdCfg.enablePIMU()
         else:
@@ -57,17 +50,6 @@ CONFIG_FORWARDING_COMMAND_DESCRIPTION = {
     'args'          : (
         {
             'choices'   : (
-                (
-                    {
-                        'token'         : 'crc',
-                        'short-help'    : 'Configure CRC error-checking',
-                    },
-                    {
-                        'token'         : 'disable',
-                        'data'          : {'type' : 'crc'},
-                        'doc'           : 'forwarding|crc-disable',
-                    },
-                ),
                 (
                     {
                         'token'         : 'pimu',
@@ -177,8 +159,6 @@ def running_config_forwarding(context, runcfg, words):
     cfg = []
     fwdCfg = ForwardingConfig(OFAgentConfig.forwarding)
 
-    if fwdCfg.isCRCDisabled():
-        cfg.append('forwarding crc disable\n')
     if fwdCfg.isPIMUDisabled():
         cfg.append('forwarding pimu disable\n')
     if not fwdCfg.isL2CACHEDisabled():

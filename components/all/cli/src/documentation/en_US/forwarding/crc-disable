@@ -1,3 +1,0 @@
-Disable CRC error-checking.
-Packets containing CRC errors will not be dropped or changed and will be
-forwarded as regular packets.

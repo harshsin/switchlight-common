@@ -340,7 +340,6 @@ class ForwardingConfig(object):
     Each object var that starts with "_" is processed by toJSON().
     """
     def __init__ (self, forwarding_dict):
-        self._crc = forwarding_dict.get("crc", None)
         self._pimu = forwarding_dict.get("pimu", None)
         self._l2cache = forwarding_dict.get("l2cache", False)
         self._pause = forwarding_dict.get("pause", False)
@@ -354,21 +353,6 @@ class ForwardingConfig(object):
 
     def isPauseEnabled(self):
         if self._pause is True:
-            return True
-        return False
-
-    def disableCRC (self):
-        self._crc = False
-
-    def enableCRC (self):
-        # "True" or "None" would both work
-        # Setting to "None" would result in a cleaner ofad.conf
-        self._crc = None
-
-    def isCRCDisabled (self):
-        # "True" or "None": enabled
-        # "False": disabled
-        if self._crc is False:
             return True
         return False
 
