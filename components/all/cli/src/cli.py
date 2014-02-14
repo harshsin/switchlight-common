@@ -1251,13 +1251,29 @@ class MainSh():
     def completer(self, text, state):
         question_mark = ord('?')
         if readline.get_completion_type() == question_mark:
-            if len(readline.get_line_buffer()) == 0:
+            # zero characters, OR first token
+            if text == readline.get_line_buffer():
                 #
                 # manage printing of help text during command completion
                 help_text = self.help_splash(None, text)
                 if help_text != "":
                     self.print_completion_help(help_text)
                     return
+            else:
+                # determine whether the text is currently quoted or not.
+                # while in a quote, insert a '?'
+                origline = readline.get_line_buffer()
+                in_quote = None
+                for c in origline:
+                    if c == in_quote:
+                        in_quote = None
+                    elif c == '"':
+                        in_quote = '"'
+                    elif c == "'":
+                        in_quote = "'"
+                if in_quote:
+                    readline.insert_text('?')
+                    return None
         
         try:
             origline = readline.get_line_buffer()
