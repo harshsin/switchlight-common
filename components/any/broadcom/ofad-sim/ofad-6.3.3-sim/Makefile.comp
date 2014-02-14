@@ -37,7 +37,8 @@ include $(BUILDER)/lib.mk
 DEPENDMODULES := SocketManager OFConnectionManager BRCM BRCMDriver \
     OFStateManager broadsim AET Configuration cjson \
     loci indigo Faultd VPI IOF PPE FME ELS NSS IVS uCli VASIC BigList \
-    BigRing LEDSim murmur NPP OS AIM pimu nwac ofadm
+    BigRing LEDSim murmur NPP OS AIM pimu nwac ofadm \
+    arpa router_ip_table
 
 # Module Make Settings
 BROADSIM_CONFIG_INCLUDE_CINT := 1
@@ -87,6 +88,8 @@ GLOBAL_CFLAGS += -DCINT_PRINTF=switchlight_cint_printf_hook -DCINT_VPRINTF=switc
 GLOBAL_CFLAGS += -DBRCMDRIVER_CONFIG_INCLUDE_BIGWIRE_SUPPORT=0
 # enable once 6.3 lag support is integrated
 GLOBAL_CFLAGS += -DBRCMDRIVER_CONFIG_INCLUDE_PORT_TYPE_LAG=0
+GLOBAL_CFLAGS += -UARPA_CONFIG_INCLUDE_UCLI
+GLOBAL_CFLAGS += -UROUTER_IP_TABLE_CONFIG_INCLUDE_UCLI
 
 # @fixme Should this be added conditionally?
 #GLOBAL_CFLAGS += -DOF_OBJECT_TRACKING

@@ -46,7 +46,8 @@ include $(BUILDER)/lib.mk
 DEPENDMODULES := SocketManager OFConnectionManager BRCM snmp BRCMDriver3 \
 	OFStateManager murmur NSS ELS AET Configuration cjson \
 	loci indigo Faultd IOF PPE IVS uCli BigList BigRing OS AIM \
-	tagport pimu nwac cintm sl ofadm BigHash lacpa lldpa
+	tagport pimu nwac cintm sl ofadm BigHash lacpa lldpa \
+	arpa router_ip_table
 
 #
 # Resolve module dependencies
@@ -121,6 +122,8 @@ GLOBAL_CFLAGS += -DBRCMDRIVER3_CONFIG_PORTING_STDLIB=1
 GLOBAL_CFLAGS += -DOFCONNECTIONMANAGER_CONFIG_OF_VERSION=4
 GLOBAL_CFLAGS += -DSDK_CONFIG_INCLUDE_SWITCHLIGHT_MODIFICATIONS
 GLOBAL_CFLAGS += -DBRCM_CONFIG_CONTROL_L2CACHE_ENABLE_DEFAULT=1
+GLOBAL_CFLAGS += -UARPA_CONFIG_INCLUDE_UCLI
+GLOBAL_CFLAGS += -UROUTER_IP_TABLE_CONFIG_INCLUDE_UCLI
 
 # @fixme Should this be added conditionally?
 #GLOBAL_CFLAGS += -DOF_OBJECT_TRACKING
