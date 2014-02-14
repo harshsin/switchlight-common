@@ -1,13 +1,12 @@
 #!/usr/bin/python
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
-############################################################
 ############################################################
 #
 # This file provides the container for the
@@ -32,9 +31,5 @@ from slpc import SwitchLightPlatformImplementation
 SwitchLightPlatform=SwitchLightPlatformImplementation
 
 if __name__ == "__main__":
-    print SwitchLightPlatform()
-
-
-
-
-
+    from switchlight.platform.main import main
+    main(SwitchLightPlatform())
