@@ -14,7 +14,7 @@ from switchlight.vendor.accton import *
 class SwitchLightPlatformImplementation(SwitchLightPlatformAccton):
 
     def model(self):
-        raise Exception()
+        return "Accton AS5710-54X"
 
     def platform(self):
         return 'powerpc-as5710-54x-r0a'
@@ -34,12 +34,8 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformAccton):
 
 
 if __name__ == "__main__":
-    import sys
+    from switchlight.platform.main import main
+    main(SwitchLightPlatformImplementation())
 
-    p = SwitchLightPlatformImplementation()
-    if len(sys.argv) == 1 or sys.argv[1] == 'info':
-        print p
-    elif sys.argv[1] == 'env':
-        print p.get_environment()
 
 
