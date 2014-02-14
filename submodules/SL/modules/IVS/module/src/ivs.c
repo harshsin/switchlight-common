@@ -25,6 +25,14 @@
 #include <lldpa/lldpa.h>
 #endif
 
+#ifdef DEPENDMODULE_INCLUDE_ARPA
+#include <arpa/arpa.h>
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ROUTER_IP_TABLE
+#include <router_ip_table/router_ip_table.h>
+#endif
+
 /**
  * Try an operation and return the error code on failure.
  */
@@ -223,6 +231,14 @@ ivs_init(ivs_t* ivs)
 
 #ifdef DEPENDMODULE_INCLUDE_LLDPA
     TRY(lldpa_system_init());
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ARPA
+    TRY(arpa_init());
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ROUTER_IP_TABLE
+    TRY(router_ip_table_init());
 #endif
 
     TRY(ind_cfg_install_sighup_handler());
@@ -614,6 +630,14 @@ int
 ivs_denit(ivs_t* ivs)
 {
     int rv;
+
+#ifdef DEPENDMODULE_INCLUDE_ROUTER_IP_TABLE
+    router_ip_table_finish();
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ARPA
+    arpa_finish();
+#endif
 
 #ifdef DEPENDMODULE_INCLUDE_LLDPA
     lldpa_system_finish();

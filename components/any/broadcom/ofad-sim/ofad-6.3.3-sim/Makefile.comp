@@ -37,7 +37,8 @@ include $(BUILDER)/lib.mk
 DEPENDMODULES := SocketManager OFConnectionManager BRCM BRCMDriver \
     OFStateManager broadsim AET Configuration cjson \
     loci indigo Faultd VPI IOF PPE FME ELS NSS IVS uCli VASIC BigList \
-    BigRing LEDSim murmur NPP OS AIM pimu nwac ofadm
+    BigRing LEDSim murmur NPP OS AIM pimu nwac ofadm \
+    arpa router_ip_table
 
 # Module Make Settings
 BROADSIM_CONFIG_INCLUDE_CINT := 1
