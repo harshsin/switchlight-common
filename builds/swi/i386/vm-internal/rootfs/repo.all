@@ -1,4 +1,4 @@
 [deb-all]
-packages=pcli python-flask
+packages=pcli python-cherrypy3 slrest
 source=copy:__DIR__/all/ ./
 omitdebsrc=true
