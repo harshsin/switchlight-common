@@ -1,0 +1,82 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:        slrest
+# Required-Start:  $remote_fs $syslog
+# Required-Stop:   $remote_fs $syslog
+# Default-Start:   2 3 4 5
+# Default-Stop:    0 1 6
+# Short-Description: Start the SwitchLight REST Service
+### END INIT INFO
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+. /lib/lsb/init-functions
+
+DAEMON=/usr/sbin/slrest
+PIDFILE=/var/run/slrest/slrest.pid
+SLREST_OPTS="--pidfile $PIDFILE --daemonize --logfile=/var/run/slrest/slrest.log --syslog"
+# Authorization and SSL to be reenabled once the certificates are setup in the build
+SLREST_EXTRA_OPTS="--no-auth --no-ssl"
+QUIET=
+
+test -x $DAEMON || exit 5
+
+RUNASUSER=root
+UGID=$(getent passwd $RUNASUSER | cut -f 3,4 -d:) || true
+
+if [ -f /etc/default/slrest ]; then
+	. /etc/default/slrest
+fi
+
+case $1 in
+	start)
+		log_daemon_msg "Starting SwitchLight REST Server" "slrest"
+		if [ -z "$UGID" ]; then
+			log_failure_msg "user \"$RUNASUSER\" does not exist"
+			exit 1
+		fi
+  		start-stop-daemon --start $QUIET --oknodo --pidfile $PIDFILE --startas $DAEMON -- $SLREST_OPTS $SLREST_EXTRA_OPTS
+		status=$?
+		if [ $status -eq 0 ]; then
+			# Wait 60 seconds for the PID file to become available before reporting success or failure.
+			for i in $(seq 1 60)
+		 	do
+				[ -f $PIDFILE ] && break
+				sleep 1
+			done
+			test -f $PIDFILE
+			status=$?
+		fi
+		log_end_msg $status
+  		;;
+	stop)
+		log_daemon_msg "Stopping SwitchLight REST Server" "slrest"
+  		start-stop-daemon --stop $QUIET --oknodo --pidfile $PIDFILE
+		log_end_msg $?
+		rm -f $PIDFILE
+  		;;
+	restart|force-reload)
+		$0 stop && sleep 2 && $0 start
+  		;;
+	try-restart)
+		if $0 status >/dev/null; then
+			$0 restart
+		else
+			exit 0
+		fi
+		;;
+	reload)
+                log_daemon_msg "Reloading SwitchLight REST Server" "slrest"
+                start-stop-daemon --stop $QUIET --oknodo --pidfile $PIDFILE --signal 1
+		status=$?
+	        log_end_msg $status
+		;;
+	status)
+		status_of_proc $DAEMON "SwitchLight REST Server"
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart|try-restart|force-reload|reload|status}"
+		exit 2
+		;;
+esac
