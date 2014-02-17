@@ -15,9 +15,8 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 DAEMON=/usr/sbin/slrest
 PIDFILE=/var/run/slrest/slrest.pid
-SLREST_OPTS="--pidfile $PIDFILE --daemonize --logfile=/var/run/slrest/slrest.log --syslog"
-# Authorization and SSL to be reenabled once the certificates are setup in the build
-SLREST_EXTRA_OPTS="--no-auth --no-ssl"
+SLREST_OPTS="--pidfile $PIDFILE --daemonize --logfile=/var/run/slrest/slrest.log --syslog --private-key=/etc/slrest.conf.d/privatekey.pem --cert=/etc/slrest.conf.d/cert.pem"
+SLREST_EXTRA_OPTS=
 QUIET=
 
 test -x $DAEMON || exit 5
