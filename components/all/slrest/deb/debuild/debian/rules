@@ -28,6 +28,8 @@ override_dh_auto_install:
 	cp ../../src/slrest.py $(INSTALL_DIR)/usr/sbin/slrest
 	mkdir -p $(INSTALL_DIR)/etc/slrest.conf.d
 	$(SWITCHLIGHT)/tools/sslgen.sh $(INSTALL_DIR)/etc/slrest.conf.d/privatekey.pem $(INSTALL_DIR)/etc/slrest.conf.d/cert.pem
+	cp ../../src/slrest.conf $(INSTALL_DIR)/etc/slrest.conf
+
 
 
 
