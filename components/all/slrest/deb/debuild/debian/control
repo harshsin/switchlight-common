@@ -7,6 +7,6 @@ Standards-Version: 3.8.4
 
 Package: slrest
 Architecture: all
-Depends: 
+Depends: python-netaddr, python-yaml
 Description: SwitchLight REST Server
   Provides the SwitchLight REST Server.
