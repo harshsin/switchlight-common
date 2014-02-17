@@ -79,6 +79,7 @@ class SwitchLightRestServer(object):
                 else:
                     self.logger.error("The certification file '%s' does not exist." % ops.cert)
                     return False
+            config['server.ssl_module'] = 'builtin'
 
         # Update manual config
         cherrypy.config.update(config)
