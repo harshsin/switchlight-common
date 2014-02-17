@@ -1,38 +1,41 @@
 #!/usr/bin/python
 ############################################################
 #
-# Authentication support. 
+# User and Network Authentication support. 
 #
 ############################################################
 import crypt
 import spwd
-
-logger = None
+from netaddr import *
 
 #
-# Optional Server Authorization Credentials. 
+# Optional Server account credentials. 
 #
-SERVER_AUTHORIZATIONS = {
-    'admin' : 'bsn',
+SERVER_ACCOUNTS = { 
 }
 
-def server_auth_clear_all():
+def server_account_clear_all():
     """Clear existing authentication pairs."""
-    SERVER_AUTHORIZATIONS.clear()
+    SERVER_ACCOUNTS.clear()
 
-def server_auth_add(username, password):
+def server_account_get_all():
+    return SERVER_ACCOUNTS
+
+def server_account_add(username, password):
     """Add to existing authentication pairs."""
-    SERVER_AUTHORIZATIONS[username] = password
+    SERVER_ACCOUNTS[username] = password
 
-def server_auth_remove(username):
-    SERVER_AUTHORIZATIONS.pop(username, None)
-    
+def server_account_update(d):
+    SERVER_ACCOUNTS.update(d)
 
-def server_auth_check(username, password):
+def server_account_remove(username):
+    SERVER_ACCOUNTS.pop(username, None)
+ 
+def server_account_check(username, password):
     """Check a user against the local authorization dict."""
-    if username not in SERVER_AUTHORIZATIONS:
+    if username not in SERVER_ACCOUNTS:
         return None
-    return SERVER_AUTHORIZATIONS[username] == password
+    return SERVER_ACCOUNTS[username] == password
 
 
 
@@ -41,12 +44,15 @@ def server_auth_check(username, password):
 #
 # Only user accounts in the whitelist will be checked:
 USER_ACCOUNTS = {
-    'admin' : True, 
-    'root' : True,
 }
 
 def user_account_clear_all():
     USER_ACCOUNTS.clear()
+def user_account_get_all():
+    return USER_ACCOUNTS
+
+def user_account_update(d):
+    USER_ACCOUNTS.update(d)
 
 def user_account_add(username):
     USER_ACCOUNTS[username] = True
@@ -74,11 +80,11 @@ def user_account_check(username, password):
 
 
 #
-# Main authorizations routine. This is passed as the validator
+# Main user authorizations routine. This is passed as the validator
 # to cherrypy. 
 #
 def checkpassword(realm, username, password):
-    if server_auth_check(username, password):
+    if server_account_check(username, password):
         return True
     if user_account_check(username, password):
         return True
@@ -86,5 +92,34 @@ def checkpassword(realm, username, password):
     return False
 
 
+#
+# Allowed networks
+#
+# Only requests from IPs in the allowed networks will be allowed.
+#
+NETWORKS = {
+}
+
+def network_clear_all():
+    NETWORKS.clear()
+
+def network_get_all():
+    return NETWORKS
+
+def network_add(key, network):
+    NETWORKS[key] = network
+
+def network_remove(key):
+    NETWORKS.pop(key, None)
+
+def network_update(d):
+    NETWORKS.update(d)
+
+def network_check(address):
+    for (key, data) in NETWORKS.iteritems():
+        if IPAddress(address) in IPNetwork(data):
+            return data
+
+    return False
 
 
