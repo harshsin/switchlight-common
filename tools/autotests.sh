@@ -16,4 +16,5 @@ platforms="quanta-lb9 quanta-lb9a quanta-ly2 hoth endor"
 for platform in $platforms; do
     abat task t.sl."$platform".oftest.internal"$1" --enable || true
     abat task t.sl."$platform".oftest.release"$1" --enable || true
+    abat task t.sl."$platform".oftest.internal-t5"$1" --enable || true
 done
