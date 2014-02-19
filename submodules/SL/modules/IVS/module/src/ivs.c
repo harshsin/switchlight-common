@@ -37,6 +37,10 @@
 #include <router_ip_table/router_ip_table.h>
 #endif
 
+#ifdef DEPENDMODULE_INCLUDE_ICMPA
+#include <icmpa/icmpa.h>
+#endif
+
 /**
  * Try an operation and return the error code on failure.
  */
@@ -247,6 +251,10 @@ ivs_init(ivs_t* ivs)
 
 #ifdef DEPENDMODULE_INCLUDE_ROUTER_IP_TABLE
     TRY(router_ip_table_init());
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ICMPA
+    TRY(icmpa_init());
 #endif
 
     TRY(ind_cfg_install_sighup_handler());
@@ -647,8 +655,16 @@ ivs_denit(ivs_t* ivs)
     arpa_finish();
 #endif
 
+#ifdef DEPENDMODULE_INCLUDE_LACPA
+    lacpa_finish();
+#endif
+
 #ifdef DEPENDMODULE_INCLUDE_LLDPA
     lldpa_system_finish();
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ICMPA
+    icmpa_finish();
 #endif
 
     if ((rv = ind_core_finish()) < 0) {
