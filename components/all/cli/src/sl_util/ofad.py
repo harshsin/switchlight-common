@@ -517,14 +517,6 @@ class OFADConfig(object):
         self._data["port_list"] = val
 
     @property
-    def full_match_table (self):
-        return self._data["full_match_table"]
-
-    @full_match_table.setter
-    def full_match_table (self, val):
-        self._data["full_match_table"] = val
-
-    @property
     def forwarding (self):
         if "forwarding" in self._data:
             return self._data["forwarding"]
