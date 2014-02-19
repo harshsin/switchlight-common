@@ -25,6 +25,10 @@
 #include <lldpa/lldpa.h>
 #endif
 
+#ifdef DEPENDMODULE_INCLUDE_DHCPRA
+#include <dhcpra/dhcpra.h>
+#endif
+
 #ifdef DEPENDMODULE_INCLUDE_ARPA
 #include <arpa/arpa.h>
 #endif
@@ -231,6 +235,10 @@ ivs_init(ivs_t* ivs)
 
 #ifdef DEPENDMODULE_INCLUDE_LLDPA
     TRY(lldpa_system_init());
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_DHCPRA
+    TRY(dhcpra_system_init());
 #endif
 
 #ifdef DEPENDMODULE_INCLUDE_ARPA
