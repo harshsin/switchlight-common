@@ -13,4 +13,9 @@ echo "" >/etc/sl_crashkernel
 echo "block/sda sda2 flash" > /etc/sl_mounts
 echo "block/sda sda3 flash2" >> /etc/sl_mounts
 
+echo "# MTD device name       Device offset   Env. size       Flash sector size" >  /etc/fw_env.config
+echo "/dev/mtd1               0x00000000      0x00002000      0x00010000"        >> /etc/fw_env.config
+
+
+
 
