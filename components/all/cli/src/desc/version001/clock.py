@@ -86,31 +86,37 @@ class _NTPConfig(object):
                 cl.append("server %s\n" % (server))
             cfg.write("".join(cl))
             
-    def _remove_server (self, server):
+    def _remove_server (self, server, init):
         ### FIXME: Need a lock
         if server not in self.servers:
             raise UnknownServerError(server)
         self.servers.remove(server)
         self._write_cache()
-        NTP.restart()
+        if init:
+            print "Warning: NTP restart is disabled in init mode."
+        else:
+            NTP.restart()
 
-    def _add_server (self, server):
+    def _add_server (self, server, init):
         if server in self.servers:
             raise KnownServerError(server)
         self.servers.add(server)
         self._write_cache()
-        NTP.restart()
+        if init:
+            print "Warning: NTP restart is disabled in init mode."
+        else:
+            NTP.restart()
         
 
-    def cli_config (self, no_command, data):
+    def cli_config (self, no_command, data, init):
         if no_command:
             try:
-                self._remove_server(data["server"])
+                self._remove_server(data["server"], init)
             except UnknownServerError, e:
                 print "Server '%s' is not configured" % (data["server"])
         else:
             try:
-                self._add_server(data["server"])
+                self._add_server(data["server"], init)
             except KnownServerError, e:
                 print "Server '%s' is already configured" % (data["server"])
             
@@ -183,6 +189,7 @@ command.add_action('implement-config-ntp', NTPConfig.cli_config,
                     {'kwargs' : {
                         'no_command' : '$is-no-command',
                         'data'       : '$data',
+                        'init'       : '$is-init',
                     } } )
 
 command.add_action('implement-enable-ntp', NTPConfig.cli_enable,

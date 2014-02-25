@@ -217,7 +217,7 @@ def trap_set(no_cmd, trap, threshold):
                 "monitor -I %s %s %s %d\n" % (item[0], item[1], Mon_Ops[trap], threshold))
 
 
-def config_snmp(no_command, data):
+def config_snmp(no_command, data, init):
     if 'host' in data:
         trap_dest(no_command,
                   data['host'],
@@ -265,13 +265,17 @@ def config_snmp(no_command, data):
             raise error.ActionError('Cannot access SNMP configuration')
 
     if get_snmp_status() == 'enabled':
-        Snmp.restart()
+        if init:
+            print "Warning: SNMP restart is disabled in init mode."
+        else:
+            Snmp.restart()
 
 
 command.add_action('implement-config-snmp', config_snmp,
                     {'kwargs': {
                                  'no_command' : '$is-no-command',
                                  'data'       : '$data',
+                                 'init'       : '$is-init',
                                } } )
 
 SNMP_SERVER_COMMAND_DESCRIPTION = {

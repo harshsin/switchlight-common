@@ -1166,6 +1166,7 @@ class CommandHandler(object):
                             'value': value,
                             'data': new_arg_data,
                             'is-no-command': self.is_no_command,
+                            'is-init': bigsh.options.init,
                         }
                         new_arg_scopes = [invocation_scope] + arg_scopes
                         try:
@@ -1508,6 +1509,7 @@ class CommandExecutor(CommandHandler):
             'data': arg_data,
             'fields': fields,
             'is-no-command': self.is_no_command,
+            'is-init': bigsh.options.init,
         }
 
         #scopes = [invocation_scope] + scopes
@@ -1690,6 +1692,7 @@ class CommandCompleter(CommandHandler):
                         'data': arg_data,
                         'completions': completions,
                         'is-no-command': self.is_no_command,
+                        'is-init': bigsh.options.init,
                         'mode' : command_mode,
                     }
                     arg_scopes.insert(0, invocation_scope)
