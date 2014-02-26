@@ -32,10 +32,7 @@ def config_forwarding(no_command, data, init):
 
     OFAgentConfig.forwarding = fwdCfg.toJSON()
     OFAgentConfig.write(warn=True)
-    if init:
-        print "Warning: OFAD reload is disabled in init mode."
-    else:
-        OFAgentConfig.reload()
+    OFAgentConfig.reload(deferred=init)
 
 command.add_action('implement-config-forwarding', config_forwarding,
                    {'kwargs': {

@@ -226,10 +226,7 @@ def shutdown_intf(no_command, port_list, init):
 
     OFAgentConfig.port_list = portMgr.toJSON()
     OFAgentConfig.write(warn=True)
-    if init:
-        print "Warning: OFAD reload is disabled in init mode."
-    else:
-        OFAgentConfig.reload()
+    OFAgentConfig.reload(deferred=init)
 
 def config_intf(no_command, data, init):
     base, port_list = parse_port_list(data['intf-port-list'])

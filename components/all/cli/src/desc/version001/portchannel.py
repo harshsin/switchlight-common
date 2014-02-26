@@ -43,10 +43,7 @@ def config_port_channel(no_command, data, init):
 
     OFAgentConfig.port_list = portManager.toJSON()
     OFAgentConfig.write(warn=True)
-    if init:
-        print "Warning: OFAD reload is disabled in init mode."
-    else:
-        OFAgentConfig.reload()
+    OFAgentConfig.reload(deferred=init)
 
 command.add_action('implement-config-port-channel', config_port_channel,
                    {'kwargs': {

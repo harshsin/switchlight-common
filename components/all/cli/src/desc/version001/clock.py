@@ -92,20 +92,14 @@ class _NTPConfig(object):
             raise UnknownServerError(server)
         self.servers.remove(server)
         self._write_cache()
-        if init:
-            print "Warning: NTP restart is disabled in init mode."
-        else:
-            NTP.restart()
+        NTP.restart(deferred=init)
 
     def _add_server (self, server, init):
         if server in self.servers:
             raise KnownServerError(server)
         self.servers.add(server)
         self._write_cache()
-        if init:
-            print "Warning: NTP restart is disabled in init mode."
-        else:
-            NTP.restart()
+        NTP.restart(deferred=init)
         
 
     def cli_config (self, no_command, data, init):

@@ -265,10 +265,7 @@ def config_snmp(no_command, data, init):
             raise error.ActionError('Cannot access SNMP configuration')
 
     if get_snmp_status() == 'enabled':
-        if init:
-            print "Warning: SNMP restart is disabled in init mode."
-        else:
-            Snmp.restart()
+        Snmp.restart(deferred=init)
 
 
 command.add_action('implement-config-snmp', config_snmp,

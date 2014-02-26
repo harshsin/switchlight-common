@@ -61,10 +61,7 @@ class _LoggingConfig(object):
             existing.add(remote)
             self.remotes = existing
 
-        if init:
-            print "Warning: Rsyslog restart is disabled in init mode."
-        else:
-            RSyslog.restart()
+        RSyslog.restart(deferred=init)
 
     def cli_show_running (self, context, runcfg, words):
         comp_runcfg = []

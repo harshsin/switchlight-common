@@ -147,10 +147,7 @@ def config_controller(no_command, data, init):
 
     OFAgentConfig.controllers = clist
     OFAgentConfig.write(warn=True)
-    if init:
-        print "Warning: OFAD reload is disabled in init mode."
-    else:
-        OFAgentConfig.reload()
+    OFAgentConfig.reload(deferred=init)
 
 command.add_action('implement-config-controller', config_controller,
                     {'kwargs': {
@@ -216,10 +213,7 @@ def config_datapath(no_command, data, init):
 
         if changed:
             OFAgentConfig.write()
-            if init:
-                print "Warning: OFAD reload is disabled in init mode."
-            else:
-                OFAgentConfig.reload()
+            OFAgentConfig.reload(deferred=init)
 
 command.add_action('implement-config-datapath', config_datapath,
                     {'kwargs': {
@@ -286,10 +280,7 @@ def config_logging(no_command, data, init):
 
     OFAgentConfig.logging = log
     OFAgentConfig.write(warn=True)
-    if init:
-        print "Warning: OFAD reload is disabled in init mode."
-    else:
-        OFAgentConfig.reload()
+    OFAgentConfig.reload(deferred=init)
 
 command.add_action('implement-config-openflow-logging', config_logging,
                     {'kwargs': {
@@ -338,10 +329,7 @@ def config_table_miss_action(no_command, data, init):
         OFAgentConfig.table_miss_action = data['table-miss-action']
 
     OFAgentConfig.write(warn=True)
-    if init:
-        print "Warning: OFAD reload is disabled in init mode."
-    else:
-        OFAgentConfig.reload()
+    OFAgentConfig.reload(deferred=init)
 
 command.add_action('implement-config-table-miss-action', 
                    config_table_miss_action,
