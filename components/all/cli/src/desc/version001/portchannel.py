@@ -17,7 +17,7 @@ OFAgentConfig = OFADConfig()
 PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
 PortManager.setLAGBase(OFAgentConfig.lag_base_name)
 
-def config_port_channel(no_command, data):
+def config_port_channel(no_command, data, is_init):
     portManager = PortManager(OFAgentConfig.port_list)
 
     portId = data["port-channel-id"]
@@ -43,12 +43,13 @@ def config_port_channel(no_command, data):
 
     OFAgentConfig.port_list = portManager.toJSON()
     OFAgentConfig.write(warn=True)
-    OFAgentConfig.reload()
+    OFAgentConfig.reload(deferred=is_init)
 
 command.add_action('implement-config-port-channel', config_port_channel,
                    {'kwargs': {
                        'no_command' : '$is-no-command',
                        'data'       : '$data',
+                       'is_init'    : '$is-init',
                     }})
 
 CONFIG_PORTCHANNEL_COMMAND_DESCRIPTION = {

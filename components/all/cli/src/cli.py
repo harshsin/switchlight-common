@@ -22,6 +22,8 @@ import locale
 import socket
 import time
 import subprocess
+from sl_util import Service
+from sl_util.ofad import OFADConfig
 
 
 class MainSh():
@@ -1980,6 +1982,12 @@ def main():
             p.wait()
             sys.exit()
     cli.loop()
+
+    # Handle deferred service restarts/reloads.
+    # This is only executed in init mode.
+    if cli.options.init:
+        Service.handle_deferred_restart()
+        OFADConfig.handle_deferred_reload()
 
     if loading_startup:
         file(startup_loaded_file, "w").write("")

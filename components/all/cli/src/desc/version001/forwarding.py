@@ -8,7 +8,7 @@ from sl_util.ofad import OFADConfig, ForwardingConfig
 
 OFAgentConfig = OFADConfig()
 
-def config_forwarding(no_command, data):
+def config_forwarding(no_command, data, is_init):
     fwdCfg = ForwardingConfig(OFAgentConfig.forwarding)
 
     if data['type'] == 'pimu':
@@ -32,12 +32,13 @@ def config_forwarding(no_command, data):
 
     OFAgentConfig.forwarding = fwdCfg.toJSON()
     OFAgentConfig.write(warn=True)
-    OFAgentConfig.reload()
+    OFAgentConfig.reload(deferred=is_init)
 
 command.add_action('implement-config-forwarding', config_forwarding,
                    {'kwargs': {
                        'no_command' : '$is-no-command',
                        'data'       : '$data',
+                       'is_init'    : '$is-init',
                     }})
 
 CONFIG_FORWARDING_COMMAND_DESCRIPTION = {

@@ -417,6 +417,8 @@ class OFADConfig(object):
     PATH = "/etc/ofad.conf"
     VERSION = 2
 
+    deferred_reload = False
+
     def __init__ (self):
         self._cache_tinfo = (0,0)
         self._data_cache = None
@@ -581,8 +583,20 @@ class OFADConfig(object):
                 json.dump(data, cfg, sort_keys=True, indent=4, separators=(',', ': '))
             self._rebuild_cache()
 
-    def reload (self):
+    @classmethod
+    def reload (klass, deferred=False):
+        if deferred:
+            print "Warning: OFAD reload is deferred."
+            klass.deferred_reload = True
+            return
+
         try:
             shell.call('service ofad reload')
         except subprocess.CalledProcessError:
             raise error.ActionError('Cannot reload openflow agent configuration')
+
+    @classmethod
+    def handle_deferred_reload (klass):
+        if klass.deferred_reload:
+            print "Reloading OFAD..."
+            klass.reload()

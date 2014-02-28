@@ -4,6 +4,8 @@ from __future__ import absolute_import
 
 from sl_util.shell import call
 
+deferred_restart = []
+
 class Service(object):
     SVC_NAME = "UNSET"
     RUNNING = True
@@ -26,10 +28,22 @@ class Service(object):
             return Service.HALTED
 
     @classmethod
-    def restart (klass):
-        (sout, serr, ret) = call("service %s restart" % (klass.SVC_NAME))
+    def restart (klass, deferred=False):
+        if deferred:
+            print "Warning: %s restart is deferred." % klass.SVC_NAME
+            global deferred_restart
+            if klass not in deferred_restart:
+                deferred_restart.append(klass)
+        else:
+            (sout, serr, ret) = call("service %s restart" % (klass.SVC_NAME))
 
     @classmethod
     def reload (klass):
         (sout, serr, ret) = call("service %s reload" % (klass.SVC_NAME))
 
+
+    @staticmethod
+    def handle_deferred_restart ():
+        for svc in deferred_restart:
+            print "Restarting %s..." % svc.SVC_NAME
+            svc.restart()
