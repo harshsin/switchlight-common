@@ -1983,9 +1983,11 @@ def main():
             sys.exit()
     cli.loop()
 
-    # Handle deferred service restarts/reloads
-    Service.handle_deferred_restart()
-    OFADConfig.handle_deferred_reload()
+    # Handle deferred service restarts/reloads.
+    # This is only executed in init mode.
+    if cli.options.init:
+        Service.handle_deferred_restart()
+        OFADConfig.handle_deferred_reload()
 
     if loading_startup:
         file(startup_loaded_file, "w").write("")

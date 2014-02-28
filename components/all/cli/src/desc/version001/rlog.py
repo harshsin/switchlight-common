@@ -44,7 +44,7 @@ class _LoggingConfig(object):
             except UnsupportedTransportError:
                 continue
 
-    def cli_config (self, no_command, data, init):
+    def cli_config (self, no_command, data, is_init):
         existing = self.remotes
         if data.has_key('tcp'):
             remote = TCPRemote()
@@ -61,7 +61,7 @@ class _LoggingConfig(object):
             existing.add(remote)
             self.remotes = existing
 
-        RSyslog.restart(deferred=init)
+        RSyslog.restart(deferred=is_init)
 
     def cli_show_running (self, context, runcfg, words):
         comp_runcfg = []
@@ -155,7 +155,7 @@ command.add_action('implement-config-logging', LoggingConfig.cli_config,
                     {'kwargs': {
                                  'no_command' : '$is-no-command',
                                  'data'       : '$data',
-                                 'init'       : '$is-init',
+                                 'is_init'    : '$is-init',
                                } } )
 
 # FIXME can more than one external syslog server be specified?

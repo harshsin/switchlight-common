@@ -214,7 +214,7 @@ SHOW_INTERFACE_COMMAND_DESCRIPTION = {
 }
 
 
-def shutdown_intf(no_command, port_list, init):
+def shutdown_intf(no_command, port_list, is_init):
     portMgr = PortManager(OFAgentConfig.port_list)
 
     # assumes port list has already been checked by caller
@@ -226,9 +226,9 @@ def shutdown_intf(no_command, port_list, init):
 
     OFAgentConfig.port_list = portMgr.toJSON()
     OFAgentConfig.write(warn=True)
-    OFAgentConfig.reload(deferred=init)
+    OFAgentConfig.reload(deferred=is_init)
 
-def config_intf(no_command, data, init):
+def config_intf(no_command, data, is_init):
     base, port_list = parse_port_list(data['intf-port-list'])
 
     if base == const.MGMT_PORT_BASE:
@@ -238,7 +238,7 @@ def config_intf(no_command, data, init):
                                   (no_command, data))
     else:
         if 'shutdown' in data:
-            shutdown_intf(no_command, port_list, init)
+            shutdown_intf(no_command, port_list, is_init)
         else:
             raise error.ActionError('Invalid action for dataplane interfaces')
 
@@ -246,7 +246,7 @@ command.add_action('implement-config-intf', config_intf,
                     {'kwargs': {
                                  'no_command' : '$is-no-command',
                                  'data'       : '$data',
-                                 'init'       : '$is-init',
+                                 'is_init'    : '$is-init',
                                } } )
 
 CONFIG_IF_COMMAND_DESCRIPTION = {

@@ -123,7 +123,7 @@ SHOW_DATAPATH_COMMAND_DESCRIPTION = {
     )
 }
 
-def config_controller(no_command, data, init):
+def config_controller(no_command, data, is_init):
     clist = OFAgentConfig.controllers
 
     if 'port' in data:
@@ -147,13 +147,13 @@ def config_controller(no_command, data, init):
 
     OFAgentConfig.controllers = clist
     OFAgentConfig.write(warn=True)
-    OFAgentConfig.reload(deferred=init)
+    OFAgentConfig.reload(deferred=is_init)
 
 command.add_action('implement-config-controller', config_controller,
                     {'kwargs': {
                                  'no_command' : '$is-no-command',
                                  'data'       : '$data',
-                                 'init'       : '$is-init',
+                                 'is_init'    : '$is-init',
                                } } )
 
 SET_CONTROLLER_COMMAND_DESCRIPTION = {
@@ -191,7 +191,7 @@ SET_CONTROLLER_COMMAND_DESCRIPTION = {
 }
 
 
-def config_datapath(no_command, data, init):
+def config_datapath(no_command, data, is_init):
     changed = False
     cfg = OFAgentConfig
     cfg.update()
@@ -213,13 +213,13 @@ def config_datapath(no_command, data, init):
 
         if changed:
             OFAgentConfig.write()
-            OFAgentConfig.reload(deferred=init)
+            OFAgentConfig.reload(deferred=is_init)
 
 command.add_action('implement-config-datapath', config_datapath,
                     {'kwargs': {
                                  'no_command' : '$is-no-command',
                                  'data'       : '$data',
-                                 'init'       : '$is-init',
+                                 'is_init'    : '$is-init',
                                } } )
 
 CONFIG_DATAPATH_COMMAND_DESCRIPTION = {
@@ -267,7 +267,7 @@ CONFIG_DATAPATH_COMMAND_DESCRIPTION = {
 }
 
 
-def config_logging(no_command, data, init):
+def config_logging(no_command, data, is_init):
     log = OFAgentConfig.logging
 
     if no_command:
@@ -280,13 +280,13 @@ def config_logging(no_command, data, init):
 
     OFAgentConfig.logging = log
     OFAgentConfig.write(warn=True)
-    OFAgentConfig.reload(deferred=init)
+    OFAgentConfig.reload(deferred=is_init)
 
 command.add_action('implement-config-openflow-logging', config_logging,
                     {'kwargs': {
                                  'no_command' : '$is-no-command',
                                  'data'       : '$data',
-                                 'init'       : '$is-init',
+                                 'is_init'    : '$is-init',
                                } } )
 
 OPENFLOW_LOGGING_COMMAND_DESCRIPTION = {
@@ -319,7 +319,7 @@ OPENFLOW_LOGGING_COMMAND_DESCRIPTION = {
 
 TABLE_MISS_ACTION_DEFAULT = 'drop'
 
-def config_table_miss_action(no_command, data, init):
+def config_table_miss_action(no_command, data, is_init):
     if no_command:
         if 'table-miss-action' in data and \
                 OFAgentConfig.table_miss_action != data['table-miss-action']:
@@ -329,14 +329,14 @@ def config_table_miss_action(no_command, data, init):
         OFAgentConfig.table_miss_action = data['table-miss-action']
 
     OFAgentConfig.write(warn=True)
-    OFAgentConfig.reload(deferred=init)
+    OFAgentConfig.reload(deferred=is_init)
 
 command.add_action('implement-config-table-miss-action', 
                    config_table_miss_action,
                     {'kwargs': {
                                  'no_command' : '$is-no-command',
                                  'data'       : '$data',
-                                 'init'       : '$is-init',
+                                 'is_init'    : '$is-init',
                                } } )
 
 OPENFLOW_TABLE_MISS_ACTION_COMMAND_DESCRIPTION = {
