@@ -9,6 +9,7 @@ import logging
 
 from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
+from slrest.base.config import SLConfig
 
 class bash(SLAPIObject):
     """Execute a bash command and return the results."""
@@ -46,3 +47,21 @@ class reboot(SLAPIObject):
         util.reboot(self.logger, d)
         return "Rebooting in %s seconds...\n" % d
 
+class update_sl_config(SLAPIObject):
+    """Update and reload switch startup and running configs."""
+    route = "/api/sl_config/update"
+    def POST(self, url):
+        SLConfig.update_config_from_url(url, self.logger)
+        return "OK\n"
+
+class get_startup_sl_config(SLAPIObject):
+    """Get switch startup config."""
+    route = "/api/sl_config/get_startup"
+    def GET(self):
+        return "\n".join(SLConfig.get_startup_config(self.logger)) + "\n"
+
+class get_running_sl_config(SLAPIObject):
+    """Get switch running config."""
+    route = "/api/sl_config/get_running"
+    def GET(self):
+        return "\n".join(SLConfig.get_running_config(self.logger)) + "\n"
