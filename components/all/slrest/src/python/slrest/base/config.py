@@ -7,13 +7,15 @@
 
 from slrest.base import util
 
+import logging
 import re
 import urllib2
 
 # Used for filtering out unneeded lines in config
 FILTER_REGEX = re.compile(r"^SwitchLight.*|^.*?\(config\).*|^Exiting.*|^\!")
 
-logger = None
+# Set default logger
+logger = logging.getLogger("config")
 
 def set_logger(logger_):
     global logger
@@ -36,9 +38,9 @@ def verify_configs(expected_cfg, actual_cfg):
     """
     lines1, lines2 = compare_configs(expected_cfg, actual_cfg)
     if len(lines1) != 0 or len(lines2) != 0:
-        raise ValueError("Verify configs failed.\n"
-                         "Missing lines:\n%s\n"
-                         "Extra lines:\n%s" % (lines1, lines2))
+        logger.error("Missing lines:\n%s" % lines1)
+        logger.error("Extra lines:\n%s" % lines2)
+        raise ValueError("Verify configs failed.")
 
 def get_config_from_url(url):
     """
@@ -46,8 +48,7 @@ def get_config_from_url(url):
     Filter out unneeded lines.
     Return config as a list of config lines (strings).
     """
-    if logger:
-        logger.debug("Fetching config from url: %s" % url)
+    logger.debug("Fetching config from url: %s" % url)
 
     cfg = []
     try:
@@ -59,8 +60,7 @@ def get_config_from_url(url):
             cfg.append(l)
 
     except (urllib2.HTTPError, urllib2.URLError):
-        if logger:
-            logger.exception("Error getting config from url.\n%s" % url)
+        logger.exception("Error getting config from url.\n%s" % url)
         raise
 
     return cfg
@@ -102,9 +102,8 @@ def create_patch_config(old_cfg, new_cfg):
     Return patch config as a list of config lines (strings).
     """
     old_lines, new_lines = compare_configs(old_cfg, new_cfg)
-    if logger:
-        logger.debug("old_lines:\n%s" % old_lines)
-        logger.debug("new_lines:\n%s" % new_lines)
+    logger.debug("old_lines:\n%s" % old_lines)
+    logger.debug("new_lines:\n%s" % new_lines)
 
     # create patch config:
     # - remove a config line by prepending it with a "no"
@@ -119,16 +118,14 @@ def apply_config(cfg):
     """
     cmd = ";".join(cfg)
     out = util.pcli_command(cmd)
-    if logger:
-        logger.debug("pcli output:\n%s" % out)
+    logger.debug("pcli output:\n%s" % out)
 
 def save_running_config():
     """
     Save running config as startup config via pcli.
     """
     out = util.pcli_command("copy running-config startup-config")
-    if logger:
-        logger.debug("pcli output:\n%s" % out)
+    logger.debug("pcli output:\n%s" % out)
 
 def update_config_from_url(url):
     """
@@ -136,13 +133,11 @@ def update_config_from_url(url):
     """
     new_cfg = get_config_from_url(url)
     old_cfg = get_running_config()
-    if logger:
-        logger.debug("old_cfg:\n%s" % old_cfg)
-        logger.debug("new_cfg:\n%s" % new_cfg)
+    logger.debug("old_cfg:\n%s" % old_cfg)
+    logger.debug("new_cfg:\n%s" % new_cfg)
 
     patch_cfg = create_patch_config(old_cfg, new_cfg)
-    if logger:
-        logger.debug("patch_cfg:\n%s" % patch_cfg)
+    logger.debug("patch_cfg:\n%s" % patch_cfg)
 
     apply_config(patch_cfg)
     post_cfg = get_running_config()
