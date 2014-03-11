@@ -8,6 +8,7 @@
 from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
 from slrest.base import auth
+from slrest.base import config
 import slrest.api
 
 import cherrypy
@@ -157,6 +158,9 @@ class SwitchLightRestServer(object):
             
         # Mount all API implementations. 
         SLAPIObject.mount_all(self.logger)
+
+        # Set config logger
+        config.set_logger(self.logger)
 
         return True
 
