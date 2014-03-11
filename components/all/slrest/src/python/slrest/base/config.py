@@ -12,7 +12,7 @@ import re
 import urllib2
 
 # Used for filtering out unneeded lines in config
-FILTER_REGEX = re.compile(r"^SwitchLight.*|^.*?\(config\).*|^Exiting.*|^\!")
+FILTER_REGEX = re.compile(r"^SwitchLight.*|^.*?\(config\).*|^Exiting.*|^\!|^[\s]*$")
 
 # Set default logger
 logger = logging.getLogger("config")
@@ -50,14 +50,9 @@ def get_config_from_url(url):
     """
     logger.debug("Fetching config from url: %s" % url)
 
-    cfg = []
     try:
         f = urllib2.urlopen(url)
-        for l in f.read().split("\n"):
-            l = l.strip()
-            if len(l) == 0 or FILTER_REGEX.match(l):
-                continue
-            cfg.append(l)
+        cfg = [l for l in f.read().splitlines() if not FILTER_REGEX.match(l)]
 
     except (urllib2.HTTPError, urllib2.URLError):
         logger.exception("Error getting config from url.\n%s" % url)
@@ -71,13 +66,8 @@ def get_startup_config():
     Filter out unneeded lines.
     Return config as a list of config lines (strings).
     """
-    cfg = []
     out = util.pcli_command("show running-config")
-    for l in out.split("\n"):
-        l = l.strip()
-        if len(l) == 0 or FILTER_REGEX.match(l):
-            continue
-        cfg.append(l)
+    cfg = [l for l in out.splitlines() if not FILTER_REGEX.match(l)]
     return cfg
 
 def get_running_config():
@@ -86,13 +76,8 @@ def get_running_config():
     Filter out unneeded lines.
     Return config as a list of config lines (strings).
     """
-    cfg = []
     out = util.pcli_command("show running-config")
-    for l in out.split("\n"):
-        l = l.strip()
-        if len(l) == 0 or FILTER_REGEX.match(l):
-            continue
-        cfg.append(l)
+    cfg = [l for l in out.splitlines() if not FILTER_REGEX.match(l)]
     return cfg
 
 def create_patch_config(old_cfg, new_cfg):
