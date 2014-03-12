@@ -411,25 +411,24 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         'tag'             : 'threshold', #tag makes it 'as if' token
                         'short-help'      : 'Threshold value',
                         'base-type'       : 'integer',
-                        #'doc'             : 'snmp|', #FIXME
+                        'doc'             : 'snmp|snmp-threshold',
                     },
                 ),
                 (
                     {
                         'token'           : 'trap',
                         'short-help'      : 'Enable trap',
-                        'doc'             : 'snmp|+',
                     },
                     {
                         'token'           : LINK_UP_DOWN_CLI,
                         'short-help'      : 'Link up/down notification',
                         'data'            : { 'trap' : LINK_UP_DOWN_CLI }, #set data['trap']
-                        'doc'             : 'snmp|+',
+                        'doc'             : 'snmp|snmp-linkUpDown',
                     },
                     {
                         'field'           : 'interval',
                         'tag'             : 'interval', #tag makes it 'as if' token
-                        'short-help'      : 'Polling interval in sec(s)',
+                        'short-help'      : 'Polling interval in seconds',
                         'base-type'       : 'integer',
                     },
                 ),

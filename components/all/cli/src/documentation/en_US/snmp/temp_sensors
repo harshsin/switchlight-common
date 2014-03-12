@@ -1,0 +1,2 @@
+Enable SNMP trap when chassis temperatures in degrees Celsius exceed the
+configured threshold.

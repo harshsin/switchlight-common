@@ -1,0 +1,3 @@
+Enable SNMP trap when the L2 flow table utilization exceeds the configured threshold.
+The L2 flow table utilization is the percentage of L2 flow entries in use divided by
+the L2 flow table capacity.
