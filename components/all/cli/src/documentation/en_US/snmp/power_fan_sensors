@@ -1,0 +1,2 @@
+Enable SNMP trap when the RPMs of the power supply fans are below the
+configured threshold.

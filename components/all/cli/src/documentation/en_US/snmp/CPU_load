@@ -1,0 +1,1 @@
+Enable SNMP trap when the 1 minute load average exceeds the configured threshold.

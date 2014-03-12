@@ -1,0 +1,3 @@
+Enable SNMP trap when the fullmatch flow table utilization exceeds the configured
+threshold. The fullmatch flow table utilization is the percentage of fullmatch
+flow entries in use divided by the fullmatch flow table capacity.
