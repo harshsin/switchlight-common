@@ -6,6 +6,7 @@
 ############################################################
 import cherrypy
 import logging
+import json
 
 from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
@@ -50,9 +51,19 @@ class reboot(SLAPIObject):
 class update_sl_config(SLAPIObject):
     """Update and reload switch startup and running configs."""
     route = "/api/sl_config/update"
-    def POST(self, url):
-        config.update_config_from_url(url)
-        return "OK\n"
+    def POST(self, url, async=False):
+        transaction_id = config.start_update_config_task(url)
+        if async:
+            return json.dumps({"transaction_id": transaction_id})
+        else:
+            config.wait_for_update_config_task()
+            return json.dumps(config.get_update_config_status(transaction_id))
+
+class get_update_sl_config_status(SLAPIObject):
+    """Get status on update config tasks."""
+    route = "/api/sl_config/update_status"
+    def GET(self, transaction_id):
+        return json.dumps(config.get_update_config_status(int(transaction_id)))
 
 class get_startup_sl_config(SLAPIObject):
     """Get switch startup config."""
