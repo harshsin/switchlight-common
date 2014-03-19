@@ -1,4 +1,17 @@
 #!/bin/bash
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
+#
+# Change into a SwitchLight workspace.
+#
+############################################################
 
 WS_ROOT=.
 while [ ! -f "${WS_ROOT}/.pandora-ws" ]; do

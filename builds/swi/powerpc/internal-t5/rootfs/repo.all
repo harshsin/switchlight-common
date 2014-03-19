@@ -1,5 +1,5 @@
 [deb-all]
-packages=pcli python-flask
+packages=pcli python-cherrypy3 slrest platform-config-quanta-ly2 platform-config-quanta-lb9 platform-config-powerpc-quanta-lb9-r0 platform-config-powerpc-quanta-ly2-r0 platform-config-powerpc-quanta-lb9a-r0 vendor-config-switchlight vendor-config-quanta vendor-config-accton platform-config-powerpc-as5610-52x platform-config-powerpc-as6700-32x-r0 platform-config-powerpc-as5710-54x-r0a
 source=copy:__DIR__/all ./
 omitdebsrc=true
 

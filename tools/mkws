@@ -1,4 +1,17 @@
 #!/bin/bash
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
+#
+# Create a SwitchLight workspace.
+#
+############################################################
 
 if [ "${UID}" != 0 ]; then
     exec sudo $0 "$@"
@@ -38,6 +51,17 @@ while [ "${1#-}" != "$1" ]; do
 	--nested)
 	    NESTEDOK=1
 	    ;;
+	-e)
+	    shift
+	    array=(${1//=/ })
+	    if [ "${#array[@]}" = "1" ]; then
+		export $1
+	    else
+		echo $1
+		echo "${array[1]}"
+		export ${array[0]}="${array[1]}"
+	    fi
+	    ;;
 	-h|--help)
 	    echo "Usage: $0 [OPTIONS] WS_ROOT" 2>&1
 	    echo
@@ -58,8 +82,9 @@ while [ "${1#-}" != "$1" ]; do
     esac
     shift
 done
-		
+
 WS_ROOT=$1
+
 
 if [ ! "${WS_ROOT}" ]; then
     echo "Missing required WS_ROOT parameter" 2>&1
@@ -149,8 +174,13 @@ echo "localhost" >/etc/hostname
 echo "en_US.UTF-8 UTF-8" >/etc/locale.gen
 /usr/sbin/locale-gen
 update-locale LANG=en_US.UTF-8
-dpkg --configure -a
-dpkg --configure -a # configure any packages that failed the first time
+
+#
+# Try to configure twice
+#
+dpkg --configure -a || true
+dpkg --configure -a # configure any packages that failed the first time and abort on failure. 
+
 rm -f /usr/sbin/policy-rc.d
 EOF
 chmod +x "${WS_ROOT}/tmp/config.sh"
@@ -162,6 +192,5 @@ trap 'umount -l "${WS_ROOT}/proc" "${WS_ROOT}/dev"' EXIT
 chroot "${WS_ROOT}" /tmp/config.sh || exit 1
 
 for config in ${EXTRA_CONFIGS}; do
-    pwd
     "${config}" "${WS_ROOT}" || exit 1
 done

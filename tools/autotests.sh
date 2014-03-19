@@ -1,14 +1,20 @@
-#!/bin/sh
+#!/bin/bash
+############################################################
+# <bsn.cl fy=2013 v=none>
 #
-# Run all abat tasks for the products of the autobuild script. 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
 #
-abat task t.sl.quanta-lb9.oftest.internal-6.3"$1" --enable || true
-abat task t.sl.quanta-lb9.oftest.internal"$1" --enable || true
-abat task t.sl.quanta-lb9.oftest.release"$1" --enable || true
-# Enable after the lb9a installer is fixed. 
-#    abat task t.sl.quanta-lb9a.oftest.internal-6.3"$1" --enable || true
-#    abat task t.sl.quanta-lb9a.oftest.internal"$1" --enable || true
-#    abat task t.sl.quanta-lb9a.oftest.release"$1" --enable || true
-abat task t.sl.quanta-ly2.oftest.internal-6.3"$1" --enable || true
-abat task t.sl.quanta-ly2.oftest.internal"$1" --enable || true
-abat task t.sl.quanta-ly2.oftest.release"$1" --enable || true
+#
+#
+# </bsn.cl>
+############################################################
+#
+# Run all abat tasks for the products of the autobuild script.
+#
+platforms="quanta-lb9 quanta-lb9a quanta-ly2 hoth endor"
+
+for platform in $platforms; do
+    abat task t.sl."$platform".oftest.internal"$1" --enable || true
+    abat task t.sl."$platform".oftest.release"$1" --enable || true
+    abat task t.sl."$platform".oftest.internal-t5"$1" --enable || true
+done

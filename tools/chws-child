@@ -1,4 +1,17 @@
 #!/bin/bash
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
+#
+# Helper script used by the chws tool.
+#
+############################################################
 
 shopt -s extglob
 
@@ -74,7 +87,7 @@ if [ ! -f "${WS_ROOT}${WS_ROOT}/.pandora-ws" ]; then
     mount -n --bind "$d" "${WS_ROOT}$d"
 fi
 
-function source_rc { 
+function source_rc {
     if [ -f "$1" ]; then
         echo "Sourcing $1"
         source $1
@@ -86,7 +99,7 @@ function source_rc {
 # bind_mount_dst local_src workspace_dst
 #
 # bind mount the given source directory at the given destination in the workspace
-function bind_mount_dst { 
+function bind_mount_dst {
     if [ -d "$1" ]; then
         mkdir -p "${WS_ROOT}$2"
         echo "Mounting $1 -> $2"
@@ -95,9 +108,9 @@ function bind_mount_dst {
 }
 #
 # bind_mount dir
-# 
-# bind mount the given local directory at the same location in the workspace. 
-function bind_mount { 
+#
+# bind mount the given local directory at the same location in the workspace.
+function bind_mount {
     bind_mount_dst $1 $1
 }
 

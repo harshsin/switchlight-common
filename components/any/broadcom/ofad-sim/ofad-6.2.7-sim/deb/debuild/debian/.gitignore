@@ -1,7 +1,0 @@
-/files
-/*.debhelper.log
-/*.debhelper
-/*.substvars
-/ofad/
-/ofad-dbg/
-/tmp/

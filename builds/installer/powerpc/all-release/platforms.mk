@@ -1,1 +1,15 @@
-INSTALLER_PLATFORMS := quanta-lb9 quanta-ly2 quanta-ly2r quanta-lb8d quanta-ly5 delta-7448 celestica-redstone accton-es5652bt
+# -*- Makefile -*-
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
+INSTALLER_PLATFORMS := powerpc-quanta-lb9-r0 powerpc-quanta-ly2-r0 powerpc-as6700-32x-r0 powerpc-as5710-54x-r0a
+
+
+
+

@@ -1,0 +1,2 @@
+Enable SNMP trap when the total available memory on the switch is below
+the configured threshold.

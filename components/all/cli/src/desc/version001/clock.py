@@ -86,31 +86,31 @@ class _NTPConfig(object):
                 cl.append("server %s\n" % (server))
             cfg.write("".join(cl))
             
-    def _remove_server (self, server):
+    def _remove_server (self, server, is_init):
         ### FIXME: Need a lock
         if server not in self.servers:
             raise UnknownServerError(server)
         self.servers.remove(server)
         self._write_cache()
-        NTP.restart()
+        NTP.restart(deferred=is_init)
 
-    def _add_server (self, server):
+    def _add_server (self, server, is_init):
         if server in self.servers:
             raise KnownServerError(server)
         self.servers.add(server)
         self._write_cache()
-        NTP.restart()
+        NTP.restart(deferred=is_init)
         
 
-    def cli_config (self, no_command, data):
+    def cli_config (self, no_command, data, is_init):
         if no_command:
             try:
-                self._remove_server(data["server"])
+                self._remove_server(data["server"], is_init)
             except UnknownServerError, e:
                 print "Server '%s' is not configured" % (data["server"])
         else:
             try:
-                self._add_server(data["server"])
+                self._add_server(data["server"], is_init)
             except KnownServerError, e:
                 print "Server '%s' is already configured" % (data["server"])
             
@@ -150,12 +150,40 @@ ntpd_running_config_tuple = (
 run_config.register_running_config('ntpd', 2000, None,
                                    NTPConfig.cli_running_config,
                                    ntpd_running_config_tuple)
+
+
+def show_ntp(data):
+    if NTP.status() == Service.RUNNING:
+        try:
+            shell.call('ntpdc -p', show_output=True)
+        except:
+            pass
+    else:
+        print "NTP disabled"
+
+command.add_action('implement-show-ntp', show_ntp,
+                    {'kwargs': {'data'      : '$data',}})
+
+SHOW_NTP_COMMAND_DESCRIPTION = {
+    'name'          : 'show',
+    'mode'          : 'login',
+    'no-supported'  : False,
+    'args'          : (
+        {
+            'token'         : 'ntp',
+            'action'        : 'implement-show-ntp',
+            'short-help'    : 'Show current NTP status',
+            'doc'           : 'clock|show',
+        },
+    )
+}
     
 
 command.add_action('implement-config-ntp', NTPConfig.cli_config,
                     {'kwargs' : {
                         'no_command' : '$is-no-command',
                         'data'       : '$data',
+                        'is_init'    : '$is-init',
                     } } )
 
 command.add_action('implement-enable-ntp', NTPConfig.cli_enable,

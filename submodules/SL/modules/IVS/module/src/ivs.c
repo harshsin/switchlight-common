@@ -25,6 +25,22 @@
 #include <lldpa/lldpa.h>
 #endif
 
+#ifdef DEPENDMODULE_INCLUDE_DHCPRA
+#include <dhcpra/dhcpra.h>
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ARPA
+#include <arpa/arpa.h>
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ROUTER_IP_TABLE
+#include <router_ip_table/router_ip_table.h>
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ICMPA
+#include <icmpa/icmpa.h>
+#endif
+
 /**
  * Try an operation and return the error code on failure.
  */
@@ -225,6 +241,22 @@ ivs_init(ivs_t* ivs)
     TRY(lldpa_system_init());
 #endif
 
+#ifdef DEPENDMODULE_INCLUDE_DHCPRA
+    TRY(dhcpra_system_init());
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ARPA
+    TRY(arpa_init());
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ROUTER_IP_TABLE
+    TRY(router_ip_table_init());
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ICMPA
+    TRY(icmpa_init());
+#endif
+
     TRY(ind_cfg_install_sighup_handler());
 
     /* Process the configuration file option if present */
@@ -263,8 +295,18 @@ ivs_init(ivs_t* ivs)
 #endif
 
 #if IVS_CONFIG_INCLUDE_NETWORK_CLI == 1
-    nss_create(&ivs->netif.nss, IVS_CONFIG_NSS_PORT_DEFAULT, "0.0.0.0"); 
-    ivs->netif.ucli = ucli_copy(ivs->ucli); 
+    /* Backdoor for SwitchLight. Fixme with ZTN. */
+    {
+        FILE* fp; 
+        char* listenon = "127.0.0.1"; 
+        if((fp=fopen("/mnt/flash/promiscuous-internal-cli", "r"))) {
+	  AIM_LOG_WARN("promiscuous-cli mode."); 
+	  listenon = "0.0.0.0"; 
+	  fclose(fp); 
+        }    
+        nss_create(&ivs->netif.nss, IVS_CONFIG_NSS_PORT_DEFAULT, listenon); 
+        ivs->netif.ucli = ucli_copy(ivs->ucli); 
+    }
 #endif
 
 #if IVS_CONFIG_INCLUDE_CONSOLE_CLI == 1
@@ -346,72 +388,72 @@ ivs_enable(ivs_t* ivs, int enable)
     return 0; 
 }
 
-static indigo_cxn_info_t*
+static indigo_controller_info_t*
 ivs_controller_find_type__(ivs_t* ivs, ivs_cxn_type_t type, 
                            const char* caddr, int cport, 
-                           indigo_cxn_info_t* rv)
+                           indigo_controller_info_t* rv)
 {
-    indigo_cxn_info_t* cxn; 
-    indigo_cxn_info_t* list = NULL; 
+    indigo_controller_info_t* ctrl; 
+    indigo_controller_info_t* list = NULL; 
 
-    indigo_cxn_list(&list); 
+    indigo_controller_list(&list); 
 
-    for(cxn = list; cxn; cxn = cxn->next) { 
-        if(!IVS_STRCMP(caddr, cxn->cxn_proto_params.tcp_over_ipv4.controller_ip) && 
-           cxn->cxn_proto_params.tcp_over_ipv4.controller_port == cport) { 
+    for(ctrl = list; ctrl; ctrl = ctrl->next) { 
+        if(!IVS_STRCMP(caddr, ctrl->protocol_params.tcp_over_ipv4.controller_ip) && 
+           ctrl->protocol_params.tcp_over_ipv4.controller_port == cport) { 
 
-            if( (type == IVS_CXN_TYPE_LISTEN) == cxn->cxn_config_params.listen) { 
+            if( (type == IVS_CXN_TYPE_LISTEN) == ctrl->config_params.listen) { 
                 if(rv) { 
-                    IVS_MEMCPY(rv, cxn, sizeof(*rv)); 
+                    IVS_MEMCPY(rv, ctrl, sizeof(*rv)); 
                     break; 
                 }
             }
         }   
     }
-    indigo_cxn_list_destroy(list); 
-    return (cxn) ? rv : NULL; 
+    indigo_controller_list_destroy(list); 
+    return (ctrl) ? rv : NULL; 
 }
 
 
 int 
 ivs_controller_show(ivs_t* ivs, ivs_cxn_type_t type, aim_pvs_t* pvs)
 {
-    indigo_cxn_info_t* cxn; 
-    indigo_cxn_info_t* list = NULL; 
+    indigo_controller_info_t* ctrl; 
+    indigo_controller_info_t* list = NULL; 
     int typecount = 0;
     indigo_cxn_status_t status;
     int rv;
     const char* statename;
     const char* rolename;
 
-    indigo_cxn_list(&list); 
+    indigo_controller_list(&list); 
 
-    for(cxn = list; cxn; cxn = cxn->next) { 
-        ivs_cxn_type_t ctype = (cxn->cxn_config_params.listen == 1) ? 
+    for(ctrl = list; ctrl; ctrl = ctrl->next) { 
+        ivs_cxn_type_t ctype = (ctrl->config_params.listen == 1) ? 
             IVS_CXN_TYPE_LISTEN : IVS_CXN_TYPE_CONNECT; 
         if(ctype == type) { 
             typecount++; 
 
-            rv = indigo_cxn_connection_status_get(cxn->cxn_id, &status);
+            rv = indigo_cxn_connection_status_get(ctrl->main_cxn_id, &status);
             if (rv == INDIGO_ERROR_NONE) {
                 statename = ivs_cxn_state_name((ivs_cxn_state_t)status.state);
-                rolename = ivs_cxn_role_name((ivs_cxn_role_t)status.role);
+                rolename = ivs_cxn_role_name((ivs_cxn_role_t)ctrl->role);
             } else {
                 statename = "UNKNOWN";
                 rolename = "UNKNOWN";
             }
 
-            aim_printf(pvs, "    %s:%d  %14s  %8s\n", 
-                       cxn->cxn_proto_params.tcp_over_ipv4.controller_ip, 
-                       cxn->cxn_proto_params.tcp_over_ipv4.controller_port,
-                       statename, rolename);
+            aim_printf(pvs, "    %s:%d  %14s  %8s  %d\n", 
+                       ctrl->protocol_params.tcp_over_ipv4.controller_ip, 
+                       ctrl->protocol_params.tcp_over_ipv4.controller_port,
+                       statename, rolename, ctrl->num_aux);
         }
     }
     if(typecount == 0) { 
         aim_printf(pvs, "    None.\n"); 
     }
 
-    indigo_cxn_list_destroy(list); 
+    indigo_controller_list_destroy(list); 
 
     return INDIGO_ERROR_NONE; 
 }
@@ -422,24 +464,24 @@ ivs_controller_add(ivs_t* ivs, ivs_cxn_type_t type,
                    const char* caddr, int cport)
 {
     int rv; 
-    indigo_cxn_info_t cxn; 
+    indigo_controller_info_t ctrl; 
 
     if( ivs == NULL || caddr == NULL || cport < 0 ||
         !IVS_CXN_TYPE_VALID(type) ) { 
         return INDIGO_ERROR_PARAM; 
     }
 
-    if(ivs_controller_find_type__(ivs, type, caddr, cport, &cxn)) { 
-        /* Connection exists */
+    if(ivs_controller_find_type__(ivs, type, caddr, cport, &ctrl)) { 
+        /* Controller exists */
         return INDIGO_ERROR_EXISTS; 
     }
     
-    IVS_MEMSET(&cxn, 0, sizeof(cxn)); 
-    cxn.cxn_config_params.version = OF_VERSION_1_0; 
-    cxn.cxn_proto_params.tcp_over_ipv4.protocol = 
+    IVS_MEMSET(&ctrl, 0, sizeof(ctrl)); 
+    ctrl.config_params.version = OF_VERSION_1_0; 
+    ctrl.protocol_params.tcp_over_ipv4.protocol = 
         INDIGO_CXN_PROTO_TCP_OVER_IPV4; 
-    IVS_STRCPY(cxn.cxn_proto_params.tcp_over_ipv4.controller_ip, caddr); 
-    cxn.cxn_proto_params.tcp_over_ipv4.controller_port = cport; 
+    IVS_STRCPY(ctrl.protocol_params.tcp_over_ipv4.controller_ip, caddr); 
+    ctrl.protocol_params.tcp_over_ipv4.controller_port = cport; 
     
     switch (type)
         {
@@ -452,21 +494,21 @@ ivs_controller_add(ivs_t* ivs, ivs_cxn_type_t type,
 
         case IVS_CXN_TYPE_CONNECT:
             {
-                cxn.cxn_config_params.periodic_echo_ms = IVS_CONFIG_CXN_PERIODIC_ECHO_MS_DEFAULT; 
-                cxn.cxn_config_params.reset_echo_count = IVS_CONFIG_CXN_RESET_ECHO_COUNT;
+                ctrl.config_params.periodic_echo_ms = IVS_CONFIG_CXN_PERIODIC_ECHO_MS_DEFAULT; 
+                ctrl.config_params.reset_echo_count = IVS_CONFIG_CXN_RESET_ECHO_COUNT;
                 break; 
             }
         case IVS_CXN_TYPE_LISTEN:
             {
-                cxn.cxn_config_params.local = 1; 
-                cxn.cxn_config_params.listen = 1; 
+                ctrl.config_params.local = 1; 
+                ctrl.config_params.listen = 1; 
                 break; 
             }
         }
 
-    if( (rv = indigo_cxn_connection_add(&cxn.cxn_proto_params, 
-                                        &cxn.cxn_config_params, 
-                                        &cxn.cxn_id)) < 0) { 
+    if( (rv = indigo_controller_add(&ctrl.protocol_params, 
+                                    &ctrl.config_params, 
+                                    &ctrl.controller_id)) < 0) { 
         return rv; 
     }
     else {    
@@ -481,15 +523,15 @@ ivs_controller_remove(ivs_t* ivs, ivs_cxn_type_t type,
                       const char* caddr, int cport)
 {
     int rv; 
-    indigo_cxn_info_t cxn; 
+    indigo_controller_info_t ctrl; 
 
     if( ivs == NULL || caddr == NULL || cport < 0 ||
         !IVS_CXN_TYPE_VALID(type) ) { 
         return INDIGO_ERROR_PARAM; 
     }
 
-    if(ivs_controller_find_type__(ivs, type, caddr, cport, &cxn)) { 
-        if( (rv = indigo_cxn_connection_remove(cxn.cxn_id)) < 0) { 
+    if(ivs_controller_find_type__(ivs, type, caddr, cport, &ctrl)) { 
+        if( (rv = indigo_controller_remove(ctrl.controller_id)) < 0) { 
             return rv; 
         }
         else {
@@ -605,8 +647,24 @@ ivs_denit(ivs_t* ivs)
 {
     int rv;
 
+#ifdef DEPENDMODULE_INCLUDE_ROUTER_IP_TABLE
+    router_ip_table_finish();
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ARPA
+    arpa_finish();
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_LACPA
+    lacpa_finish();
+#endif
+
 #ifdef DEPENDMODULE_INCLUDE_LLDPA
     lldpa_system_finish();
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ICMPA
+    icmpa_finish();
 #endif
 
     if ((rv = ind_core_finish()) < 0) {

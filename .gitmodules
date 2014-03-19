@@ -4,15 +4,6 @@
 [submodule "submodules/broadcom"]
 	path = submodules/broadcom
 	url = git@github.com:bigswitch/Broadcom
-[submodule "submodules/lb9-sdk-5.6.6"]
-	path = submodules/lb9-sdk-5.6.6
-	url = git@github.com:bigswitch/pandora-lb9-sdk-5.6.6
-[submodule "submodules/ly2-sdk-5.10.0"]
-	path = submodules/ly2-sdk-5.10.0
-	url = git@github.com:bigswitch/pandora-ly2-sdk-5.10.0
-[submodule "submodules/sdk-6.2.7"]
-	path = submodules/sdk-6.2.7
-	url = git@github.com:bigswitch/sdk-6.2.7
 [submodule "submodules/loader"]
 	path = submodules/loader
 	url = git@github.com:bigswitch/pandora-loader
@@ -37,3 +28,6 @@
 [submodule "submodules/loxigen-artifacts"]
 	path = submodules/loxigen-artifacts
 	url = git@github.com:floodlight/loxigen-artifacts
+[submodule "submodules/linux-3.8.13-accton"]
+	path = submodules/linux-3.8.13-accton
+	url = git@github.com:bigswitch/linux-3.8.13-accton

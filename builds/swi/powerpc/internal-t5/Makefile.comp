@@ -1,9 +1,18 @@
-# -*- Makefile -*- 
-###############################################################################
+# -*- Makefile -*-
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
+############################################################
 #
 # Switchlight Powerpc Internal
 #
-###############################################################################
+############################################################
 ifndef SWITCHLIGHT
 $(error $$SWITCHLIGHT is not defined.)
 else
@@ -21,7 +30,7 @@ initrd-powerpc := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --fi
 KERNELS := $(kernel-85xx) $(kernel-e500mc)
 INITRD := $(initrd-powerpc)
 ARCH := powerpc
-SWITCHLIGHT_BUILD_CONFIG := powerpc.internal
+SWITCHLIGHT_BUILD_CONFIG := powerpc.internal.t5
 
 include $(SWITCHLIGHT)/make/swi.mk
 

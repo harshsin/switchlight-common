@@ -35,9 +35,6 @@ case $1 in
 			log_failure_msg "user \"$RUNASUSER\" does not exist"
 			exit 1
 		fi
-		[ -e /dev/linux-user-bde ] || mknod /dev/linux-user-bde c 126 0
-		[ -e /proc/linux-kernel-bde ] || insmod /lib/modules/linux-kernel-bde.ko
-		[ -e /proc/linux-user-bde ] || insmod /lib/modules/linux-user-bde.ko
   		start-stop-daemon --start $QUIET --oknodo --pidfile $PIDFILE --startas $DAEMON -- $OFAD_OPTS $OFAD_EXTRA_OPTS
 		status=$?
 		if [ $status -eq 0 ]; then
@@ -49,7 +46,7 @@ case $1 in
 			done
 			test -f $PIDFILE
 			status=$?
-		fi   
+		fi
 		log_end_msg $status
   		;;
 	stop)

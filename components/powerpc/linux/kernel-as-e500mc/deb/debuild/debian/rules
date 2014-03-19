@@ -1,0 +1,35 @@
+#!/usr/bin/make -f
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
+
+DEB_DH_INSTALL_SOURCEDIR = debian/tmp
+INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
+
+%:
+	dh $@
+
+build-arch:
+	dh build-arch
+
+clean:
+	dh clean
+
+override_dh_auto_install:
+	mkdir -p $(INSTALL_DIR)/usr/kernels/as-e500mc/src
+	mkdir -p $(INSTALL_DIR)/usr/kernels/as-e500mc/dtb
+	cp -R ../../linux-as-e500mc-headers $(INSTALL_DIR)/usr/kernels/as-e500mc/src
+	cp ../../kernel-as-e500mc $(INSTALL_DIR)/usr/kernels/as-e500mc
+	cp ../../kernel-as-e500mc.bin.gz $(INSTALL_DIR)/usr/kernels/as-e500mc
+	cp -R ../../linux-as-e500mc-dtbs/*.dtb $(INSTALL_DIR)/usr/kernels/as-e500mc/dtb
+
+override_dh_strip:
+	@echo "Skipping dh_strip"
+
+

@@ -1,7 +1,7 @@
 Source: ofad-6.3.3-release
 Section: misc
 Priority: optional
-Maintainer: Jeffrey Townsend <jeff@bigswitch.com>
+Maintainer: Support <support@bigswitch.com>
 Build-Depends: debhelper (>= 9), libedit-dev, libncurses5-dev, libsnmp-dev
 Standards-Version: 3.8.4
 
@@ -17,7 +17,7 @@ Architecture: powerpc
 Section: debug
 Priority: extra
 Depends:
-	ofad (= ${binary:Version}),
+	ofad-6.3.3-release (= ${binary:Version}),
 	${misc:Depends}
 Description: debugging symbols for ofad
  This packages provides the debug symbols for ofad. 

@@ -1,0 +1,21 @@
+############################################################
+# powerpc-as6700-32x-r0
+############################################################
+
+echo "fsl,dpaa.16/ethernet.18 ma1" > /etc/sl_net
+
+echo "kernel-as-e500mc" >/etc/sl_kernel
+echo "initrd-powerpc" >/etc/sl_initrd
+echo "rootfs-powerpc" >/etc/sl_rootfs
+touch /etc/sl_nokexec
+echo "" >/etc/sl_crashkernel
+
+echo "block/sda sda2 flash" > /etc/sl_mounts
+echo "block/sda sda3 flash2" >> /etc/sl_mounts
+
+echo "# MTD device name       Device offset   Env. size       Flash sector size" >  /etc/fw_env.config
+echo "/dev/mtd1               0x00000000      0x00002000      0x00010000"        >> /etc/fw_env.config
+
+
+
+

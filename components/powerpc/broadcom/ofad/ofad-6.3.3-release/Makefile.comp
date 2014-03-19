@@ -1,9 +1,18 @@
-# -*- Makefile -*- 
-#############################################################################
+# -*- Makefile -*-
+############################################################
+# <bsn.cl fy=2013 v=none>
 #
-#  Makefile 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
 #
-###############################################################################
+#
+#
+# </bsn.cl>
+############################################################
+############################################################
+#
+#  Makefile
+#
+############################################################
 include $(SWITCHLIGHT)/make/config.mk
 
 SDK := $(shell $(SWITCHLIGHT_PKG_INSTALL) libbroadcom-6.3-release-dev:powerpc --find-dir libbroadcom-6.3-release-sdk)
@@ -30,10 +39,10 @@ LIBRARY := ofad-6.3.3-release-lib
 $(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(BUILDER)/lib.mk
 
-DEPENDMODULES := SocketManager OFConnectionManager BRCM BRCMDriver \
-	OFStateManager snmp murmur NSS ELS AET Configuration cjson \
+DEPENDMODULES := SocketManager OFConnectionManager BRCM snmp BRCMDriver \
+	OFStateManager murmur NSS ELS AET Configuration cjson \
 	loci indigo Faultd IOF PPE IVS uCli BigList BigRing OS AIM \
-	BigHash tagport pimu nwac ofadm lacpa
+	BigHash tagport pimu nwac ofadm
 
 #
 # Resolve module dependencies
@@ -41,35 +50,23 @@ DEPENDMODULES := SocketManager OFConnectionManager BRCM BRCMDriver \
 include $(BUILDER)/dependmodules.mk
 
 BINARY := ofad.shared
-$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS) 
+$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS)
 include $(BUILDER)/bin.mk
 $(BINARY)_EXTRA_LINK_LIBS += $(SDK_SHARED_LINK_LIBS)
 
 BINARY := ofad.static
-$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS) 
+$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS)
 include $(BUILDER)/bin.mk
 $(BINARY)_EXTRA_LINK_LIBS += $(SDK_STATIC_LINK_LIBS)
 
-SCRIPT := brcm_lb9_gpio_init
-$(SCRIPT)_PARTS := $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules/BRCM/module/src/$(SCRIPT)
-include $(BUILDER)/script.mk
-
-SCRIPT := brcm_ly2_gpio_init
-$(SCRIPT)_PARTS := $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules/BRCM/module/src/$(SCRIPT)
-include $(BUILDER)/script.mk
-
-SCRIPT := brcm_ly2_phy_reset
-$(SCRIPT)_PARTS := $(SWITCHLIGHT_SUBMODULE_BROADCOM)/Modules/BRCM/module/src/$(SCRIPT)
-include $(BUILDER)/script.mk
-
 #
-# Now that we've specified all the things we want to build, 
-# finalize with target definitions. 
+# Now that we've specified all the things we want to build,
+# finalize with target definitions.
 #
 include $(BUILDER)/targets.mk
 
 #
-# Include UCLI support for all modules by default. 
+# Include UCLI support for all modules by default.
 #
 GLOBAL_CFLAGS += $(foreach mod,$(DEPENDMODULES_UPPER),-D$(mod)_CONFIG_INCLUDE_UCLI=1)
 
@@ -102,11 +99,16 @@ GLOBAL_CFLAGS += -DBRCM_CONFIG_TARGET_LINUX_USER=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_RATE_LIMIT_DEFAULT=0
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_RPC_CLIENT=0
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_RPC_SERVER=0
-GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_QUANTA_LB9=1
-GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_QUANTA_LB9A=1
-GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_QUANTA_LY2=1
-GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_ACCTON_5652=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LB9_R0=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LB9A_R0=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LY2_R0=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_AS5610_52X=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_AS5710_54X_R0A=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_AS6700_32X_R0=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_DIAG_SHELL=0
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_KERNEL_MODULES_INIT=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_KERNEL_MODULES_INIT_SCRIPT="\"/usr/sbin/brcm-modules-init.sh\""
+GLOBAL_CFLAGS += -DBRCM_CONFIG_KERNEL_MODULES_INIT_SCRIPT_ARGS="\"6.3\""
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_PVS_SYSLOG=1
 GLOBAL_CFLAGS += -DAIM_CONFIG_PVS_SYSLOG_IDENT_DEFAULT="\"ofad\""
 GLOBAL_CFLAGS += -DIVS_CONFIG_INCLUDE_CXN_LOG=1
@@ -128,7 +130,7 @@ ifdef OF_CXN_DUMP_ALL_OBJECTS
 GLOBAL_CFLAGS += -DOF_CXN_DUMP_ALL_OBJECTS
 endif
 
-GLOBAL_LINK_LIBS += -ledit -lncurses -rdynamic 
+GLOBAL_LINK_LIBS += -ledit -lncurses -rdynamic
 
 .PHONY: deb
 deb:

@@ -1,9 +1,17 @@
 #!/usr/bin/python
-###############################################################################
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
 #
 # SwitchLight Build Package Manager
 #
-###############################################################################
+############################################################
 import sys
 import os
 import argparse
@@ -20,13 +28,8 @@ import fcntl
 # Disabled and/or deprecated packages
 #
 disabled_packages = [
-    'brcmd-5.6', 
-    'brcmd-5.10',
-    'ofad-5.6', 
-    'ofad-5.10', 
-    'libbroadcom-5.6',
-    'libbroadcom-5.10',
-]; 
+    "kernel-e500mc:powerpc",
+];
 
 def package_enabled(p):
     for dp in disabled_packages:
@@ -113,7 +116,7 @@ def check_call(cmd, *args, **kwargs):
         logger.debug("+ " + " ".join(cmd))
     subprocess.check_call(cmd, *args, **kwargs)
 
-###############################################################################
+############################################################
 
 ap = argparse.ArgumentParser("SwitchLight Build Package Manager")
 
@@ -135,6 +138,7 @@ ap.add_argument("--force-build", help="Force rebuild from source.",
                 action='store_true')
 ap.add_argument("--verbose", action='store_true', help="verbose logging")
 ap.add_argument("--quiet", action='store_true', help="minimal logging")
+ap.add_argument("--extract", help="Extract package to the given directory.")
 
 ops = ap.parse_args()
 
@@ -159,12 +163,12 @@ class Lock:
     def __init__(self, filename):
         self.filename = filename
         self.handle = open(filename, 'w')
-    
+
     def acquire(self):
         logger.debug("acquiring lock %s" % self.filename)
         fcntl.flock(self.handle, fcntl.LOCK_EX)
         logger.debug("acquired lock %s" % self.filename)
-        
+
     def release(self):
         fcntl.flock(self.handle, fcntl.LOCK_UN)
         logger.debug("released lock %s" % self.filename)
@@ -182,7 +186,7 @@ if ops.list_all:
     sys.exit(0)
 
 if ops.add_pkg:
-    repoLock.acquire(); 
+    repoLock.acquire();
     for pa in ops.add_pkg[0]:
         # Copy the package into the repo
         logger.info("adding new package %s...", pa)
@@ -239,6 +243,13 @@ for pa in ops.packages[0]:
         sys.exit(1)
 
     deb = packages[0]
+
+    if ops.extract:
+        # Just extract the contents into the given directory.
+        if not os.path.exists(ops.extract):
+            os.makedirs(ops.extract)
+        check_call(('dpkg', '-x', "%s/%s" % (package_dir, deb), ops.extract))
+        sys.exit(0)
 
     extract_dir = "%s/debian/installs/%s/%s" % (SWITCHLIGHT, arch, package)
 

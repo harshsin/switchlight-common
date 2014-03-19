@@ -1,19 +1,27 @@
-###############################################################################
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
 #
 # SwitchLight Build Products
 #
-###############################################################################
+############################################################
 
 .DEFAULT_GOAL = default
 
 # All build products go here
 BUILDDIR := BUILDS
 
-###############################################################################
+############################################################
 #
 # SWI Builds
 #
-###############################################################################
+############################################################
 
 # These are the available SWI architectures
 SWI_ARCHS := $(filter-out swi/all,$(wildcard swi/*))
@@ -26,9 +34,8 @@ SWI_ARCHS := $(filter-out swi/all,$(wildcard swi/*))
 SWI_BUILD_PATHS := \
 	swi/powerpc/internal \
 	swi/powerpc/release \
-	swi/powerpc/internal-t5 \
-	swi/powerpc/internal-6.3 \
-	swi/powerpc/internal-6.3-t5 
+	swi/powerpc/bringup \
+	swi/powerpc/internal-t5
 #swi/i386/vm-internal
 
 #
@@ -55,11 +62,11 @@ show-swis:
 	@echo $(SWI_BUILD_PATHS)
 
 
-###############################################################################
+############################################################
 #
 # Installer Builds
 #
-###############################################################################
+############################################################
 
 # These are the available installer architectures
 INST_ARCHS := $(filter-out installer/all,$(wildcard installer/*))
@@ -92,11 +99,11 @@ show-installers:
 
 
 
-###############################################################################
+############################################################
 #
 # Components directory
 #
-###############################################################################
+############################################################
 .PHONY: components
 
 components:
@@ -111,11 +118,11 @@ all: $(ALL_TARGETS)
 default: show-swis
 
 
-###############################################################################
+############################################################
 #
 # Parallel Build Optimizations
 #
-###############################################################################
+############################################################
 # init all submodules
 submodules_init:
 	$(SWITCHLIGHT)/tools/submodules.py __all__ __all__ $(SWITCHLIGHT)
@@ -125,45 +132,44 @@ $(subst :,.,$(1)): $(subst :,.,$(2))
 	$(SWITCHLIGHT)/tools/spkg.py $(1) --build
 endef
 
-
 PARALLEL_0 := \
 kernel-85xx:powerpc \
-kernel-e500mc:powerpc \
+kernel-as-e500mc:powerpc \
 initrd-powerpc:powerpc
-# kernel-x86-64:amd64 initrd-i386:i386
+
+# kernel-x86-64:amd64 initrd-i386:i386 kernel-e500mc:powerpc
 $(foreach c,$(PARALLEL_0),$(eval $(call cbuild,$(c),submodules_init)))
 
 PARALLEL_1 := \
-platform-quanta-lb9a:powerpc \
-platform-quanta-ly2:powerpc \
-platform-quanta-lb9:powerpc \
-platform-quanta-ly5:powerpc \
-platform-accton-es5652bt:powerpc
+platform-powerpc-quanta-lb9a-r0:powerpc \
+platform-powerpc-quanta-lb9-r0:powerpc \
+platform-powerpc-quanta-ly2-r0:powerpc \
+platform-powerpc-as6700-32x-r0:powerpc \
+platform-powerpc-as5710-54x-r0a:powerpc
 # loader-i386:i386
 $(foreach c,$(PARALLEL_1),$(eval $(call cbuild,$(c),$(PARALLEL_0))))
 
 PARALLEL_2 := \
-libbroadcom-6.2-internal:powerpc \
-libbroadcom-6.2-release:powerpc \
-libbroadcom-6.2-internal-src:all \
 libbroadcom-6.3-internal:powerpc \
 libbroadcom-6.3-release:powerpc \
-libbroadcom-6.3-internal-src:all 
+libbroadcom-6.3-internal-src:all \
+libbroadcom-6.3-kernel-85xx-modules:powerpc \
+libbroadcom-6.3-kernel-as-e500mc-modules:powerpc
+
 $(foreach c,$(PARALLEL_2),$(eval $(call cbuild,$(c),$(PARALLEL_1))))
 
 PARALLEL_3 := \
 faultd:powerpc \
 sofcon:powerpc \
-brcmd-6.2.7-internal:powerpc \
 brcmd-6.3.3-internal:powerpc \
-ofad-6.2.7-release:powerpc \
-ofad-6.2.7-internal:powerpc \
 ofad-6.3.3-release:powerpc \
 ofad-6.3.3-internal:powerpc \
-ofad-6.2.7-t5:powerpc \
 ofad-6.3.3-t5:powerpc \
-pcli:all
-# faultd:amd64 brcmd-6.2.7-sim:amd64 ofad-6.2.7-sim:amd64 \
+pcli:all \
+slrest:all \
+switchlight-internal-dbg-sources:all
+
+# faultd:amd64 brcmd-6.3.3-sim:amd64 ofad-6.3.3-sim:amd64 \
 
 $(foreach c,$(PARALLEL_3),$(eval $(call cbuild,$(c),$(PARALLEL_2))))
 

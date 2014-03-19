@@ -1,9 +1,21 @@
 #!/bin/bash -ex
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
 LOCALDIR=$(dirname "$0")
 SHARED_DIR=${LOCALDIR}/../../../all/shared
 WS_ROOT=$1
-tar -C "${SHARED_DIR}" -c --exclude "*~" . | tar -C "${WS_ROOT}" -x -v --no-same-owner
 
+HRFSTOOL="python ${SWITCHLIGHT}/tools/py/rfstool.py"
+RFSTOOL="${HRFSTOOL} --chroot ${WS_ROOT}"
+
+${HRFSTOOL} -c overlay "${SHARED_DIR}" "${WS_ROOT}"
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d initdev defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d restorepersist defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d rc.boot defaults
@@ -15,6 +27,7 @@ chroot "${WS_ROOT}" /usr/sbin/update-rc.d loadstartupconfig defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d ofad defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d snmpd remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d ssh remove
+chroot "${WS_ROOT}" /usr/sbin/update-rc.d slrest remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d openbsd-inetd remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d ntp remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d nfs-common remove
@@ -32,14 +45,15 @@ chroot "${WS_ROOT}" /usr/sbin/update-rc.d mountnfs-bootclean.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d mountnfs.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d lm-sensors remove
 
-chroot "${WS_ROOT}" passwd -d root
+# Root is disabled completely in release images
+${RFSTOOL} -c user_disable root
+# Standard admin and recovery accounts
+${RFSTOOL} -c user_recovery_add standard
+${RFSTOOL} -c user_admin_add
+
 rm -f "${WS_ROOT}/etc/securetty" # allow root login via telnet
 sed -i "s/\(^[123456]:.*\)/#\1/" "${WS_ROOT}/etc/inittab"
 echo "T0:23:respawn:/sbin/pgetty ttyS0" >>"${WS_ROOT}/etc/inittab"
-: >"${WS_ROOT}/etc/motd"
-echo "admin:x:0:0:root:/root:/usr/bin/pcli" >>"${WS_ROOT}/etc/passwd"
-echo "admin::::::::" >>"${WS_ROOT}/etc/shadow"
-chroot "${WS_ROOT}" /usr/bin/apt-get clean
-chroot "${WS_ROOT}" /usr/sbin/localepurge
-find "${WS_ROOT}/usr/share/doc" -type f | xargs rm -rf
-find "${WS_ROOT}/usr/share/man" -type f | xargs rm -rf
+
+${RFSTOOL} -c fsclean
+

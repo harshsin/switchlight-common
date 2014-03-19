@@ -123,7 +123,7 @@ SHOW_DATAPATH_COMMAND_DESCRIPTION = {
     )
 }
 
-def config_controller(no_command, data):
+def config_controller(no_command, data, is_init):
     clist = OFAgentConfig.controllers
 
     if 'port' in data:
@@ -147,12 +147,13 @@ def config_controller(no_command, data):
 
     OFAgentConfig.controllers = clist
     OFAgentConfig.write(warn=True)
-    OFAgentConfig.reload()
+    OFAgentConfig.reload(deferred=is_init)
 
 command.add_action('implement-config-controller', config_controller,
                     {'kwargs': {
                                  'no_command' : '$is-no-command',
                                  'data'       : '$data',
+                                 'is_init'    : '$is-init',
                                } } )
 
 SET_CONTROLLER_COMMAND_DESCRIPTION = {
@@ -190,7 +191,7 @@ SET_CONTROLLER_COMMAND_DESCRIPTION = {
 }
 
 
-def config_datapath(no_command, data):
+def config_datapath(no_command, data, is_init):
     changed = False
     cfg = OFAgentConfig
     cfg.update()
@@ -212,12 +213,13 @@ def config_datapath(no_command, data):
 
         if changed:
             OFAgentConfig.write()
-            OFAgentConfig.reload()
+            OFAgentConfig.reload(deferred=is_init)
 
 command.add_action('implement-config-datapath', config_datapath,
                     {'kwargs': {
                                  'no_command' : '$is-no-command',
                                  'data'       : '$data',
+                                 'is_init'    : '$is-init',
                                } } )
 
 CONFIG_DATAPATH_COMMAND_DESCRIPTION = {
@@ -265,7 +267,7 @@ CONFIG_DATAPATH_COMMAND_DESCRIPTION = {
 }
 
 
-def config_logging(no_command, data):
+def config_logging(no_command, data, is_init):
     log = OFAgentConfig.logging
 
     if no_command:
@@ -278,12 +280,13 @@ def config_logging(no_command, data):
 
     OFAgentConfig.logging = log
     OFAgentConfig.write(warn=True)
-    OFAgentConfig.reload()
+    OFAgentConfig.reload(deferred=is_init)
 
 command.add_action('implement-config-openflow-logging', config_logging,
                     {'kwargs': {
                                  'no_command' : '$is-no-command',
                                  'data'       : '$data',
+                                 'is_init'    : '$is-init',
                                } } )
 
 OPENFLOW_LOGGING_COMMAND_DESCRIPTION = {
@@ -314,20 +317,26 @@ OPENFLOW_LOGGING_COMMAND_DESCRIPTION = {
 }
 
 
-def config_table_miss_action(no_command, data):
+TABLE_MISS_ACTION_DEFAULT = 'drop'
+
+def config_table_miss_action(no_command, data, is_init):
     if no_command:
-        OFAgentConfig.table_miss_action = "packet-in"
+        if 'table-miss-action' in data and \
+                OFAgentConfig.table_miss_action != data['table-miss-action']:
+            raise error.ActionError('Does not match configured value')
+        OFAgentConfig.table_miss_action = TABLE_MISS_ACTION_DEFAULT
     else:
         OFAgentConfig.table_miss_action = data['table-miss-action']
 
     OFAgentConfig.write(warn=True)
-    OFAgentConfig.reload()
+    OFAgentConfig.reload(deferred=is_init)
 
 command.add_action('implement-config-table-miss-action', 
                    config_table_miss_action,
                     {'kwargs': {
                                  'no_command' : '$is-no-command',
                                  'data'       : '$data',
+                                 'is_init'    : '$is-init',
                                } } )
 
 OPENFLOW_TABLE_MISS_ACTION_COMMAND_DESCRIPTION = {
@@ -344,47 +353,6 @@ OPENFLOW_TABLE_MISS_ACTION_COMMAND_DESCRIPTION = {
             'short-help'      : 'Action to take if no matching flows',
             'type'            : 'enum',
             'values'          : ('packet-in', 'drop', 'normal'),
-            'optional-for-no' : True,
-            'doc'             : 'ofad|+',
-        },
-    ),
-}
-
-
-def config_full_match_table(no_command, data):
-    if no_command:
-        if 'full-match-table' in data and \
-                data['full-match-table'] != OFAgentConfig.full_match_table:
-            raise error.ActionError('Does not match configured value')
-
-        OFAgentConfig.full_match_table = "all"
-    else:
-        OFAgentConfig.full_match_table = data['full-match-table']
-
-    OFAgentConfig.write(warn=True)
-    OFAgentConfig.reload()
-
-command.add_action('implement-config-full-match-table', 
-                   config_full_match_table,
-                    {'kwargs': {
-                                 'no_command' : '$is-no-command',
-                                 'data'       : '$data',
-                               } } )
-
-OPENFLOW_FULL_MATCH_TABLE_COMMAND_DESCRIPTION = {
-    'name'         : 'full-match-table',
-    'mode'         : 'config',
-    'short-help'   : 'Configure full match table',
-    'action'       : 'implement-config-full-match-table',
-    'no-action'    : 'implement-config-full-match-table',
-    'doc'          : 'ofad|full-match-table',
-    'doc-example'  : 'ofad|full-match-table-example',
-    'args'         : (
-        {
-            'field'           : 'full-match-table',
-            'short-help'      : 'Configuration of full match table',
-            'type'            : 'enum',
-            'values'          : ('all', 'l3l4'),
             'optional-for-no' : True,
             'doc'             : 'ofad|+',
         },
@@ -410,13 +378,9 @@ def running_config_openflow(context, runcfg, words):
     for (module, loglevel) in OFAgentConfig.logging.iteritems():
         comp_runcfg.append('logging %s %s\n' % (module, loglevel))
 
-    if OFAgentConfig.table_miss_action != 'packet-in':
+    if OFAgentConfig.table_miss_action != TABLE_MISS_ACTION_DEFAULT:
         comp_runcfg.append('table-miss-action %s\n' % 
                            OFAgentConfig.table_miss_action)
-
-    if OFAgentConfig.full_match_table != 'all':
-        comp_runcfg.append('full-match-table %s\n' % 
-                           OFAgentConfig.full_match_table)
 
     # attach component-specific config
     if len(comp_runcfg) > 0:

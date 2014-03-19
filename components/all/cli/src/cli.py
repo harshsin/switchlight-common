@@ -22,6 +22,8 @@ import locale
 import socket
 import time
 import subprocess
+from sl_util import Service
+from sl_util.ofad import OFADConfig
 
 
 class MainSh():
@@ -1251,13 +1253,29 @@ class MainSh():
     def completer(self, text, state):
         question_mark = ord('?')
         if readline.get_completion_type() == question_mark:
-            if len(readline.get_line_buffer()) == 0:
+            # zero characters, OR first token
+            if text == readline.get_line_buffer():
                 #
                 # manage printing of help text during command completion
                 help_text = self.help_splash(None, text)
                 if help_text != "":
                     self.print_completion_help(help_text)
                     return
+            else:
+                # determine whether the text is currently quoted or not.
+                # while in a quote, insert a '?'
+                origline = readline.get_line_buffer()
+                in_quote = None
+                for c in origline:
+                    if c == in_quote:
+                        in_quote = None
+                    elif c == '"':
+                        in_quote = '"'
+                    elif c == "'":
+                        in_quote = "'"
+                if in_quote:
+                    readline.insert_text('?')
+                    return None
         
         try:
             origline = readline.get_line_buffer()
@@ -1880,9 +1898,12 @@ class MainSh():
                 print "\nExiting."
                 return
             except Exception, e:
-                print "\nError running command '%s'.\n" % line
+                print "\nError running command '%s'." % line
                 if self.debug or self.debug_backtrace:
+                    print
                     traceback.print_exc()
+                else:
+                    print "For additional debug information, use 'debug cli'.\n"
 
 
 #
@@ -1949,8 +1970,24 @@ def main():
 
     # Start CLI
     cli = MainSh()
-    cli.init()
+    try:
+        cli.init()
+    except Exception, e:
+        traceback.print_exc()
+        if not loading_startup:
+            # start bash to allow admin user to recover the device
+            sys.stdout.write("\nError initializing cli; dropping to bash.\n")
+            p = subprocess.Popen("/bin/bash", stdout=sys.stdout, 
+                                 stdin=sys.stdin, env=os.environ)
+            p.wait()
+            sys.exit()
     cli.loop()
+
+    # Handle deferred service restarts/reloads.
+    # This is only executed in init mode.
+    if cli.options.init:
+        Service.handle_deferred_restart()
+        OFADConfig.handle_deferred_reload()
 
     if loading_startup:
         file(startup_loaded_file, "w").write("")

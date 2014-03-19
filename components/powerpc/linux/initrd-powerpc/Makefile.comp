@@ -1,7 +1,17 @@
-###############################################################################
+# -*- Makefile -*-
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
+############################################################
 #
 #
-###############################################################################
+############################################################
 BUILD_INITRD_POWERPC := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 include $(SWITCHLIGHT)/make/config.mk
@@ -20,10 +30,11 @@ $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done:
 	touch $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done
 
 $(BUILD_INITRD_POWERPC)/initrd-powerpc: $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) platform-configs
 	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) SWITCHLIGHT_RELEASE="$(RELEASE)" buildroot-powerpc
 	cat $(SWITCHLIGHT_SUBMODULE_LOADER)/buildroot-powerpc/images/rootfs.cpio.gz >initrd-powerpc
 
-.PHONY: deb
+.PHONY: deb $(BUILD_INITRD_POWERPC)/initrd-powerpc
 
 deb:
 	$(MAKE) -C deb

@@ -1,9 +1,11 @@
 ARCH = powerpc
 DEBUILD = debuild --prepend-path=/usr/lib/ccache -eSWITCHLIGHT -a$(ARCH) -b -us -uc
 PACKAGE_DIR := $(SWITCHLIGHT)/debian/repo
+PYLOXI = $(SWITCHLIGHT)/submodules/loxigen-artifacts/pyloxi
 
 all:
 	ln -snf ../debuild/debian src/debian
+	ln -snf $(PYLOXI)/loxi src/loxi
 	cd src; $(DEBUILD)
 	$(SWITCHLIGHT)/tools/spkg.py --add-pkg *.deb
 

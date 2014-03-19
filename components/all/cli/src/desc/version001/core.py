@@ -11,28 +11,78 @@ import cfgfile
 from datetime import timedelta
 
 from sl_util import shell
+from sl_util.ofad import OFADConfig, PortManager
+
+from switchlight.platform.current import SwitchLightPlatform
+import re
+
+Platform=SwitchLightPlatform()
+FW_PRINTENV = '/usr/bin/fw_printenv'
+
+OFAgentConfig = OFADConfig()
+PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
+PortManager.setLAGBase(OFAgentConfig.lag_base_name)
+
+def fw_getenv(var):
+    try:
+        value=subprocess.check_output([FW_PRINTENV, var], stderr=subprocess.STDOUT);
+        if value.startswith("%s=" % var):
+            value = value[len(var)+1:]
+        return value
+    except Exception, e:
+        pass
+    return None
+
+def parse_sl_version(ver):
+    try:
+        m = re.match(r"(SwitchLight) (.*?) (\(.*?\))", ver)
+        return m.group(1,2,3)
+    except Exception, e:
+        return (ver, "", "")
 
 VERSION_FILE = '/etc/sl_version'
 
 def show_version(data):
     out = []
 
-    # Marketing data from the software image
-    try:
-        fh = open(VERSION_FILE)
-        fs_ver = fh.readline().rstrip()
-        fh.close()
-    except IOError, e:
-         fs_ver = "Switch Light - internal release"
-    out.append(fs_ver)
+    with open(VERSION_FILE, "r") as f:
+        sl_version = f.readline().strip()
 
-    if 'full' in data:
+    if not 'full' in data:
+        # Single line version
+        out.append(sl_version)
+    else:
+        # Full version information
+
+        # UBoot version, if available.
+        uver=fw_getenv('ver')
+        out.append("UBoot Version: %s" % (uver if uver else "Not available on this platform."))
+
+        # Platform Information
+        out.append(str(Platform))
+
+        # Loader/Installer information
+        sli=fw_getenv('sl_installer_version')
+        if sli:
+            fs_ver = parse_sl_version(sli)
+            out.append("SwitchLight Loader Version: %s %s" % (fs_ver[0], fs_ver[1]))
+            out.append("SwitchLight Loader Build: %s" % (fs_ver[2]))
+        else:
+            out.append("SwitchLight Loader Version: Not available on this platform.")
+            out.append("SwitchLight Loader Build: Not available on this platform.")
+        out.append("")
+
+        fs_ver = parse_sl_version(sl_version);
+        out.append("Software Image Version: %s %s" % (fs_ver[0], fs_ver[1]))
+        out.append("Internal Build Version: %s " % (fs_ver[2]))
+        out.append("")
+
         # Uptime
         out.append("")
         try:
             with open('/proc/uptime', 'r') as data:
                 secs = float(data.readline().split()[0])
-                out.append("Uptime is %s" % 
+                out.append("Uptime is %s" %
                            (str(timedelta(seconds = secs))[:-7]))
         except Exception, e:
             pass
@@ -79,12 +129,9 @@ SHOW_VERSION_COMMAND_DESCRIPTION = {
 
 def show_environment(data):
     try:
-        (sout, serr, rc) = shell.call('sensors')
-        # filter out text in parens, blank lines, "Adapter: i2c-0-mux", etc
-        print "\n".join([line.split('(',1)[0] for line in sout.split('\n') \
-                             if ':' in line and 'Adapter' not in line])
+        print Platform.get_environment()
     except:
-        pass
+        print "Environment data is not implemented on this platform."
 
 command.add_action('implement-show-environment', show_environment,
                     {'kwargs': {'data'      : '$data',}})
@@ -158,7 +205,7 @@ def ping(data):
         count = data['count']
     else:
         count = 4
-    
+
     shell.call("ping %s -b -c %d -i0.25" % (data['target'], count),
                show_output = True)
 
@@ -300,7 +347,7 @@ command.add_action('implement-save', save_config,
 # Perform 'copy tech-support' command
 
 tech_support_tmpfile = 'tech-support.tmp'
-tech_support_script = [
+tech_support_scripts = [
     'date',
     'cat /etc/sl_version',
     'cat /mnt/flash/boot-config',
@@ -316,6 +363,7 @@ tech_support_script = [
     'ps auxww',
     'df',
     'sensors',
+    'ntpdc -p',
     'cat /etc/rsyslog.conf',
     'cat /etc/ofad.conf',
     'cat /etc/snmp/snmpd.conf',
@@ -329,9 +377,27 @@ tech_support_script = [
     'ofad-ctl interface show',
     'ofad-ctl port',
     'ofad-ctl show-snmp',
+    'ofad-ctl inventory',
+    'ofad-ctl portcfg',
+    'ofad-ctl crc status',
+    'ofad-ctl l2cache status',
+    'ofad-ctl pause status',
+    'ofad-ctl pimu status',
+    'ofad-ctl flow-stats',
+    'ofad-ctl stats',
+    'ofad-ctl bigwire summary',
+    'ofad-ctl bigwire tenant',
+    'ofad-ctl bigwire uplink',
+    'ofad-ctl bigwire l2',
+    'ofad-ctl bigwire qinq',
 ]
 
 def save_tech_support(data):
+    portManager = PortManager(OFAgentConfig.port_list)
+    scripts = list(tech_support_scripts)
+    for lag in portManager.getLAGs():
+        scripts.append('ofad-ctl port %s' % lag.portName)
+
     p = subprocess.Popen(args=['/bin/bash'],
                          bufsize=1,
                          stdin=subprocess.PIPE,
@@ -339,12 +405,12 @@ def save_tech_support(data):
                          )
     p.stdin.write('cd /tmp\n')
     p.stdin.write('rm -f %s*\n' % tech_support_tmpfile)
-    for li in tech_support_script:
+    for li in scripts:
         p.stdin.write("echo ===== '%s' >>%s\n" % (li, tech_support_tmpfile))
-        p.stdin.write('%s >>%s\n' % (li, tech_support_tmpfile))
+        p.stdin.write('%s &>>%s\n' % (li, tech_support_tmpfile))
     p.stdin.write('gzip -c %s >/mnt/flash2/tech-support_`date +%%y%%m%%d%%H%%M%%S`.gz\n' % tech_support_tmpfile)
     p.stdin.write('rm -f %s*\n' % tech_support_tmpfile)
-    
+
 
 command.add_action('implement-tech-support', save_tech_support,
                     {'kwargs': {'data'      : '$data',}})
@@ -653,7 +719,7 @@ LOCATE_COMMAND_DESCRIPTION = {
 def running_config_hostname(context, runcfg, words):
     comp_runcfg = []
 
-    # collect component-specific config    
+    # collect component-specific config
     hostname = socket.gethostname()
     if hostname != 'localhost':
         comp_runcfg.append('hostname %s\n' % hostname)

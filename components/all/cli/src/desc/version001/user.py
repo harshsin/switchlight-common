@@ -14,6 +14,16 @@ import subprocess
 from sl_util import shell
 
 
+#
+# These are the available user accounts we can configure.
+# We only modify accounts, we don't create them, so
+# they must be preexisting.
+#
+# This will obviously need to change if we allow
+# user creation in the future.
+#
+CONFIG_USERS = ('admin', 'recovery')
+
 def gen_salt():
     # return an eight character salt value
     salt_map = './' + string.digits + string.ascii_uppercase + \
@@ -27,8 +37,9 @@ def gen_salt():
 
 def config_user(no_command, data):
     # FIXME handle adding or removing a user
-    if data['username'] != 'admin':
-        raise error.ActionError('Only admin user can be configured')
+    if data['username'] not in CONFIG_USERS:
+        raise error.ActionError('Only the %s user can be configured.' %
+                                (', '.join(CONFIG_USERS[0:-1]) + " or " + CONFIG_USERS[-1]))
 
     if no_command:
         hashedpw = spwd.getspnam(data['username'])[1]
@@ -130,15 +141,18 @@ CONFIG_USER_COMMAND_DESCRIPTION = {
 def running_config_username(context, runcfg, words):
     comp_runcfg = []
 
-    # collect component-specific config    
-    hashedpw = spwd.getspnam('admin')[1]
-    if len(hashedpw) > 0:
-        comp_runcfg.append('username admin secret hash %s\n' % hashedpw)
+    # collect component-specific config
+    for user in CONFIG_USERS:
+        hashedpw = spwd.getspnam(user)[1]
+        if len(hashedpw) > 0:
+            comp_runcfg.append('username %s secret hash %s\n' %
+                               (user, hashedpw))
 
     # attach component-specific config
     if len(comp_runcfg) > 0:
         runcfg.append('!\n')
         runcfg += comp_runcfg
+
 
 username_running_config_tuple = (
     (

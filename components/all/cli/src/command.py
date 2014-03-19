@@ -1166,6 +1166,7 @@ class CommandHandler(object):
                             'value': value,
                             'data': new_arg_data,
                             'is-no-command': self.is_no_command,
+                            'is-init': bigsh.options.init,
                         }
                         new_arg_scopes = [invocation_scope] + arg_scopes
                         try:
@@ -1508,6 +1509,7 @@ class CommandExecutor(CommandHandler):
             'data': arg_data,
             'fields': fields,
             'is-no-command': self.is_no_command,
+            'is-init': bigsh.options.init,
         }
 
         #scopes = [invocation_scope] + scopes
@@ -1690,6 +1692,7 @@ class CommandCompleter(CommandHandler):
                         'data': arg_data,
                         'completions': completions,
                         'is-no-command': self.is_no_command,
+                        'is-init': bigsh.options.init,
                         'mode' : command_mode,
                     }
                     arg_scopes.insert(0, invocation_scope)
@@ -3879,7 +3882,16 @@ def init_command(bs):
         'pattern'    : r'^(\d{1,3}\.){3}\d{1,3}$',
         'validation' : 'validate-ip-address',
     })
-    
+
+    add_typedef({
+        'name'      : 'ip6-address',
+        'help-name' : 'IP6 address',
+        'base-type' : 'string',
+        # FIXME: Regex is copied from controller CLI.
+        #        We might want to simplify this and make it more maintainable.
+        'pattern'   : r'^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$',
+    })
+
     add_typedef({
         'name'        : 'ip-address-not-mask',
         'help-name'   : 'IP Address',
@@ -3932,7 +3944,7 @@ def init_command(bs):
         'help-name': 'IP address or domain name',
         'base-type': 'string',
         'pattern': (
-            r'^([a-zA-Z0-9-]+\.?)+$', # simple domain name
+            r'^([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,}[a-zA-Z0-9])?\.?)+$', # simple domain name
             r'^(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$',
         ),
         # for ip addresses, ought to validate non-mask values, ie: 0.0.0.0, 255.255.255.255

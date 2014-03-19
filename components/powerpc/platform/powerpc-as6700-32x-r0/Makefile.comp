@@ -1,0 +1,33 @@
+# -*- Makefile -*-
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
+#
+# powerpc-as6700-32x-r0
+#
+############################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not set)
+else
+include $(SWITCHLIGHT)/make/config.mk
+endif
+
+KERNEL.BIN.GZ := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-as-e500mc:powerpc --find-file kernel-as-e500mc.bin.gz)
+INITRD := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
+DTB := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-as-e500mc-dtbs:powerpc --find-file powerpc-as6700-32x-r0.dtb)
+PLATFORM_NAME := powerpc-as6700-32x-r0
+
+$(info $(KERNEL.BIN.GZ) $(DTB))
+
+include $(SWITCHLIGHT)/make/platform-ppc.mk
+
+.PHONY: deb
+
+deb:
+	$(MAKE) -C deb

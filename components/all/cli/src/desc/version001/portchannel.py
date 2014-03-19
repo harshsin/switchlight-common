@@ -9,16 +9,15 @@ from sl_util.ofad import OFADConfig, OFADCtl, PortManager
 from sl_util import utils
 from sl_util import const
 
+from switchlight.platform.current import SwitchLightPlatform
+from switchlight.platform.base import *
+
+Platform=SwitchLightPlatform()
 OFAgentConfig = OFADConfig()
 PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
 PortManager.setLAGBase(OFAgentConfig.lag_base_name)
 
-LAG_COMPONENT_MAX = {
-    'quanta-lb9': 8,
-    'quanta-ly2': 16
-}
-
-def config_port_channel(no_command, data):
+def config_port_channel(no_command, data, is_init):
     portManager = PortManager(OFAgentConfig.port_list)
 
     portId = data["port-channel-id"]
@@ -26,9 +25,7 @@ def config_port_channel(no_command, data):
     componentPorts = None
     if "interface-list" in data:
         componentPorts = utif.resolve_port_list(data["interface-list"])
-
-        platform = utils.get_platform()
-        lagCompMax = LAG_COMPONENT_MAX.get(platform, None)
+        lagCompMax = Platform.platinfo.LAG_COMPONENT_MAX;
         if lagCompMax is None:
             raise error.ActionError("Cannot determine max number of component ports supported")
         if len(componentPorts) > lagCompMax:
@@ -46,12 +43,13 @@ def config_port_channel(no_command, data):
 
     OFAgentConfig.port_list = portManager.toJSON()
     OFAgentConfig.write(warn=True)
-    OFAgentConfig.reload()
+    OFAgentConfig.reload(deferred=is_init)
 
 command.add_action('implement-config-port-channel', config_port_channel,
                    {'kwargs': {
                        'no_command' : '$is-no-command',
                        'data'       : '$data',
+                       'is_init'    : '$is-init',
                     }})
 
 CONFIG_PORTCHANNEL_COMMAND_DESCRIPTION = {

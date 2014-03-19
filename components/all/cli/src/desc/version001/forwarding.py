@@ -8,17 +8,10 @@ from sl_util.ofad import OFADConfig, ForwardingConfig
 
 OFAgentConfig = OFADConfig()
 
-def config_forwarding(no_command, data):
+def config_forwarding(no_command, data, is_init):
     fwdCfg = ForwardingConfig(OFAgentConfig.forwarding)
 
-    if data['type'] == 'crc':
-        if no_command: # when run with a 'no' its an enable op
-            fwdCfg.enableCRC()
-        else:
-            print "WARNING: CRC forwarding setting must be consistent on all Big Tap switches in the same forwarding domain."
-            fwdCfg.disableCRC()
-
-    elif data['type'] == 'pimu':
+    if data['type'] == 'pimu':
         if no_command: # when run with a 'no' its an enable op
             fwdCfg.enablePIMU()
         else:
@@ -29,17 +22,23 @@ def config_forwarding(no_command, data):
             fwdCfg.disableL2CACHE()
         else:
             fwdCfg.enableL2CACHE()
+    elif data['type'] == 'pause':
+        if no_command: # When run with a 'no' its a disable op
+            fwdCfg.disablePause()
+        else:
+            fwdCfg.enablePause()
     else:
         raise error.ActionError('Unspported forwarding config type: %s' % data['type'])
 
     OFAgentConfig.forwarding = fwdCfg.toJSON()
     OFAgentConfig.write(warn=True)
-    OFAgentConfig.reload()
+    OFAgentConfig.reload(deferred=is_init)
 
 command.add_action('implement-config-forwarding', config_forwarding,
                    {'kwargs': {
                        'no_command' : '$is-no-command',
                        'data'       : '$data',
+                       'is_init'    : '$is-init',
                     }})
 
 CONFIG_FORWARDING_COMMAND_DESCRIPTION = {
@@ -54,17 +53,6 @@ CONFIG_FORWARDING_COMMAND_DESCRIPTION = {
             'choices'   : (
                 (
                     {
-                        'token'         : 'crc',
-                        'short-help'    : 'Configure CRC error-checking',
-                    },
-                    {
-                        'token'         : 'disable',
-                        'data'          : {'type' : 'crc'},
-                        'doc'           : 'forwarding|crc-disable',
-                    },
-                ),
-                (
-                    {
                         'token'         : 'pimu',
                         'short-help'    : 'Configure Packet-In Management Unit',
                     },
@@ -74,17 +62,29 @@ CONFIG_FORWARDING_COMMAND_DESCRIPTION = {
                         'doc'           : 'forwarding|pimu-disable',
                     },
                 ),
-                (  
+                (
                     {
-                        'token'         : 'l2cache', 
+                        'token'         : 'l2cache',
                         'short-help'    : 'Configurare L2 Cache',
-                    }, 
+                    },
                     {
-                        'token'         : 'enable', 
-                        'data'          : {'type' : 'l2cache'}, 
+                        'token'         : 'enable',
+                        'data'          : {'type' : 'l2cache'},
                         'doc'           : 'forwarding|l2cache-enable',
-                    }, 
+                    },
                 ),
+                (
+                    {
+                        'token'         : 'pause',
+                        'short-help'    : 'Configure port pause settings',
+                    },
+                    {
+                        'token'         : 'enable',
+                        'data'          : {'type' : 'pause'},
+                        'doc'           : 'forwarding|pause-enable',
+                    },
+                ),
+
             ),
         },
     ),
@@ -128,16 +128,28 @@ SHOW_FORWARDING_COMMAND_DESCRIPTION = {
                 ),
                 (
                     {
-                        'token'         : 'l2cache',
-                        'short-help'    :'Show L2 cache configuration status', 
+                        'token'         : 'pause',
+                        'short-help'    : 'Show the port pause configuration status',
                     },
                     {
-                        'token'         : 'status', 
-                        'action'        : 'ofad-ctl-command', 
-                        'command'       : 'l2cache status', 
+                        'token'         : 'status',
+                        'action'        : 'ofad-ctl-command',
+                        'command'       : 'pause status',
+                        'doc'           : 'forwarding|show-pause-status',
+                    },
+                ),
+                (
+                    {
+                        'token'         : 'l2cache',
+                        'short-help'    :'Show L2 cache configuration status',
+                    },
+                    {
+                        'token'         : 'status',
+                        'action'        : 'ofad-ctl-command',
+                        'command'       : 'l2cache status',
                         'doc'           : 'forwarding|show-l2cache-status',
-                    }, 
-                ), 
+                    },
+                ),
             ),
         },
 
@@ -148,13 +160,12 @@ def running_config_forwarding(context, runcfg, words):
     cfg = []
     fwdCfg = ForwardingConfig(OFAgentConfig.forwarding)
 
-    if fwdCfg.isCRCDisabled():
-        cfg.append('forwarding crc disable\n')
     if fwdCfg.isPIMUDisabled():
         cfg.append('forwarding pimu disable\n')
     if not fwdCfg.isL2CACHEDisabled():
         cfg.append('forwarding l2cache enable\n')
-
+    if fwdCfg.isPauseEnabled():
+        cfg.append('forwarding pause enable\n')
     if cfg:
         runcfg.append('!\n')
         runcfg += cfg

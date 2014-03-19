@@ -1,0 +1,45 @@
+#!/usr/bin/make -f
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
+
+DEB_DH_INSTALL_SOURCEDIR = debian/tmp
+INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
+
+include $(SWITCHLIGHT)/make/config.mk
+
+%:
+	dh $@
+
+clean:
+	dh clean
+
+
+SWITCHLIGHT_ABS=$(abspath $(SWITCHLIGHT))
+TARGET_ROOT=$(INSTALL_DIR)$(SWITCHLIGHT_ABS)
+
+SRC_SUBMODULES := \
+	bigcode bigcode-internal broadcom indigo \
+	infra loxigen-artifacts switchlight-common
+
+SRC_SDKS := sdk-6.3.3
+
+override_dh_auto_install:
+	mkdir -p $(TARGET_ROOT)/submodules
+	$(foreach sm,$(SRC_SUBMODULES), \
+		cp -R $(SWITCHLIGHT)/submodules/$(sm) \
+		$(TARGET_ROOT)/submodules; )
+	$(foreach sdk,$(SRC_SDKS), \
+		mkdir -p $(TARGET_ROOT)/submodules/$(sdk) && \
+		rsync -a --include 'src/***' --include 'include/***' \
+		--exclude '*' $(SWITCHLIGHT)/submodules/$(sdk)/ \
+		$(TARGET_ROOT)/submodules/$(sdk) ; )
+	echo "$(SWITCHLIGHT)/*" > debian/switchlight-internal-dbg-sources.install
+
+

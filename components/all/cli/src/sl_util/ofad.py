@@ -53,7 +53,7 @@ class Controller(object):
     def setAddress (self, addr):
         self._addr = addr
         return self
-    
+
     @property
     def port (self):
         return self._port
@@ -340,22 +340,19 @@ class ForwardingConfig(object):
     Each object var that starts with "_" is processed by toJSON().
     """
     def __init__ (self, forwarding_dict):
-        self._crc = forwarding_dict.get("crc", None)
         self._pimu = forwarding_dict.get("pimu", None)
         self._l2cache = forwarding_dict.get("l2cache", False)
+        self._pause = forwarding_dict.get("pause", False)
 
-    def disableCRC (self):
-        self._crc = False
+    def disablePause(self):
+        # True or None: disabled
+        self._pause = None
 
-    def enableCRC (self):
-        # "True" or "None" would both work
-        # Setting to "None" would result in a cleaner ofad.conf
-        self._crc = None
+    def enablePause(self):
+        self._pause = True
 
-    def isCRCDisabled (self):
-        # "True" or "None": enabled
-        # "False": disabled
-        if self._crc is False:
+    def isPauseEnabled(self):
+        if self._pause is True:
             return True
         return False
 
@@ -376,7 +373,7 @@ class ForwardingConfig(object):
 
     def enableL2CACHE (self):
         self._l2cache = True
-        
+
     def disableL2CACHE (self):
         self._l2cache = False
 
@@ -384,7 +381,7 @@ class ForwardingConfig(object):
         if self._l2cache is False:
             return True
         return False
-            
+
     def toJSON (self):
         d = {}
         for k, v in self.__dict__.iteritems():
@@ -419,7 +416,9 @@ class OFADCtl(object):
 class OFADConfig(object):
     PATH = "/etc/ofad.conf"
     VERSION = 2
-    
+
+    deferred_reload = False
+
     def __init__ (self):
         self._cache_tinfo = (0,0)
         self._data_cache = None
@@ -444,7 +443,7 @@ class OFADConfig(object):
     @property
     def dpid (self):
         return self._data["of_datapath_id"]
-    
+
     @dpid.setter
     def dpid (self, val):
         if not isinstance(val, DPID):
@@ -480,7 +479,7 @@ class OFADConfig(object):
             if c._cfg_static or c._cfg_dhcp:
                 jcl.append(c.toJSON())
         self._data["controllers"] = jcl
-            
+
     @property
     def logging (self):
         if "logging" in self._data:
@@ -520,14 +519,6 @@ class OFADConfig(object):
         self._data["port_list"] = val
 
     @property
-    def full_match_table (self):
-        return self._data["full_match_table"]
-
-    @full_match_table.setter
-    def full_match_table (self, val):
-        self._data["full_match_table"] = val
-
-    @property
     def forwarding (self):
         if "forwarding" in self._data:
             return self._data["forwarding"]
@@ -546,7 +537,7 @@ class OFADConfig(object):
             return True
         else:
             return False
-        
+
     @property
     def _data (self):
         stat = os.stat(OFADConfig.PATH)
@@ -592,8 +583,20 @@ class OFADConfig(object):
                 json.dump(data, cfg, sort_keys=True, indent=4, separators=(',', ': '))
             self._rebuild_cache()
 
-    def reload (self):
+    @classmethod
+    def reload (klass, deferred=False):
+        if deferred:
+            print "Warning: OFAD reload is deferred."
+            klass.deferred_reload = True
+            return
+
         try:
             shell.call('service ofad reload')
         except subprocess.CalledProcessError:
             raise error.ActionError('Cannot reload openflow agent configuration')
+
+    @classmethod
+    def handle_deferred_reload (klass):
+        if klass.deferred_reload:
+            print "Reloading OFAD..."
+            klass.reload()

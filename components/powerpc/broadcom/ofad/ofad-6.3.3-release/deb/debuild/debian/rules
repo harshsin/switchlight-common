@@ -1,4 +1,13 @@
 #!/usr/bin/make -f
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
 
 DEB_DH_INSTALL_SOURCEDIR = debian/tmp
 
@@ -18,9 +27,6 @@ clean:
 override_dh_auto_install:
 	mkdir -p $(INSTALL_DIR)/usr/bin $(INSTALL_DIR)/etc/init.d
 	cp $(OFAD_6_3_3_DIR)/build/$(DEB_HOST_GNU_TYPE)/bin/ofad.shared $(INSTALL_DIR)/usr/bin/ofad-6.3
-	cp $(OFAD_6_3_3_DIR)/build/$(DEB_HOST_GNU_TYPE)/bin/brcm_lb9_gpio_init $(INSTALL_DIR)/usr/bin/brcm_lb9_gpio_init
-	cp $(OFAD_6_3_3_DIR)/build/$(DEB_HOST_GNU_TYPE)/bin/brcm_ly2_gpio_init $(INSTALL_DIR)/usr/bin/brcm_ly2_gpio_init
-	cp $(OFAD_6_3_3_DIR)/build/$(DEB_HOST_GNU_TYPE)/bin/brcm_ly2_phy_reset $(INSTALL_DIR)/usr/bin/brcm_ly2_phy_reset
 	cp $(SWITCHLIGHT)/components/all/ofad/ofad-ctl $(INSTALL_DIR)/usr/bin/ofad-ctl
 	cp $(SWITCHLIGHT)/components/all/ofad/ofad.init debian
 

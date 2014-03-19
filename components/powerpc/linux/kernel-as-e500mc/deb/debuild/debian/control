@@ -1,0 +1,24 @@
+Source: kernel-as-e500mc
+Section: misc
+Priority: optional
+Maintainer: Support <support@bigswitch.com>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.8.4
+
+Package: kernel-as-e500mc
+Architecture: powerpc
+Depends: 
+Description: SwitchLight Kernel for the AS6700
+ This package provides the SwitchLight Kernel for the AS6700
+
+Package: kernel-as-e500mc-headers
+Architecture: powerpc
+Depends: 
+Description: SwitchLight Kernel for the AS6700
+ This package provides the SwitchLight Kernel for the AS6700 (Headers)
+
+Package: kernel-as-e500mc-dtbs
+Architecture: powerpc
+Depends:
+Description: SwitchLight DTBs for the AS6700 platform
+ This package provides the DTB for the AS6700 platform.

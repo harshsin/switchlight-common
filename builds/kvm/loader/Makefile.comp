@@ -1,5 +1,14 @@
 # -*- Makefile -*-
-###############################################################################
+############################################################
+# <bsn.cl fy=2013 v=none>
+# 
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
+# 
+# 
+# 
+# </bsn.cl>
+############################################################
+############################################################
 #
 # Build the SwitchLight Loader ISO. 
 #
@@ -10,7 +19,7 @@
 #
 # How to run:
 # > kvm -m 1024 -cdrom loader-i386.iso -boot d -nographic -hda hda.img
-###############################################################################
+############################################################
 #
 # We inherit the Makefile.comp from the i386/loader build, but specify that
 # we should use a custom initrd build rather than the default, which is
