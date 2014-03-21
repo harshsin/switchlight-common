@@ -29,6 +29,10 @@ import fcntl
 #
 disabled_packages = [
     "kernel-e500mc:powerpc",
+    "brcmd-6.3.3-sim:amd64",
+    "brcmd-6.3.3-sim-dbg:amd64",
+    "ofad-6.3.3-sim:amd64",
+    "ofad-6.3.3-sim-dbg:amd64"
 ];
 
 def package_enabled(p):
