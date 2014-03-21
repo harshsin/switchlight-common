@@ -1,5 +1,5 @@
 [deb-powerpc]
-packages=brcmd-6.3.3-internal brcmd-6.3.3-internal-dbg ofad-6.3.3-internal ofad-6.3.3-internal-dbg libbroadcom-6.3-internal-dbg libbroadcom-6.3-kernel-85xx-modules libbroadcom-6.3-kernel-as-e500mc-modules snmpd sofcon lm-sensors fancontrol pciutils usbutils mtd-utils kexec-tools i2c-tools module-init-tools isc-dhcp-client ntp wget ethtool localepurge tcpdump telnetd python-pyinotify cpio util-linux dosfstools gnu-fdisk rssh u-boot-tools file gdb binutils
+packages=brcmd-6.3.3-internal brcmd-6.3.3-internal-dbg ofad-6.3.3-internal ofad-6.3.3-internal-dbg libbroadcom-6.3-internal-dbg libbroadcom-6.3-kernel-85xx-modules libbroadcom-6.3-kernel-as-e500mc-modules snmpd sofcon lm-sensors fancontrol pciutils usbutils mtd-utils kexec-tools i2c-tools module-init-tools isc-dhcp-client ntp wget ethtool localepurge tcpdump telnetd python-pyinotify cpio util-linux dosfstools gnu-fdisk rssh u-boot-tools file gdb binutils orc orc-brcm
 source=copy:__DIR__/powerpc/ ./
 omitdebsrc=true
 

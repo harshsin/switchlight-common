@@ -1,0 +1,80 @@
+# -*- Makefile -*-
+###############################################################################
+#
+#  Makefile
+#
+#
+###############################################################################
+include $(SWITCHLIGHT)/make/config.mk
+
+DEBUG := 1
+
+SDK := $(shell $(SWITCHLIGHT_PKG_INSTALL) libbroadcom-6.3-internal-dev:powerpc --find-dir libbroadcom-6.3-internal-sdk)
+SDK_BUILD_TARGET := switchlight-powerpc-internal
+LIBBROADCOM_A := libbroadcom-6.3-internal.a
+LIBBROADCOM_SO := libbroadcom-internal.so.6.3
+include $(SWITCHLIGHT_SUBMODULE_BROADCOM)/tools/sdk.mk
+
+GLOBAL_CFLAGS += -DSDK_SIM_CONFIG_INCLUDE_SDK_$(SDK_UVERSION)=1
+
+#
+# Default to a local build directory for everything
+#
+ifndef BUILD_DIR
+BUILD_DIR := ./build
+endif
+
+ifndef TOOLCHAIN
+TOOLCHAIN := powerpc-linux-gnu
+endif
+
+MODULE := brcmd-6.3.3-internal
+include $(BUILDER)/standardinit.mk
+
+LIBRARY := brcmd-6.3.3-internal-lib
+$(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
+include $(BUILDER)/lib.mk
+
+
+DEPENDMODULES := orc_brcm BRCM BRCMTest OS NSS AIM BigList uCli ELS IOF cintm
+
+#
+# Resolve module dependencies
+#
+include $(BUILDER)/dependmodules.mk
+
+SHAREDLIB := orc_brcm.so
+$(SHAREDLIB)_TARGETS := $(ALL_TARGETS)
+include $(BUILDER)/so.mk
+
+#
+# Now that we've specified all the things we want to build,
+# finalize with target definitions.
+#
+include $(BUILDER)/targets.mk
+
+#
+# Include UCLI support for all modules by default.
+#
+GLOBAL_CFLAGS += $(foreach mod,$(DEPENDMODULES_UPPER),-D$(mod)_CONFIG_INCLUDE_UCLI=1)
+
+GLOBAL_CFLAGS += -DOS_CONFIG_INCLUDE_POSIX=1
+GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MODULES_INIT=1
+GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MAIN=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_MAIN=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_TESTS=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_AIM_MAIN=1
+GLOBAL_CFLAGS += -DUCLI_CONFIG_INCLUDE_ELS_LOOP=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_RPC_SERVER=0
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_RPC_CLIENT=0
+GLOBAL_CFLAGS += -DBRCM_CONFIG_TARGET_LINUX_USER=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LB9_R0=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LB9A_R0=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LY2_R0=1
+GLOBAL_CFLAGS += -DCINT_CONFIG_INCLUDE_STDLIB=1
+GLOBAL_CFLAGS += -I$(orc_BASEDIR)/module/inc 
+
+GLOBAL_LINK_LIBS += -ledit -lncurses -ldl
+
+include $(SWITCHLIGHT)/make/deb-subdir.mk
+
