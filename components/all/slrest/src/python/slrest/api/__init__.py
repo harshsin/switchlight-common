@@ -76,3 +76,40 @@ class get_running_sl_config(SLAPIObject):
     route = "/api/sl_config/get_running"
     def GET(self):
         return "\n".join(config.get_running_config()) + "\n"
+
+
+class trigger_beacon(SLAPIObject):
+    """Trigger LED beaconing."""
+    route = "/api/system/beacon"
+    def POST(self):
+        # FIXME use platform independent version
+        cmd = "ofad-ctl modules brcm led-flash 3 100 100 10"
+        return util.bash_command(cmd)
+
+
+class get_cpu_load(SLAPIObject):
+    """Get switch CPU load."""
+    route = "/api/status/cpu-load"
+    def GET(self):
+        try:
+            with open('/proc/loadavg', 'r') as data:
+                avgs = data.readline().split()[0:3]
+                out = { '1-min-average': avgs[0],
+                        '5-min-average': avgs[1],
+                        '15-min-average': avgs[2] }
+        except:
+            out = {}
+        return json.dumps(out)
+
+class get_memory(SLAPIObject):
+    """Get switch memory usage."""
+    route = "/api/status/memory"
+    def GET(self):
+        try:
+            with open('/proc/meminfo', 'r') as data:
+                memtotal = data.readline().split(':')[1].strip()
+                memfree = data.readline().split(':')[1].strip()
+                out = { 'total': memtotal, 'free': memfree }
+        except:
+            out = {}
+        return json.dumps(out)
