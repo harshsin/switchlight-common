@@ -77,7 +77,7 @@ GLOBAL_CFLAGS += -DFAULTD_CONFIG_INCLUDE_MAIN=1
 GLOBAL_CFLAGS += -DFAULTD_CONFIG_INCLUDE_AIM_MAIN=1
 GLOBAL_CFLAGS += -g
 
-GLOBAL_LINK_LIBS += -ldl
+GLOBAL_LINK_LIBS += -ldl -rdynamic -lpthread   # pthreads is needed to unbork gdb
 
 
 include $(SWITCHLIGHT)/make/deb-subdir.mk
