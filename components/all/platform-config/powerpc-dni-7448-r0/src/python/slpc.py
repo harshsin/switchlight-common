@@ -14,7 +14,7 @@ from switchlight.vendor.dni import *
 class SwitchLightPlatformImplementation(SwitchLightPlatformDNI):
 
     def model(self):
-        return "DNI 7448"
+        return "7448"
 
     def platform(self):
         return 'powerpc-dni-7448-r0'
@@ -22,7 +22,7 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformDNI):
     def _plat_info_dict(self):
         return {
             platinfo.LAG_COMPONENT_MAX : 16,
-            platinfo.PORT_COUNT : 54
+            platinfo.PORT_COUNT : 52
             }
 
     def _plat_oid_table(self):
