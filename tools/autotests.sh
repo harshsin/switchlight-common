@@ -11,7 +11,7 @@
 #
 # Run all abat tasks for the products of the autobuild script.
 #
-platforms="quanta-lb9 quanta-lb9a quanta-ly2 hoth endor"
+platforms="quanta-lb9 quanta-lb9a quanta-ly2 hoth endor dni-4778"
 
 for platform in $platforms; do
     abat task t.sl."$platform".oftest.internal"$1" --enable || true

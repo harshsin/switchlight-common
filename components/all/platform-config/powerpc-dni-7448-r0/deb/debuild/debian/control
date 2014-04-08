@@ -7,6 +7,6 @@ Standards-Version: 3.8.4
 
 Package: platform-config-powerpc-dni-7448-r0
 Architecture: all
-Depends: 
+Depends: vendor-config-dni
 Description: Platform Configuration files for powerpc-dni-7448-r0.
  Platform Configuration files for powerpc-dni-7448-r0.
