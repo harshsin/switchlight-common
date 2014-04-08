@@ -1,0 +1,23 @@
+#!/usr/bin/make -f
+
+DEB_DH_INSTALL_SOURCEDIR = debian/tmp
+INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
+PACKAGE_NAME = t6-dump-flows
+
+include $(SWITCHLIGHT)/make/config.mk
+
+%:
+	dh $@
+
+build-arch:
+	dh build-arch
+
+clean:
+	dh clean
+
+override_dh_usrlocal:
+
+override_dh_auto_install:
+	mkdir -p $(INSTALL_DIR)/usr/local/bin
+	cp -R $(SWITCHLIGHT_SUBMODULE_T6_MISC)/dump-flows $(INSTALL_DIR)/usr/local/bin
+

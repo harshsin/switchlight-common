@@ -3,27 +3,27 @@
 ## ifndef SWITCHLIGHT
 ## $(error $$SWITCHLIGHT is not set)
 ## endif
-## 
+##
 ## include $(SWITCHLIGHT)/make/config.mk
-## 
+##
 ## all:
 ## 	@echo Nothing to be done.
-## 
+##
 ## .PHONY: deb
 ## deb:
 ## 	$(MAKE) -C deb
-## 
-## 
-## 
-## 
+##
+##
+##
+##
 # -*- Makefile -*-
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 ############################################################
@@ -51,12 +51,12 @@ $(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(BUILDER)/lib.mk
 
 
-DEPENDMODULES := orc AIM 
+DEPENDMODULES := orc AIM
 
 include $(BUILDER)/dependmodules.mk
 
 BINARY := orced
-$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS) 
+$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS)
 include $(BUILDER)/bin.mk
 
 SHAREDLIB := veth.so

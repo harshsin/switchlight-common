@@ -1,0 +1,12 @@
+Source: t6-dump-flows
+Section: misc
+Priority: optional
+Maintainer: Support <support@bigswitch.com>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.8.4
+
+Package: t6-dump-flows
+Architecture: all
+Depends: 
+Description: T6 Dump Flow Tools
+ T6 Dump Flow Tools
