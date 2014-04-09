@@ -1,4 +1,4 @@
 [deb-all]
-packages=pcli python-cherrypy3 slrest
+packages=pcli python-cherrypy3 python-tz slrest
 source=copy:__DIR__/all/ ./
 omitdebsrc=true
