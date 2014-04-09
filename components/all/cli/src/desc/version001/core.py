@@ -15,6 +15,7 @@ from sl_util.ofad import OFADConfig, PortManager
 
 from switchlight.platform.current import SwitchLightPlatform
 import re
+from pytz import all_timezones
 
 Platform=SwitchLightPlatform()
 FW_PRINTENV = '/usr/bin/fw_printenv'
@@ -700,6 +701,56 @@ HOSTNAME_COMMAND_DESCRIPTION = {
     ),
 }
 
+def set_timezone(no_command, data):
+    if no_command:
+        if 'timezone' in data:
+            with open('/etc/timezone', 'r') as fd:
+                timezone = fd.readline().strip()
+            if data['timezone'] != timezone:
+                raise error.ActionError('Timezone does not match existing zone')
+        timezone = 'Etc/UTC'
+    else:
+        timezone = data['timezone']
+        if timezone not in all_timezones:
+            raise error.ActionError('Invalid timezone')
+    try:
+        with open('/etc/timezone', 'w') as fd:
+            fd.write(timezone)
+        shell.call('dpkg-reconfigure -f noninteractive tzdata')
+        shell.call('service rsyslog restart')
+    except subprocess.CalledProcessError:
+        raise error.ActionError('Unable to set timezone')
+
+command.add_action('implement-set-timezone', set_timezone,
+                    {'kwargs': {
+                                 'no_command' : '$is-no-command',
+                                 'data'       : '$data',
+                               } } )
+
+TIMEZONE_COMMAND_DESCRIPTION = {
+    'name'         : 'timezone',
+    'mode'         : 'config*',
+    'short-help'   : 'Set the switch timezone',
+    'action'       : (
+        { 'proc': 'implement-set-timezone' },
+        { 'proc': 'prompt-update' },
+    ),
+    'no-action'    : (
+        { 'proc': 'implement-set-timezone' },
+        { 'proc': 'prompt-update' },
+    ),
+    'doc'          : 'timezone',
+    #'doc-example'  : 'timezone-example',
+    'args'         : (
+        {
+            'field'       : 'timezone',
+            'type'        : 'string',
+            'syntax-help' : 'Timezone for this switch',
+            'optional-for-no' : True,
+        },
+    ),
+}
+
 def locate ():
     shell.call("ofad-ctl modules brcm led-flash 3 100 100 10")
 
@@ -746,3 +797,32 @@ run_config.register_running_config('hostname', 500,  None,
                                    running_config_hostname,
                                    hostname_running_config_tuple)
 
+def running_config_timezone(context, runcfg, words):
+    comp_runcfg = []
+
+    # collect component-specific config
+    with open('/etc/timezone', 'r') as fd:
+        timezone = fd.readline().strip()
+    comp_runcfg.append('timezone %s\n' % timezone)
+
+    # attach component-specific config
+    if len(comp_runcfg) > 0:
+        runcfg.append('!\n')
+        runcfg += comp_runcfg
+
+timezone_running_config_tuple = (
+    (
+        {
+            'optional'   : False,
+            'field'      : 'running-config',
+            'type'       : 'enum',
+            'values'     : 'timezone',
+            'short-help' : 'Configuration for timezone',
+            'doc'        : 'running-config|show-timezone',
+        },
+    ),
+)
+
+run_config.register_running_config('timezone', 600,  None,
+                                   running_config_timezone,
+                                   timezone_running_config_tuple)
