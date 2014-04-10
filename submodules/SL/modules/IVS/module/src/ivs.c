@@ -364,7 +364,7 @@ ivs_enable(ivs_t* ivs, int enable)
     if(ivs->netif.nss) { 
         if(nss_start(ivs->netif.nss) >= 0) { 
             TRY(ind_soc_timer_event_register_with_priority(
-                    ivs_nss_callback__, ivs, 100, 10));
+                    ivs_nss_callback__, ivs, 100, IND_SOC_HIGH_PRIORITY));
         }
     }
 #endif
@@ -1057,7 +1057,7 @@ ivs_status_log_enable(ivs_t* ivs)
     TRY(ind_soc_timer_event_register_with_priority(status_log_callback__,
                                                    ivs, 
                                                    IVS_CONFIG_STATUS_LOG_PERIOD_S*1000,
-                                                   15));
+                                                   IND_SOC_HIGH_PRIORITY));
     return 0; 
 }
 
