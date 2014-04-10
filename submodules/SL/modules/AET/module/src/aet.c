@@ -314,7 +314,7 @@ aet_enable_set(int enable)
 
     if (enable) {
         rv = ind_soc_socket_register_with_priority(
-            as.fd, aet_socket_ready_handler, NULL, -20);
+            as.fd, aet_socket_ready_handler, NULL, IND_SOC_LOWEST_PRIORITY);
         if (rv < 0) {
             LOG_ERROR("AET: Could not register socket on enable");
             return rv;
