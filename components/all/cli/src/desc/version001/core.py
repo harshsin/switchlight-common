@@ -721,7 +721,6 @@ def set_timezone(no_command, data, is_init):
             fd.write(timezone)
         shell.call('dpkg-reconfigure -f noninteractive tzdata')
         RSyslog.restart(deferred=is_init)
-        #shell.call('service rsyslog restart')
     except subprocess.CalledProcessError:
         raise error.ActionError('Unable to set timezone')
 
