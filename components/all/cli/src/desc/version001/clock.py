@@ -78,13 +78,20 @@ class _NTPConfig(object):
             cfg.write("".join(newcfg))
 
     def _write_cache (self):
-        with open(_NTPConfig.PATH, "w+") as cfg:
-            cl = ["### Switch Light\n"]
+        newcfg = []
+        with open(_NTPConfig.PATH, "rw+") as cfg:
+            for line in cfg.readlines():
+                if line.startswith("server"):
+                    continue
+                newcfg.append(line)
+
             # MUST GRAB THE INTERNAL CACHE!
             # We've whacked it by this point, so ctime/mtime will have changed
             for server in self._server_cache:
-                cl.append("server %s\n" % (server))
-            cfg.write("".join(cl))
+                newcfg.append("server %s iburst\n" % (server))
+            cfg.seek(0)
+            cfg.truncate()
+            cfg.write("".join(newcfg))
             
     def _remove_server (self, server, is_init):
         ### FIXME: Need a lock
@@ -92,14 +99,16 @@ class _NTPConfig(object):
             raise UnknownServerError(server)
         self.servers.remove(server)
         self._write_cache()
-        NTP.restart(deferred=is_init)
+        if NTP.status() == Service.RUNNING:
+            NTP.restart(deferred=is_init)
 
     def _add_server (self, server, is_init):
         if server in self.servers:
             raise KnownServerError(server)
         self.servers.add(server)
         self._write_cache()
-        NTP.restart(deferred=is_init)
+        if NTP.status() == Service.RUNNING:
+            NTP.restart(deferred=is_init)
         
 
     def cli_config (self, no_command, data, is_init):
@@ -155,7 +164,7 @@ run_config.register_running_config('ntpd', 2000, None,
 def show_ntp(data):
     if NTP.status() == Service.RUNNING:
         try:
-            shell.call('ntpdc -p', show_output=True)
+            shell.call('ntpq -p', show_output=True)
         except:
             pass
     else:
@@ -221,9 +230,9 @@ CONFIG_NTP_COMMAND_DESCRIPTION = {
                     },
                     {
                         'field'           : 'server',
-                        'type'            : 'string',
+                        'type'            : 'ip-address-or-domain-name',
                         'optional-for-no' : False,
-                        'syntax-help'     : 'NTP Server Address',
+                        'syntax-help'     : 'IP address or domain name of NTP Server',
                     },
                 ),
             ),
