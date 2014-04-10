@@ -737,7 +737,8 @@ TIMEZONE_COMMAND_DESCRIPTION = {
     'short-help'   : 'Set the switch timezone',
     'action'       : 'implement-set-timezone',
     'no-action'    : 'implement-set-timezone',
-    'doc'          : 'timezone',
+    'doc'          : 'core|timezone',
+    'doc-example'  : 'core|timezone-example',
     'args'         : (
         {
             'field'       : 'timezone',
