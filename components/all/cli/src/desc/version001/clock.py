@@ -143,6 +143,8 @@ class _NTPConfig(object):
         if NTP.status() == Service.RUNNING:
             try:
                 NTP.disable()
+                #allow large time difference, set clock and exit,
+                #run in foreground
                 shell.call('ntpd -g -q -n')
                 NTP.enable()
             except:
@@ -257,14 +259,13 @@ command.add_action('implement-sync-ntp', NTPConfig.cli_sync,
 
 SYNC_NTP_COMMAND_DESCRIPTION = {
     'name'         : 'ntp',
-    'mode'         : 'config',
+    'mode'         : 'enable',
     'action'       : 'implement-sync-ntp',
-    'no-action'    : 'implement-sync-ntp',
     'no-supported' : False,
     'args'         : (
         {
             'token'       : 'sync',
-            'short-help'  : 'Sync NTP service',
+            'short-help'  : 'Synchronize clock via NTP',
             'doc'         : 'clock|ntp-sync',
         },
     )
