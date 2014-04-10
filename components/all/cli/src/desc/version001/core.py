@@ -690,7 +690,7 @@ HOSTNAME_COMMAND_DESCRIPTION = {
         { 'proc': 'implement-set-hostname' },
         { 'proc': 'prompt-update' },
     ),
-    'doc'          : 'hostname',
+    'doc'          : 'core|hostname',
     #'doc-example'  : 'hostname-example',
     'args'         : (
         {
