@@ -15,6 +15,8 @@ from sl_util.ofad import OFADConfig, PortManager
 
 from switchlight.platform.current import SwitchLightPlatform
 import re
+import pytz
+from desc.version001.rlog import RSyslog
 
 Platform=SwitchLightPlatform()
 FW_PRINTENV = '/usr/bin/fw_printenv'
@@ -688,13 +690,60 @@ HOSTNAME_COMMAND_DESCRIPTION = {
         { 'proc': 'implement-set-hostname' },
         { 'proc': 'prompt-update' },
     ),
-    'doc'          : 'hostname',
+    'doc'          : 'core|hostname',
     #'doc-example'  : 'hostname-example',
     'args'         : (
         {
             'field'       : 'hostname',
             'type'        : 'string',
             'syntax-help' : 'Name for this switch',
+            'optional-for-no' : True,
+        },
+    ),
+}
+
+DEFAULT_TIMEZONE =  'Etc/UTC'
+
+def set_timezone(no_command, data, is_init):
+    if no_command:
+        if 'timezone' in data:
+            with open('/etc/timezone', 'r') as fd:
+                timezone = fd.readline().strip()
+            if data['timezone'] != timezone:
+                raise error.ActionError('Timezone does not match existing zone')
+        timezone = DEFAULT_TIMEZONE
+    else:
+        timezone = data['timezone']
+        if timezone not in pytz.all_timezones:
+            raise error.ActionError('Invalid timezone')
+    try:
+        with open('/etc/timezone', 'w') as fd:
+            fd.write(timezone)
+        shell.call('dpkg-reconfigure -f noninteractive tzdata')
+        RSyslog.restart(deferred=is_init)
+    except subprocess.CalledProcessError:
+        raise error.ActionError('Unable to set timezone')
+
+command.add_action('implement-set-timezone', set_timezone,
+                    {'kwargs': {
+                                 'no_command' : '$is-no-command',
+                                 'data'       : '$data',
+                                 'is_init'    : '$is-init',
+                               } } )
+
+TIMEZONE_COMMAND_DESCRIPTION = {
+    'name'         : 'timezone',
+    'mode'         : 'config*',
+    'short-help'   : 'Set the switch timezone',
+    'action'       : 'implement-set-timezone',
+    'no-action'    : 'implement-set-timezone',
+    'doc'          : 'core|timezone',
+    'doc-example'  : 'core|timezone-example',
+    'args'         : (
+        {
+            'field'       : 'timezone',
+            'type'        : 'string',
+            'syntax-help' : 'Timezone for this switch',
             'optional-for-no' : True,
         },
     ),
@@ -746,3 +795,35 @@ run_config.register_running_config('hostname', 500,  None,
                                    running_config_hostname,
                                    hostname_running_config_tuple)
 
+def running_config_timezone(context, runcfg, words):
+    comp_runcfg = []
+
+    # collect component-specific config
+    try:
+        with open('/etc/timezone', 'r') as fd:
+            timezone = fd.readline().strip()
+        comp_runcfg.append('timezone %s\n' % timezone)
+    except:
+        pass
+
+    # attach component-specific config
+    if len(comp_runcfg) > 0:
+        runcfg.append('!\n')
+        runcfg += comp_runcfg
+
+timezone_running_config_tuple = (
+    (
+        {
+            'optional'   : False,
+            'field'      : 'running-config',
+            'type'       : 'enum',
+            'values'     : 'timezone',
+            'short-help' : 'Configuration for timezone',
+            'doc'        : 'running-config|show-timezone',
+        },
+    ),
+)
+
+run_config.register_running_config('timezone', 600,  None,
+                                   running_config_timezone,
+                                   timezone_running_config_tuple)

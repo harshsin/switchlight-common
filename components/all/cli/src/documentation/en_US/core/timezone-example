@@ -1,0 +1,6 @@
+timezone US/Pacific
+    Sets the timezone to US Pacific time.
+timezone Europe/Berlin
+    Sets the timezone to Europe Berlin time.
+timezone Asia/Tokyo
+    Sets the timezone to Japanese time.
