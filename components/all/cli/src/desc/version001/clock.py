@@ -139,6 +139,18 @@ class _NTPConfig(object):
             runcfg.append("no ntp enable\n")
         runcfg.extend(slist)
 
+    def cli_sync (self, data):
+        if NTP.status() == Service.RUNNING:
+            try:
+                NTP.disable()
+                #allow large time difference, set clock and exit,
+                #run in foreground
+                shell.call('ntpd -g -q -n')
+                NTP.enable()
+            except:
+                pass
+        else:
+            print "NTP disabled"
 
 NTPConfig = _NTPConfig()
 
@@ -238,4 +250,23 @@ CONFIG_NTP_COMMAND_DESCRIPTION = {
             ),
         },
     ),
+}
+
+command.add_action('implement-sync-ntp', NTPConfig.cli_sync,
+                    {'kwargs' : {
+                        'data'       : '$data',
+                    } } )
+
+SYNC_NTP_COMMAND_DESCRIPTION = {
+    'name'         : 'ntp',
+    'mode'         : 'enable',
+    'action'       : 'implement-sync-ntp',
+    'no-supported' : False,
+    'args'         : (
+        {
+            'token'       : 'sync',
+            'short-help'  : 'Synchronize clock via NTP',
+            'doc'         : 'clock|ntp-sync',
+        },
+    )
 }

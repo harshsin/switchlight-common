@@ -4,5 +4,5 @@ ntp enable
 no ntp enable
   Disables NTP service.
 
-server 0.us.pool.ntp.org; server 1.us.pool.ntp.org
+ntp server 0.us.pool.ntp.org; ntp server 1.us.pool.ntp.org
   Configures the device to use the two specified NTP server pools.
