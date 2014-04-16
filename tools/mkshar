@@ -1,0 +1,167 @@
+#!/usr/bin/python
+
+"""mkshar
+
+Generate a shar (with a zip file payload) for a Switch Light installer.
+"""
+
+import sys, os, shutil
+import subprocess
+import hashlib
+import optparse
+
+HELP = """\
+%prog [OPTIONS] SHAR-OUTPUT SFX-FRAGMENT INSTALL-SCRIPT [ARG ...]
+"""
+
+parser = optparse.OptionParser(usage=HELP)
+parser.add_option('--blocksize',
+                  type=int, default=512,
+                  help="Set block size for e.g. 'dd'")
+parser.add_option('--bzip',
+                  action='store_true',
+                  help="Enable bzip2")
+parser.add_option('--lazy',
+                  action='store_true',
+                  help="Enable lazy unpacking")
+parser.add_option('--unzip-sfx',
+                  action='store_true',
+                  help="Use 'unzip' to natively handle SFX preamble")
+
+opts, args = parser.parse_args()
+
+ZIP = "/usr/bin/zip"
+ZIP_OPTS = ['-v',
+            '-y',
+            '-n', '.zip:.loader:.swi:.jar:.gz:.bz:.bz2:.xz',]
+
+# enable (experimental) bzip2, make sure that
+# busybox unzip supports it
+# Ha ha, using '-9' not only cranks up the compression,
+# but *ignores* the suffix list for 'store-only'.
+if opts.bzip:
+    ZIP_COMPRESS_OPTS = ['-Z', 'bzip2', '-8',]
+else:
+    ZIP_COMPRESS_OPTS = ['-8',]
+
+shar = args.pop(0)
+sfx = args.pop(0)
+install = args.pop(0)
+
+import logging
+logging.basicConfig()
+logger = logging.getLogger("mkshar")
+logger.setLevel(logging.DEBUG)
+
+logger.info("initializing ZIP")
+zipFile = os.path.abspath(shar + ".zip.in")
+if os.path.exists(zipFile):
+    logger.debug("+ /bin/rm %s", zipFile)
+    os.unlink(zipFile)
+
+def _addfile(path, *opts):
+    logger.info("adding file %s with opts %s",
+                path, " ".join(opts))
+    cmd = [ZIP,] + ZIP_OPTS + list(opts) + ['-u', zipFile, path,]
+    subprocess.check_call(cmd)
+
+def _addfiles(paths, *opts):
+    logger.info("adding %d files with opts %s",
+                len(paths), " ".join(opts))
+    cmd = [ZIP,] + ZIP_OPTS + list(opts) + [zipFile,] + paths
+    subprocess.check_call(cmd)
+
+def _zipopts(path):
+    ext = os.path.splitext(path)[1].lower()
+    if ext in ('.loader', '.zip', '.swi',):
+        return ['-0',]
+    else:
+        return ZIP_COMPRESS_OPTS
+
+_addfile(install, '-0')
+
+logger.info("adding other payload items")
+o = ['-r',] + ZIP_COMPRESS_OPTS
+_addfiles(args, *o)
+
+logger.info("prepping SFX")
+buf = open(sfx).read()
+
+# block to 512 bytes
+sz = len(buf)
+rem = sz % 512
+pad = 512 - rem
+if pad == 1:
+    buf += "\n"
+elif pad > 1:
+    pad -= 1
+    buf = buf + ('#' * pad) + "\n"
+
+def _splice(tag, val):
+    global buf
+    pat = tag + '='
+    p = buf.find(pat)
+    q = buf.find("\n", p+1)
+    if p < 0:
+        raise ValueError("cannot find tag %s" % repr(tag))
+    llen = q - p
+    line = "%s=%s #" % (tag, str(val),)
+    if len(line) > llen:
+        raise SystemExit("cannot insert byte count marker")
+    llen -= len(line)
+    line = line + ('#' * llen)
+    buf = buf[:p] + line + buf[q:]
+
+_splice('SFX_BYTES', len(buf))
+_splice('SFX_BLOCKSIZE', opts.blocksize)
+_splice('SFX_INSTALL', os.path.split(install)[1])
+_splice('SFX_CHECKSUM', '')
+if opts.lazy:
+    _splice('SFX_LAZY', '1')
+else:
+    _splice('SFX_LAZY', '')
+if opts.unzip_sfx:
+    _splice('SFX_UNZIP', '1')
+else:
+    _splice('SFX_UNZIP', '')
+
+# remember the checksum offset
+ckStart = buf.find("SFX_CHECKSUM=")
+ckEnd = buf.find("\n", ckStart+1)
+
+logger.info("generating shar")
+wfd = open(shar, "w")
+wfd.write(buf)
+rfd = open(zipFile, "r")
+shutil.copyfileobj(rfd, wfd)
+rfd.close()
+wfd.close()
+
+logger.info("adjusting SFX")
+cmd = [ZIP,] + ZIP_OPTS + ['-A', shar,]
+subprocess.check_call(cmd)
+
+# compute the actual checksum
+ckf = hashlib.md5()
+ckf.update(buf[:ckStart])
+ckf.update(buf[ckEnd+1:])
+
+rfd = open(shar, "r")
+rfd.seek(len(buf), 0)
+while True:
+    buf = rfd.read(10*1024)
+    if not buf: break
+    ckf.update(buf)
+rfd.close()
+
+logger.info("adjusting checksum")
+wfd = open(shar, "r+")
+wfd.seek(ckStart, 0)
+wfd.write("SFX_CHECKSUM=%s #" % ckf.hexdigest())
+wfd.close()
+
+logger.info("+ /bin/chmod +x %s", shar)
+os.chmod(shar, 0755)
+
+logger.debug("+ /bin/rm %s", zipFile)
+os.unlink(zipFile)

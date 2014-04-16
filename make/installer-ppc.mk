@@ -27,24 +27,18 @@ endif
 PLATFORM_LOADERS := $(foreach p,$(INSTALLER_PLATFORMS),$(shell $(SWITCHLIGHT_PKG_INSTALL) platform-$(p):powerpc --find-file switchlight.$(p).loader))
 # Get the platform config package for each platform
 
-$(INSTALLER_NAME): $(INSTALLER_NAME).cpio
-	$(SL_V_at)cp /dev/null $@
-	$(SL_V_at)sed \
-	  -e 's^@SLVERSION@^$(RELEASE)^g' \
-	  $(SWITCHLIGHT)/builds/installer/installer.sh \
-	>> $@
-	$(SL_V_GEN)gzip -9 < $@.cpio >> $@
-	$(SL_V_at)rm $@.cpio
-
-$(INSTALLER_NAME).cpio: $(PLATFORM_DIRS) $(INSTALLER_SWI)
+shar installer $(INSTALLER_NAME).shar: $(PLATFORM_DIRS) $(INSTALLER_SWI)
 	$(SL_V_at)cp $(PLATFORM_LOADERS) .
 	$(foreach p,$(INSTALLER_PLATFORMS), $(SWITCHLIGHT_PKG_INSTALL) platform-config-$(p):all --extract .;)
 	$(SL_V_at)cp $(INSTALLER_SWI) switchlight-powerpc.swi
+	$(SL_V_at)sed \
+	  -e 's^@SLVERSION@^$(RELEASE)^g' \
+	  $(SWITCHLIGHT)/builds/installer/installer.sh \
+	>> installer.sh
 	$(SL_V_GEN)set -o pipefail ;\
 	if $(SL_V_P); then v="-v"; else v="--quiet"; fi ;\
-	find *.loader lib switchlight-powerpc.swi \
-	| cpio $$v -H newc -o > $@
-	$(SL_V_at)rm -f switchlight-powerpc.swi
+	$(SWITCHLIGHT)/tools/mkshar --lazy $@ $(SWITCHLIGHT)/tools/sfx.sh.in installer.sh *.loader lib switchlight-powerpc.swi
+	$(SL_V_at)rm -f switchlight-powerpc.swi installer.sh
 	$(SL_V_at)rm -rf ./lib ./usr *.loader
 
 $(INSTALLER_SWI):
@@ -61,4 +55,4 @@ RELEASE := SwitchLight$(SWITCHLIGHT_RELEASE_BANNER)($(SWITCHLIGHT_BUILD_CONFIG),
 endif
 
 clean:
-	rm -f *.cpio *.jffs2 *.loader *.swi *.installer
+	rm -f *.jffs2 *.loader *.swi *.installer

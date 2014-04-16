@@ -367,6 +367,9 @@ installer_standard_blockdev_install () {
 set -e
 cd $(dirname $0)
 
+installer_script=${0##*/}
+installer_zip=$1
+
 # Check installer debug option from the uboot environment
 fw_printenv sl_installer_debug &> /dev/null && installer_debug=1
 
@@ -444,11 +447,13 @@ fi
 
 # Unpack our distribution
 installer_say "Unpacking SwitchLight installer files..."
-installer_dir=/tmp/.installer
-rm -rf "${installer_dir}"
-mkdir "${installer_dir}"
-sed -e '1,/^PAYLOAD_FOLLOWS$/d' "$0" | gzip -dc | ( cd "${installer_dir}" && cpio -imdv ) || exit 1
-
+installer_dir=`pwd`
+if test "$SFX_UNZIP"; then
+  unzip $installer_zip -x $installer_script
+else
+  dd if=$installer_zip bs=$SFX_BLOCKSIZE skip=$SFX_BLOCKS \
+  | unzip - -x $installer_script
+fi
 
 # Developer debugging
 if [ "${installer_unpack_only}" ]; then

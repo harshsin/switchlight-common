@@ -1,0 +1,173 @@
+#!/bin/sh
+
+set -e
+
+CMD=${0##*/}
+
+UNZIP=/usr/bin/unzip
+
+UNZIPOPTS=
+UNZIPARGS=
+UNZIPDIR=
+UNZIPQ="-q"
+UNZIPV=
+
+mode=install
+
+SHAR=$0
+
+shardir=`dirname $SHAR`
+shardir=`cd $shardir && pwd`
+SHARABS="$shardir"/${SHAR##*/}
+
+SFX_BYTES=0 ## fill in the size (padded) of this SFX header ##################
+SFX_BLOCKSIZE=1 ## use a larger block size, 'dd bs=1' is sometimes slow ######
+SFX_CHECKSUM= ## compute checksum over this SFX and the payload ##############
+SFX_INSTALL=install ## internal script in the payload to run #################
+SFX_LAZY=  ## set to '1' to defer extraction to SFX_INSTALL ##################
+SFX_UNZIP=1  ## set to '' if this unzip cannot parse SFX headers #############
+
+while test $# -gt 0; do
+  case "$1" in
+    -x)
+      mode=unzip
+      UNZIPARGS=$UNZIPARGS${UNZIPARGS:+" "}"$1"
+      shift
+      UNZIPARGS=$UNZIPARGS${UNZIPARGS:+" "}"$1"
+      shift
+      continue
+      ;;
+    -d)
+      shift
+      UNZIPDIR=$1
+      shift
+      continue
+      ;;
+    -v)
+      UNZIPQ=
+      UNZIPV="$1"
+      shift
+      ;;
+    -q)
+      UNZIPQ="$1"
+      UNZIPV=
+      shift
+      ;;
+    -*)
+      mode=unzip
+      UNZIPOPTS=$UNZIPOPTS${UNZIPOPTS:+" "}"$1"
+      shift
+      ;;
+    *)
+      mode=unzip
+      UNZIPARGS=$UNZIPARGS${UNZIPARGS:+" "}"$1"
+      shift
+      continue
+      ;;
+  esac
+done
+
+if test "$SFX_BLOCKSIZE" -gt 1; then
+  SFX_BLOCKS=$(($SFX_BYTES / $SFX_BLOCKSIZE))
+  SFX_TRAILER=$(($SFX_BYTES % $SFX_BLOCKSIZE))
+  if test $SFX_TRAILER -ne 0; then
+    echo "$CMD: *** SFX is not block-aligned" 1>&2
+    exit 1
+  fi
+else
+  echo "$CMD: *** SFX is blocked, dd may be slow" 1>&2
+fi
+
+if test "$SFX_UNZIP"; then
+  _CAT=":"
+  _ZIP="$SHARABS"
+else
+  _CAT="dd if=$SHARABS bs=$SFX_BLOCKSIZE skip=$SFX_BLOCKS"
+  _ZIP="-"
+fi
+
+if test "$mode" = "unzip"; then
+  echo "$CMD: processing with zip"
+  $_CAT | $UNZIP $UNZIPQ $UNZIPV $UNZIPOPTS "$_ZIP" $UNZIPARGS
+  exit $?
+fi
+
+if test "$mode" != "install"; then
+  echo "$CMD: *** invalid mode: $mode" 1>&2
+  exit 1
+fi
+
+workdir=`/bin/mktemp -t -d sfx-XXXXXX` || exit 1
+do_cleanup()
+{
+  cd /tmp
+  /bin/rm -fr $workdir
+}
+trap "do_cleanup" 0 1
+
+if test "$UNZIPDIR"; then
+  :
+else
+  UNZIPDIR=$workdir
+fi
+
+banner=`unzip 2>&1` || :
+case "$banner" in
+  *"-t"*)
+    echo "$CMD: testing shar"
+    $_CAT | $UNZIP $UNZIPQ $UNZIPV $UNZIPOPTS -t "$_ZIP"
+    sts=$?
+    test $sts -eq 0 || exit $sts
+  ;;
+esac
+
+echo "$CMD: computing checksum"
+{
+  dd if="$SHARABS" bs=$SFX_BLOCKSIZE count=$SFX_BLOCKS 2>/dev/null | sed -e "/^SFX_CHECKSUM=/d";
+  dd if="$SHARABS" bs=$SFX_BLOCKSIZE skip=$SFX_BLOCKS 2>/dev/null
+} | md5sum > "$UNZIPDIR/ck"
+
+set dummy `cat "$UNZIPDIR/ck"`
+newck=$2
+
+rm -f "$UNZIPDIR/ck"
+
+if test "$SFX_CHECKSUM" = "$newck"; then
+  echo "$CMD: checksum is OK"
+else
+  echo "$CMD: *** checksum mismatch" 1>&2
+  exit 1
+fi
+
+shardir=`dirname $0`
+shardir=`cd $shardir && pwd`
+
+echo "$CMD: extracting shar into $UNZIPDIR"
+cd $UNZIPDIR
+
+if test "$SFX_LAZY"; then
+  $_CAT | $UNZIP $UNZIPQ $UNZIPOPTS "$_ZIP" $UNZIPARGS "$SFX_INSTALL"
+else
+  $_CAT | $UNZIP $UNZIPQ $UNZIPOPTS "$_ZIP" $UNZIPARGS
+fi
+
+if test -f "$SFX_INSTALL"; then
+  echo "$CMD: invoking installer $SFX_INSTALL"
+  chmod +x "$SFX_INSTALL"
+  export SFX_BLOCKSIZE SFX_BLOCKS SFX_UNZIP
+  ./"$SFX_INSTALL" "$SHARABS"
+  exit $?
+else
+  echo "$CMD: *** missing installer: $SFX_INSTALL" 1>&2
+  exit 1
+fi
+
+##############################
+#
+# END OF SHAR HEADER
+#
+# BINARY ZIP DATA FOLLOWS
+#
+# DO NOT EDIT!
+#
+##############################
