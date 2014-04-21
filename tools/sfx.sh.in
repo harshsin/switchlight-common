@@ -100,8 +100,8 @@ fi
 workdir=`/bin/mktemp -t -d sfx-XXXXXX` || exit 1
 do_cleanup()
 {
-  cd /tmp
-  /bin/rm -fr $workdir
+  cd /
+  /bin/rm -fr $workdir 2>/dev/null
 }
 trap "do_cleanup" 0 1
 
