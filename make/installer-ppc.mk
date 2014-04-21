@@ -27,7 +27,9 @@ endif
 PLATFORM_LOADERS := $(foreach p,$(INSTALLER_PLATFORMS),$(shell $(SWITCHLIGHT_PKG_INSTALL) platform-$(p):powerpc --find-file switchlight.$(p).loader))
 # Get the platform config package for each platform
 
-shar installer $(INSTALLER_NAME).shar: $(PLATFORM_DIRS) $(INSTALLER_SWI)
+shar installer: $(INSTALLER_NAME).shar
+
+$(INSTALLER_NAME).shar: $(PLATFORM_DIRS) $(INSTALLER_SWI)
 	$(SL_V_at)cp $(PLATFORM_LOADERS) .
 	$(foreach p,$(INSTALLER_PLATFORMS), $(SWITCHLIGHT_PKG_INSTALL) platform-config-$(p):all --extract .;)
 	$(SL_V_at)cp $(INSTALLER_SWI) switchlight-powerpc.swi
