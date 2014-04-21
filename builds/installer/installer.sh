@@ -152,7 +152,10 @@ installer_partition_format() {
 
 installer_umount_blockdev() {
     local blockdev=$1
-    umount `cat /proc/mounts | grep ${blockdev} | awk '{print $2}'` || true
+    local mounts=`cat /proc/mounts | grep ${blockdev} | awk '{print $2}'`
+    if [ "$mounts" ]; then
+        umount $mounts || :
+    fi
 }
 
 
