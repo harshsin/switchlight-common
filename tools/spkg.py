@@ -118,7 +118,7 @@ def check_call(cmd, *args, **kwargs):
         logger.debug("+ " + cmd)
     else:
         logger.debug("+ " + " ".join(cmd))
-    subprocess.check_call(cmd, *args, **kwargs)
+    return subprocess.check_call(cmd, *args, **kwargs)
 
 ############################################################
 
