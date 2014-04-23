@@ -26,12 +26,8 @@ PortManager.setLAGBase(OFAgentConfig.lag_base_name)
 # this is done by adding a '?' (match zero or one times) after all characters
 # except the first.
 def opt_re(name):
-    s = [ name[0:2] ]  # no '?' after first character
-    for c in name[2:]:
-        if c in '-':   # escape special characters
-            s.append('\\'+c)
-        else:
-            s.append(c)
+    # no '?' after first character; escape special characters
+    s = [ name[0:2] ] + [ '\\' + c if c in '-' else c for c in name[2:] ]
     return '?'.join(s) + '?'
 
 
@@ -39,8 +35,8 @@ command.add_typedef({
         'name'      : 'interface-list',
         'help-name' : 'comma-separated list of port ranges',
         'base-type' : 'string',
-        'pattern'   : r'^'+ opt_re(OFAgentConfig.physical_base_name) + '|' + 
-        opt_re(OFAgentConfig.lag_base_name) +'(\d+(-\d+)?,)*\d+(-\d+)?$',
+        'pattern'   : r'^('+ opt_re(OFAgentConfig.physical_base_name) + '|' + 
+        opt_re(OFAgentConfig.lag_base_name) +')(\d+(-\d+)?,)*\d+(-\d+)?$',
         })
 
 
