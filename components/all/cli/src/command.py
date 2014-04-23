@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 Big Switch Networks, Inc.
+# Copyright (c) 2011-2014 Big Switch Networks, Inc.
 # All rights reserved.
 #
 
@@ -4018,11 +4018,4 @@ def init_command(bs):
         'base-type' : 'string',
         # FIXME Does not allow optional parameters, such as rounds=xxx
         'pattern'   : r'^\$[0-9]\$[./0-9A-Za-z]+\$[./0-9A-Za-z]+$',
-    })
-
-    add_typedef({
-        'name'      : 'interface-list',
-        'help-name' : 'comma-separated list of port ranges',
-        'base-type' : 'string',
-        'pattern'   : r'^[A-Za-z-]+(\d+(-\d+)?,)*\d+(-\d+)?$',
     })

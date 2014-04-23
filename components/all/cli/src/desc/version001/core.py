@@ -1,4 +1,5 @@
-# Copyright (c) 2013  BigSwitch Networks
+# Copyright (c) 2013-2014 BigSwitch Networks
+# All rights reserved.
 
 import command
 import run_config
@@ -344,6 +345,26 @@ def save_config(data):
 
 command.add_action('implement-save', save_config,
                     {'kwargs': {'data'      : '$data',}})
+
+
+def show_tech_support(data):
+    print 'Use "enable; copy tech-support flash2" instead.'
+
+command.add_action('implement-show-tech-support', show_tech_support,
+                    {'kwargs': {'data'      : '$data',}})
+
+SHOW_STARTUP_CONFIG_COMMAND_DESCRIPTION = {
+    'name'         : 'show',
+    'mode'         : 'login',
+    'action'       : 'implement-show-tech-support',
+    'no-supported' : False,
+    'args'         : (
+        {
+            'token'       : 'tech-support',
+            'short-help'  : 'Show tech support information',
+        },
+    )
+}
 
 
 # Perform 'copy tech-support' command
