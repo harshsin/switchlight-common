@@ -1,4 +1,5 @@
-# Copyright (c) 2013  BigSwitch Networks
+# Copyright (c) 2013-2014 BigSwitch Networks
+# All rights reserved.
 
 import command
 import run_config
@@ -19,6 +20,29 @@ import itertools
 OFAgentConfig = OFADConfig()
 PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
 PortManager.setLAGBase(OFAgentConfig.lag_base_name)
+
+# generate a regexp that only requires the first character of the name,
+# with all other characters are optional;
+# this is done by adding a '?' (match zero or one times) after all characters
+# except the first.
+def opt_re(name):
+    s = [ name[0:2] ]  # no '?' after first character
+    for c in name[2:]:
+        if c in '-':   # escape special characters
+            s.append('\\'+c)
+        else:
+            s.append(c)
+    return '?'.join(s) + '?'
+
+
+command.add_typedef({
+        'name'      : 'interface-list',
+        'help-name' : 'comma-separated list of port ranges',
+        'base-type' : 'string',
+        'pattern'   : r'^'+ opt_re(OFAgentConfig.physical_base_name) + '|' + 
+        opt_re(OFAgentConfig.lag_base_name) +'(\d+(-\d+)?,)*\d+(-\d+)?$',
+        })
+
 
 def get_base_name(s):
     # given a string, return the base name of an interface; 
@@ -194,20 +218,38 @@ SHOW_INTERFACE_COMMAND_DESCRIPTION = {
         },
         {
             'optional'        : True,
-            'args'            : (
-                {
-                    'field'           : 'intf-port-list',
-                    'type'            : 'interface-list',
-                    'syntax-help'     : 'Interface port range list',
-                    'doc'             : 'interface|show-intf-port-list',
-                },
-                {
-                    'token'           : 'detail',
-                    'short-help'      : 'detailed interface information',
-                    'optional'        : True,
-                    'doc'             : 'interface|show-intf-detail',
-                    'data'            : { 'detail' : True },
-                },
+            'choices' : (
+                (
+                    {
+                        'field'           : 'intf-port-list',
+                        'type'            : 'interface-list',
+                        'syntax-help'     : 'Interface port range list',
+                        'doc'             : 'interface|show-intf-port-list',
+                    },
+                    {
+                        'token'           : 'detail',
+                        'short-help'      : 'detailed interface information',
+                        'optional'        : True,
+                        'doc'             : 'interface|show-intf-detail',
+                        'data'            : { 'detail' : True },
+                    },
+                ),
+                (
+                    {
+                        'field'           : 'intf-port-list',
+                        'type'            : 'enum',
+                        'values'          : const.MGMT_PORTS,
+                        'syntax-help'     : 'Management interface',
+                        'doc'             : 'interface|config-intf-port-list',
+                    },
+                    {
+                        'token'           : 'detail',
+                        'short-help'      : 'detailed interface information',
+                        'optional'        : True,
+                        'doc'             : 'interface|show-intf-detail',
+                        'data'            : { 'detail' : True },
+                    },
+                ),
             ),
         },
     )
@@ -265,47 +307,59 @@ CONFIG_IF_COMMAND_DESCRIPTION = {
             'doc'             : 'interface|config-intf-port-list',
         },
         {
+            'token'           : 'shutdown',
+            'data'            : { 'shutdown' : True },
+            'short-help'      : 'Shut down interface',
+            'doc'             : 'interface|shutdown',
+        },
+    ),
+}
+
+
+CONFIG_MGMT_IF_COMMAND_DESCRIPTION = {
+    'name'         : 'interface',
+    'mode'         : 'config',
+    'short-help'   : 'Configure interface parameters',
+    'action'       : 'implement-config-intf',
+    'no-action'    : 'implement-config-intf',
+    'doc'          : 'interface|interface',
+    'doc-example'  : 'interface|interface-example',
+    'args'         : (
+        {
+            'field'           : 'intf-port-list',
+            'type'            : 'enum',
+            'values'          : const.MGMT_PORTS,
+            'syntax-help'     : 'Management interface',
+            'doc'             : 'interface|config-intf-port-list',
+        },
+        {
+            'token'           : 'ip-address',
+            'short-help'      : 'Configure IPv4 address',
+            'doc'             : 'mgmt|ip-address',
+        },
+        {
             'choices' : (
                 (
                     {
-                        'token'           : 'shutdown',
-                        'data'            : { 'shutdown' : True },
-                        'short-help'      : 'Shut down interface',
-                        'doc'             : 'interface|shutdown',
+                        'token'           : 'dhcp',
+                        'data'            : { 'dhcp' : True },
+                        'short-help'      : 'Enable DHCP',
+                        'doc'             : 'mgmt|dhcp'
+                    },
+                    {
+                        'token'           : 'sticky',
+                        'data'            : { 'sticky' : True },
+                        'optional'        : True,
+                        'optional-for-no' : True,
+                        'short-help'      : 'Persist info regardless of lease duration',
                     },
                 ),
                 (
                     {
-                        'token'           : 'ip-address',
-                        'short-help'      : 'Configure IPv4 address',
-                        'doc'             : 'mgmt|ip-address',
-                    },
-                    {
-                        'choices' : (
-                            (
-                                {
-                                    'token'           : 'dhcp',
-                                    'data'            : { 'dhcp' : True },
-                                    'short-help'      : 'Enable DHCP',
-                                    'doc'             : 'mgmt|dhcp'
-                                },
-                                {
-                                    'token'           : 'sticky',
-                                    'data'            : { 'sticky' : True },
-                                    'optional'        : True,
-                                    'optional-for-no' : True,
-                                    'short-help'      : 'Persist info regardless of lease duration',
-                                },
-                            ),
-                            (
-                                {
-                                    'field'           : 'ip-address',
-                                    'type'            : 'cidr-range',
-                                    'syntax-help'     : 'IP address/prefix',
-                                    'doc'             : 'mgmt|address',
-                                },
-                            ),
-                        ),
+                        'field'           : 'ip-address',
+                        'type'            : 'cidr-range',
+                        'syntax-help'     : 'IP address/prefix',
+                        'doc'             : 'mgmt|address',
                     },
                 ),
             ),
