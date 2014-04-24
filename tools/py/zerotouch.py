@@ -10,7 +10,7 @@ import json
 ap=argparse.ArgumentParser(description="ZTN Manifest Generator.")
 
 ap.add_argument("--manifest_version", help="Specify manifest version.",
-                default=1)
+                default="1")
 ap.add_argument("--operation", help="Manifest operation.", required=True)
 ap.add_argument("--platforms", nargs='+', help="Platform list.", required=True)
 ap.add_argument("--release", help="Manifest release string.", required=True)
@@ -24,7 +24,7 @@ operations=dict(swi='ztn-runtime', installer='os-install')
 if ops.operation in operations:
     ops.operation = operations[ops.operation]
 
-manifest = dict(manifest_version=str(ops.manifest_version),
+manifest = dict(manifest_version=ops.manifest_version,
                 release=ops.release,
                 platform=','.join(ops.platforms),
                 operation=ops.operation,
