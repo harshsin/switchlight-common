@@ -1,0 +1,12 @@
+Source: ztn
+Section: misc
+Priority: optional
+Maintainer: Support <support@bigswitch.com>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.8.4
+
+Package: ztn
+Architecture: all
+Depends: 
+Description: Zero Touch Networking.
+ Zero Touch Networking.
