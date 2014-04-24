@@ -65,7 +65,7 @@ $(SWI).swi: rootfs-$(ARCH).sqsh $(ZTN_MANIFEST)
 	zip -n $(INITRD_LOCAL):rootfs-$(ARCH).sqsh - $(KERNELS_LOCAL) $(INITRD_LOCAL) rootfs-$(ARCH).sqsh $(ZTN_MANIFEST) >$@.tmp
 	$(SWITCHLIGHT)/tools/swiver $@.tmp $(SWI)-$(SWITCHLIGHT_BUILD_TIMESTAMP).swi "$(RELEASE)"
 	ln -s $(SWI)-$(SWITCHLIGHT_BUILD_TIMESTAMP).swi $@
-	rm $(KERNELS_LOCAL) $(INITRD_LOCAL) rootfs-$(ARCH).sqsh *.tmp #$(ZTN_MANIFEST)
+	rm $(KERNELS_LOCAL) $(INITRD_LOCAL) rootfs-$(ARCH).sqsh *.tmp $(ZTN_MANIFEST)
 
 rootfs-$(ARCH).sqsh:
 	$(MAKE) -C rootfs rootfs.all
