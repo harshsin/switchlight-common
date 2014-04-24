@@ -1,0 +1,24 @@
+#!/usr/bin/python
+
+import json
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-M", action="store_true")
+parser.add_argument("-r", action="store_true")
+parser.add_argument("filter")
+parser.add_argument("file")
+args = parser.parse_args()
+
+jdata = open(args.file)
+data = json.load(jdata)
+
+if args.filter.startswith("."):
+    args.filter = args.filter[1:]
+
+if args.filter in data:
+    print data[args.filter] 
+else: 
+    print "null"
+
+jdata.close()
