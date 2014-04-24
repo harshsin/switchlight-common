@@ -3,3 +3,5 @@ rootfs-*.sqsh
 rootfs-*/
 *.swi
 BUILDS/*
+zerotouch.json
+Packages

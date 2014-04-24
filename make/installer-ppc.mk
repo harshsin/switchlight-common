@@ -18,7 +18,7 @@ ifndef INSTALLER_SWI
 $(error $$INSTALLER_SWI is not set)
 endif
 
-# The final name of the installer file must be specified. 
+# The final name of the installer file must be specified.
 ifndef INSTALLER_NAME
 $(error $$INSTALLER_NAME is not set)
 endif
@@ -27,7 +27,11 @@ endif
 PLATFORM_LOADERS := $(foreach p,$(INSTALLER_PLATFORMS),$(shell $(SWITCHLIGHT_PKG_INSTALL) platform-$(p):powerpc --find-file switchlight.$(p).loader))
 # Get the platform config package for each platform
 
-$(INSTALLER_NAME): $(PLATFORM_DIRS) $(INSTALLER_SWI)
+# ZTN Manifest for the installer
+ZTN_MANIFEST := zerotouch.json
+
+
+$(INSTALLER_NAME): $(PLATFORM_DIRS) $(INSTALLER_SWI) $(ZTN_MANIFEST)
 	$(SL_V_at)cp $(PLATFORM_LOADERS) .
 	$(foreach p,$(INSTALLER_PLATFORMS), $(SWITCHLIGHT_PKG_INSTALL) platform-config-$(p):all --extract .;)
 	$(SL_V_at)cp $(INSTALLER_SWI) switchlight-powerpc.swi
@@ -37,9 +41,9 @@ $(INSTALLER_NAME): $(PLATFORM_DIRS) $(INSTALLER_SWI)
 	>> installer.sh
 	$(SL_V_GEN)set -o pipefail ;\
 	if $(SL_V_P); then v="-v"; else v="--quiet"; fi ;\
-	$(SWITCHLIGHT)/tools/mkshar --lazy $@ $(SWITCHLIGHT)/tools/sfx.sh.in installer.sh *.loader lib switchlight-powerpc.swi
+	$(SWITCHLIGHT)/tools/mkshar --lazy $@ $(SWITCHLIGHT)/tools/sfx.sh.in installer.sh *.loader lib switchlight-powerpc.swi $(ZTN_MANIFEST)
 	$(SL_V_at)rm -f switchlight-powerpc.swi installer.sh
-	$(SL_V_at)rm -rf ./lib ./usr *.loader
+	$(SL_V_at)rm -rf ./lib ./usr *.loader $(ZTN_MANIFEST)
 
 shar installer: $(INSTALLER_NAME)
 
@@ -56,5 +60,11 @@ ifndef RELEASE
 RELEASE := SwitchLight$(SWITCHLIGHT_RELEASE_BANNER)($(SWITCHLIGHT_BUILD_CONFIG),$(SWITCHLIGHT_BUILD_TIMESTAMP),$(SWITCHLIGHT_BUILD_SHA1))
 endif
 
+.PHONY: $(ZTN_MANIFEST)
+
+$(ZTN_MANIFEST):
+	$(SWITCHLIGHT)/tools/py/zerotouch.py --release "$(RELEASE)" --operation installer --platforms $(INSTALLER_PLATFORMS) --sha1 $(SWITCHLIGHT_BUILD_SHA1) > $(ZTN_MANIFEST)
+
 clean:
 	rm -f *.jffs2 *.loader *.swi *.installer
+
