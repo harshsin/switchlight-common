@@ -1,4 +1,4 @@
-# -*- Makefile -*- 
+# -*- Makefile -*-
 ###############################################################################
 #
 # Common SWI build rules
@@ -45,18 +45,31 @@ ifndef ARCH
 $(error $$ARCH is not defined.)
 endif
 
-$(SWI).swi: rootfs-$(ARCH).sqsh
+# ZTN Platforms are required for the manifest
+ifndef ZTN_PLATFORMS
+$(error $$ZTN_PLATFORMS is not defined)
+endif
+
+ZTN_MANIFEST := zerotouch.json
+
+# Always regenerate
+.PHONY: $(ZTN_MANIFEST)
+
+$(ZTN_MANIFEST):
+	$(SWITCHLIGHT)/tools/py/zerotouch.py --release "$(RELEASE)" --operation swi --platforms $(ZTN_PLATFORMS) --sha1 $(SWITCHLIGHT_BUILD_SHA1) > $(ZTN_MANIFEST)
+
+$(SWI).swi: rootfs-$(ARCH).sqsh $(ZTN_MANIFEST)
 	rm -f $@.tmp
 	rm -f *.swi
-	cp $(KERNELS) $(INITRD) . 
-	zip -n $(INITRD_LOCAL):rootfs-$(ARCH).sqsh - $(KERNELS_LOCAL) $(INITRD_LOCAL) rootfs-$(ARCH).sqsh >$@.tmp
+	cp $(KERNELS) $(INITRD) .
+	zip -n $(INITRD_LOCAL):rootfs-$(ARCH).sqsh - $(KERNELS_LOCAL) $(INITRD_LOCAL) rootfs-$(ARCH).sqsh $(ZTN_MANIFEST) >$@.tmp
 	$(SWITCHLIGHT)/tools/swiver $@.tmp $(SWI)-$(SWITCHLIGHT_BUILD_TIMESTAMP).swi "$(RELEASE)"
 	ln -s $(SWI)-$(SWITCHLIGHT_BUILD_TIMESTAMP).swi $@
-	rm $(KERNELS_LOCAL) $(INITRD_LOCAL) rootfs-$(ARCH).sqsh *.tmp
+	rm $(KERNELS_LOCAL) $(INITRD_LOCAL) rootfs-$(ARCH).sqsh *.tmp #$(ZTN_MANIFEST)
 
 rootfs-$(ARCH).sqsh:
 	$(MAKE) -C rootfs rootfs.all
-	cp rootfs/$@ . 
+	cp rootfs/$@ .
 
 clean:
 	$(SL_V_at)rm -f $(KERNELS_LOCAL) $(INITRD_LOCAL) rootfs-$(ARCH).sqsh *.tmp
