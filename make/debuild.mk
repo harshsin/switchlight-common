@@ -37,8 +37,12 @@ deb:
 	$(SL_V_at)$(MAKE) -C ../ $(SL_MAKEFLAGS)
 	cd $(DEBUILD_DIR); $(DEBUILD)
 	$(SWITCHLIGHT_PKG_INSTALL) --add-pkg *$(ARCH)*.deb
-ifndef KEEP_LOCAL_DEBS
+ifdef NO_LOCAL_DEBS
+	# Remove local package after installing into the repository
 	rm *$(ARCH)*.deb
+else
+	# Move local package into component directory.
+	mv *$(ARCH)*.deb ..
 endif
 	rm -rf $(DEBUILD_DIR)/debian/tmp $(foreach p,$(PACKAGE_NAMES),$(DEBUILD_DIR)/debian/$(p)/ $(DEBUILD_DIR)/debian/$(p)-dbg)
 
