@@ -56,27 +56,24 @@ dsc_dhcp_boot()
 
 dsc_swi_manifest()
 {
-    local macaddr neigh
-    macaddr=$1; shift
-    neigh=$1; shift
-
     local url
+    url=$1;
+
     local swi_url_mf swi_md5_new swi_md5_dl
     local cfg_url_mf cfg_md5_new cfg_md5_dl
 
     rm -f /tmp/mf0 /tmp/swi0 /tmp/cfg0
 
-    url="http://${neigh}/ztn/switch/${macaddr}/switch_light_manifest"
     echo "Trying $url"
     wget -O /tmp/mf0 "$url" 1>/dev/null 2>&1
     test $? -eq 0 || return 2
 
-    echo "Discovered Switch Light manifest from neighbor discovery ($neigh)"
-    swi_url_mf=$(jq -M -r '.swi_url' < /tmp/mf0)
+    echo "Discovered Switch Light manifest from url ($url)"
+    swi_url_mf=$(jq -M -r '.swi_url' /tmp/mf0)
     test "$swi_url_mf" || return 2
 
     # see if there is a locally-cached SWI
-    swi_md5_new=$(jq -M -r '.swi_md5' < /tmp/mf0)
+    swi_md5_new=$(jq -M -r '.swi_md5' /tmp/mf0)
     if [ "$swi_md5_new" = "$swi_md5_orig" ]; then
         echo "Using cached ZTN SWI ($swi_url_orig)"
     else
@@ -91,9 +88,9 @@ dsc_swi_manifest()
     fi
 
     # Try to get a startup-config too
-    cfg_url_mf=$(jq -M -r '.startup_config_url' < /tmp/mf0)
+    cfg_url_mf=$(jq -M -r '.startup_config_url' /tmp/mf0)
     if [ "$cfg_url_mf" ]; then
-        cfg_md5_new=$(jq -M -r '.startup_config_md5' < /tmp/mf0)
+        cfg_md5_new=$(jq -M -r '.startup_config_md5' /tmp/mf0)
         if [ "$cfg_md5_orig" = "$cfg_md5_new" ]; then
             echo "Using cached ZTN startup-config"
         else
