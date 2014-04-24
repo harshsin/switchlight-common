@@ -7,3 +7,4 @@ Manifest.mk
 version.o
 *.mk
 build/
+*.deb

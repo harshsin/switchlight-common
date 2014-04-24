@@ -17,6 +17,10 @@
 # All build products go here
 BUILDDIR := BUILDS
 
+# Don't keep local debian files during autobuilds to save
+# space
+NO_LOCAL_DEBS := 1
+
 ############################################################
 #
 # SWI Builds
