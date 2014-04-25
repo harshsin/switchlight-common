@@ -111,7 +111,6 @@ dsc_swi_manifest()
         mv /tmp/swi0 /mnt/flash2/.ztn-switchlight.swi
     fi
     echo "$swi_url_orig" > /etc/SWI
-    echo "$swi_url_mf" > /mnt/flash2/.ztn-switchlight.swi.url
 
     # startup-config is optional here
     if [ -f /tmp/cfg0 ]; then
@@ -120,10 +119,18 @@ dsc_swi_manifest()
         mv /tmp/cfg0 /mnt/flash2/.ztn-startup-config
     fi
     if [ "$cfg_url_mf" ]; then
-        echo "$cfg_url_mf" > /mnt/flash2/.ztn-startup-config.url
+        :
     else
-        rm -f /mnt/flash2/.ztn-startup-config /mnt/flash2/.ztn-startup-config.url
+        echo "No ZTN startup-config, removing cached /mnt/flash2/.ztn-startup-config"
+        rm -f /mnt/flash2/.ztn-startup-config
     fi
+
+    # save the json manifest so it's available for the
+    # switch/controller handshake
+    # XXX roth -- coordinate all of these path names with boot1
+    # (e.g. for pre-upgrade slipstreaming)
+    echo "Saving cached manifest /mnt/flash2/.ztn.json"
+    mv /tmp/mf0 /mnt/flash2/.ztn.json
 
     return 0
 }

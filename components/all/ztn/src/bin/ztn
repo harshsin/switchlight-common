@@ -72,6 +72,7 @@ if [ "$ZTN" ]; then
     if [ "$MODE" = "discover" ]; then
         echo "ZTN discover image from neighbor discovery"
         macaddr=$(ifconfig ${intf} | awk '/HWaddr/ { print tolower($5) }')
+        platform=$(cat /etc/sl_platform)
         ping6 -I ${intf} -c 3 ff02::1 > /dev/null 2>&1
         neighs6=$(ip -6 neigh show | awk '{printf("%s%%'$intf'\n", $1)}')
 
@@ -79,7 +80,8 @@ if [ "$ZTN" ]; then
         neighs=$(ip -4 neigh show | awk '{print $1}')
 
         for a in $neighs6 $neighs; do
-            url="http://${a}/ztn/switch/${macaddr}/switch_light_manifest"
+            # XXX roth -- also add serial if available
+            url="http://${a}/ztn/switch/${macaddr}/switch_light_manifest?platform=${platform}"
             dsc_swi_manifest ${url} && exit
         done
 
