@@ -17,10 +17,7 @@ case "$1" in
     -discover)
         MODE="discover"
         shift
-        intf=$1
-        if [ ! ${intf} ]; then
-            intf="ma1"
-        fi
+        intf=${1-ma1}
     ;;
 
     -url)
