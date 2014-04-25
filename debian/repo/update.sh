@@ -8,6 +8,9 @@
 # 
 # </bsn.cl>
 ############################################################
+set -e
+set -x
+
 if [ -z $SERVER ] ; then
 	SERVER=switch-nfs.bigswitch.com
 fi
