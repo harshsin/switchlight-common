@@ -10,4 +10,81 @@
 # Import the ZTN library
 . /lib/ztn/ztn-functions
 
+MODE=""
 
+# This script has to be invoked with either -discover or -url
+case "$1" in
+    -discover)
+        MODE="discover"
+        shift
+        intf=${1-ma1}
+    ;;
+
+    -url)
+        MODE="url"
+        shift
+        url=$1
+        if [ ! ${url} ]; then
+            exit 1
+        fi
+    ;;
+    *)
+        echo "Unknown argument '$1'" >&2
+        exit 1
+    ;;
+esac
+
+if [ -z "$MODE" ]; then
+    echo "Must give -discover or -url" >&2
+    exit 1
+fi
+
+# see if we are in (or if we want to be in) ZTN mode
+# retrieve the cached state of the previous swi
+swi_url_orig=$(sed -n -e 's/^SWI=\(.*\)/\1/p' /mnt/flash/boot-config)
+case "$swi_url_orig" in
+    "")
+        ZTN=1
+        swi_url_orig="flash2:.ztn-switchlight.swi"
+    ;;
+    flash2:.ztn-switchlight.swi)
+        ZTN=1
+    ;;
+    /mnt/flash2/.ztn-switchlight.swi)
+        ZTN=1
+        swi_url_orig="flash2:.ztn-switchlight.swi"
+    ;;
+esac
+
+if [ "$ZTN" ]; then
+
+    if [ -f /mnt/flash2/.ztn-switchlight.swi ]; then
+        swi_md5_orig=$(md5sum /mnt/flash2/.ztn-switchlight.swi 2>/dev/null | awk '{print $1}')
+    fi
+
+    if [ -f /mnt/flash2/.ztn-startup-config ]; then
+        cfg_md5_orig=$(md5sum /mnt/flash2/.ztn-startup-config 2>/dev/null | awk '{print $1}')
+    fi
+
+    if [ "$MODE" = "discover" ]; then
+        echo "ZTN discover image from neighbor discovery"
+        macaddr=$(ifconfig ${intf} | awk '/HWaddr/ { print tolower($5) }')
+        platform=$(cat /etc/sl_platform)
+        ping6 -I ${intf} -c 3 ff02::1 > /dev/null 2>&1
+        neighs6=$(ip -6 neigh show | awk '{printf("%s%%'$intf'\n", $1)}')
+
+        ping -I ${intf} -w 2 -c 3 -q 255.255.255.255 > /dev/null 2>&1
+        neighs=$(ip -4 neigh show | awk '{print $1}')
+
+        for a in $neighs6 $neighs; do
+            # XXX roth -- also add serial if available
+            url="http://${a}/ztn/switch/${macaddr}/switch_light_manifest?platform=${platform}"
+            dsc_swi_manifest ${url} && exit
+        done
+
+    elif [ "$MODE" = "url" ]; then
+        echo "ZTN precache image from url"
+        dsc_swi_manifest ${url}
+    fi 
+
+fi
