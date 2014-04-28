@@ -6,192 +6,385 @@
 #
 ############################################################
 
+#
+# The ZTN data files are stored here.
+# Overrideable for testing.
+#
+ZTN_ROOT_DIR=${ZTN_ROOT:-/mnt/flash2/ztn}
 
+#
+# The ZTN cache is stored here
+#
+ZTN_CACHE_DIR=${ZTN_ROOT_DIR}/cache
+
+#
+# The latest ZTN manifest is always stored here
+#
+ZTN_MANIFEST=${ZTN_ROOT_DIR}/manifest.json
 
 ##############################
 #
-# dsc_dhcp_boot INTF
+# ztn_init
 #
-# Grovel through the dhcp lease (udhcp) for a boot file entry.
-# Return '0' for success (discovery can cease)
-# Return '2' for undetermined (continue discovery)
-# Anything else is an error
+# Initialize the ZTN infrastructure.
 #
 ##############################
-
-dsc_dhcp_boot()
+ztn_init()
 {
-    local intf macaddr bootservers
-    intf=$1; shift
-    macaddr=$1; shift
-    bootservers=$(cat /tmp/udhcpc.boot_file 2>/dev/null)
-    case "$bootservers" in
-        SWI=*)
-            echo "Discovered boot configuration from DHCP"
-            echo "${bootservers#SWI=}" | sed "s/__macaddr__/${macaddr}/g;s/__platform__/${platform}/g" >/etc/SWI
-            echo "NETDEV=${intf}" >/etc/NET
-            echo "NETAUTO=dhcp" >>/etc/NET
-            return 0
-            ;;
-    esac
+    :
+}
 
-    # else, nothing to see here
-    return 2
+
+##############################
+#
+# ztn_cache_dir <class> <key> <mkdir>
+#    <class> The cache class
+#    <key>   The cache key
+#    <mkdir> The cache key directory will be created if necessary.
+#
+ztn_cache_dir()
+{
+    local dir="${ZTN_CACHE_DIR}/${1}/${2}"
+    if [ "${3}" ]; then
+        mkdir -p "${dir}"
+    fi
+    echo ${dir}
 }
 
 ##############################
 #
-# dsc_swi_manifest
+# ztn_cache_remove <class> <key>
+#     <class> The cache class
+#     <key>   The cache key
 #
-# Download a SWI manifest and its components.
+#     Remove the a directory in the cache.
+#
+ztn_cache_remove()
+{
+    local dir=$(ztn_cache_dir $1 $2)
+    rm -rf ${dir}
+}
+
+##############################
+#
+# ztn_key <file>
+#    <file> The file
+#
+#    Returns the hash key for the given file.
+#
+ztn_key()
+{
+    echo $(md5sum $1 | awk '{print $1}')
+}
+
+##############################
+#
+# ztn_cache_path <class> <key>
+#    <key>  The key
+#    <mkdir> Make the key directory as well.
+#
+#     Returns the cannonical file location
+#     for an object stored in the cache.
+#
+ztn_cache_path()
+{
+    local class=$1
+    local key=$2
+    local mkdir=$3
+    local hdir=$(ztn_cache_dir ${class} ${key} ${mkdir})
+    echo "${hdir}/${key}.${class}"
+}
+
+##############################
+#
+# ztn_cache_install <class> <file> <key>
+#     <class>
+#     <file>      Local filename
+#     <key>       Hash key if available otherwise calculated.
+#
+#     Install the given file into the cache. This will
+#     override any existing data.
+#
+ztn_cache_install()
+{
+    local class=$1
+    local file=$2
+    local key=${3:-$(ztn_key ${file})}
+    local path=$(ztn_cache_path ${class} ${key} 1)
+    cp ${file} ${path}
+    sync
+}
+
+##############################
+#
+# ztn_cache_find <class> <key>
+#    <class> The class
+#    <key>   The key
+#
+ztn_cache_find()
+{
+    local path=$(ztn_cache_path $1 $2)
+    if [ -e "${path}" ]; then
+        echo "${path}"
+    fi
+}
+
+##############################
+#
+# ztn_cache_download <class> <url> <key>
+#     <class> The class
+#     <url> The download url
+#     <key> The expected key (verified)
+#
+# Download a file and store it in the cache.
+#
+ztn_cache_download()
+{
+    local class=$1
+    local url=$2
+    local key=$3
+    local path=$(mktemp)
+
+    echo "Trying $url"
+    wget -O "${path}" "${url}" 1>/dev/null 2>&1
+    test $? -eq 0 || return 2
+    local dlkey=$(ztn_key ${path})
+    if [ "${key}" = "${dlkey}" ]; then
+        ztn_cache_install ${class} ${path}
+        echo "New ${class} (${key}) installed..."
+        # Record the source URL
+        echo "${url}" > "$(ztn_cache_find ${class} ${key}).url"
+    else
+        echo "  Key mismatch for the downloaded ${class}. The ${class} was not installed."
+        echo "    Expected: ${key}"
+        echo "    Received: ${dlkey}"
+    fi
+
+    rm ${path}
+}
+
+
+##############################
+#
+# ztn_manifest_key_get
+#
+ztn_manifest_key_get()
+{
+    key=$1
+    man=${2:-${ZTN_MANIFEST}}
+    val=$(jq -M -r $key ${man})
+    # Return nothing for missing keys, not 'null'
+    if [ "${val}" != "null" ]; then
+        echo ${val}
+    fi
+}
+
+##############################
+#
+# ztn_manifest_swi_md5
+#
+ztn_manifest_swi_md5()
+{
+    echo $(ztn_manifest_key_get '.swi_md5' $1)
+}
+
+##############################
+#
+# ztn_manifest_startup_key_get()
+#
+ztn_manifest_startup_md5()
+{
+    echo $(ztn_manifest_key_get '.startup_config_md5' $1)
+}
+
+
+##############################
+#
+# ztn_manifest_process <murl>
+#
+# Download a ZTN SWI manifest and its components.
 # Return '0' for success (discovery can cease)
 # Return '2' for undetermined (continue discovery)
 # Anything else is an error
 #
-# Enviromnent:
-#   $swi_md5_orig
-#   $cfg_md5_orig
-#
-##############################
 
-dsc_swi_manifest()
+ztn_manifest_process()
 {
-    local url
-    url=$1;
+    local murl=$1
+    local swi_url_mf swi_md5_mf
+    local cfg_url_mf cfg_md5_mf
 
-    local swi_url_mf swi_md5_new swi_md5_dl
-    local cfg_url_mf cfg_md5_new cfg_md5_dl
-
-    rm -f /tmp/mf0 /tmp/swi0 /tmp/cfg0
-
-    echo "Trying $url"
-    wget -O /tmp/mf0 "$url" 1>/dev/null 2>&1
+    local manifest=$(mktemp)
+    echo "Trying ${murl}"
+    wget -O ${manifest} "$murl" 1>/dev/null 2>&1
     test $? -eq 0 || return 2
 
     echo "Discovered Switch Light manifest from url ($url)"
-    swi_url_mf=$(jq -M -r '.swi_url' /tmp/mf0)
-    test "$swi_url_mf" || return 2
+    swi_url_mf=$(ztn_manifest_key_get '.swi_url' ${manifest})
 
-    # see if there is a locally-cached SWI
-    swi_md5_new=$(jq -M -r '.swi_md5' /tmp/mf0)
-    if [ "$swi_md5_new" = "$swi_md5_orig" ]; then
-        echo "Using cached ZTN SWI ($swi_url_orig)"
-    else
-        echo "Downloading new ZTN SWI $swi_url_mf"
-        wget -O /tmp/swi0 "$swi_url_mf" 1>/dev/null 2>&1
-        test $? -eq 0 || return 2
-        swi_md5_dl=$(md5sum /tmp/swi0 | awk '{print $1}')
-        if [ "$swi_md5_dl" != "$swi_md5_new" ]; then
-            echo "MD5 mismatch in downloaded SWI"
-            return 2
-        fi
-    fi
-
-    # Try to get a startup-config too
-    cfg_url_mf=$(jq -M -r '.startup_config_url' /tmp/mf0)
-    if [ "$cfg_url_mf" ]; then
-        cfg_md5_new=$(jq -M -r '.startup_config_md5' /tmp/mf0)
-        if [ "$cfg_md5_orig" = "$cfg_md5_new" ]; then
-            echo "Using cached ZTN startup-config"
+    # Is there a SWI specified?
+    if [ "${swi_url_mf}" ]; then
+        swi_md5_mf=$(ztn_manifest_swi_md5 ${manifest})
+        # Do we already have this SWI?
+        if [ "$(ztn_cache_find swi ${swi_md5_mf})" ]; then
+            # We aleady have it
+            echo "Using cached SWI..."
         else
-            echo "Downloading new startup-config $cfg_url_mf"
-            wget -O /tmp/cfg0 "$cfg_url_mf" 1>/dev/null 2>&1
-            test $? -eq 0 || return 2
-            cfg_md5_dl=$(md5sum /tmp/cfg0 | awk '{print $1}')
-            if [ "$cfg_md5_dl" != "$cfg_md5_new" ]; then
-                echo "MD5 mismatch in downloaded startup-config"
-                return 2
-            fi
+            # Go get it
+            echo "Downloading new SWI..."
+            ztn_cache_download swi ${swi_url_mf} ${swi_md5_mf}
         fi
     fi
 
-    if [ -f /tmp/swi0 ]; then
-        echo "Caching ZTN SWI $swi_url_mf --> /mnt/flash2/.ztn-switchlight.swi"
-        rm -f /mnt/flash2/.ztn-switchlight.swi
-        mv /tmp/swi0 /mnt/flash2/.ztn-switchlight.swi
-    fi
-    echo "$swi_url_orig" > /etc/SWI
-
-    # startup-config is optional here
-    if [ -f /tmp/cfg0 ]; then
-        echo "Caching ZTN startup-config $cfg_url_mf --> /mnt/flash2/.ztn-startup-config"
-        rm -f /mnt/flash2/.ztn-startup-config
-        mv /tmp/cfg0 /mnt/flash2/.ztn-startup-config
-    fi
+    # Is there a startup config?
+    cfg_url_mf=$(ztn_manifest_key_get '.startup_config_url' ${manifest})
     if [ "$cfg_url_mf" ]; then
-        :
-    else
-        echo "No ZTN startup-config, removing cached /mnt/flash2/.ztn-startup-config"
-        rm -f /mnt/flash2/.ztn-startup-config
+        cfg_md5_mf=$(ztn_manifest_startup_md5 ${manifest})
+        # Do we already have this startup-config?
+        if [ "$(ztn_cache_find startup-config ${cfg_md5_mf})" ]; then
+            # We already have it
+            echo "Using cached startup-config..."
+        else
+            # Go get it
+            echo "Downloading startup-config..."
+            ztn_cache_download startup-config ${cfg_url_mf} ${cfg_md5_mf}
+        fi
     fi
 
-    # save the json manifest so it's available for the
-    # switch/controller handshake
-    # XXX roth -- coordinate all of these path names with boot1
-    # (e.g. for pre-upgrade slipstreaming)
-    echo "Saving cached manifest /mnt/flash2/.ztn.json"
-    mv /tmp/mf0 /mnt/flash2/.ztn.json
-
+    # Save the current manifest
+    mv ${manifest} ${ZTN_MANIFEST}
     return 0
 }
 
-##############################
-#
-# dsc_dsnssd
-#
-# Try to discover switch config (net and/or SWI) from DNS-SD
-#
-##############################
 
-dsc_dnssd()
+##############################
+#
+# ztn_manifest_validate
+#
+#    Returns whether the latest manifest file and its contents are valid.
+#
+ztn_manifest_validate()
 {
-    local macaddr dns
-    macaddr=$1; shift
-    dns=$1; shift
-
-    local txt word key val
-
-    echo "Trying $dns"
-    txt=$(dig +short +time=5 +tries=1 @$dns -p5353 ${macaddr}._slconfig._udp.local TXT)
-    test $? -eq 0 || return 2
-
-    echo "Discovered boot configuration from DNS-SD"
-    cp /dev/null /etc/NET
-    for word in $txt; do
-        # words may be quoted
-        word=$(expr "$word" : '["]\?\(.*[^"]\)["]\?')
-        case "$word" in
-            *=*)
-                key=${word%%=*}; val=${word#$key=}
-                ;;
-            *)
-                key=$word; val=
-                ;;
-        esac
-        case "$key" in
-            SWI)
-                echo "$val" >/etc/SWI
-                ;;
-            NET*)
-                echo "$val" >> /etc/NET
-                ;;
-            FLASH)
-                echo "Getting flash::${val}..."
-                mkdir -p /tmp/flash
-                cd /tmp/flash && wget "$val"
-
-                mv /tmp/flash/* /mnt/flash
-                rmdir /tmp/flash
-                ;;
-        esac
-    done
-
-    # valid DNS-SD config for this platform, stop here
-    return 0
+    if [ -e "${ZTN_MANIFEST}" ]; then
+        # Verify the SWI settings
+        swi_md5=$(ztn_manifest_swi_md5)
+        # This is required to be set and available
+        if [ "$(ztn_cache_find swi ${swi_md5})" ]; then
+            # Look for startup-config
+            startup_md5=$(ztn_manifest_startup_md5)
+            # This is optional
+            if [ "${startup_md5}" ]; then
+                if [ "$(ztn_cache_find startup-config ${startup_md5})" ]; then
+                    echo "ZTN Manifest validated (SWI, startup-config)."
+                    return 0
+                else
+                    echo "The startup-config specified in the current manifest is missing."
+                    echo "   ${startup_md5}"
+                    return 1
+                fi
+            else
+                # Startup-config key is missing from the manifest but otherwise its fine.
+                echo "ZTN Manifest validated (SWI)."
+                return 0
+            fi
+        else
+            # The SWI key is missing or the SWI itself is missing, both bad.
+            if [ "${swi_md5}" ]; then
+                echo "The SWI specified in the current manifest is missing."
+                echo "    ${swi_md5}"
+            else
+                echo "There is no SWI specified in the current manifest."
+            fi
+            return 1
+        fi
+    else
+        # The manifest is missing
+        echo "ZTN Manifest is missing."
+        return 1
+    fi
 }
 
-# Local variables:
-# mode: sh
-# indent-tabs-mode: nil
-# sh-basic-offset: 4
-# End:
+
+##############################
+#
+# ztn_discovery_ex <intf> <mac> <platform> <serial>
+#    <intf>      The interface on which to discover.
+#    <platform>  The platform identifier.
+#    <serial>    The system serial number.
+#
+# Perform ZTN neighbor discovery and process the resulting manifest
+# using the values provided by the caller.
+#
+# This function will:
+# 1. Discover a neighboring and responding ZTN server.
+# 2. Process the resulting manifest.
+#
+# IF this function succeeds then we have downloaded and
+# validated everthing required to boot.
+#
+ztn_discovery_ex()
+{
+    local intf=$1
+    local macaddr=$2
+    local platform=$3
+    local serial=$4
+
+    # borrow liberally from ONIE (rootconf/default/bin/discover)
+    # ha ha, the wget IPv6 link local syntax is screwy
+    # (and also does not match upstream GNU wget)
+    ping6 -I ${intf} -c 3 ff02::1 > /dev/null 2>&1
+    neighs6=$(ip -6 neigh show | awk '{printf("%s%%'$intf'\n", $1)}')
+
+    ping -I ${intf} -w 2 -c 3 -q 255.255.255.255 > /dev/null 2>&1
+    neighs=$(ip -4 neigh show | awk '{print $1}')
+
+    for a in $neighs6 $neighs; do
+        local url="http://${a}/ztn/switch/${macaddr}/switch_light_manifest?platform=${platform}&serial=${serial}"
+        ztn_manifest_process $url && return 1
+    done
+}
+
+##############################
+#
+# ztn_discovery <intf> <platform> <serial>
+#
+ztn_discovery()
+{
+    local macaddr=$(ifconfig ${1} | awk '/HWaddr/ { print tolower($5) }')
+    ztn_discovery_ex $1 ${macaddr} $2 $3
+}
+
+##############################
+#
+# ztn_swi_get
+#
+#   Returns the path to the SWI we should
+#   currently be booting according to
+#   the latest downloaded manifest.
+#
+#   You cannot reliably use the result unless you call ztn_manifest_validate() first.
+#
+ztn_swi_get()
+{
+    # Get the key from the manifest
+    key=$(ztn_manifest_swi_md5)
+    echo $(ztn_cache_find swi ${key})
+}
+
+##############################
+#
+# ztn_startup_get
+#
+#   Returns the path to the startup-config we should
+#   currently load according to the latest
+#   downloaded manifest.
+#
+#   You cannot reliably use the result unless you call ztn_manifest_validate() first.
+#
+ztn_startup_get()
+{
+    # Get the key from the manifest
+    key=$(ztn_manifest_startup_md5)
+    echo $(ztn_cache_find startup-config ${key})
+}
+
