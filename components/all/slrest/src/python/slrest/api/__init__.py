@@ -8,6 +8,7 @@ import cherrypy
 import logging
 import json
 import re
+import os
 
 from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
@@ -123,6 +124,11 @@ class get_tech_support(SLAPIObject):
         try:
             out = util.pcli_command('copy tech-support flash2')
             match = re.search(r'Writing (.*?)\.\.\.', out)
-            return open(match.group(1)).read()
+            fn = match.group(1)
+            result = cherrypy.lib.static.serve_file(
+                fn, content_type='application/gzip',
+                disposition='attachment', name=os.path.basename(fn))
+            os.unlink(fn)
+            return result
         except:
             return ''
