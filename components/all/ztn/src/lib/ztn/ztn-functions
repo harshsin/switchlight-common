@@ -1,3 +1,4 @@
+#!/bin/sh
 ############################################################
 #
 # ztn-functions
@@ -22,6 +23,11 @@ ZTN_CACHE_DIR=${ZTN_ROOT_DIR}/cache
 #
 ZTN_MANIFEST=${ZTN_ROOT_DIR}/manifest.json
 
+#
+# Controls how long discovery waits for neighbor responses (in seconds)
+#
+ZTN_DISCOVERY_RESPONSE_WAIT=0
+
 ##############################
 #
 # ztn_init
@@ -33,7 +39,6 @@ ztn_init()
 {
     :
 }
-
 
 ##############################
 #
@@ -74,7 +79,7 @@ ztn_cache_remove()
 #
 ztn_key()
 {
-    echo $(md5sum $1 | awk '{print $1}')
+    md5sum $1 | awk '{print $1}'
 }
 
 ##############################
@@ -97,15 +102,15 @@ ztn_cache_path()
 
 ##############################
 #
-# ztn_cache_install <class> <file> <key>
+# ztn_cache_install_local <class> <file> <key>
 #     <class>
 #     <file>      Local filename
 #     <key>       Hash key if available otherwise calculated.
 #
-#     Install the given file into the cache. This will
+#     Install the given local file into the cache. This will
 #     override any existing data.
 #
-ztn_cache_install()
+ztn_cache_install_local()
 {
     local class=$1
     local file=$2
@@ -129,30 +134,101 @@ ztn_cache_find()
     fi
 }
 
+
 ##############################
 #
-# ztn_cache_download <class> <url> <key>
+# ztn_cache_class_inventory <class>
+#
+# Show the object inventory for the current class.
+#
+ztn_cache_class_inventory()
+{
+    local class=$1
+
+    keys=$(ls ${ZTN_CACHE_DIR}/${class})
+
+    for k in ${keys}; do
+        path=$(ztn_cache_path ${class} ${k})
+        if [ "${path}" ]; then
+            echo "$(basename ${path})   [$(date -r $path) - $(cat ${path}.url)]"
+        else
+            echo "ztn cache entry ${k} os corrupt."
+        fi
+    done
+}
+
+##############################
+#
+# ztn_cache_inventory
+#
+# Show the object inventory for all classes.
+#
+ztn_cache_inventory()
+{
+    classes=$(ls ${ZTN_CACHE_DIR})
+    for k in ${classes}; do
+        echo "${k}:"
+        ztn_cache_class_inventory $k
+        echo
+    done
+}
+
+##############################
+#
+# ztn_download_url <url> <localdst>
+#   <url>  The file url
+#   <localdst> The local file
+ztn_download_url()
+{
+    local url=$1
+    local localdst=$2
+
+    case "${url}" in
+        http:*|ftp:*)
+            echo "Downloading ${url}...."
+            wget -O "${localdst}" "${url}"
+            ;;
+        *)
+            echo "Unsupported URL ${url}"
+            return 1
+            ;;
+    esac
+}
+
+##############################
+#
+# ztn_cache_install_url <class> <url> <key>
 #     <class> The class
-#     <url> The download url
+#     <url> The url
 #     <key> The expected key (verified)
 #
 # Download a file and store it in the cache.
 #
-ztn_cache_download()
+ztn_cache_install_url()
 {
     local class=$1
     local url=$2
     local key=$3
-    local path=$(mktemp)
+    local path
+    local rmpath
 
-    echo "Trying $url"
-    wget -O "${path}" "${url}" 1>/dev/null 2>&1
-    test $? -eq 0 || return 2
+    # Special case local files so we don't have multiple copies
+    if [ -e "${url}" ]; then
+        path="${url}"
+    else
+        path=$(mktemp)
+        rmpath=1
+        ztn_download_url "${url}" "${path}"
+        test $? -eq 0 || return 2
+    fi
+
     local dlkey=$(ztn_key ${path})
+    key=${key:-${dlkey}}
+
     if [ "${key}" = "${dlkey}" ]; then
-        ztn_cache_install ${class} ${path}
-        echo "New ${class} (${key}) installed..."
-        # Record the source URL
+        ztn_cache_install_local ${class} ${path}
+        echo "New ${class} ${key} installed..."
+            # Record the source URL
         echo "${url}" > "$(ztn_cache_find ${class} ${key}).url"
     else
         echo "  Key mismatch for the downloaded ${class}. The ${class} was not installed."
@@ -160,7 +236,9 @@ ztn_cache_download()
         echo "    Received: ${dlkey}"
     fi
 
-    rm ${path}
+    if [ "$rmpath" ]; then
+        rm -rf "${path}"
+    fi
 }
 
 
@@ -200,7 +278,7 @@ ztn_manifest_startup_md5()
 
 ##############################
 #
-# ztn_manifest_process <murl>
+# ztn_manifest_process_url <murl>
 #
 # Download a ZTN SWI manifest and its components.
 # Return '0' for success (discovery can cease)
@@ -208,18 +286,22 @@ ztn_manifest_startup_md5()
 # Anything else is an error
 #
 
-ztn_manifest_process()
+ztn_manifest_process_url()
 {
     local murl=$1
     local swi_url_mf swi_md5_mf
     local cfg_url_mf cfg_md5_mf
 
     local manifest=$(mktemp)
-    echo "Trying ${murl}"
-    wget -O ${manifest} "$murl" 1>/dev/null 2>&1
-    test $? -eq 0 || return 2
+    if [ -e "${murl}" ]; then
+        cp "${murl}" "${manifest}"
+    else
+        echo "Trying manifest ${murl}"
+        wget -O ${manifest} "$murl" 1>/dev/null 2>&1
+        test $? -eq 0 || return 2
+    fi
 
-    echo "Discovered Switch Light manifest from url ($url)"
+    echo "Discovered Switch Light manifest from url $url"
     swi_url_mf=$(ztn_manifest_key_get '.swi_url' ${manifest})
 
     # Is there a SWI specified?
@@ -228,11 +310,11 @@ ztn_manifest_process()
         # Do we already have this SWI?
         if [ "$(ztn_cache_find swi ${swi_md5_mf})" ]; then
             # We aleady have it
-            echo "Using cached SWI..."
+            echo "SWI ${swi_md5_mf} is already cached."
         else
             # Go get it
             echo "Downloading new SWI..."
-            ztn_cache_download swi ${swi_url_mf} ${swi_md5_mf}
+            ztn_cache_install_url swi ${swi_url_mf} ${swi_md5_mf}
         fi
     fi
 
@@ -243,11 +325,11 @@ ztn_manifest_process()
         # Do we already have this startup-config?
         if [ "$(ztn_cache_find startup-config ${cfg_md5_mf})" ]; then
             # We already have it
-            echo "Using cached startup-config..."
+            echo "startup-config ${cfg_md5_mf} is already cached."
         else
             # Go get it
             echo "Downloading startup-config..."
-            ztn_cache_download startup-config ${cfg_url_mf} ${cfg_md5_mf}
+            ztn_cache_install_url startup-config ${cfg_url_mf} ${cfg_md5_mf}
         fi
     fi
 
@@ -304,6 +386,32 @@ ztn_manifest_validate()
     fi
 }
 
+##############################
+#
+# ztn_manifest_url <h> <m> <p> <s>
+#   <h>  Host
+#   <m>  MAC Address
+#   <p>  Platform
+#   <s>  Serial Number
+#
+#   Returns a ZTN manifest URL.
+#
+ztn_manifest_url()
+{
+    echo "http://${1}/ztn/switch/${2}/switch_light_manifest?platform=${3}&serial=${4}"
+}
+
+##############################
+#
+# ztn_manifest_process <h> <m> <p> <s>
+#    <h>  Host
+#    <m>  MAC Address
+#    <p>  Platform
+#    <s>  Serial Number
+ztn_manifest_process()
+{
+    ztn_manifest_process_url $(ztn_manifest_url "$1" "$2" "$3" "$4")
+}
 
 ##############################
 #
@@ -333,14 +441,18 @@ ztn_discovery_ex()
     # ha ha, the wget IPv6 link local syntax is screwy
     # (and also does not match upstream GNU wget)
     ping6 -I ${intf} -c 3 ff02::1 > /dev/null 2>&1
-    neighs6=$(ip -6 neigh show | awk '{printf("%s%%'$intf'\n", $1)}')
-
     ping -I ${intf} -w 2 -c 3 -q 255.255.255.255 > /dev/null 2>&1
+
+    if [ "${ZTN_DISCOVERY_RESPONSE_WAIT}" ]; then
+        # The amount of time to wait for responses
+        sleep "${ZTN_DISCOVERY_RESPONSE_WAIT}"
+    fi
+
+    neighs6=$(ip -6 neigh show | awk '{printf("%s%%'$intf'\n", $1)}')
     neighs=$(ip -4 neigh show | awk '{print $1}')
 
     for a in $neighs6 $neighs; do
-        local url="http://${a}/ztn/switch/${macaddr}/switch_light_manifest?platform=${platform}&serial=${serial}"
-        ztn_manifest_process $url && return 1
+        ztn_manifest_process ${a} ${macaddr} ${platform} ${serial} && return 1
     done
 }
 
@@ -350,8 +462,10 @@ ztn_discovery_ex()
 #
 ztn_discovery()
 {
-    local macaddr=$(ifconfig ${1} | awk '/HWaddr/ { print tolower($5) }')
-    ztn_discovery_ex $1 ${macaddr} $2 $3
+    if ifconfig ${1} > /dev/null 2>&1; then
+        local macaddr=$(ifconfig ${1} | awk '/HWaddr/ { print tolower($5) }')
+        ztn_discovery_ex $1 ${macaddr} $2 $3
+    fi
 }
 
 ##############################
