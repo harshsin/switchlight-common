@@ -9,7 +9,7 @@ import subprocess
 import os
 import socket
 import cfgfile
-from datetime import timedelta
+from datetime import timedelta,datetime
 
 from sl_util import shell
 from sl_util.ofad import OFADConfig, PortManager
@@ -18,6 +18,8 @@ from switchlight.platform.current import SwitchLightPlatform
 import re
 import pytz
 from desc.version001.rlog import RSyslog
+
+import sys
 
 Platform=SwitchLightPlatform()
 FW_PRINTENV = '/usr/bin/fw_printenv'
@@ -416,6 +418,9 @@ tech_support_scripts = [
 ]
 
 def save_tech_support(data):
+    tech_support_file = '/mnt/flash2/tech-support_%s.gz' % \
+        datetime.now().strftime('%y%m%d%H%M%S')
+
     portManager = PortManager(OFAgentConfig.port_list)
     scripts = list(tech_support_scripts)
     for lag in portManager.getLAGs():
@@ -431,8 +436,14 @@ def save_tech_support(data):
     for li in scripts:
         p.stdin.write("echo ===== '%s' >>%s\n" % (li, tech_support_tmpfile))
         p.stdin.write('%s &>>%s\n' % (li, tech_support_tmpfile))
-    p.stdin.write('gzip -c %s >/mnt/flash2/tech-support_`date +%%y%%m%%d%%H%%M%%S`.gz\n' % tech_support_tmpfile)
+    p.stdin.write('gzip -c %s > %s\n' % \
+                      (tech_support_tmpfile, tech_support_file))
     p.stdin.write('rm -f %s*\n' % tech_support_tmpfile)
+    p.stdin.write('exit\n')
+    print 'Writing %s...' % tech_support_file,
+    sys.stdout.flush()
+    p.wait()
+    print 'done.'
 
 
 command.add_action('implement-tech-support', save_tech_support,

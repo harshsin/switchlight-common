@@ -7,6 +7,8 @@
 import cherrypy
 import logging
 import json
+import re
+import os
 
 from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
@@ -113,3 +115,20 @@ class get_memory(SLAPIObject):
         except:
             out = {}
         return json.dumps(out)
+
+
+class get_tech_support(SLAPIObject):
+    """Get switch tech support info."""
+    route = "/api/status/tech-support"
+    def GET(self):
+        try:
+            out = util.pcli_command('copy tech-support flash2')
+            match = re.search(r'Writing (.*?)\.\.\.', out)
+            fn = match.group(1)
+            result = cherrypy.lib.static.serve_file(
+                fn, content_type='application/gzip',
+                disposition='attachment', name=os.path.basename(fn))
+            os.unlink(fn)
+            return result
+        except:
+            return ''
