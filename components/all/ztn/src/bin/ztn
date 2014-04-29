@@ -18,6 +18,7 @@ INTF=
 DISCOVER=
 MANIFEST=
 OPERATIONS=
+VALIDATE_REQUIRED=
 
 __help__="
 Usage: $0 [OPTIONS] [OPERATIONS]
@@ -29,6 +30,8 @@ Operations:
   --add-startup URL: Add the given startup-config URL to the cache.
   --validate current|[manifest]: Validate the current or given manifest.
   --inventory: Show the cache inventory
+  --swi: Return the SWI from the current boot manifest.
+  --startup: Return the startup-config from the current boot manifest.
 
 Options:
   --root PATH: Override the default ZTN root directory.
@@ -62,6 +65,16 @@ while [ "${1#-}" != "$1" ]; do
         --inventory)
             INVENTORY=1
             OPERATIONS="${OPERATIONS} inventory"
+            ;;
+        --swi)
+            SWI=1
+            OPERATIONS="${OPERATIONS} swi"
+            VALIDATE_REQUIRED=1
+            ;;
+        --startup)
+            STARTUP=1
+            OPERATIONRS="${OPERATIONS} startup"
+            VALIDATE_REQUIRED=1
             ;;
         --url)
             shift
@@ -159,24 +172,21 @@ MAC=${MAC:-$(ifconfig ${1} | awk '/HWaddr/ { print tolower($5) }')}
 #
 # Perform whatever operations were requested.
 #
-if [ "${ADD_SWI}" ]; then
-    ztn_cache_install_url swi "${ADD_SWI}"
-fi
-
-if [ "${ADD_STARTUP}" ]; then
-    ztn_cache_install_url startup-config "${ADD_STARTUP}"
-fi
-
-if [ "${VALIDATE}" ]; then
-    if [ "${VALIDATE}" = "current" ]; then
-        ztn_manifest_validate
+# Operations that can change the cache state should come first.
+#
+#
+if [ "${DISCOVER}" ]; then
+    if [ "${PLATFORM}" ]; then
+        # Intentionally test both library functions
+        if [ "${MAC}" ]; then
+            ztn_discovery_ex ${INTF} ${MAC} ${PLATFORM} ${SERIAL}
+        else
+            ztn_discovery ${INTF} ${PLATFORM} ${SERIAL}
+        fi
     else
-        ztn_manifest_validate "${VALIDATE}"
+        echo "Must specify --platform with --discover."
+        exit 1
     fi
-fi
-
-if [ "${INVENTORY}" ]; then
-    ztn_cache_inventory
 fi
 
 if [ "${MANIFEST}" ]; then
@@ -209,19 +219,43 @@ if [ "${MANIFEST}" ]; then
     fi
 fi
 
+if [ "${ADD_SWI}" ]; then
+    ztn_cache_install_url swi "${ADD_SWI}"
+fi
 
+if [ "${ADD_STARTUP}" ]; then
+    ztn_cache_install_url startup-config "${ADD_STARTUP}"
+fi
 
-
-if [ "${DISCOVER}" ]; then
-    if [ "${PLATFORM}" ]; then
-        # Intentionally test both library functions
-        if [ "${MAC}" ]; then
-            ztn_discovery_ex ${INTF} ${MAC} ${PLATFORM} ${SERIAL}
-        else
-            ztn_discovery ${INTF} ${PLATFORM} ${SERIAL}
-        fi
+#
+# These commands only read the cache state.
+#
+if [ "${VALIDATE}" ]; then
+    if [ "${VALIDATE}" = "current" ]; then
+        ztn_manifest_validate
     else
-        echo "Must specify --platform with --discover."
+        ztn_manifest_validate "${VALIDATE}"
+    fi
+fi
+
+if [ "${INVENTORY}" ]; then
+    ztn_cache_inventory
+fi
+
+if [ "${VALIDATE_REQUIRED}" ]; then
+    if ! ztn_manifest_validate 1; then
         exit 1
     fi
 fi
+
+if [ "${SWI}" ]; then
+    ztn_swi_get
+fi
+
+if [ "${STARTUP}" ]; then
+    ztn_startup_get
+fi
+
+
+
+

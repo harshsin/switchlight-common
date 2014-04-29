@@ -341,7 +341,7 @@ ztn_manifest_process_url()
 
 ##############################
 #
-# ztn_manifest_validate
+# ztn_manifest_validate <only-failures>
 #
 #    Returns whether the latest manifest file and its contents are valid.
 #
@@ -357,7 +357,9 @@ ztn_manifest_validate()
             # This is optional
             if [ "${startup_md5}" ]; then
                 if [ "$(ztn_cache_find startup-config ${startup_md5})" ]; then
-                    echo "ZTN Manifest validated (SWI, startup-config)."
+                    if [ ! "$1" ]; then
+                        echo "ZTN Manifest validated (SWI, startup-config)."
+                    fi
                     return 0
                 else
                     echo "The startup-config specified in the current manifest is missing."
@@ -366,7 +368,9 @@ ztn_manifest_validate()
                 fi
             else
                 # Startup-config key is missing from the manifest but otherwise its fine.
-                echo "ZTN Manifest validated (SWI)."
+                if [ ! "$1" ]; then
+                    echo "ZTN Manifest validated (SWI)."
+                fi
                 return 0
             fi
         else
