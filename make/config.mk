@@ -140,11 +140,10 @@ SWITCHLIGHT_PKG_INSTALL := $(SWITCHLIGHT)/tools/spkg.py --verbose
 
 endif
 
-ifndef SL_MAKEFLAGS
 ifeq ($(VERBOSE),1)
+SL_MAKEFLAGS += V=1
 else
-SL_MAKEFLAGS = --no-print-directory
-endif
+SL_MAKEFLAGS += --no-print-directory
 endif
 
 #
