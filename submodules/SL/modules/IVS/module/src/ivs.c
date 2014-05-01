@@ -428,6 +428,9 @@ ivs_controller_show(ivs_t* ivs, ivs_cxn_type_t type, aim_pvs_t* pvs)
 
     indigo_controller_list(&list); 
 
+    aim_printf(pvs, "    %15s:%-5s  %-14s  %-8s  %-s\n",
+               "IP", "Port", "State", "Role", "#Aux");
+
     for(ctrl = list; ctrl; ctrl = ctrl->next) { 
         ivs_cxn_type_t ctype = (ctrl->config_params.listen == 1) ? 
             IVS_CXN_TYPE_LISTEN : IVS_CXN_TYPE_CONNECT; 
@@ -443,14 +446,11 @@ ivs_controller_show(ivs_t* ivs, ivs_cxn_type_t type, aim_pvs_t* pvs)
                 rolename = "UNKNOWN";
             }
 
-            aim_printf(pvs, "    %15s:%-5d  %14s  %8s  %d\n", 
+            aim_printf(pvs, "    %15s:%-5d  %-14s  %-8s  %-d\n", 
                        ctrl->protocol_params.tcp_over_ipv4.controller_ip, 
                        ctrl->protocol_params.tcp_over_ipv4.controller_port,
                        statename, rolename, ctrl->num_aux);
         }
-    }
-    if(typecount == 0) { 
-        aim_printf(pvs, "    None.\n"); 
     }
 
     indigo_controller_list_destroy(list); 
