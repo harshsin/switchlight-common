@@ -62,28 +62,40 @@ export SWITCHLIGHT=/build/switchlight
 INSTALL_AUTOBUILD_DIR=${INSTALL_BASE_DIR}/$USERDIR"$BRANCH"
 INSTALL_DIR=${INSTALL_AUTOBUILD_DIR}/$SWITCHLIGHT_BUILD_TIMESTAMP.$SHA1
 
+
+if [ -f /usr/bin/onl-chws ]; then
+    # This is the new standard.
+    CHWS=onl-chws
+    CHWSRC=.onl-chwsrc
+else
+    # Old switchlight versions
+    CHWS=chws
+    CHWSRC=.chwsrc
+fi
+
+
 #
 # Remount the current workspace to /build/switchlight
 #
 pwd
-cat <<EOF > .chwsrc
+cat <<EOF > $(CHWSRC)
 bind_mount_dst $SWITCHLIGHT_ROOT $SWITCHLIGHT
 EOF
 
 rm -rf $SWITCHLIGHT_ROOT/builds/BUILDS
 
-(chws make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel0 -j $JOBS) || true
-(chws make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel1 -j $JOBS) || true
-(chws make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel2 -j $JOBS) || true
-(chws make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel3 -j $JOBS) || true
-(chws make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel4 -j $JOBS) || true
-(chws make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel5 -j $JOBS) || true
-(chws make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel6 -j $JOBS) || true
+($(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel0 -j $JOBS) || true
+($(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel1 -j $JOBS) || true
+($(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel2 -j $JOBS) || true
+($(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel3 -j $JOBS) || true
+($(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel4 -j $JOBS) || true
+($(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel5 -j $JOBS) || true
+($(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel6 -j $JOBS) || true
 
 
 function build_and_install {
     # Build Requested
-    chws make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache $@
+    $(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache $@
 
     # Make the install directory
     ssh $INSTALL_SERVER mkdir -p $INSTALL_DIR
