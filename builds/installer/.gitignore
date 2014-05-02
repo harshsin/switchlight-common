@@ -1,2 +1,4 @@
 *.installer
 *.deb
+*.build
+*.changes

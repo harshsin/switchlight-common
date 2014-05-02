@@ -24,7 +24,19 @@ include platforms.mk
 INSTALLER_SWI := $(SWITCHLIGHT)/builds/swi/powerpc/release/switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-release.swi
 INSTALLER_NAME := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-release.all.$(SWITCHLIGHT_BUILD_TIMESTAMP).installer
 SWITCHLIGHT_BUILD_CONFIG := powerpc.release
+
+#
+# The debian package name for the bundle is set dynamically here with the PACKAGE_NAME variable.
+#
+# We name the debian package with the full release information. This avoids ambiguity as to the contents and allows multiple
+# bundle packages to be installed simultanously.
+#
 PACKAGE_NAME := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-release.all.$(SWITCHLIGHT_BUILD_TIMESTAMP)
+
+# If we want a single cannonical name for the debian package (which implies previous versions will be removed and
+# replaced when a new bundle is installed and keeping simultanous/multiple versions difficult) then we can use
+# a static name here:
+#PACKAGE_NAME := switchlight-something-bundle
 
 include $(SWITCHLIGHT)/make/installer-ppc.mk
 include $(SWITCHLIGHT)/make/deb-subdir.mk
