@@ -132,3 +132,37 @@ class get_tech_support(SLAPIObject):
             return result
         except:
             return ''
+
+
+class get_controller(SLAPIObject):
+    """Get 'show controller' command output."""
+    route = "/api/status/controller"
+    def GET(self):
+        cherrypy.response.headers['Content-Type']= 'text/plain'
+        try:
+            out = util.pcli_command('show controller')
+        except:
+            out = {}
+        return out
+
+class get_environment(SLAPIObject):
+    """Get 'show environment' command output."""
+    route = "/api/status/environment"
+    def GET(self):
+        cherrypy.response.headers['Content-Type']= 'text/plain'
+        try:
+            out = util.pcli_command('show environment')
+        except:
+            out = {}
+        return out
+
+class get_inventory(SLAPIObject):
+    """Get 'show inventory' command output."""
+    route = "/api/status/inventory"
+    def GET(self):
+        cherrypy.response.headers['Content-Type']= 'text/plain'
+        try:
+            out = util.pcli_command('show inventory')
+        except:
+            out = {}
+        return out
