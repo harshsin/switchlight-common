@@ -101,7 +101,7 @@ function build_and_install {
 }
 
 # Build primary targets for testing
-build_and_install swi-internal swi-release swi-internal-t5 swi-bringup installer-bringup installer-all-release installer-powerpc-quanta-lb9a-r0-release  installer-powerpc-quanta-ly2-r0-release installer-powerpc-quanta-lb9-r0-release
+build_and_install swi-internal swi-release swi-internal-t5 swi-bringup installer-bringup installer-all-release
 
 # Copy the loader binaries (hack)
 ssh $INSTALL_SERVER mkdir -p $INSTALL_DIR/loaders
