@@ -78,24 +78,24 @@ fi
 # Remount the current workspace to /build/switchlight
 #
 pwd
-cat <<EOF > $(CHWSRC)
+cat <<EOF > $CHWSRC
 bind_mount_dst $SWITCHLIGHT_ROOT $SWITCHLIGHT
 EOF
 
 rm -rf $SWITCHLIGHT_ROOT/builds/BUILDS
 
-($(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel0 -j $JOBS) || true
-($(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel1 -j $JOBS) || true
-($(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel2 -j $JOBS) || true
-($(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel3 -j $JOBS) || true
-($(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel4 -j $JOBS) || true
-($(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel5 -j $JOBS) || true
-($(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel6 -j $JOBS) || true
+($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel0 -j $JOBS) || true
+($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel1 -j $JOBS) || true
+($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel2 -j $JOBS) || true
+($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel3 -j $JOBS) || true
+($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel4 -j $JOBS) || true
+($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel5 -j $JOBS) || true
+($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel6 -j $JOBS) || true
 
 
 function build_and_install {
     # Build Requested
-    $(CHWS) make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache $@
+    $CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache $@
 
     # Make the install directory
     ssh $INSTALL_SERVER mkdir -p $INSTALL_DIR
