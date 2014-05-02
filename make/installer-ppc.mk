@@ -23,6 +23,10 @@ ifndef INSTALLER_NAME
 $(error $$INSTALLER_NAME is not set)
 endif
 
+export INSTALLER_SWI
+export INSTALLER_NAME
+export PACKAGE_NAME
+
 # Get the platform loaders from each platform package
 PLATFORM_LOADERS := $(foreach p,$(INSTALLER_PLATFORMS),$(shell $(SWITCHLIGHT_PKG_INSTALL) platform-$(p):powerpc --find-file switchlight.$(p).loader))
 # Get the platform config package for each platform
@@ -30,8 +34,12 @@ PLATFORM_LOADERS := $(foreach p,$(INSTALLER_PLATFORMS),$(shell $(SWITCHLIGHT_PKG
 # ZTN Manifest for the installer
 ZTN_MANIFEST := zerotouch.json
 
+DCONTROL := deb/debuild/debian/control
+DCHANGE := deb/debuild/debian/changelog
+DDATE := $(shell date -R)
 
 $(INSTALLER_NAME): $(PLATFORM_DIRS) $(INSTALLER_SWI) $(ZTN_MANIFEST)
+	$(SL_V_at)rm -rf *.installer *.deb
 	$(SL_V_at)cp $(PLATFORM_LOADERS) .
 	$(foreach p,$(INSTALLER_PLATFORMS), $(SWITCHLIGHT_PKG_INSTALL) platform-config-$(p):all --extract .;)
 	$(SL_V_at)cp $(INSTALLER_SWI) switchlight-powerpc.swi
@@ -44,6 +52,23 @@ $(INSTALLER_NAME): $(PLATFORM_DIRS) $(INSTALLER_SWI) $(ZTN_MANIFEST)
 	$(SWITCHLIGHT)/tools/mkshar --lazy $@ $(SWITCHLIGHT)/tools/sfx.sh.in installer.sh *.loader lib switchlight-powerpc.swi $(ZTN_MANIFEST)
 	$(SL_V_at)rm -f switchlight-powerpc.swi installer.sh
 	$(SL_V_at)rm -rf ./lib ./usr *.loader $(ZTN_MANIFEST)
+	echo "Source: $(PACKAGE_NAME)" > $(DCONTROL)
+	echo "Section: misc" >> $(DCONTROL)
+	echo "Priority: optional" >> $(DCONTROL)
+	echo "Maintainer: Support <support@bigswitch.com" >> $(DCONTROL)
+	echo "Build-Depends: debhelper (>= 9)" >> $(DCONTROL)
+	echo "Standards-Version: 3.8.4" >> $(DCONTROL)
+	echo "" >> $(DCONTROL)
+	echo "Package: $(PACKAGE_NAME)" >> $(DCONTROL)
+	echo "Architecture: all" >> $(DCONTROL)
+	echo "Depends:" >> $(DCONTROL)
+	echo "Description: Switch Light Bundle" >> $(DCONTROL)
+	echo " Switch Light Bundle" >> $(DCONTROL)
+	echo "$(PACKAGE_NAME) (0.1.0bsn1~ubuntu1) UNRELEASED; urgency=low" > $(DCHANGE)
+	echo "" >> $(DCHANGE)
+	echo "  * Initial release." >> $(DCHANGE)
+	echo "" >> $(DCHANGE)
+	echo " -- Support <support@bigswitch.com>  $(DDATE)" >> $(DCHANGE)
 
 shar installer: $(INSTALLER_NAME)
 
