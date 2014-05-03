@@ -49,13 +49,14 @@ class MainSh():
     # contained objects
     pp = None
 
-    warning_suppress = False            #
+    warning_suppress = False
+    single_cmd = None
 
     #
     # --------------------------------------------------------------------------------
     # warning
     #  When a config is getting replayed, warnings are suporessed.  Other situations
-    #  may also require supression of warnings.
+    #  may also require suppression of warnings.
     #
     def warning(self, message):
         if not self.warning_suppress:
@@ -63,7 +64,7 @@ class MainSh():
     
     #
     # --------------------------------------------------------------------------------
-    # supress_warnings(self)
+    # suppress_warnings(self)
     #
     def suppress_warnings(self):
         self.warning_suppress = True
@@ -112,7 +113,7 @@ class MainSh():
     # --------------------------------------------------------------------------------
     # note
     #  When a config is getting replayed, warnings/notes are suporessed.  Other situations
-    #  may also require supression of warnings.
+    #  may also require suppression of warnings.
     #
     def note(self, message):
         if not self.warning_suppress:
@@ -368,6 +369,8 @@ class MainSh():
         parser.add_option('-q', "--quiet", dest='quiet',
                           help='suppress warning messages',
                           action='store_true', default=False)
+        parser.add_option('-c', "--command", dest='command',
+                          help='run command and exit')
         (self.options, self.args) = parser.parse_args()
         self.dump_syntax = self.options.dump_syntax
         if not self.dump_syntax:
@@ -424,9 +427,11 @@ class MainSh():
         quiet = self.options.quiet
         if quiet == None:
             quiet = os.getenv('BIGCLI_SUPPRESS_WARNING')
-
         if quiet:
-            self.supress_warnings()
+            self.suppress_warnings()
+
+        # process command option
+        self.single_cmd = self.options.command
 
         self.pp = PrettyPrinter(self)
 
@@ -1905,6 +1910,15 @@ class MainSh():
                 else:
                     print "For additional debug information, use 'debug cli'.\n"
 
+    # for handling a single command from the 'command' option
+    def do_single_cmd(self, cmd):
+        try:
+            self.handle_multipart_line(cmd)
+        except:
+            print "\nError running command '%s'." % cmd
+            if self.debug or self.debug_backtrace:
+                print
+                traceback.print_exc()
 
 #
 # --------------------------------------------------------------------------------
@@ -1981,7 +1995,10 @@ def main():
                                  stdin=sys.stdin, env=os.environ)
             p.wait()
             sys.exit()
-    cli.loop()
+    if cli.single_cmd is None:
+        cli.loop()
+    else:
+        cli.do_single_cmd(cli.single_cmd)
 
     # Handle deferred service restarts/reloads.
     # This is only executed in init mode.
