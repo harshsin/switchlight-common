@@ -142,7 +142,7 @@ class get_controller(SLAPIObject):
         try:
             out = util.pcli_command('show controller')
         except:
-            out = {}
+            out = ''
         return out
 
 class get_environment(SLAPIObject):
@@ -153,7 +153,7 @@ class get_environment(SLAPIObject):
         try:
             out = util.pcli_command('show environment')
         except:
-            out = {}
+            out = ''
         return out
 
 class get_inventory(SLAPIObject):
@@ -164,5 +164,5 @@ class get_inventory(SLAPIObject):
         try:
             out = util.pcli_command('show inventory')
         except:
-            out = {}
+            out = ''
         return out
