@@ -19,6 +19,11 @@ ZTN_ROOT_DIR=${ZTN_ROOT:-/mnt/flash2/ztn}
 ZTN_CACHE_DIR=${ZTN_ROOT_DIR}/cache
 
 #
+# Make sure the ZTN root is always initialized.
+#
+mkdir -p ${ZTN_CACHE_DIR} || exit 1
+
+#
 # The latest ZTN manifest is always stored here
 #
 ZTN_MANIFEST=${ZTN_ROOT_DIR}/manifest.json
@@ -26,7 +31,7 @@ ZTN_MANIFEST=${ZTN_ROOT_DIR}/manifest.json
 #
 # Controls how long discovery waits for neighbor responses (in seconds)
 #
-ZTN_DISCOVERY_RESPONSE_WAIT=0
+ZTN_DISCOVERY_RESPONSE_WAIT=${ZTN_DISCOVERY_RESPONSE_WAIT:-0}
 
 ##############################
 #
@@ -186,7 +191,9 @@ ztn_download_url()
     case "${url}" in
         http:*|ftp:*)
             echo "Downloading ${url}...."
-            wget -O "${localdst}" "${url}"
+            if ! wget -O "${localdst}" "${url}"; then
+                return 2
+            fi
             ;;
         *)
             echo "Unsupported URL ${url}"
@@ -301,7 +308,7 @@ ztn_manifest_process_url()
         test $? -eq 0 || return 2
     fi
 
-    echo "Discovered Switch Light manifest from url $url"
+    echo "Discovered Switch Light manifest from url $murl"
     swi_url_mf=$(ztn_manifest_key_get '.swi_url' ${manifest})
 
     # Is there a SWI specified?
@@ -314,7 +321,9 @@ ztn_manifest_process_url()
         else
             # Go get it
             echo "Downloading new SWI..."
-            ztn_cache_install_url swi ${swi_url_mf} ${swi_md5_mf}
+            if ! ztn_cache_install_url swi ${swi_url_mf} ${swi_md5_mf}; then
+                return 2
+            fi
         fi
     fi
 
@@ -329,7 +338,9 @@ ztn_manifest_process_url()
         else
             # Go get it
             echo "Downloading startup-config..."
-            ztn_cache_install_url startup-config ${cfg_url_mf} ${cfg_md5_mf}
+            if ! ztn_cache_install_url startup-config ${cfg_url_mf} ${cfg_md5_mf}; then
+                return 2
+            fi
         fi
     fi
 
@@ -456,8 +467,10 @@ ztn_discovery_ex()
     neighs=$(ip -4 neigh show | awk '{print $1}')
 
     for a in $neighs6 $neighs; do
-        ztn_manifest_process ${a} ${macaddr} ${platform} ${serial} && return 1
+        ztn_manifest_process ${a} ${macaddr} ${platform} ${serial} && return 0
     done
+
+    return 1
 }
 
 ##############################
