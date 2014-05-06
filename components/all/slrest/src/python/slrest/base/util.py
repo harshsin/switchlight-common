@@ -16,8 +16,9 @@ import signal
 
 def pcli_command(cmd):
     """Execute a PCLI command and return the results."""
-    p = subprocess.Popen(('/usr/bin/pcli', '--init', '--mode=config'), stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-    (out,err) = p.communicate(input=cmd)
+    out = subprocess.check_output(('/usr/bin/pcli', '--init', '--mode=config',
+                                   '--command', cmd), 
+                                  stderr=subprocess.STDOUT)
     return out
 
 

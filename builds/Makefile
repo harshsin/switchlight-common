@@ -83,9 +83,10 @@ INST_BUILD_PATHS := $(foreach arch,$(INST_ARCHS),$(wildcard $(arch)/*))
 #
 define installer_build_template
 installer-$(1):
-	$(MAKE) -C $(2)
+	$(MAKE) -C $(2) deb
 	mkdir -p $(BUILDDIR)
 	cp $(2)/*.installer $(BUILDDIR)
+	test ! -f $(2)/*.deb || cp $(2)/*.deb $(BUILDDIR)
 	$(MAKE) -C $(2) clean
 endef
 

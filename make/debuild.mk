@@ -19,10 +19,6 @@ ifndef SWITCHLIGHT
 $(error $$SWITCHLIGHT must be specified before including this makefile.)
 endif
 
-ifndef PACKAGE_NAMES
-$(error $$PACKAGE_NAMES must be specified.)
-endif
-
 include $(SWITCHLIGHT)/make/config.mk
 
 DEBUILD = debuild --prepend-path=/usr/lib/ccache -eSWITCHLIGHT -eBUILD_DIR_BASE $(DEBUILD_ARGS) $(ARCH_OPTIONS) -b -us -uc
