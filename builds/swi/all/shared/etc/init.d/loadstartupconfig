@@ -18,9 +18,9 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 
 case "$1" in
     start)
-        if [ -e /etc/ztn_startup-config ]; then
+        if [ -e /mnt/flash/boot/ztn-startup-config ]; then
             log_action_begin_msg "Loading startup-config from ZTN"
-            config=/etc/ztn_startup-config
+            config=/mnt/flash/boot/ztn-startup-config
         elif [ -e /etc/swi_startup-config ]; then
             log_action_begin_msg "Loading startup-config from SWI"
 	    config=/etc/swi_startup-config
