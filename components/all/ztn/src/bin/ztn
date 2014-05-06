@@ -42,6 +42,7 @@ Options:
   --mac MAC: Set the mac address.
   --server SERVER: Set the server name.
   --url URL: Set the manifest url. This will override all other settings.
+  --wait: The amount of time to wait for neighbor discovery.
 "
 
 while [ "${1#-}" != "$1" ]; do
@@ -73,7 +74,7 @@ while [ "${1#-}" != "$1" ]; do
             ;;
         --startup)
             STARTUP=1
-            OPERATIONRS="${OPERATIONS} startup"
+            OPERATIONS="${OPERATIONS} startup"
             VALIDATE_REQUIRED=1
             ;;
         --url)
@@ -100,6 +101,11 @@ while [ "${1#-}" != "$1" ]; do
             shift
             # This is used directly by the ZTN function library.
             ZTN_ROOT=$1
+            ;;
+        --wait)
+            shift
+            # This is used directly by the ZTN function library.
+            ZTN_DISCOVERY_RESPONSE_WAIT=$1
             ;;
         --lib)
             shift
@@ -179,9 +185,15 @@ if [ "${DISCOVER}" ]; then
     if [ "${PLATFORM}" ]; then
         # Intentionally test both library functions
         if [ "${MAC}" ]; then
-            ztn_discovery_ex ${INTF} ${MAC} ${PLATFORM} ${SERIAL}
+            if ! ztn_discovery_ex ${INTF} ${MAC} ${PLATFORM} ${SERIAL}; then
+                echo "Failed."
+                exit 1
+            fi
         else
-            ztn_discovery ${INTF} ${PLATFORM} ${SERIAL}
+            if ! ztn_discovery ${INTF} ${PLATFORM} ${SERIAL}; then
+                echo "Failed."
+                exit 1
+            fi
         fi
     else
         echo "Must specify --platform with --discover."
