@@ -48,12 +48,11 @@ endif
 	>> installer.sh
 	$(SL_V_GEN)set -o pipefail ;\
 	if $(SL_V_P); then v="-v"; else v="--quiet"; fi ;\
+	$(SWITCHLIGHT)/tools/mkshar --lazy $@ $(SWITCHLIGHT)/tools/sfx.sh.in installer.sh *.loader lib switchlight-powerpc.swi $(ZTN_MANIFEST)
 ifdef INSTALLER_SWI
 	$(SL_V_at)rm -f switchlight-powerpc.swi
 endif
-	$(SWITCHLIGHT)/tools/mkshar --lazy $@ $(SWITCHLIGHT)/tools/sfx.sh.in installer.sh *.loader lib switchlight-powerpc.swi $(ZTN_MANIFEST)
-	$(SL_V_at)rm -f switchlight-powerpc.swi installer.sh
-	$(SL_V_at)rm -rf ./lib ./usr *.loader $(ZTN_MANIFEST)
+	$(SL_V_at)rm -rf installer.sh ./lib ./usr *.loader $(ZTN_MANIFEST)
 ifdef PACKAGE_NAME
 	echo "Source: $(PACKAGE_NAME)" > $(DCONTROL)
 	echo "Section: misc" >> $(DCONTROL)
