@@ -190,7 +190,7 @@ def show_log(data):
 command.add_action('implement-show-log', show_log,
                     {'kwargs': {'data'      : '$data',}})
 
-SHOW_USERS_COMMAND_DESCRIPTION = {
+SHOW_LOG_COMMAND_DESCRIPTION = {
     'name'         : 'show',
     'mode'         : 'login',
     'action'       : 'implement-show-log',
