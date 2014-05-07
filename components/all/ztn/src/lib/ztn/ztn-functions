@@ -146,6 +146,10 @@ ztn_cache_find()
 #
 # Show the object inventory for the current class.
 #
+# Please Note:
+# The output format must be YAML.
+# Other tools depend on this.
+#
 ztn_cache_class_inventory()
 {
     local class=$1
@@ -155,9 +159,10 @@ ztn_cache_class_inventory()
     for k in ${keys}; do
         path=$(ztn_cache_path ${class} ${k})
         if [ "${path}" ]; then
-            echo "$(basename ${path})   [$(date -r $path) - $(cat ${path}.url)]"
-        else
-            echo "ztn cache entry ${k} os corrupt."
+            echo "  ${k} :"
+            echo "    date : \"$(date -r $path)\""
+            echo "    url : \"$(cat ${path}.url)\""
+            echo "    path : \"${path}\""
         fi
     done
 }
@@ -171,8 +176,9 @@ ztn_cache_class_inventory()
 ztn_cache_inventory()
 {
     classes=$(ls ${ZTN_CACHE_DIR})
+
     for k in ${classes}; do
-        echo "${k}:"
+        echo "${k} :"
         ztn_cache_class_inventory $k
         echo
     done
