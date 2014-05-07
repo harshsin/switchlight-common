@@ -19,6 +19,7 @@ DISCOVER=
 TRANSACT=
 OPERATIONS=
 VALIDATE_REQUIRED=
+MANIFEST=
 
 __help__="
 Usage: $0 [OPTIONS] [OPERATIONS]
@@ -32,6 +33,7 @@ Operations:
   --inventory: Show the cache inventory
   --swi: Return the SWI from the current boot manifest.
   --startup: Return the startup-config from the current boot manifest.
+  --manifest: Show the contents of the current ZTN manifest.
 
 Options:
   --root PATH: Override the default ZTN root directory.
@@ -49,6 +51,10 @@ while [ "${1#-}" != "$1" ]; do
     case "$1" in
         -x)
             set -x
+            ;;
+        --manifest)
+            MANIFEST=1
+            OPERATIONS="${OPERATIONS} manifest"
             ;;
         --discover)
             DISCOVER=1
@@ -270,6 +276,12 @@ fi
 if [ "${STARTUP}" ]; then
     ztn_startup_get
 fi
+
+if [ "${MANIFEST}" ]; then
+    cat ${ZTN_MANIFEST}
+    echo
+fi
+
 
 
 
