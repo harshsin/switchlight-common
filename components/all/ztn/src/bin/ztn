@@ -61,7 +61,7 @@ while [ "${1#-}" != "$1" ]; do
         --validate)
             shift
             VALIDATE=$1
-            OPERATIONS="${OPERAIONS} validate"
+            OPERATIONS="${OPERATIONS} validate"
             ;;
         --inventory)
             INVENTORY=1
@@ -251,6 +251,9 @@ if [ "${VALIDATE}" ]; then
 fi
 
 if [ "${INVENTORY}" ]; then
+    # Don't output anything extra here.
+    # The output format is YAML and we don't
+    # want to ruin it.
     ztn_cache_inventory
 fi
 
