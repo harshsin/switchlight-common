@@ -249,8 +249,12 @@ installer_platform_bootconfig() {
     local blockdev=$1
     local partno=$2
 
+    # Is there a static boot-config in the installer package?
+    if [ -f "${installer_dir}/boot-config" ]; then
+        bootconfig=$(cat ${installer_dir}/boot-config)
+
     # Is there a platform bootconfig file?
-    if [ -f "${installer_platform_dir}/boot-config" ]; then
+    elif [ -f "${installer_platform_dir}/boot-config" ]; then
         bootconfig=$(cat ${installer_platform_dir}/boot-config)
     # Is there a platform bootconfig string?
     elif [ "${platform_bootconfig}" ]; then

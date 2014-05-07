@@ -7,7 +7,267 @@
 #
 ############################################################
 
-# Import the ZTN library
-. /lib/ztn/ztn-functions
+SERVER=
+MAC=
+PLATFORM=
+SERIAL=
+URL=
+ZTN_ROOT=
+ZTN_FUNCTIONS=
+INTF=
+DISCOVER=
+MANIFEST=
+OPERATIONS=
+VALIDATE_REQUIRED=
+
+__help__="
+Usage: $0 [OPTIONS] [OPERATIONS]
+
+Operations:
+  --discover: Run full ZTN discovery.
+  --manifest: Process a manifest URL.
+  --add-swi URL:  Add the given SWI URL to the cache.
+  --add-startup URL: Add the given startup-config URL to the cache.
+  --validate current|[manifest]: Validate the current or given manifest.
+  --inventory: Show the cache inventory
+  --swi: Return the SWI from the current boot manifest.
+  --startup: Return the startup-config from the current boot manifest.
+
+Options:
+  --root PATH: Override the default ZTN root directory.
+  --lib PATH:  Use the given ZTN library.
+  --platform PLATFORM: Set the platform name.
+  --intf INTF: Set the interface name for discovery transactions.
+  --serial SERIAL: Set the serial number.
+  --mac MAC: Set the mac address.
+  --server SERVER: Set the server name.
+  --url URL: Set the manifest url. This will override all other settings.
+  --wait: The amount of time to wait for neighbor discovery.
+"
+
+while [ "${1#-}" != "$1" ]; do
+    case "$1" in
+        -x)
+            set -x
+            ;;
+        --discover)
+            DISCOVER=1
+            OPERATIONS="${OPERATIONS} discover"
+            ;;
+        --manifest)
+            MANIFEST=1
+            OPERATIONS="${OPERATIONS} manifest"
+            ;;
+        --validate)
+            shift
+            VALIDATE=$1
+            OPERATIONS="${OPERAIONS} validate"
+            ;;
+        --inventory)
+            INVENTORY=1
+            OPERATIONS="${OPERATIONS} inventory"
+            ;;
+        --swi)
+            SWI=1
+            OPERATIONS="${OPERATIONS} swi"
+            VALIDATE_REQUIRED=1
+            ;;
+        --startup)
+            STARTUP=1
+            OPERATIONS="${OPERATIONS} startup"
+            VALIDATE_REQUIRED=1
+            ;;
+        --url)
+            shift
+            URL=$1
+            ;;
+        --mac)
+            shift
+            MAC=$1
+            ;;
+        --server)
+            shift
+            SERVER=$1
+            ;;
+        --platform)
+            shift
+            PLATFORM=$1
+            ;;
+        --serial)
+            shift
+            SERIAL=$1
+            ;;
+        --root)
+            shift
+            # This is used directly by the ZTN function library.
+            ZTN_ROOT=$1
+            ;;
+        --wait)
+            shift
+            # This is used directly by the ZTN function library.
+            ZTN_DISCOVERY_RESPONSE_WAIT=$1
+            ;;
+        --lib)
+            shift
+            # Use this ZTN library
+            ZTN_FUNCTIONS=$1
+            ;;
+        --add-swi)
+            shift
+            ADD_SWI=$1
+            OPERATIONS="${OPERATIONS} add-swi"
+            ;;
+        --add-startup)
+            shift
+            ADD_STARTUP=$1
+            OPERATIONS="${OPERATIONS} add-startup"
+            ;;
+        --intf)
+            shift
+            INTF=$1
+            ;;
+        -h|--help)
+            echo "${__help__}"
+            exit 0
+            ;;
+        *)
+	    echo "Unrecognized option $1" 2>&1
+	    exit 1
+	    ;;
+    esac
+    shift
+done
+
+
+if [ ! "${OPERATIONS}" ]; then
+    echo "No operation."
+    echo "${__help__}"
+    exit 1
+fi
+
+#
+# Load the ZTN library
+#
+ZTN_FUNCTIONS=${ZTN_FUNCTIONS:-/lib/ztn/ztn-functions}
+
+if [ -e "${ZTN_FUNCTIONS}" ]; then
+    # Import the ZTN library
+    . ${ZTN_FUNCTIONS}
+else
+    echo "The ZTN library is missing. (${ZTN_FUNCTIONS})"
+    echo "You can specify its location with the --lib option."
+    exit 1
+fi
+
+#
+# Attempt some reasonable-ish defaults
+#
+if [ ! "${PLATFORM}" ]; then
+    if [ -e /etc/sl_platform ]; then
+        PLATFORM=$(cat /etc/sl_platform)
+    fi
+    if [ -e /etc/onl_platform ]; then
+        PLATFORM=$(cat /etc/onl_platform)
+    fi
+fi
+SERIAL=${SERIAL:-unknown}
+INTF=${INTF:-ma1}
+MAC=${MAC:-$(ifconfig ${1} | awk '/HWaddr/ { print tolower($5) }')}
+
+
+#
+# Perform whatever operations were requested.
+#
+# Operations that can change the cache state should come first.
+#
+#
+if [ "${DISCOVER}" ]; then
+    if [ "${PLATFORM}" ]; then
+        # Intentionally test both library functions
+        if [ "${MAC}" ]; then
+            if ! ztn_discovery_ex ${INTF} ${MAC} ${PLATFORM} ${SERIAL}; then
+                echo "Failed."
+                exit 1
+            fi
+        else
+            if ! ztn_discovery ${INTF} ${PLATFORM} ${SERIAL}; then
+                echo "Failed."
+                exit 1
+            fi
+        fi
+    else
+        echo "Must specify --platform with --discover."
+        exit 1
+    fi
+fi
+
+if [ "${MANIFEST}" ]; then
+    if [ "${URL}" ]; then
+        if ! ztn_manifest_process_url "${URL}"; then
+            echo "Failed."
+            exit 1
+        fi
+    else
+        if [ ! "${SERVER}" ]; then
+            echo "--server or --url must be set with --manifest."
+            exit 1
+        fi
+        if [ ! "${MAC}" ]; then
+            echo "--mac or --url must be set with --manifest."
+            exit 1
+        fi
+        if [ ! "${PLATFORM}" ]; then
+            echo "--platform or --url must be set with --manifest."
+            exit 1
+        fi
+        if [ ! "${SERIAL}" ]; then
+            echo "--serial or --url must be set with --manifest."
+            exit 1
+        fi
+        if ! ztn_manifest_process "${SERVER}" "${MAC}" "${PLATFORM}" "${SERIAL}"; then
+            echo "Failed."
+            exit 1
+        fi
+    fi
+fi
+
+if [ "${ADD_SWI}" ]; then
+    ztn_cache_install_url swi "${ADD_SWI}"
+fi
+
+if [ "${ADD_STARTUP}" ]; then
+    ztn_cache_install_url startup-config "${ADD_STARTUP}"
+fi
+
+#
+# These commands only read the cache state.
+#
+if [ "${VALIDATE}" ]; then
+    if [ "${VALIDATE}" = "current" ]; then
+        ztn_manifest_validate
+    else
+        ztn_manifest_validate "${VALIDATE}"
+    fi
+fi
+
+if [ "${INVENTORY}" ]; then
+    ztn_cache_inventory
+fi
+
+if [ "${VALIDATE_REQUIRED}" ]; then
+    if ! ztn_manifest_validate 1; then
+        exit 1
+    fi
+fi
+
+if [ "${SWI}" ]; then
+    ztn_swi_get
+fi
+
+if [ "${STARTUP}" ]; then
+    ztn_startup_get
+fi
+
+
 
 

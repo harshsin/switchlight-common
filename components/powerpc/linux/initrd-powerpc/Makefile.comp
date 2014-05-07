@@ -1,11 +1,11 @@
 # -*- Makefile -*-
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 ############################################################
@@ -29,15 +29,19 @@ $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done:
 	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) setup
 	touch $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done
 
-$(BUILD_INITRD_POWERPC)/initrd-powerpc: $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done
-	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) platform-configs
-	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) SWITCHLIGHT_RELEASE="$(RELEASE)" buildroot-powerpc
+VERSION_FILE=$(BUILD_INITRD_POWERPC)/config.slv
+
+$(BUILD_INITRD_POWERPC)/initrd-powerpc: $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done $(VERSION_FILE)
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) platform-configs ztn
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) VERSION_FILE=$(VERSION_FILE) buildroot-powerpc
 	cat $(SWITCHLIGHT_SUBMODULE_LOADER)/buildroot-powerpc/images/rootfs.cpio.gz >initrd-powerpc
 
 .PHONY: deb $(BUILD_INITRD_POWERPC)/initrd-powerpc
 
 deb:
 	$(MAKE) -C deb
+
+include $(SWITCHLIGHT)/make/version.mk
 
 
 
