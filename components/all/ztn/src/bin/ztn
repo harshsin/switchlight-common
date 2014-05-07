@@ -16,7 +16,7 @@ ZTN_ROOT=
 ZTN_FUNCTIONS=
 INTF=
 DISCOVER=
-MANIFEST=
+TRANSACT=
 OPERATIONS=
 VALIDATE_REQUIRED=
 
@@ -25,7 +25,7 @@ Usage: $0 [OPTIONS] [OPERATIONS]
 
 Operations:
   --discover: Run full ZTN discovery.
-  --manifest: Process a manifest URL.
+  --transact: Run a ZTN transaction via server or URL.
   --add-swi URL:  Add the given SWI URL to the cache.
   --add-startup URL: Add the given startup-config URL to the cache.
   --validate current|[manifest]: Validate the current or given manifest.
@@ -54,9 +54,9 @@ while [ "${1#-}" != "$1" ]; do
             DISCOVER=1
             OPERATIONS="${OPERATIONS} discover"
             ;;
-        --manifest)
-            MANIFEST=1
-            OPERATIONS="${OPERATIONS} manifest"
+        --transact)
+            TRANSACT=1
+            OPERATIONS="${OPERATIONS} transact"
             ;;
         --validate)
             shift
@@ -201,30 +201,30 @@ if [ "${DISCOVER}" ]; then
     fi
 fi
 
-if [ "${MANIFEST}" ]; then
+if [ "${TRANSACT}" ]; then
     if [ "${URL}" ]; then
-        if ! ztn_manifest_process_url "${URL}"; then
+        if ! ztn_transact_url "${URL}"; then
             echo "Failed."
             exit 1
         fi
     else
         if [ ! "${SERVER}" ]; then
-            echo "--server or --url must be set with --manifest."
+            echo "--server or --url must be set with --transact."
             exit 1
         fi
         if [ ! "${MAC}" ]; then
-            echo "--mac or --url must be set with --manifest."
+            echo "--mac or --url must be set with --transact."
             exit 1
         fi
         if [ ! "${PLATFORM}" ]; then
-            echo "--platform or --url must be set with --manifest."
+            echo "--platform or --url must be set with --transact."
             exit 1
         fi
         if [ ! "${SERIAL}" ]; then
-            echo "--serial or --url must be set with --manifest."
+            echo "--serial or --url must be set with --transact."
             exit 1
         fi
-        if ! ztn_manifest_process "${SERVER}" "${MAC}" "${PLATFORM}" "${SERIAL}"; then
+        if ! ztn_transact "${SERVER}" "${MAC}" "${PLATFORM}" "${SERIAL}"; then
             echo "Failed."
             exit 1
         fi
