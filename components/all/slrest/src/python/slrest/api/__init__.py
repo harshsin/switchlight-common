@@ -273,25 +273,41 @@ class v1_sleep(SLAPIObject):
     Used for transaction testing.
     """
     route = "/api/v1/sleep"
-    def GET(self, seconds):
-        route = self.route
-        class Simple(TransactionTask):
-            def handler(self):
-                time.sleep(self.args)
-                self.status = "OK"
-                self.reason = "Finished up in %d seconds" % (self.args)
-                self.data = dict(args=self.args)
-                self.finish()
+    def GET(self, seconds, sync=False):
 
+        #
+        # Declare a subclass of TransactionTask
+        # to contain your task's functionality
+        #
         class Sleep(TransactionTask):
+            #
+            # This handler performs the actual work
+            #
             def handler(self):
                 time.sleep(self.args)
                 self.status = response.status.OK
                 self.reason = "Sleep %d seconds completed." % self.args
                 self.finish()
 
-        tm = TransactionManager.get_manager(route)
-        (tid, tt) = tm.new(Sleep, int(seconds))
+        # Get a transaction manager. We just instance one per our route
+        # Normally this would be per transaction group.
+        tm = TransactionManager.get_manager(self.route)
+
+        # Generate a new task and return the task response.
+        # The first argument is the TransactionTask class.
+        # The second argument is the path for the response.
+        #  Its just easiest to specify it here, where we already know the route.
+        # The first argument is optional, but will be passed to the subclass
+        # as the .args member
+        (tid, tt) = tm.new(Sleep, self.route, int(seconds))
+
+        # If the response should be syncronous then join the task:
+        if sync:
+            tt.join()
+
+        # Return the response
         return tt.response()
+
+
 
 
