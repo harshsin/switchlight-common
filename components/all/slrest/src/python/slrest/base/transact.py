@@ -49,7 +49,7 @@ class TransactionManagers(object):
         """
         Get any task with the given transaction id.
         """
-        for m in klass.managers.items():
+        for m in klass.managers.values():
             tt = m.get_task(tid)
             if tt:
                 return tt
@@ -62,7 +62,7 @@ class TransactionManagers(object):
         Return all running transaction ids.
         """
         tids = [];
-        for m in klass.managers.items():
+        for m in klass.managers.values():
             tids = tids + m.get_tids_running()
         return tids
 
@@ -72,7 +72,7 @@ class TransactionManagers(object):
         Return all finished transaction ids.
         """
         tids = []
-        for m in klass.managers.items():
+        for m in klass.managers.values():
             tids = tids + m.get_tids_finished()
         return tids
 
@@ -82,7 +82,7 @@ class TransactionManagers(object):
         Return all transaction ids.
         """
         tids = []
-        for m in klass.managers.items():
+        for m in klass.managers.values():
             tids = tids + m.get_tids()
         return tids
 
@@ -92,7 +92,7 @@ class TransactionManagers(object):
         Return all running tasks.
         """
         tasks = []
-        for m in klass.managers.items():
+        for m in klass.managers.values():
             tasks = tasks + m.get_tasks_running()
         return tasks
 
@@ -102,7 +102,7 @@ class TransactionManagers(object):
         Return all finished tasks.
         """
         tasks = []
-        for m in klass.managers.items():
+        for m in klass.managers.values():
             tasks = tasks + m.get_tasks_finished()
         return tasks
 
@@ -112,7 +112,7 @@ class TransactionManagers(object):
         Return all tasks.
         """
         tasks = []
-        for m in klass.managers.items():
+        for m in klass.managers.values():
             tasks = tasks + m.get_tasks_all()
         return tasks
 
@@ -205,14 +205,14 @@ class TransactionManager(object):
             return self.running.keys() + self.finished.keys()
 
     def get_tasks_running(self):
-        return self.running.items()
+        return self.running.values()
 
     def get_tasks_finished(self):
-        return self.finished.items()
+        return self.finished.values()
 
     def get_tasks_all(self):
         with self.lock:
-            return self.running.items() + self.finished.items()
+            return self.running.values() + self.finished.values()
 
 
     def __get_task(self, tid):
