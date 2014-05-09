@@ -8,7 +8,6 @@
 #
 # </bsn.cl>
 ############################################################
-############################################################
 #
 # SwitchLight Installation Script.
 #
@@ -261,11 +260,7 @@ installer_platform_bootconfig() {
         bootconfig="${platform_bootconfig}"
     # Use the default.
     else
-        if [ "${installer_mode_standalone}" ]; then
-            bootconfig="SWI=flash2:switchlight-${installer_arch}.swi\nNETDEV=ma1\n"
-        else
-            bootconfig='SWI=flash2:.ztn-switchlight.swi\nNETDEV=ma1\nNETAUTO=dhcp\n'
-        fi
+        bootconfig="SWI=flash2:switchlight-${installer_arch}.swi\nNETDEV=ma1\n"
     fi
     # Write the boot-config file to the given partition.
     installer_say "Writing boot-config."
@@ -302,11 +297,7 @@ installer_platform_swi() {
         if [ "${platform_swi_install_name}" ]; then
             local swidst="${platform_swi_install_name}"
         else
-            if [ "${installer_mode_standalone}" ]; then
-                local swidst="switchlight-${installer_arch}.swi"
-            else
-                local swidst=".ztn-switchlight.swi"
-            fi
+            local swidst="switchlight-${installer_arch}.swi"
         fi
         installer_partition_cp ${blockdev} ${partno} ${swi} ${swidst}
     else
@@ -385,25 +376,12 @@ if [ "$installer_debug" ]; then
     set -x
 fi
 
-#
-# The default hands-free installer installers SwitchLight in ZTN mode.
-# If you want to install in standalone mode from the console,
-# do the following at the uboot prompt before installing:
-# -> setenv sl_installer_standalone 1
-# -> saveenv
-#
-fw_printenv sl_installer_standalone &> /dev/null && installer_mode_standalone=1
-
-#
-# Remount tmpfs larger if possible.
-# We will be doing all of our work out of /tmp
-#
-mount -o remount,size=512M /tmp || true
-
 # Pickup ONIE defines for this machine.
 [ -r /etc/machine.conf ] && . /etc/machine.conf
 
-
+#
+# Installation environment setup.
+#
 if [ "${onie_platform}" ]; then
     # Running under ONIE, most likely in the background in installer mode.
     # Our messages have to be sent to the console directly, not to stdout.
@@ -441,16 +419,15 @@ else
     installer_arch=powerpc
 fi
 
-# Replaced during build packaging with the current version.
-sl_version="@SLVERSION@"
 
-installer_say "SwitchLight Installer ${sl_version}"
-installer_say "Detected platform: ${installer_platform}"
-if [ "${installer_mode_standalone}" ]; then
-    installer_say "Installing in standalone mode."
-else
-    installer_say "Installing in ZTN mode."
-fi
+#
+# Remount tmpfs larger if possible.
+# We will be doing all of our work out of /tmp
+#
+mount -o remount,size=512M /tmp || true
+
+
+
 
 # Unpack our distribution
 installer_say "Unpacking SwitchLight installer files..."
@@ -463,12 +440,18 @@ else
 fi
 
 # Developer debugging
+fw_printenv sl_installer_unpack_only &> /dev/null && installer_unpack_only=1
 if [ "${installer_unpack_only}" ]; then
     installer_say "Unpack only requested."
     exit 1
 fi
 
 
+# Replaced during build packaging with the current version.
+sl_version="@SLVERSION@"
+
+installer_say "SwitchLight Installer ${sl_version}"
+installer_say "Detected platform: ${installer_platform}"
 
 # Look for the platform installer directory.
 installer_platform_dir="${installer_dir}/lib/platform-config/${installer_platform}"
