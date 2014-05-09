@@ -15,6 +15,7 @@ from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
 from slrest.base import config
 from slrest.base.transact import *
+from slrest.base.response import SLREST
 
 class bash(SLAPIObject):
     """Execute a bash command and return the results."""
@@ -234,37 +235,42 @@ class ztn_transact_status(SLAPIObject):
         out = json.dumps({ 'status' : status })
         return out
 
-class v1_transaction_status(SLAPIObject):
+
+
+
+
+
+
+class v1_transaction(SLAPIObject):
     """Get the status of the given transaction."""
     route = "/api/v1/transaction"
     def GET(self, id):
-        tt = TransactionManager.get_global_task(id)
+        tt = TransactionManagers.get_task(id)
         if tt:
             return tt.response()
         else:
-            return json.dumps({ "status" : response.status.MISSING })
+            return SLREST.response(self.route, SLREST.Status.MISSING)
 
 class v1_transactions_running(SLAPIObject):
-    """Show all running transactions"""
+    """Show all running transaction ids"""
     route = "/api/v1/transactions/running"
     def GET(self):
-        tids = TransactionManager.get_all_running_tids()
-        return json.dumps({ "status" : response.status.OK, "data" : tids})
+        return SLREST.response(self.route, SLREST.Status.OK,
+                               data=TransactionManagers.get_tids_running())
 
 class v1_transactions_finished(SLAPIObject):
-    """Show all finished transactions"""
+    """Show all finished transaction ids"""
     route = "/api/v1/transactions/finished"
     def GET(self):
-        tids = TransactionManager.get_all_finished_tids()
-        return json.dumps({ "status" : response.status.OK, "data" : tids})
+        return SLREST.response(self.route, SLREST.Status.OK,
+                               data=TransactionManagers.get_tids_finished())
 
 class v1_transactions_all(SLAPIObject):
     """Show all transactions"""
     route = "/api/v1/transactions/all"
     def GET(self):
-        tids = TransactionManager.get_all_tids()
-        return json.dumps({ "status" : response.status.OK, "data" : tids})
-
+        return SLREST.response(self.route, SLREST.Status.OK,
+                               data=TransactionManagers.get_tids_all())
 
 class v1_sleep(SLAPIObject):
     """
@@ -285,13 +291,13 @@ class v1_sleep(SLAPIObject):
             #
             def handler(self):
                 time.sleep(self.args)
-                self.status = response.status.OK
+                self.status = SLREST.Status.OK
                 self.reason = "Sleep %d seconds completed." % self.args
                 self.finish()
 
         # Get a transaction manager. We just instance one per our route
         # Normally this would be per transaction group.
-        tm = TransactionManager.get_manager(self.route)
+        tm = TransactionManagers.get(self.route)
 
         # Generate a new task and return the task response.
         # The first argument is the TransactionTask class.
@@ -299,7 +305,7 @@ class v1_sleep(SLAPIObject):
         #  Its just easiest to specify it here, where we already know the route.
         # The first argument is optional, but will be passed to the subclass
         # as the .args member
-        (tid, tt) = tm.new(Sleep, self.route, int(seconds))
+        (tid, tt) = tm.new_task(Sleep, self.route, int(seconds))
 
         # If the response should be syncronous then join the task:
         if sync:
