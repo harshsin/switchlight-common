@@ -1,22 +1,35 @@
 #!/usr/bin/python
 ############################################################
 #
-# SLREST Response Formats
+# SLREST Response Constants
 #
 ############################################################
 
-class status(object):
-    """
-    SLREST Status Codes
+class SLREST(object):
+    class Keys(object):
+        """
+        SLREST JSON Standard Response Keys
+        """
+        PATH="path"
+        STATUS="status"
+        REASON="reason"
+        TRANSACTION="transaction"
+        DATA="data"
 
-    All APIs set the status key of their response to one
-    of these values.
-    """
-    OK="OK"
-    ERROR="ERROR"
-    ACCEPTED="ACCEPTED"
-    BUSY="BUSY"
-    PENDING="PENDING"
-    EXPIRED="EXPIRED"
-    MISSING="MISSING"
+    class Status(object):
+        """
+        SLREST Status Codes
+
+        All APIs set the status key of their response to one
+        of these values.
+        """
+        OK="OK"
+        ERROR="ERROR"
+        ACCEPTED="ACCEPTED"
+        BUSY="BUSY"
+        PENDING="PENDING"
+        EXPIRED="EXPIRED"
+        MISSING="MISSING"
+
+
 
