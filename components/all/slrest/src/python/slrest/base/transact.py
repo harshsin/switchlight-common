@@ -1,70 +1,158 @@
 #!/usr/bin/python
 ############################################################
 #
-# SwitchLight Transactions
+# SLREST Transaction Management
 #
 ############################################################
-
 from datetime import datetime
 import logging
-import re
-import urllib2
 import threading
-import Queue
 import uuid
 import time
+import os
+import shutil
+import json
+import response
+
+# This is the global transaction collection timer.
+GARBAGE_COLLECT_TIMEOUT=1
+
+# This is the location for TransactionTask working directories
+TRANSACTION_TASK_WORKDIR_BASE="/tmp/slrest"
+
 
 class TransactionManager(object):
+    """
+    Global Transaction Manager Class
+
+    All API transactions are submitted via a TransactionManager object.
+
+    TransactionManagers are tracked by name, and intended to be instanced
+    for a group of API implementations sharing the same transaction semantics.
+    """
+
+    # Global Transaction Manager instances are stored here.
     managers={}
 
-    def __str__(self):
-        s = ''
-        with self.lock:
-            s += "TransactionManager: %s\n" % self.name
-            s += "  Maximum Tasks: %d\n" % self.max
-            s += "  Running: %d\n" % len(self.running)
-            s += "  Finished: %d\n" % len(self.finished)
-        return s
-
     @classmethod
-    def get(klass, name, max_=0):
+    def get_manager(klass, name, max_=0):
+        """
+        Get a TransactionManager by name
+
+        This will allocate a new TransactionManager or return
+        the existing one by name.
+
+        name : The name of the transaction manager.
+        max_ : Passed to TransactionManager() if creating a new object.
+               See TransactionManager.__init__()
+
+        """
+
         if not name in klass.managers:
             klass.managers[name] = TransactionManager(name, max_)
         return klass.managers[name]
 
-    def __init__(self, name, max_):
+    @classmethod
+    def get_global_task(klass, tid):
+        """
+        Get a global transaction
+        """
+        for (n, m) in klass.managers.iteritems():
+            tt = m.get(tid)
+            if tt:
+                return tt
+        return None
+
+
+    @classmethod
+    def get_all_running_tids(klass):
+        """
+        Return all transaction ids
+        """
+        tids = [];
+        for (n, m) in klass.managers.iteritems():
+            tids = tids + m.get_running_tids()
+        return tids
+
+    @classmethod
+    def get_all_finished_tids(klass):
+        tids = []
+        for (n, m) in klass.managers.iteritems():
+            tids = tids + m.get_finished_tids()
+        return tids
+
+    @classmethod
+    def get_all_tids(klass):
+        tids = []
+        for (n, m) in klass.managers.iteritems():
+            tids = tids + m.get_tids()
+        return tids
+
+
+    def __init__(self, name, max_=None):
+        """
+        Create a new TransactionManager.
+
+        name : The name of this transaction manager.
+        max_ : The maximum number of outstanding transactions that should
+               be allowed by the manager.
+
+               None means unlimited.
+
+        """
         self.name = name
         self.max = max_
+        # These are the currently running transactions
         self.running = {}
+        # These are completed transactions.
         self.finished = {}
         self.logger = logging.getLogger(name)
         self.lock = threading.Lock()
         self.newlock = threading.Lock()
 
-    def userlock(self):
-        self.userlock.lock()
 
-    def userunlock(self):
-        self.userlock.unlock()
+    def new(self, transaction_class, path, args=None):
+        """
+        Create a new task
 
-    def outstanding(self):
-        return len(self.transactions)
-
-    def new_task(self, task, args):
-        self.logger.info("new task")
+        """
         with self.newlock:
             if self.max and len(self.running) >= self.max:
                 return (None, None)
-            tt = TransactionTask(self, task, args)
+            tt = transaction_class(self)
             with self.lock:
                 self.running[tt.tid] = tt
+            tt.path = path
+            tt.args = args
             tt.start()
         return (tt.tid, tt)
 
-    def finish_task(self, tid):
+
+    def __get(self, tid):
+        """Get the given task (lookup only) """
+        rv = None
+        with self.lock:
+            if tid in self.running:
+                rv = self.running[tid]
+            if tid in self.finished:
+                rv = self.finished[tid]
+        return rv
+
+    def get(self, tid):
+        """Get the given task. """
+        rv = self.__get(tid)
+        if rv:
+            rv.access_time = datetime.utcnow()
+        # Garbage collect
+        self.__gc()
+        return rv
+
+    def finish(self, tid):
+        """Called by a TransactionTask object when it completes itself."""
         with self.lock:
             if tid in self.running:
                 self.finished[tid] = self.running[tid]
+                self.finished[tid].access_time = datetime.utcnow()
                 del self.running[tid]
                 return True
             elif tid in self.finished:
@@ -73,35 +161,176 @@ class TransactionManager(object):
             else:
                 return False
 
-    def get_task(self, tid, clean=False):
+
+    def __gc(self):
+        """Perform garbage collection on finished tasks."""
         with self.lock:
-            if tid in self.running:
-                return self.running[tid]
-            if tid in self.finished:
-                tt = self.finished[tid]
-                if clean:
-                    del self.finished[tid]
-                return tt
-        return None
+            for k in self.finished.keys():
+                tt = self.finished[k]
+                t = datetime.utcnow() - tt.access_time
+                if t.total_seconds() >= GARBAGE_COLLECT_TIMEOUT:
+                    del self.finished[k]
+                    tt.cleanup()
+        self.__gc_orphans()
+
+    def __gc_orphans(self):
+        """
+        Garbage collect any transaction workspaces that have been orphaned.
+
+        Any transaction directories that aren't associated with any current
+        transaction ids are orphaned and should probably be cleaned up.
+        """
+        for e in os.listdir(TRANSACTION_TASK_WORKDIR_BASE):
+            if self.__get(e) is None:
+                shutil.rmtree("%s/%s" % (TRANSACTION_TASK_WORKDIR_BASE,
+                                         e))
+
+    def __str__(self):
+        """String Representation"""
+        s = ''
+        with self.lock:
+            s += "TransactionManager: %s\n" % self.name
+            s += "  Maximum Tasks: %d\n" % self.max
+            s += "  Running: %d\n" % len(self.running)
+            s += "  Finished: %d\n" % len(self.finished)
+        return s
+
+    def get_running_tids(self):
+        """Return all currently running transaction ids."""
+        return self.running.keys()
+
+    def get_finished_tids(self):
+        """Return all currently finished transaction ids."""
+        return self.finished.keys()
+
+    def get_tids(self):
+        """Return all known ids."""
+        with self.lock:
+            return self.running.keys() + self.finished.keys()
 
 class TransactionTask(object):
-    def __init__(self, parent, task, args):
-        self.parent = parent
+    """
+    Individual Transaction Implementations.
+
+    TransactionTasks are created for each requested transaction
+    by the parent TransactionManager.
+
+    You should derive from this class and provide the handle() and cleanup()
+    methods to implement your transaction's functionality.
+
+    """
+
+    def __init__(self, tm):
+        """
+        Create a TransactionTask object.
+
+        tm : The parent transaction manager.
+        """
+
+        # Parent transaction manager.
+        self.tm = tm;
+        # Our transaction id
         self.tid = str(uuid.uuid4())
-        self.started = datetime.utcnow()
+        # When we started - populated when the start() method is invoked.
+        self.started = None
+        # When we finished - populated when the task finishes itself.
         self.finished = None
-        self.exception = None
-        self.logger = logging.getLogger("%s:%s" % (parent.name, self.tid))
-        self.result = None
-        self.rc = None
-        self.worker = threading.Thread(target=task, args=(self,)+args)
+        # Per-task logger
+        self.logger = logging.getLogger("%s:%s" % (tm.name, self.tid))
+
+
+        #
+        # These keys are required by the response protocol.
+        #
+        self.status = response.status.ACCEPTED
+        self.reason = "The transaction is still being processed."
+        self.transaction = "/api/v1/transaction?id=%s" % self.tid
+        self.data = None
+        self.path = None
+
+        #
+        # All objects inherit a task-specific work area that
+        # will persist for the lifetime of the task.
+        #
+        self.workdir = "%s/%s" % (TRANSACTION_TASK_WORKDIR_BASE, self.tid)
+        os.makedirs(self.workdir)
+
+        self.worker = None
 
     def start(self):
+        """Start processing our task."""
+        self.worker = threading.Thread(target=self.__handler)
+        self.started = datetime.utcnow()
         self.worker.start()
+
+    def finish(self):
+        """Called by the transaction handler when it has completed its task."""
+        self.finished = datetime.utcnow()
+        self.duration = (self.finished - self.started).total_seconds()
+        self.tm.finish(self.tid)
+
+    def cleanup(self):
+        # Call any custom cleanup
+        self.__handler_cleanup()
+        # Destroy our working directory
+        shutil.rmtree(self.workdir)
+
+    def __handler(self):
+        """This internal method handles exception processing for derived handlers."""
+        try:
+            self.handler()
+        except Exception, e:
+            self.reason = "Internal Exception (%s): %s" % (self.handler, e)
+            self.status = response.status.ERROR
+            self.finish()
+
+    def __handler_cleanup(self):
+        """This internal method handles exception processing from derived handler_cleanups."""
+        try:
+            self.handler_cleanup()
+        except:
+            pass
+
+    def handler(self):
+        """
+        This method handles the actual transaction.
+        """
+        self.status = "OK"
+        self.reason = "Didn't do anything."
+        self.data = None
+        self.finish()
+
+    def handler_cleanup(self):
+        """
+        This method performs custom cleanup for a handler.
+
+        The task's work directory is automatically deallocated when
+        the task is deleted. This method is only required if you have
+        cleanup other than removing the contents of the work directory.
+        """
+        return True
+
+
+    def join(self):
+        """Join with the worker task."""
+        if self.worker:
+            self.worker.join()
+            self.worker = None
+
+    def running(self):
+        """Is the task currently running."""
+        if self.worker:
+            if self.finished:
+                self.join()
+                return False
+            else:
+                return True
+        else:
+            return False
 
     def __str__(self):
         s = ""
-        s += "Type: %s\n" % self.parent.name
+        s += "Type: %s\n" % self.tm.name
         s += "ID: %s\n" % self.tid
         s += "Started: %s\n" % self.started
         s += "Status: "
@@ -113,56 +342,66 @@ class TransactionTask(object):
         else:
             s += "Completed."
         s += '\n'
+        if self.started:
+            s += "Started: %s\n" % self.started
         if self.finished:
             s += "Finished: %s\n" % self.finished
-        if self.exception:
-            s += 'Exception: %s\n' % self.exception
-        if self.result:
-            s += 'Result: %s\n' % self.result
-        if self.rc:
-            s += 'Returned: %s\n' % self.rc
-
+            s += "Duration: %d seconds\n" % self.duration
+            s += "Status: %s\n" % self.status
+            s += "Reason: %s\n" % self.reason
+            if self.data:
+                s += "Data:\n"
+                s += repr(self.data)
+            else:
+                s += "Data: %s" % self.data
         return s
 
-    def _worker_finished(self, rc, result, exception=None):
-        self.finished = datetime.utcnow()
-        self.result = result
-        self.rc = rc
-        self.exception = exception
-        self.parent.finish_task(self.tid)
 
-    def join(self):
-        if self.worker is not None:
-            self.logger.debug("Joining worker")
-            self.worker.join()
-            self.worker = None
-
-    def running(self):
-        if self.worker:
-            if self.finished:
-                self.join()
-                return False
-            else:
-                return True
-        else:
-            return False
+    def response(self):
+        # Returns the JSON response for the given transaction.
+        response = {}
+        response["path"] = self.path
+        response["status"] = self.status
+        response["reason"] = self.reason
+        response["transaction"] = self.transaction
+        response["data"] = self.data
+        return json.dumps(response)
 
 
 if __name__ == "__main__":
-    def transhandler(parent, sleep, prnt):
-        parent.logger.info("sleep=%d, prnt=%s" % (sleep, prnt))
-        time.sleep(sleep)
-        parent._worker_finished(True, "Finished")
 
-    tm = TransactionManager.get("ZTN")
-    (tid,tt) = tm.new_task(transhandler, (5, "Hello, World!"))
+    def simple_test(t):
+        class Simple(TransactionTask):
+            def handler(self):
+                time.sleep(self.args)
+                self.status = "OK"
+                self.reason = "Finished up in %d seconds" % (self.args)
+                self.data = dict(args=self.args)
+                self.finish()
 
-    while tt.running():
+        print "simple_test(%d)" % t
+        tm = TransactionManager.get_manager("simple")
+        now = datetime.utcnow()
+        (tid, tt) = tm.new(Simple, "simple_path", t)
+        r=True
+        while tt.running():
+            time.sleep(1/4)
+            if r:
+                print tt.response()
+                r = False
+
+        tt = tm.get(tid)
+
+        if int(tt.duration) != t:
+            raise Exception("Failed: duration=%s, arg=%d" % (tt.duration, t))
         print tt
+        print tt.response()
         print tm
-        time.sleep(1)
+        print "Passed"
+        return True
 
-    print tt
-    print tm
-
+    simple_test(1)
+    simple_test(2)
+    simple_test(3)
+    simple_test(4)
 
