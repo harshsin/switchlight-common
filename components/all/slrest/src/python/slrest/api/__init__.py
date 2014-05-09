@@ -14,7 +14,7 @@ import os
 from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
 from slrest.base import config
-from slrest.base import transact
+from slrest.base.transact import *
 
 class bash(SLAPIObject):
     """Execute a bash command and return the results."""
@@ -192,7 +192,7 @@ class ztn_transact_server(SLAPIObject):
             out = util.bash_command("ztn --transact --server %s" % server)
             task._worker_finished(True, out)
 
-        tm = transact.TransactionManager.get("ZTN", 1)
+        tm = TransactionManager.get("ZTN", 1)
         (tid, tt) = tm.new_task(transact_server, (server,))
         if tid is None:
             out = json.dumps({"transaction_id" : tid, "msg" : "transaction outstanding" })
@@ -211,7 +211,7 @@ class ztn_transact_url(SLAPIObject):
             out = util.bash_command("ztn --transact --url %s" % server)
             task._worker_finished(True, out)
 
-        tm = transact.TransactionManager.get("ZTN", 1)
+        tm = TransactionManager.get("ZTN", 1)
         (tid, tt) = tm.new_task(transact_url, (url,))
         if tid is None:
             out = json.dumps({"transaction_id" : tid, "msg" : "transaction outstanding" })
@@ -226,7 +226,7 @@ class ztn_transact_status(SLAPIObject):
     """Get the status of a ZTN transaction."""
     route = "/api/ztn/transact/status"
     def POST(self, tid):
-        tm = transact.TransactionManager.get("ZTN")
+        tm = TransactionManager.get("ZTN")
         tt = tm.get_task(tid)
         status = "Invalid"
         if tt:
@@ -234,5 +234,64 @@ class ztn_transact_status(SLAPIObject):
         out = json.dumps({ 'status' : status })
         return out
 
+class v1_transaction_status(SLAPIObject):
+    """Get the status of the given transaction."""
+    route = "/api/v1/transaction"
+    def GET(self, id):
+        tt = TransactionManager.get_global_task(id)
+        if tt:
+            return tt.response()
+        else:
+            return json.dumps({ "status" : response.status.MISSING })
+
+class v1_transactions_running(SLAPIObject):
+    """Show all running transactions"""
+    route = "/api/v1/transactions/running"
+    def GET(self):
+        tids = TransactionManager.get_all_running_tids()
+        return json.dumps({ "status" : response.status.OK, "data" : tids})
+
+class v1_transactions_finished(SLAPIObject):
+    """Show all finished transactions"""
+    route = "/api/v1/transactions/finished"
+    def GET(self):
+        tids = TransactionManager.get_all_finished_tids()
+        return json.dumps({ "status" : response.status.OK, "data" : tids})
+
+class v1_transactions_all(SLAPIObject):
+    """Show all transactions"""
+    route = "/api/v1/transactions/all"
+    def GET(self):
+        tids = TransactionManager.get_all_tids()
+        return json.dumps({ "status" : response.status.OK, "data" : tids})
+
+
+class v1_sleep(SLAPIObject):
+    """
+    Simply sleep for the given number of seconds.
+
+    Used for transaction testing.
+    """
+    route = "/api/v1/sleep"
+    def GET(self, seconds):
+        route = self.route
+        class Simple(TransactionTask):
+            def handler(self):
+                time.sleep(self.args)
+                self.status = "OK"
+                self.reason = "Finished up in %d seconds" % (self.args)
+                self.data = dict(args=self.args)
+                self.finish()
+
+        class Sleep(TransactionTask):
+            def handler(self):
+                time.sleep(self.args)
+                self.status = response.status.OK
+                self.reason = "Sleep %d seconds completed." % self.args
+                self.finish()
+
+        tm = TransactionManager.get_manager(route)
+        (tid, tt) = tm.new(Sleep, int(seconds))
+        return tt.response()
 
 
