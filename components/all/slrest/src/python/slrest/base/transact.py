@@ -419,16 +419,11 @@ class TransactionTask(object):
         """
         Generate the JSON response message for our current state.
         """
-
-        r = {}
-        r[SLREST.Keys.PATH] = self.path
-        r[SLREST.Keys.STATUS] = self.status
-        r[SLREST.Keys.REASON] = self.reason
-        r[SLREST.Keys.TRANSACTION] = self.transaction
-        r[SLREST.Keys.DATA] = self.data
-        return json.dumps(r)
-
-
+        return SLREST.response(self.path,
+                               self.status,
+                               self.reason,
+                               self.transaction,
+                               self.data)
 
 
 if __name__ == "__main__":

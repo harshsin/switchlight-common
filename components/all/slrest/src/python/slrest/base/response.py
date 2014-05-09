@@ -1,9 +1,10 @@
 #!/usr/bin/python
 ############################################################
 #
-# SLREST Response Constants
+# SLREST Responses
 #
 ############################################################
+import json
 
 class SLREST(object):
     class Keys(object):
@@ -31,5 +32,12 @@ class SLREST(object):
         EXPIRED="EXPIRED"
         MISSING="MISSING"
 
-
-
+    @staticmethod
+    def response(path, status, reason, transaction, data):
+        r = {}
+        r[SLREST.Keys.PATH] = path
+        r[SLREST.Keys.STATUS] = status
+        r[SLREST.Keys.REASON] = reason
+        r[SLREST.Keys.TRANSACTION] = transaction
+        r[SLREST.Keys.DATA] = data
+        return json.dumps(r)
