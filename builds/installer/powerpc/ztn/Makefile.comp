@@ -26,3 +26,7 @@ SWITCHLIGHT_BUILD_CONFIG := powerpc.ztn
 INSTALLER_EXTRA_FILES := boot-config
 
 include $(SWITCHLIGHT)/make/installer-ppc.mk
+
+deb:
+	@echo "No debian package here."
+	$(MAKE)
