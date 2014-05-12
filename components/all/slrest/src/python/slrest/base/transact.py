@@ -35,13 +35,13 @@ class TransactionManagers(object):
         the existing one by name.
 
         name : The name of the transaction manager.
-        max_ : Passed to TransactionManager() if creating a new object.
-               See TransactionManager.__init__()
+        max_ : Passed to _TransactionManager() if creating a new object.
+               See _TransactionManager.__init__()
 
         """
 
         if not name in klass.managers:
-            klass.managers[name] = TransactionManager(name, max_)
+            klass.managers[name] = _TransactionManager(name, max_)
         return klass.managers[name]
 
     @classmethod
@@ -119,11 +119,14 @@ class TransactionManagers(object):
 
 
 
-class TransactionManager(object):
+class _TransactionManager(object):
     """
     Global Transaction Manager Class
 
     All API transactions are submitted via a TransactionManager object.
+
+    Most _TransactionManager objects are retrieved through
+    the TransactionManagers factory.
     """
 
     def __init__(self, name, max_=None):
@@ -146,7 +149,7 @@ class TransactionManager(object):
         self.logger = logging.getLogger(name)
         self.lock = threading.Lock()
         self.newlock = threading.Lock()
-
+        self.gc_start = datetime.utcnow()
 
     def new_task(self, transaction_class, path, args=None):
         """
@@ -181,7 +184,7 @@ class TransactionManager(object):
         with self.lock:
             if tid in self.running:
                 self.finished[tid] = self.running[tid]
-                self.finished[tid].access_time = datetime.utcnow()
+                self.finished[tid].gc_start = datetime.utcnow()
                 del self.running[tid]
                 return True
             elif tid in self.finished:
@@ -271,7 +274,8 @@ class TransactionTask(object):
     TransactionTasks are created for each requested transaction
     by the parent TransactionManager.
 
-    You should derive from this class and provide the handle() and cleanup()
+    You should derive from this class and provide the
+    handler() and handler_cleanup()
     methods to implement your transaction's functionality.
 
     """
