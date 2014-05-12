@@ -43,15 +43,11 @@ def show_single_intf(ifname):
         print "  IPv4 Address(es): %s" % (", ".join(intf.v4addrs))
         try:
             print "  MTU %d bytes, Speed %s Mbps" % (intf.mtu, intf.speed)
-            stats = intf.stats
-            print "  Received: %(rx-bytes)d bytes, %(rx-packets)d packets" \
-                % (stats)
-            print "            %(rx-errors)d errors, %(rx-drops)d drops" \
-                % (stats)
-            print "  Sent:     %(tx-bytes)d bytes, %(tx-packets)d packets" \
-                % (stats)
-            print "            %(tx-errors)d errors, %(tx-drops)d drops" \
-                % (stats)
+            print ("  Received: %(rx-bytes)d bytes, %(rx-packets)d packets\n"
+                   "            %(rx-errors)d errors, %(rx-drops)d drops\n"
+                   "  Sent:     %(tx-bytes)d bytes, %(tx-packets)d packets\n"
+                   "            %(tx-errors)d errors, %(tx-drops)d drops") \
+                   % (intf.stats)
         except InterfaceDownError:
             return
     except UnknownInterfaceError:
@@ -279,7 +275,8 @@ class _NetworkConfig(object):
             if data['gw'] in gateways:
                 self.delete_gateway(data['gw'])
             else:
-                print "Gateway '%s' is not configured" % (data['gw'])
+                raise error.ActionError("Gateway '%s' is not configured" 
+                                        % (data['gw']))
         else:
             self.add_gateway(data['gw'])
         
@@ -454,14 +451,16 @@ class _DNSConfig(object):
                 try:
                     self._remove_server(data['server'])
                 except UnknownServerError:
-                    print "Server '%s' is not configured" % (data['server'])
+                    raise error.ActionError("Server '%s' is not configured"
+                                            % (data['server']))
             else:
                 self.remove_all_servers()
         else:
             try:
                 self._add_server(data['server'])
             except KnownServerError:
-                print "Server '%s' is already configured" % (data['server'])
+                raise error.ActionError("Server '%s' is already configured"
+                                        % (data['server']))
 
     def cli_domain_config (self, no_command, data):
         if NetworkConfig.dhcp_enabled:
