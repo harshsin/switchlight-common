@@ -14,8 +14,18 @@
 ############################################################
 include $(SWITCHLIGHT)/make/config.mk
 
-export PACKAGE_FILES := $(wildcard $(SWITCHLIGHT)/builds/swi/powerpc/release/switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-*20*.swi) 		\
-			$(wildcard $(SWITCHLIGHT)/builds/installer/powerpc/ztn/switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-*20*.installer)
+
+SWI_FILES := $(wildcard $(SWITCHLIGHT)/builds/swi/powerpc/release/switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-*20*.swi)
+ifndef SWI_FILES
+$(error "Could not find the correct SWI files for this package")
+endif
+
+INSTALLER_FILES := $(wildcard $(SWITCHLIGHT)/builds/installer/powerpc/ztn/switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-*20*.installer)
+ifndef INSTALLER_FILES
+$(error "Could not find the correct installer files for this package")
+endif
+
+export PACKAGE_FILES := $(SWI_FILES) $(INSTALLER_FILES)
 
 #PACKAGE_NAME := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-release.all.$(SWITCHLIGHT_BUILD_TIMESTAMP)
 
