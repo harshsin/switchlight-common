@@ -21,8 +21,6 @@ endif
 
 export INSTALLER_SWI
 export INSTALLER_NAME
-export PACKAGE_NAME
-export PACKAGE_VERSION
 
 # Get the platform loaders from each platform package
 PLATFORM_LOADERS := $(foreach p,$(INSTALLER_PLATFORMS),$(shell $(SWITCHLIGHT_PKG_INSTALL) platform-$(p):powerpc --find-file switchlight.$(p).loader))
@@ -30,10 +28,6 @@ PLATFORM_LOADERS := $(foreach p,$(INSTALLER_PLATFORMS),$(shell $(SWITCHLIGHT_PKG
 
 # ZTN Manifest for the installer
 ZTN_MANIFEST := zerotouch.json
-
-DCONTROL := deb/debuild/debian/control
-DCHANGE := deb/debuild/debian/changelog
-DDATE := $(shell date -R)
 
 $(INSTALLER_NAME): $(PLATFORM_DIRS) $(INSTALLER_SWI) $(ZTN_MANIFEST)
 	$(SL_V_at)rm -rf *.installer *.deb
@@ -53,27 +47,7 @@ ifdef INSTALLER_SWI
 	$(SL_V_at)rm -f switchlight-powerpc.swi
 endif
 	$(SL_V_at)rm -rf installer.sh ./lib ./usr *.loader $(ZTN_MANIFEST)
-ifdef PACKAGE_NAME
-	echo "Source: $(PACKAGE_NAME)" > $(DCONTROL)
-	echo "Section: misc" >> $(DCONTROL)
-	echo "Priority: optional" >> $(DCONTROL)
-	echo "Maintainer: Support <support@bigswitch.com>" >> $(DCONTROL)
-	echo "Build-Depends: debhelper (>= 9)" >> $(DCONTROL)
-	echo "Standards-Version: 3.8.4" >> $(DCONTROL)
-	echo "" >> $(DCONTROL)
-	echo "Package: $(PACKAGE_NAME)" >> $(DCONTROL)
-	echo "Provides: $(VPACKAGE_NAME)" >> $(DCONTROL)
-	echo "Conflicts: $(VPACKAGE_NAME)" >> $(DCONTROL)
-	echo "Architecture: all" >> $(DCONTROL)
-	echo "Depends:" >> $(DCONTROL)
-	echo "Description: Switch Light Bundle" >> $(DCONTROL)
-	echo " Switch Light Bundle" >> $(DCONTROL)
-	echo "$(PACKAGE_NAME) ($(PACKAGE_VERSION)) UNRELEASED; urgency=low" > $(DCHANGE)
-	echo "" >> $(DCHANGE)
-	echo "  * Initial release." >> $(DCHANGE)
-	echo "" >> $(DCHANGE)
-	echo " -- Support <support@bigswitch.com>  $(DDATE)" >> $(DCHANGE)
-endif
+
 
 shar installer: $(INSTALLER_NAME)
 
