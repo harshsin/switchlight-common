@@ -17,19 +17,21 @@ import signal
 def pcli_command(cmd):
     """Execute a PCLI command and return the results."""
     out = subprocess.check_output(('/usr/bin/pcli', '--init', '--mode=config',
-                                   '--command', cmd), 
+                                   '--command', cmd),
                                   stderr=subprocess.STDOUT)
     return out
 
 
 def bash_command(cmd):
     """Execute a bash command and return the results."""
+    rc = 0
     try:
-        result = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+        output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError, e:
-        result = e.output
-    return result
+        output = e.output
+        rc = e.returncode
 
+    return (rc, output)
 
 def reboot(logger, seconds=None):
     """Reboot after the given number of seconds."""
