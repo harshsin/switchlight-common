@@ -30,7 +30,7 @@ PLATFORM_LOADERS := $(foreach p,$(INSTALLER_PLATFORMS),$(shell $(SWITCHLIGHT_PKG
 ZTN_MANIFEST := zerotouch.json
 
 $(INSTALLER_NAME): $(PLATFORM_DIRS) $(INSTALLER_SWI) $(ZTN_MANIFEST)
-	$(SL_V_at)rm -rf *.installer *.deb
+	$(SL_V_at)rm -rf *.installer
 	$(SL_V_at)cp $(PLATFORM_LOADERS) .
 	$(foreach p,$(INSTALLER_PLATFORMS), $(SWITCHLIGHT_PKG_INSTALL) platform-config-$(p):all --extract .;)
 ifdef INSTALLER_SWI
