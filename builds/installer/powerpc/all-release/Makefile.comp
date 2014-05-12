@@ -24,6 +24,7 @@ include platforms.mk
 INSTALLER_SWI := $(SWITCHLIGHT)/builds/swi/powerpc/release/switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-release.swi
 INSTALLER_NAME := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-release.all.$(SWITCHLIGHT_BUILD_TIMESTAMP).installer
 SWITCHLIGHT_BUILD_CONFIG := powerpc.release
+INSTALLER_EXTRA_FILES := boot-config
 
 #
 # The debian package name for the bundle is set dynamically here with the PACKAGE_NAME variable.
