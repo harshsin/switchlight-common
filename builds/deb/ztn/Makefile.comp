@@ -1,0 +1,53 @@
+# -*- Makefile -*-
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
+#
+# ZTN debian package.
+#
+############################################################
+include $(SWITCHLIGHT)/make/config.mk
+
+export PACKAGE_FILES := $(wildcard $(SWITCHLIGHT)/builds/swi/powerpc/release/switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-*20*.swi) 		\
+			$(wildcard $(SWITCHLIGHT)/builds/installer/powerpc/ztn/switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-*20*.installer)
+
+#PACKAGE_NAME := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-release.all.$(SWITCHLIGHT_BUILD_TIMESTAMP)
+
+export PACKAGE_NAME := switchlight-bundle
+export VPACKAGE_NAME := switchlight-bundle
+export PACKAGE_VERSION := "0.$(SWITCHLIGHT_RELEASE_VERSION)"
+
+DCONTROL := deb/debuild/debian/control
+DCHANGE := deb/debuild/debian/changelog
+DDATE := $(shell date -R)
+
+ztndeb:
+	echo "Source: $(PACKAGE_NAME)" > $(DCONTROL)
+	echo "Section: misc" >> $(DCONTROL)
+	echo "Priority: optional" >> $(DCONTROL)
+	echo "Maintainer: Support <support@bigswitch.com>" >> $(DCONTROL)
+	echo "Build-Depends: debhelper (>= 9)" >> $(DCONTROL)
+	echo "Standards-Version: 3.8.4" >> $(DCONTROL)
+	echo "" >> $(DCONTROL)
+	echo "Package: $(PACKAGE_NAME)" >> $(DCONTROL)
+	echo "Provides: $(VPACKAGE_NAME)" >> $(DCONTROL)
+	echo "Conflicts: $(VPACKAGE_NAME)" >> $(DCONTROL)
+	echo "Architecture: all" >> $(DCONTROL)
+	echo "Depends:" >> $(DCONTROL)
+	echo "Description: Switch Light Bundle" >> $(DCONTROL)
+	echo " Switch Light Bundle" >> $(DCONTROL)
+	echo "$(PACKAGE_NAME) ($(PACKAGE_VERSION)) UNRELEASED; urgency=low" > $(DCHANGE)
+	echo "" >> $(DCHANGE)
+	echo "  * Initial release." >> $(DCHANGE)
+	echo "" >> $(DCHANGE)
+	echo " -- Support <support@bigswitch.com>  $(DDATE)" >> $(DCHANGE)
+
+
+include $(SWITCHLIGHT)/make/deb-subdir.mk
+
