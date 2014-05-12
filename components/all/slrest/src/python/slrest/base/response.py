@@ -71,3 +71,15 @@ class SLREST(object):
             r = e
 
         return json.dumps(r)
+
+
+    @staticmethod
+    def pending(path, reason=None):
+        """Return a transaction-pending response"""
+        if reason is None:
+            reason = "There is already a transaction in progress."""
+
+        return SLREST.response(path=path,
+                               status=SLREST.Status.PENDING,
+                               reason=reason)
+
