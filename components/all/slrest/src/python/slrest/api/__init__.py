@@ -170,6 +170,12 @@ class get_inventory(SLAPIObject):
             out = ''
         return out
 
+
+
+
+
+
+
 class v1_ztn_inventory(SLAPIObject):
     """Get the current ZTN inventory."""
     route = "/api/v1/ztn/inventory"
@@ -185,7 +191,6 @@ class v1_ztn_inventory(SLAPIObject):
             return SLREST.response(path=self.route,
                                    status=SLREST.Status.OK,
                                    data=d)
-
 
 class v1_ztn_discover(SLAPIObject):
     """Run ZTN discovery."""
@@ -217,6 +222,40 @@ class v1_ztn_discover(SLAPIObject):
 
         # Return the response
         return tt.response()
+
+
+class v1_ztn_transact_server(SLAPIObject):
+    """Perform a manifest transaction using the given server."""
+    route = "/api/v1/ztn/transact/server"
+    def POST(self, server, sync=False):
+
+        class TransactServer(TransactionTask):
+            #
+            # This handler performs the actual work
+            #
+            def handler(self):
+                (rc, out) = util.bash_command("ztn --transact --server %s" % self.args)
+                if rc:
+                    self.status = SLREST.Status.ERROR
+                else:
+                    self.status = SLREST.Status.OK
+                self.reason = out
+                self.finish()
+
+        tm = TransactionManagers.get("ZTN", max_=1)
+        (tid, tt) = tm.new_task(TransactServer, self.route, server)
+
+        if tid is None:
+            # Transaction already in progress
+            return SLREST.pending(self.route)
+
+        # If the response should be syncronous then join the task:
+        if sync:
+            tt.join()
+
+        # Return the response
+        return tt.response()
+
 
 
 class v1_ztn_transact_url(SLAPIObject):
@@ -284,11 +323,7 @@ class v1_transactions_all(SLAPIObject):
                                data=TransactionManagers.get_tids_all())
 
 class v1_sleep(SLAPIObject):
-    """
-    Simply sleep for the given number of seconds.
-
-    Used for transaction testing.
-    """
+    """Simply sleep for the given number of seconds."""
     route = "/api/v1/sleep"
     def GET(self, seconds, sync=False):
 
