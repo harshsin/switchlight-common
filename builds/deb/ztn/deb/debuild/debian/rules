@@ -22,8 +22,7 @@ ZEROTOUCH_DIR := /usr/share/floodlight/zerotouch
 
 override_dh_auto_install:
 	mkdir -p $(INSTALL_DIR)$(ZEROTOUCH_DIR)
-	cp ../../$(INSTALLER_NAME) $(INSTALL_DIR)$(ZEROTOUCH_DIR)
-	cp $(INSTALLER_SWI) $(INSTALL_DIR)$(ZEROTOUCH_DIR)
+	cp $(PACKAGE_FILES) $(INSTALL_DIR)$(ZEROTOUCH_DIR)
 	echo "usr/*" > debian/$(PACKAGE_NAME).install
 
 

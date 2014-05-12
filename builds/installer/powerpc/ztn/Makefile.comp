@@ -21,12 +21,9 @@ endif
 
 include platforms.mk
 
-INSTALLER_NAME := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-release.all.$(SWITCHLIGHT_BUILD_TIMESTAMP).installer
+INSTALLER_NAME := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-release.ztn.$(SWITCHLIGHT_BUILD_TIMESTAMP).installer
 SWITCHLIGHT_BUILD_CONFIG := powerpc.ztn
 INSTALLER_EXTRA_FILES := boot-config
 
 include $(SWITCHLIGHT)/make/installer-ppc.mk
 
-deb:
-	@echo "No debian package here."
-	$(MAKE)

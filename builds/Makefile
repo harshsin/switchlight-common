@@ -83,11 +83,9 @@ INST_BUILD_PATHS := $(foreach arch,$(INST_ARCHS),$(wildcard $(arch)/*))
 #
 define installer_build_template
 installer-$(1):
-	$(MAKE) -C $(2) deb
+	$(MAKE) -C $(2)
 	mkdir -p $(BUILDDIR)
 	cp $(2)/*.installer $(BUILDDIR)
-	test ! -f $(2)/*.deb || cp $(2)/*.deb $(BUILDDIR)
-	$(MAKE) -C $(2) clean
 endef
 
 $(foreach inst,$(INST_BUILD_PATHS),$(eval $(call installer_build_template,$(notdir $(inst)),$(inst))))
@@ -103,6 +101,20 @@ show-installers:
 	@echo $(INST_BUILD_PATHS)
 
 
+############################################################
+#
+# Debian Packages
+#
+############################################################
+define deb_build_template
+debian-$(1):
+	$(MAKE) -C $(2) deb
+	mkdir -p $(BUILDDIR)
+	cp $(2)/*.deb $(BUILDDIR)
+endef
+
+DEB_BUILD_PATHS := $(wildcard deb/*)
+$(foreach d,$(DEB_BUILD_PATHS),$(eval $(call deb_build_template,$(notdir $(d)),$(d))))
 
 ############################################################
 #

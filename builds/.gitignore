@@ -2,6 +2,10 @@ rootfs-*.cpio
 rootfs-*.sqsh
 rootfs-*/
 *.swi
+*.installer
+*.deb
+*.build
+*.changes
 BUILDS/*
 zerotouch.json
 Packages
