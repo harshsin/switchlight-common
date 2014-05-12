@@ -86,7 +86,6 @@ installer-$(1):
 	$(MAKE) -C $(2)
 	mkdir -p $(BUILDDIR)
 	cp $(2)/*.installer $(BUILDDIR)
-	$(MAKE) -C $(2) clean
 endef
 
 $(foreach inst,$(INST_BUILD_PATHS),$(eval $(call installer_build_template,$(notdir $(inst)),$(inst))))
@@ -112,7 +111,6 @@ debian-$(1):
 	$(MAKE) -C $(2) deb
 	mkdir -p $(BUILDDIR)
 	cp $(2)/*.deb $(BUILDDIR)
-	$(MAKE) -C $(2) clean
 endef
 
 DEB_BUILD_PATHS := $(wildcard deb/*)
