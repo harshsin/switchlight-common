@@ -291,7 +291,7 @@ ztn_manifest_startup_md5()
 
 ##############################
 #
-# ztn_manifest_process_url <murl>
+# ztn_transact_url <murl>
 #
 # Download a ZTN SWI manifest and its components.
 # Return '0' for success (discovery can cease)
@@ -299,7 +299,7 @@ ztn_manifest_startup_md5()
 # Anything else is an error
 #
 
-ztn_manifest_process_url()
+ztn_transact_url()
 {
     local murl=$1
     local swi_url_mf swi_md5_mf
@@ -424,14 +424,14 @@ ztn_manifest_url()
 
 ##############################
 #
-# ztn_manifest_process <h> <m> <p> <s>
+# ztn_transact <h> <m> <p> <s>
 #    <h>  Host
 #    <m>  MAC Address
 #    <p>  Platform
 #    <s>  Serial Number
-ztn_manifest_process()
+ztn_transact()
 {
-    ztn_manifest_process_url $(ztn_manifest_url "$1" "$2" "$3" "$4")
+    ztn_transact_url $(ztn_manifest_url "$1" "$2" "$3" "$4")
 }
 
 ##############################
@@ -473,7 +473,7 @@ ztn_discovery_ex()
     neighs=$(ip -4 neigh show | awk '{print $1}')
 
     for a in $neighs6 $neighs; do
-        ztn_manifest_process ${a} ${macaddr} ${platform} ${serial} && return 0
+        ztn_transact ${a} ${macaddr} ${platform} ${serial} && return 0
     done
 
     return 1
