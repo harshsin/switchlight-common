@@ -21,7 +21,7 @@ class bash(SLAPIObject):
     """Execute a bash command and return the results."""
     route="/api/bash"
     def POST(self, cmd):
-        return util.bash_command(cmd)
+        return util.bash_command(cmd)[1]
 
 
 class pcli(SLAPIObject):
@@ -89,7 +89,7 @@ class trigger_beacon(SLAPIObject):
     def POST(self):
         # FIXME use platform independent version
         cmd = "ofad-ctl modules brcm led-flash 3 100 100 10"
-        return util.bash_command(cmd)
+        return util.bash_command(cmd)[2]
 
 
 class get_cpu_load(SLAPIObject):
@@ -170,75 +170,86 @@ class get_inventory(SLAPIObject):
             out = ''
         return out
 
-class ztn_inventory(SLAPIObject):
+class v1_ztn_inventory(SLAPIObject):
     """Get the current ZTN inventory."""
-    route = "/api/ztn/inventory"
+    route = "/api/v1/ztn/inventory"
     def GET(self):
-        try:
-            # The ZTN inventory is returned in YAML format.
-            y = util.bash_command("ztn --inventory")
-            d = yaml.load(y)
-            # The requestor wants JSON
-            out = json.dumps(d)
-        except:
-            out = ''
-        return out
-
-class ztn_transact_server(SLAPIObject):
-    """Perform a manifest transaction against the given server address."""
-    route = "/api/ztn/transact/server"
-    def POST(self, server, sync=False):
-
-        def transact_server(task, server):
-            out = util.bash_command("ztn --transact --server %s" % server)
-            task._worker_finished(True, out)
-
-        tm = TransactionManager.get("ZTN", 1)
-        (tid, tt) = tm.new_task(transact_server, (server,))
-        if tid is None:
-            out = json.dumps({"transaction_id" : tid, "msg" : "transaction outstanding" })
-        elif sync:
-            tt.join()
-            out = tt.result
+        # The ZTN inventory is returned in YAML format.
+        (rc, out) = util.bash_command("ztn --inventory")
+        if rc:
+            return SLREST.response(path=self.route,
+                                   status=SLREST.Status.ERROR,
+                                   reason=out)
         else:
-            out = json.dumps({"transaction_id" : str(tid) })
-        return out
+            d = yaml.load(out)
+            return SLREST.response(path=self.route,
+                                   status=SLREST.Status.OK,
+                                   data=d)
 
-class ztn_transact_url(SLAPIObject):
+
+class v1_ztn_discover(SLAPIObject):
+    """Run ZTN discovery."""
+    route = "/api/v1/ztn/discover"
+    def POST(self, sync=False):
+        class Discover(TransactionTask):
+            #
+            # This handler performs the actual work
+            #
+            def handler(self):
+                (rc, out) = util.bash_command("ztn --discover")
+                if rc:
+                    self.status = SLREST.Status.ERROR
+                else:
+                    self.status = SLREST.Status.OK
+                self.reason = out
+                self.finish()
+
+        tm = TransactionManagers.get("ZTN", max_=1)
+        (tid, tt) = tm.new_task(Discover, self.route)
+
+        if tid is None:
+            # Transaction already in progress
+            return SLREST.pending(self.route)
+
+        # If the response should be syncronous then join the task:
+        if sync:
+            tt.join()
+
+        # Return the response
+        return tt.response()
+
+
+class v1_ztn_transact_url(SLAPIObject):
     """Perform a manifest transaction using the given URL."""
-    route = "/api/ztn/transact/url"
+    route = "/api/v1/ztn/transact/url"
     def POST(self, url, sync=False):
-        def transact_url(task, url):
-            out = util.bash_command("ztn --transact --url %s" % server)
-            task._worker_finished(True, out)
 
-        tm = TransactionManager.get("ZTN", 1)
-        (tid, tt) = tm.new_task(transact_url, (url,))
+        class TransactUrl(TransactionTask):
+            #
+            # This handler performs the actual work
+            #
+            def handler(self):
+                (rc, out) = util.bash_command("ztn --transact --url %s" % self.args)
+                if rc:
+                    self.status = SLREST.Status.ERROR
+                else:
+                    self.status = SLREST.Status.OK
+                self.reason = out
+                self.finish()
+
+        tm = TransactionManagers.get("ZTN", max_=1)
+        (tid, tt) = tm.new_task(TransactUrl, self.route, url)
+
         if tid is None:
-            out = json.dumps({"transaction_id" : tid, "msg" : "transaction outstanding" })
-        elif sync:
+            # Transaction already in progress
+            return SLREST.pending(self.route)
+
+        # If the response should be syncronous then join the task:
+        if sync:
             tt.join()
-            out = tt.result
-        else:
-            out = json.dumps({"transaction_id" : str(tid) })
-        return out
 
-class ztn_transact_status(SLAPIObject):
-    """Get the status of a ZTN transaction."""
-    route = "/api/ztn/transact/status"
-    def POST(self, tid):
-        tm = TransactionManager.get("ZTN")
-        tt = tm.get_task(tid)
-        status = "Invalid"
-        if tt:
-            status = "Running" if tt.running() else "Finished"
-        out = json.dumps({ 'status' : status })
-        return out
-
-
-
-
-
+        # Return the response
+        return tt.response()
 
 
 class v1_transaction(SLAPIObject):
