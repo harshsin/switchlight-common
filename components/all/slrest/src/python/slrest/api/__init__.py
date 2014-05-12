@@ -173,7 +173,22 @@ class get_inventory(SLAPIObject):
 
 
 
+############################################################
+#
+# ZTN Support
+#
+############################################################
+#
+# Only one ZTN transaction may be outstanding at a time.
+#
+# These are all submitted under the "ZTN" transaction manager.
+#
+ZTN_TRANSACTION_MANAGER="ZTN"
+ZTN_TRANSACTION_MANAGER_MAX=1
 
+def ztn_transaction_manager_get():
+    return TransactionManagers.get(ZTN_TRANSACTION_MANAGER,
+                                   ZTN_TRANSACTION_MANAGER_MAX)
 
 
 class v1_ztn_inventory(SLAPIObject):
@@ -209,7 +224,8 @@ class v1_ztn_discover(SLAPIObject):
                 self.reason = out
                 self.finish()
 
-        tm = TransactionManagers.get("ZTN", max_=1)
+        tm = ztn_transaction_manager_get()
+
         (tid, tt) = tm.new_task(Discover, self.route)
 
         if tid is None:
@@ -242,7 +258,7 @@ class v1_ztn_transact_server(SLAPIObject):
                 self.reason = out
                 self.finish()
 
-        tm = TransactionManagers.get("ZTN", max_=1)
+        tm = ztn_transaction_manager_get()
         (tid, tt) = tm.new_task(TransactServer, self.route, server)
 
         if tid is None:
@@ -276,7 +292,7 @@ class v1_ztn_transact_url(SLAPIObject):
                 self.reason = out
                 self.finish()
 
-        tm = TransactionManagers.get("ZTN", max_=1)
+        tm = ztn_transaction_manager_get()
         (tid, tt) = tm.new_task(TransactUrl, self.route, url)
 
         if tid is None:
@@ -348,7 +364,7 @@ class v1_sleep(SLAPIObject):
         # Generate a new task and return the task response.
         # The first argument is the TransactionTask class.
         # The second argument is the path for the response.
-        #  Its just easiest to specify it here, where we already know the route.
+        # Its just easiest to specify it here, where we already know the route.
         # The first argument is optional, but will be passed to the subclass
         # as the .args member
         (tid, tt) = tm.new_task(Sleep, self.route, int(seconds))
