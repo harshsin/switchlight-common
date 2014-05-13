@@ -23,7 +23,7 @@ request subnet-mask, broadcast-address, time-offset, routers,
 	netbios-name-servers, netbios-scope, interface-mtu,
 	rfc3442-classless-static-routes, ntp-servers,
 	dhcp6.domain-search, dhcp6.fqdn,
-	dhcp6.name-servers, dhcp6.sntp-servers, vendor-encapsulate-options;
+	dhcp6.name-servers, dhcp6.sntp-servers;
 """
 
 SL_DHCP_EXIT_HOOK = """### SwitchLight
