@@ -250,9 +250,13 @@ fi
 #
 if [ "${VALIDATE}" ]; then
     if [ "${VALIDATE}" = "current" ]; then
-        ztn_manifest_validate
+        if ! ztn_manifest_validate; then
+            exit 1
+        fi
     else
-        ztn_manifest_validate "${VALIDATE}"
+        if ! ztn_manifest_validate "${VALIDATE}"; then
+            exit 1
+        fi
     fi
 fi
 
