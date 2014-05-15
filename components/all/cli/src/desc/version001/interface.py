@@ -66,9 +66,11 @@ def get_port_info():
         num2name[entry.port_no] = get_port_name(entry.name)
 
     # merge in rx and tx packet counts
-    for pse in conn.of13_request_stats(of13.message.port_stats_request( \
-            port_no=of13.OFPP_ALL)):
-        ports[num2name[pse.port_no]].append(pse)
+    for entrylist in conn.of13_request_stats_generator(
+            of13.message.port_stats_request( \
+            port_no=of13.OFPP_ANY)):
+        for entry in entrylist:
+            ports[num2name[entry.port_no]].append(entry)
 
     conn.close()
 
