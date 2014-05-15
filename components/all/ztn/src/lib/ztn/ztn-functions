@@ -8,6 +8,25 @@
 ############################################################
 
 #
+# Are there any custom ZTN settings?
+#
+if [ -f /etc/ZTN ]; then
+    . /etc/ZTN
+fi
+
+if [ "$ZTNDEBUG" ]; then
+    set -x
+fi
+
+#
+# Are we currently running in the loader environment?
+#
+ZTN_IN_LOADER=
+if [ -f /etc/LOADER ]; then
+    ZTN_IN_LOADER=1
+fi
+
+#
 # The ZTN data files are stored here.
 # Overrideable for testing.
 #
@@ -33,6 +52,13 @@ ZTN_MANIFEST=${ZTN_ROOT_DIR}/manifest.json
 #
 ZTN_DISCOVERY_RESPONSE_WAIT=${ZTN_DISCOVERY_RESPONSE_WAIT:-0}
 
+
+#
+# This is the default timeout value for
+# network transactions (120 seconds)
+#
+ZTN_TIMEOUT=${ZTN_TIMEOUT:-120}
+
 ##############################
 #
 # ztn_init
@@ -44,6 +70,49 @@ ztn_init()
 {
     :
 }
+
+##############################
+#
+# ztn_wget <dst> <url> <silent>
+#
+# Perform a wget operation with
+# timeout and cleanup.
+#
+ztn_wget()
+{
+    local dst=$1
+    local url=$2
+    local silent=$3
+
+    local timeout=$ZTN_TIMEOUT
+    local rv=0
+    local targs
+
+    if [ "$ZTN_IN_LOADER" ]; then
+        targs="-t${timeout}"
+    else
+        targs="${timeout}"
+    fi
+
+    if [ "$silent" ]; then
+        timeout "$targs" wget -O "${dst}" "${url}" > /dev/null 2>&1
+    else
+        timeout "$targs" wget -O "${dst}" "${url}"
+    fi
+
+    rv=$?
+
+    if [ $rv -eq 124 ] || [ $rv -eq 143 ]; then
+        echo "Operation timed out after ${timeout} seconds."
+        if [ "$ZTN_IN_LOADER" ]; then
+            killall -9 wget > /dev/null 2>&1
+        fi
+    fi
+
+    return $rv
+}
+
+
 
 ##############################
 #
@@ -197,7 +266,7 @@ ztn_download_url()
     case "${url}" in
         http:*|ftp:*)
             echo "Downloading ${url}...."
-            if ! wget -O "${localdst}" "${url}"; then
+            if ! ztn_wget "${localdst}" "${url}"; then
                 return 2
             fi
             ;;
@@ -310,7 +379,7 @@ ztn_transact_url()
         cp "${murl}" "${manifest}"
     else
         echo "Trying manifest ${murl}"
-        wget -O ${manifest} "$murl" 1>/dev/null 2>&1
+        ztn_wget "${manifest}" "$murl" 1
         test $? -eq 0 || return 2
     fi
 
