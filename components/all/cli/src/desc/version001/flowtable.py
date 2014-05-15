@@ -425,7 +425,7 @@ def show_of13_entries(rf, format_str):
 
         count = 0
         with OFConnection.OFConnection('127.0.0.1', 6634) as conn:
-            for entrylist in conn.of13_request_stats_generator(req):
+            for entrylist in conn.of13_multipart_request_generator(req):
                 for entry in entrylist:
                     count += 1
                     if count % 20 == 0 or count == 1:
