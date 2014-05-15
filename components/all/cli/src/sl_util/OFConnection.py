@@ -89,19 +89,13 @@ class OFConnection(object):
             if reply.flags & ofp10.OFPSF_REPLY_MORE == 0:
                 break
 
-    def of13_request_stats_generator(self, request):
+    def of13_multipart_request_generator(self, request):
         self.sendmsg(request)
         while True:
             reply = self.recvmsg()
             yield reply.entries
             if reply.flags & ofp13.OFPSF_REPLY_MORE == 0:
                 break
-
-    def of13_port_desc_stats_request(self):
-        request = ofp13.message.port_desc_stats_request()
-        self.sendmsg(request)
-        reply = self.recvmsg()
-        return reply
 
     def _read_exactly(self, n, timeout=None):
         _timeout = timeout or self.timeout

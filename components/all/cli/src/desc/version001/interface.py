@@ -59,14 +59,15 @@ def get_port_info():
     # store port_desc from port_desc_stats_request
     ports = {}
     num2name = {}
-    port_desc_stats_reply = conn.of13_port_desc_stats_request()
-    for entry in port_desc_stats_reply.entries:
-        entry.name = get_port_name(entry.name)
-        ports[get_port_name(entry.name)] = [entry]
-        num2name[entry.port_no] = get_port_name(entry.name)
+    for entrylist in conn.of13_multipart_request_generator(
+            of13.message.port_desc_stats_request()): 
+        for entry in entrylist:
+            entry.name = get_port_name(entry.name)
+            ports[get_port_name(entry.name)] = [entry]
+            num2name[entry.port_no] = get_port_name(entry.name)
 
     # merge in rx and tx packet counts
-    for entrylist in conn.of13_request_stats_generator(
+    for entrylist in conn.of13_multipart_request_generator(
             of13.message.port_stats_request( \
             port_no=of13.OFPP_ANY)):
         for entry in entrylist:
