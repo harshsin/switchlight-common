@@ -12,7 +12,7 @@ from sl_util import OFConnection
 from sl_util import const
 from sl_util.ofad import OFADConfig, PortManager
 
-import loxi.of10 as of10
+import loxi.of13 as of13
 
 import re
 import itertools
@@ -56,18 +56,18 @@ def get_port_info():
 
     conn = OFConnection.OFConnection('127.0.0.1', 6634)
 
-    # store port_desc from features_reply
+    # store port_desc from port_desc_stats_request
     ports = {}
     num2name = {}
-    features_reply = conn.request_features()
-    for p in features_reply.ports:
-        p.name = get_port_name(p.name)
-        ports[get_port_name(p.name)] = [p]
-        num2name[p.port_no] = get_port_name(p.name)
+    port_desc_stats_reply = conn.of13_port_desc_stats_request()
+    for entry in port_desc_stats_reply.entries:
+        entry.name = get_port_name(entry.name)
+        ports[get_port_name(entry.name)] = [entry]
+        num2name[entry.port_no] = get_port_name(entry.name)
 
     # merge in rx and tx packet counts
-    for pse in conn.of10_request_stats(of10.message.port_stats_request( \
-            port_no=of10.OFPP_ALL)):
+    for pse in conn.of13_request_stats(of13.message.port_stats_request( \
+            port_no=of13.OFPP_ALL)):
         ports[num2name[pse.port_no]].append(pse)
 
     conn.close()
@@ -81,13 +81,15 @@ def display(val):
     return str(val) if val != 0xffffffffffffffff else '---'
 
 def get_speed(bmap):
-    if bmap & of10.OFPPF_10GB_FD:
+    if bmap & of13.OFPPF_40GB_FD:
+        return '40G'
+    elif bmap & of13.OFPPF_10GB_FD:
         return '10G'
-    elif bmap & (of10.OFPPF_1GB_FD | of10.OFPPF_1GB_HD):
+    elif bmap & (of13.OFPPF_1GB_FD | of13.OFPPF_1GB_HD):
         return '1G'
-    elif bmap & (of10.OFPPF_100MB_FD | of10.OFPPF_100MB_HD):
+    elif bmap & (of13.OFPPF_100MB_FD | of13.OFPPF_100MB_HD):
         return '100M'
-    elif bmap & (of10.OFPPF_10MB_FD | of10.OFPPF_10MB_HD):
+    elif bmap & (of13.OFPPF_10MB_FD | of13.OFPPF_10MB_HD):
         return '10M'
     else:
         return ''
@@ -96,10 +98,10 @@ def show_one_dp_intf_detail(port):
     # prints detailed info for the given (port_desc, port_stats) tuple
     print '%s is %s' % \
         (port[0].name, 
-         'down' if port[0].state & of10.OFPPS_LINK_DOWN
-         else 'admin down' if port[0].config & of10.OFPPC_PORT_DOWN
+         'down' if port[0].state & of13.OFPPS_LINK_DOWN
+         else 'admin down' if port[0].config & of13.OFPPC_PORT_DOWN
          else 'up')
-    print '  Hardware Address: %s' % of10.util.pretty_mac(port[0].hw_addr)
+    print '  Hardware Address: %s' % of13.util.pretty_mac(port[0].hw_addr)
     print '  Speed: %s' % get_speed(port[0].curr)
     print '  Received: %s bytes, %s packets' % \
         (display(port[1].rx_bytes), display(port[1].rx_packets))
@@ -117,9 +119,9 @@ def show_one_dp_intf_detail(port):
 def show_one_dp_intf_summary(format_str, port):
     # prints summary info for the given (port_desc, port_stats) tuple
 
-    if port[0].config & of10.OFPPC_PORT_DOWN:
+    if port[0].config & of13.OFPPC_PORT_DOWN:
         state = 'D'
-    elif (port[0].state & of10.OFPPS_LINK_DOWN) == 0:
+    elif (port[0].state & of13.OFPPS_LINK_DOWN) == 0:
         state = '*'
     else:
         state = ' '
