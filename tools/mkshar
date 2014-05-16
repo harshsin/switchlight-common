@@ -27,6 +27,15 @@ parser.add_option('--lazy',
 parser.add_option('--unzip-sfx',
                   action='store_true',
                   help="Use 'unzip' to natively handle SFX preamble")
+parser.add_option('--unzip-pipe',
+                  action='store_true',
+                  help="Enable 'dd' to handle SFX preamble")
+parser.add_option('--unzip-loop',
+                  action='store_true',
+                  help="Enable 'losetup' to handle SFX preamble")
+parser.add_option('--unzip-pad',
+                  action='store_true',
+                  help="Special pad options for deficient unzip")
 
 opts, args = parser.parse_args()
 
@@ -78,24 +87,39 @@ def _zipopts(path):
     else:
         return ZIP_COMPRESS_OPTS
 
-_addfile(install, '-0')
-
-logger.info("adding other payload items")
-o = ['-r',] + ZIP_COMPRESS_OPTS
-_addfiles(args, *o)
-
-logger.info("prepping SFX")
-buf = open(sfx).read()
-
 # block to 512 bytes
+buf = open(sfx).read()
 sz = len(buf)
-rem = sz % 512
-pad = 512 - rem
+logger.info("script size is %d bytes", sz)
+rem = sz % opts.blocksize
+pad = opts.blocksize - rem
+
+# extra block for house keeping
+if opts.unzip_pad:
+    pad = pad + opts.blocksize
+
 if pad == 1:
     buf += "\n"
 elif pad > 1:
     pad -= 1
     buf = buf + ('#' * pad) + "\n"
+
+logger.info("padded script size is %d bytes", len(buf))
+
+if opts.unzip_pad:
+    logger.info("adding SFX pad to beginning as archive item")
+    fd = open("pad.bin", "w")
+    fd.write(('#' * (len(buf)-1)))
+    fd.write('\n')
+    fd.close()
+    _addfile("pad.bin", '-0', '-j')
+    os.unlink("pad.bin")
+
+_addfile(install, '-0')
+
+logger.info("adding other payload items")
+o = ['-r',] + ZIP_COMPRESS_OPTS
+_addfiles(args, *o)
 
 def _splice(tag, val):
     global buf
@@ -112,6 +136,8 @@ def _splice(tag, val):
     line = line + ('#' * llen)
     buf = buf[:p] + line + buf[q:]
 
+logger.info("prepping SFX")
+
 _splice('SFX_BYTES', len(buf))
 _splice('SFX_BLOCKSIZE', opts.blocksize)
 _splice('SFX_INSTALL', os.path.split(install)[1])
@@ -124,22 +150,61 @@ if opts.unzip_sfx:
     _splice('SFX_UNZIP', '1')
 else:
     _splice('SFX_UNZIP', '')
+if opts.unzip_pipe:
+    _splice('SFX_PIPE', '1')
+else:
+    _splice('SFX_PIPE', '')
+if opts.unzip_loop:
+    _splice('SFX_LOOP', '1')
+else:
+    _splice('SFX_LOOP', '')
+if opts.unzip_pad:
+    _splice('SFX_PAD', 'pad.bin')
+else:
+    _splice('SFX_PAD', '')
 
 # remember the checksum offset
 ckStart = buf.find("SFX_CHECKSUM=")
 ckEnd = buf.find("\n", ckStart+1)
 
 logger.info("generating shar")
-wfd = open(shar, "w")
-wfd.write(buf)
-rfd = open(zipFile, "r")
-shutil.copyfileobj(rfd, wfd)
-rfd.close()
-wfd.close()
 
-logger.info("adjusting SFX")
-cmd = [ZIP,] + ZIP_OPTS + ['-A', shar,]
-subprocess.check_call(cmd)
+if opts.unzip_pad:
+
+    wfd = open(shar, "w+")
+    rfd = open(zipFile, "r")
+    shutil.copyfileobj(rfd, wfd)
+    rfd.close()
+
+    logger.info("capturing first block")
+    wfd.seek(0, 0)
+    magic = wfd.read(opts.blocksize)
+
+    logger.info("splicing in SFX")
+    wfd.seek(0, 0)
+    wfd.write(buf)
+
+    logger.info("saving first block")
+    wfd.seek(len(buf)-opts.blocksize, 0)
+    wfd.write(magic)
+
+    wfd.close()
+
+    # adjust buf to include magic
+    buf = buf[:-opts.blocksize] + magic
+
+else:
+
+    wfd = open(shar, "w")
+    wfd.write(buf)
+    rfd = open(zipFile, "r")
+    shutil.copyfileobj(rfd, wfd)
+    rfd.close()
+    wfd.close()
+
+    logger.info("adjusting SFX")
+    cmd = [ZIP,] + ZIP_OPTS + ['-A', shar,]
+    subprocess.check_call(cmd)
 
 # compute the actual checksum
 ckf = hashlib.md5()
