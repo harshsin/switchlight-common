@@ -59,6 +59,53 @@ ZTN_DISCOVERY_RESPONSE_WAIT=${ZTN_DISCOVERY_RESPONSE_WAIT:-0}
 #
 ZTN_TIMEOUT=${ZTN_TIMEOUT:-120}
 
+
+#
+# If the ZTN cache filesystem contains
+# less than this amount of free space (in 1K blocks)
+# before we attempt to download a new SWI
+# then the cache will be cleared automatically
+# before continuing.
+#
+ZTN_CACHE_PROVISION_MB=${ZTN_CACHE_PROVISION_MB:-250}
+
+##############################
+#
+# ztn_cache_freem
+#
+ztn_cache_freem()
+{
+    # We request in 1K blocks to standardize output
+    local freek=$(df -Pk "${ZTN_ROOT_DIR}" | tail -1 | awk '{print $4}')
+    # Return in MB
+    echo $((${freek}/1024))
+}
+
+##############################
+#
+# ztn_cache_provision
+#
+ztn_cache_provision()
+{
+    #
+    # Todo: Allow provision size parameter.
+    # If we add a filesize to the manifests
+    # we can do better provisioning based on what
+    # we are about to download rather than an arbitrary limit.
+    #
+    local freem=$(ztn_cache_freem)
+    echo "ZTN Cache Free Memory: ${freem}M  [ Required: ${ZTN_CACHE_PROVISION_MB}M ]"
+    if [ "${freem}" -lt "${ZTN_CACHE_PROVISION_MB}" ]; then
+        #
+        # We could do something more interesting here, like LRU and partial
+        # deletes but there is really no expectation that the previous contents
+        # of the cache will really ever be referenced again.
+        #
+        echo "The cache has insufficient space for additional images and will be cleared."
+        ztn_cache_delete
+    fi
+}
+
 ##############################
 #
 # ztn_init
@@ -70,6 +117,9 @@ ztn_init()
 {
     :
 }
+
+
+
 
 ##############################
 #
@@ -129,6 +179,25 @@ ztn_cache_dir()
     fi
     echo ${dir}
 }
+##############################
+#
+# ztn_cache_delete
+#
+# Delete the entire ZTN cache
+#
+ztn_cache_delete()
+{
+    local rv
+    rm -rf ${ZTN_ROOT_DIR}
+    rv=$?
+    if [ $rv -ne 0 ]; then
+        echo "ZTN cache delete failed."
+    fi
+    mkdir -p ${ZTN_CACHE_DIR}
+    sync
+    return $rv
+}
+
 
 ##############################
 #
@@ -394,7 +463,9 @@ ztn_transact_url()
             # We aleady have it
             echo "SWI ${swi_md5_mf} is already cached."
         else
-            # Go get it
+            # Go get it.
+            # Provision if necessary.
+            ztn_cache_provision
             echo "Downloading new SWI..."
             if ! ztn_cache_install_url swi ${swi_url_mf} ${swi_md5_mf}; then
                 return 2

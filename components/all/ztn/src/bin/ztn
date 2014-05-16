@@ -20,6 +20,9 @@ TRANSACT=
 OPERATIONS=
 VALIDATE_REQUIRED=
 MANIFEST=
+DELETE=
+FREE=
+PROVISION=
 
 __help__="
 Usage: $0 [OPTIONS] [OPERATIONS]
@@ -34,6 +37,9 @@ Operations:
   --swi: Return the SWI from the current boot manifest.
   --startup: Return the startup-config from the current boot manifest.
   --manifest: Show the contents of the current ZTN manifest.
+  --delete: Delete the ZTN cache
+  --free: Show the free space in the ZTN cache filesystem.
+  --provision: Provision the ZTN cache for download.
 
 Options:
   --root PATH: Override the default ZTN root directory.
@@ -51,6 +57,18 @@ while [ "${1#-}" != "$1" ]; do
     case "$1" in
         -x)
             set -x
+            ;;
+        --provision)
+            PROVISION=1
+            OPERATIONS="${OPERATIONS} provision"
+            ;;
+        --free)
+            FREE=1
+            OPERATIONS="${OPERATIONS} free"
+            ;;
+        --delete)
+            DELETE=1
+            OPERATIONS="${OPERATIONS} delete"
             ;;
         --manifest)
             MANIFEST=1
@@ -186,7 +204,14 @@ MAC=${MAC:-$(ifconfig ${1} | awk '/HWaddr/ { print tolower($5) }')}
 #
 # Operations that can change the cache state should come first.
 #
-#
+if [ "${DELETE}" ]; then
+    ztn_cache_delete || exit 1
+fi
+
+if [ "${PROVISION}" ]; then
+    ztn_cache_provision || exit 1
+fi
+
 if [ "${DISCOVER}" ]; then
     if [ "${PLATFORM}" ]; then
         # Intentionally test both library functions
@@ -282,8 +307,17 @@ if [ "${STARTUP}" ]; then
 fi
 
 if [ "${MANIFEST}" ]; then
-    cat ${ZTN_MANIFEST}
+    if [ -f "${ZTN_MANIFEST}" ]; then
+        cat ${ZTN_MANIFEST}
+    else
+        echo "There is no ZTN manifest."
+    fi
     echo
+fi
+
+if [ "${FREE}" ]; then
+    freem=$(ztn_cache_freem)
+    echo "${freem}M"
 fi
 
 
