@@ -29,6 +29,10 @@ PLATFORM_LOADERS := $(foreach p,$(INSTALLER_PLATFORMS),$(shell $(SWITCHLIGHT_PKG
 # ZTN Manifest for the installer
 ZTN_MANIFEST := zerotouch.json
 
+MKSHAR = $(SWITCHLIGHT)/tools/mkshar
+##MKSHAR_OPTS = --lazy --unzip-sfx --unzip-loop --unzip-pipe
+MKSHAR_OPTS = --lazy --unzip-pad
+
 $(INSTALLER_NAME): $(PLATFORM_DIRS) $(INSTALLER_SWI) $(ZTN_MANIFEST)
 	$(SL_V_at)rm -rf *.installer
 	$(SL_V_at)cp $(PLATFORM_LOADERS) .
@@ -42,7 +46,7 @@ endif
 	>> installer.sh
 	$(SL_V_GEN)set -o pipefail ;\
 	if $(SL_V_P); then v="-v"; else v="--quiet"; fi ;\
-	$(SWITCHLIGHT)/tools/mkshar --lazy $@ $(SWITCHLIGHT)/tools/sfx.sh.in installer.sh *.loader lib switchlight-powerpc.swi $(ZTN_MANIFEST) $(INSTALLER_EXTRA_FILES)
+	$(MKSHAR) $(MKSHAR_OPTS) $@ $(SWITCHLIGHT)/tools/sfx.sh.in installer.sh *.loader lib switchlight-powerpc.swi $(ZTN_MANIFEST) $(INSTALLER_EXTRA_FILES)
 ifdef INSTALLER_SWI
 	$(SL_V_at)rm -f switchlight-powerpc.swi
 endif

@@ -432,7 +432,10 @@ mount -o remount,size=512M /tmp || true
 # Unpack our distribution
 installer_say "Unpacking SwitchLight installer files..."
 installer_dir=`pwd`
-if test "$SFX_UNZIP"; then
+if test "$SFX_PAD"; then
+  # ha ha, busybox cannot exclude multiple files
+  unzip $installer_zip -x $SFX_PAD
+elif test "$SFX_UNZIP"; then
   unzip $installer_zip -x $installer_script
 else
   dd if=$installer_zip bs=$SFX_BLOCKSIZE skip=$SFX_BLOCKS \
