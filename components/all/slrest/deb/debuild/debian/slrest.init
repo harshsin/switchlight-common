@@ -13,7 +13,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 . /lib/lsb/init-functions
 
-DAEMON=/usr/sbin/slrest
+DAEMON=/usr/sbin/slrest-server
 PIDFILE=/var/run/slrest/slrest.pid
 SLREST_OPTS="--pidfile $PIDFILE --daemonize --logfile=/var/run/slrest/slrest.log --syslog --config /etc/slrest.conf"
 SLREST_EXTRA_OPTS=
