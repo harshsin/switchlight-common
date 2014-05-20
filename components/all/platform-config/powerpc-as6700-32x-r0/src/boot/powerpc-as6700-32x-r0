@@ -10,11 +10,17 @@ echo "rootfs-powerpc" >/etc/sl_rootfs
 touch /etc/sl_nokexec
 echo "" >/etc/sl_crashkernel
 
-echo "block/sda sda2 flash" > /etc/sl_mounts
-echo "block/sda sda3 flash2" >> /etc/sl_mounts
-
 echo "# MTD device name       Device offset   Env. size       Flash sector size" >  /etc/fw_env.config
 echo "/dev/mtd1               0x00000000      0x00002000      0x00010000"        >> /etc/fw_env.config
+
+if fw_printenv sl_installer_use_mmc; then
+    echo "block/mmcblk0 mmcblk0p2 flash" > /etc/sl_mounts
+    echo "block/mmcblk0 mmcblk0p3 flash2" >> /etc/sl_mounts
+else
+    echo "block/sda sda2 flash" > /etc/sl_mounts
+    echo "block/sda sda3 flash2" >> /etc/sl_mounts
+fi
+
 
 
 
