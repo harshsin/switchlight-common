@@ -52,7 +52,7 @@ class v1_sys_reboot(SLAPIObject):
     """Reboot the system, with delay."""
     route = "/api/v1/sys/reboot"
     def POST(self, delay='3'):
-        (delay, error) = params.integer('delay', delay)
+        (delay, error) = params.uinteger('delay', delay)
         if error:
             return SLREST.error(self.route, reason=error)
 
