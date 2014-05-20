@@ -28,6 +28,9 @@ if [ -f /etc/default/ofad ]; then
 	. /etc/default/ofad
 fi
 
+# Allow ofad core dumps.
+ulimit -c unlimited
+
 case $1 in
 	start)
 		log_daemon_msg "Starting OpenFlow Agent" "ofad"
