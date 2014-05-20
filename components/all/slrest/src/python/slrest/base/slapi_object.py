@@ -1,7 +1,7 @@
 #!/usr/bin/python
 ############################################################
 #
-# Common framework for all REST api implementations. 
+# Common framework for all REST api implementations.
 #
 ############################################################
 import cherrypy
@@ -14,8 +14,8 @@ import cherrypy
 # Derived classes must provide the following:
 #
 # 1. Be derived directly from slapi_object
-# 2. Contain a class variable named 'route' with the REST api mount point. 
-# 3. Either a GET, POST, and/or PUT method. 
+# 2. Contain a class variable named 'route' with the REST api mount point.
+# 3. Either a GET, POST, and/or PUT method.
 #
 ############################################################
 
@@ -52,6 +52,8 @@ class help(SLAPIObject):
     route="/api/help"
     def GET(self):
         rv = "Available REST APIs:\n"
-        for klass in sorted(SLAPIObject.mounted):
+        routes = {}
+        # Sort output by route
+        for klass in sorted(SLAPIObject.mounted, key=lambda k: k.route):
             rv += "    %-32s %s\n" % (klass.route, klass.__doc__)
         return rv

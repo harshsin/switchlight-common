@@ -9,7 +9,8 @@ from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
 from slrest.base import auth
 from slrest.base import config
-import slrest.api
+from slrest.api import *
+from slrest.api.v1 import *
 
 import cherrypy
 from cherrypy import log as cplog
@@ -28,9 +29,9 @@ import json
 
 
 #
-# This is a custom tool (in the cherrypy context) to 
+# This is a custom tool (in the cherrypy context) to
 # validate the request or reject it based on the
-# requestor's source network. 
+# requestor's source network.
 #
 def remote_address_check():
     remote = cherrypy.request.headers['Remote-Addr']
@@ -54,7 +55,7 @@ class SwitchLightRestServer(object):
     def init(self, ops):
         """Initialize the server and prepare for execution."""
 
-        # Apply optional cherrypy configuration updates. 
+        # Apply optional cherrypy configuration updates.
         if ops.cp_config:
             if type(ops.cp_config) is str:
                 cherrypy.config.update(ops.cp_config)
@@ -72,7 +73,7 @@ class SwitchLightRestServer(object):
                 return False
 
 
-        # Apply server settings 
+        # Apply server settings
         if self.config:
             if self.config.get('server_accounts'):
                 auth.server_account_update(self.config['server_accounts'])
@@ -114,7 +115,7 @@ class SwitchLightRestServer(object):
             auth.network_clear_all()
             auth.network_add("network", ops.network)
 
-        # SSL is the default. 
+        # SSL is the default.
         if ops.no_ssl is False:
             if ops.private_key:
                 if os.path.exists(ops.private_key):
@@ -152,11 +153,11 @@ class SwitchLightRestServer(object):
             if not os.path.exists(os.path.dirname(ops.pidfile)):
                 os.makedirs(os.path.dirname(ops.pidfile))
             plugins.PIDFile(engine, ops.pidfile).subscribe()
-            
+
         if hasattr(engine, 'signal_handler'):
             engine.signal_handler.subscribe()
-            
-        # Mount all API implementations. 
+
+        # Mount all API implementations.
         SLAPIObject.mount_all(self.logger)
 
         # Set config logger
@@ -168,7 +169,7 @@ class SwitchLightRestServer(object):
     def run(self):
         cherrypy.engine.start()
         cherrypy.engine.block()
-        
+
     @staticmethod
     def main(name="slrest-server"):
         import argparse
@@ -204,7 +205,7 @@ class SwitchLightRestServer(object):
             logging.basicConfig(filename=ops.logfile)
         else:
             logging.basicConfig()
-            
+
         logger = logging.getLogger(name)
         logger.setLevel(logging.DEBUG)
 
