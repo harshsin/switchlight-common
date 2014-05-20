@@ -83,3 +83,17 @@ class SLREST(object):
                                status=SLREST.Status.PENDING,
                                reason=reason)
 
+
+    @staticmethod
+    def error(path, reason, data=None):
+        return SLREST.response(path=path,
+                               status=SLREST.Status.ERROR,
+                               reason=reason,
+                               data=data)
+
+    @staticmethod
+    def ok(path, reason, data=None):
+        return SLREST.response(path=path,
+                               status=SLREST.Status.OK,
+                               reason=reason,
+                               data=data)
