@@ -41,6 +41,10 @@
 #include <icmpa/icmpa.h>
 #endif
 
+#ifdef DEPENDMODULE_INCLUDE_ARPRA
+#include <arpra/arpra.h>
+#endif
+
 /**
  * Try an operation and return the error code on failure.
  */
@@ -255,6 +259,10 @@ ivs_init(ivs_t* ivs)
 
 #ifdef DEPENDMODULE_INCLUDE_ICMPA
     TRY(icmpa_init());
+#endif
+
+#ifdef DEPENDMODULE_INCLUDE_ARPRA
+    TRY(arpra_init());
 #endif
 
     TRY(ind_cfg_install_sighup_handler());
