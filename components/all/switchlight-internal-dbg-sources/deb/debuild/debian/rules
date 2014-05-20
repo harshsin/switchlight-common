@@ -25,8 +25,14 @@ SWITCHLIGHT_ABS=$(abspath $(SWITCHLIGHT))
 TARGET_ROOT=$(INSTALL_DIR)$(SWITCHLIGHT_ABS)
 
 SRC_SUBMODULES := \
-	bigcode bigcode-internal broadcom indigo \
-	infra loxigen-artifacts switchlight-common
+	bigcode \
+	bigcode-internal \
+	broadcom \
+	indigo \
+	infra \
+	loxigen-artifacts \
+	SL \
+	switchlight-common
 
 SRC_SDKS := sdk-6.3.3
 
