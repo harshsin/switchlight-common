@@ -54,8 +54,6 @@ class help(SLAPIObject):
         rv = "Available REST APIs:\n"
         routes = {}
         # Sort output by route
-        for klass in SLAPIObject.mounted:
-            routes[klass.route] = klass.__doc__
-        for route in sorted(routes):
-            rv += "    %-32s %s\n" % (route, routes[route])
+        for klass in sorted(SLAPIObject.mounted, key=lambda k: k.route):
+            rv += "    %-32s %s\n" % (klass.route, klass.__doc__)
         return rv
