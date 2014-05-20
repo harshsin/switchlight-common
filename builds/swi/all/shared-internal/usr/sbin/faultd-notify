@@ -4,11 +4,11 @@
 # </bsn.cl>
 ############################################################
 #
-# This script is included in all internal build images. 
+# This script is included in all internal build images.
 #
-# When a fault occurs the fault information and 
-# the current contents of syslog are emailed to the 
-# development support address. 
+# When a fault occurs the fault information and
+# the current contents of syslog are emailed to the
+# development support address.
 #
 ############################################################
 import sys
@@ -36,6 +36,9 @@ IP:
 Platform Information:
 %(plat)s
 
+Build Information:
+%(build)s
+
 Fault Information:
 %(fault)s
 
@@ -59,10 +62,11 @@ try:
 except Exception, e:
     ipInfo = str(e)
 
-data=dict(plat=str(slplatform), 
+data=dict(plat=str(slplatform),
 	  node=platform.node(),
-          fault=open(sys.argv[1]).read(), 
-          syslog=open('/var/log/syslog').read(), 
+          fault=open(sys.argv[1]).read(),
+          syslog=open('/var/log/syslog').read(),
+          build=open('/etc/sl_version').read(),
           ip=ipInfo)
 
 mail(data)
