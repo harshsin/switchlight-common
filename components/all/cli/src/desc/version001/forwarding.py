@@ -65,7 +65,7 @@ CONFIG_FORWARDING_COMMAND_DESCRIPTION = {
                 (
                     {
                         'token'         : 'l2cache',
-                        'short-help'    : 'Configurare L2 Cache',
+                        'short-help'    : 'Configure L2 Cache',
                     },
                     {
                         'token'         : 'enable',
