@@ -390,6 +390,9 @@ class TransactionTask(object):
             return False
 
 
+    def fidurl(self, fid):
+        return "/api/v1/transactions/file?id=%s&fid=%s" % (self.tid, fid)
+
     def __str__(self):
         s = ""
         s += "Type: %s\n" % self.tm.name
