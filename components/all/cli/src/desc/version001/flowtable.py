@@ -24,6 +24,9 @@ def convert_mac_hex_string_to_byte_array(mac):
 def convert_ip6_address_to_binary_string(ip6):
     return socket.inet_pton(socket.AF_INET6, ip6)
 
+def display_hex(val):
+    return hex(val)
+
 # FIXME: we need to figure out how to display various match cases for vlan:
 #        (1) don't care
 #        (2) match untagged
@@ -61,6 +64,7 @@ class disp_flow_ob(object):
     idle_to = "-"
     l4_src = "-"
     l4_dst = "-"
+    tcp_flags="-"
     def __init__(self,
                  prio=prio,
                  table_id=table_id,
@@ -82,7 +86,8 @@ class disp_flow_ob(object):
                  hard_to=hard_to,
                  idle_to=idle_to,
                  l4_src=l4_src,
-                 l4_dst=l4_dst):
+                 l4_dst=l4_dst,
+                 tcp_flags=tcp_flags):
         self.prio = prio
         self.table_id = table_id
         self.inport = inport
@@ -104,6 +109,7 @@ class disp_flow_ob(object):
         self.idle_to = idle_to
         self.l4_src = l4_src
         self.l4_dst = l4_dst
+        self.tcp_flags = tcp_flags
 
 flow_table_titles = disp_flow_ob(
     prio="Prio",
@@ -126,7 +132,8 @@ flow_table_titles = disp_flow_ob(
     hard_to="HardTO",
     idle_to="IdleTO",
     l4_src="L4Src",
-    l4_dst="L4Dst")
+    l4_dst="L4Dst",
+    tcp_flags="TcpFlg")
 
 def get_format_string(disp_config):
     """
@@ -135,7 +142,7 @@ def get_format_string(disp_config):
     this based on configuration
     """
     if disp_config == 'detail':
-        return "{0.prio:<5} {0.table_id:<1} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.eth_type:<6} {0.vid:<5} {0.vpcp:<3} {0.dip:<40} {0.sip:<40} {0.ipproto:<4} {0.ipdscp:<4} {0.l4_dst:<6} {0.l4_src:<6} {0.output:<16} {0.modifications:<3} {0.packets:<10} {0.hard_to:<6} {0.idle_to:<6} {0.duration:<10}"
+        return "{0.prio:<5} {0.table_id:<1} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.eth_type:<6} {0.vid:<5} {0.vpcp:<3} {0.dip:<40} {0.sip:<40} {0.ipproto:<4} {0.ipdscp:<4} {0.l4_dst:<6} {0.l4_src:<6} {0.tcp_flags:<6} {0.output:<16} {0.modifications:<3} {0.packets:<10} {0.hard_to:<6} {0.idle_to:<6} {0.duration:<10}"
     else:
         return "{0.prio:<5} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.dip:<40} {0.sip:<40} {0.output:<16} {0.packets:<10} {0.duration:<10}"
 
@@ -244,6 +251,8 @@ def of13_flow_entry_to_disp(entry):
         str(of13.oxm.udp_src_masked): ('l4_src', None),
         str(of13.oxm.udp_dst): ('l4_dst', None),
         str(of13.oxm.udp_dst_masked): ('l4_dst', None),
+        str(of13.oxm.bsn_tcp_flags): ('tcp_flags', display_hex),
+        str(of13.oxm.bsn_tcp_flags_masked): ('tcp_flags', display_hex),
         }
 
     rv = disp_flow_ob()
