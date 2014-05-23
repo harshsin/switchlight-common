@@ -101,8 +101,8 @@ def show_one_dp_intf_detail(port):
     # prints detailed info for the given (port_desc, port_stats) tuple
     print '%s is %s' % \
         (port[0].name, 
-         'down' if port[0].state & of13.OFPPS_LINK_DOWN
-         else 'admin down' if port[0].config & of13.OFPPC_PORT_DOWN
+         'admin down' if port[0].config & of13.OFPPC_PORT_DOWN
+         else 'down' if port[0].state & of13.OFPPS_LINK_DOWN
          else 'up')
     print '  Hardware Address: %s' % of13.util.pretty_mac(port[0].hw_addr)
     print '  Speed: %s' % get_speed(port[0].curr)
