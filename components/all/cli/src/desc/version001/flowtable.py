@@ -24,22 +24,8 @@ def convert_mac_hex_string_to_byte_array(mac):
 def convert_ip6_address_to_binary_string(ip6):
     return socket.inet_pton(socket.AF_INET6, ip6)
 
-def display_tcp_flags(val):
-    flags_str = ''
-    if val & of13.OFP_BSN_TCP_FLAG_FIN:
-        flags_str += 'F'     
-    if val & of13.OFP_BSN_TCP_FLAG_SYN:
-        flags_str += 'S'
-    if val & of13.OFP_BSN_TCP_FLAG_RST:
-        flags_str += 'R'
-    if val & of13.OFP_BSN_TCP_FLAG_PSH:
-        flags_str += 'P'
-    if val & of13.OFP_BSN_TCP_FLAG_ACK:
-        flags_str += 'A'
-    if val & of13.OFP_BSN_TCP_FLAG_URG:
-        flags_str += 'U'
-
-    return flags_str 
+def display_hex(val):
+    return hex(val)
 
 # FIXME: we need to figure out how to display various match cases for vlan:
 #        (1) don't care
@@ -265,8 +251,8 @@ def of13_flow_entry_to_disp(entry):
         str(of13.oxm.udp_src_masked): ('l4_src', None),
         str(of13.oxm.udp_dst): ('l4_dst', None),
         str(of13.oxm.udp_dst_masked): ('l4_dst', None),
-        str(of13.oxm.bsn_tcp_flags): ('tcp_flags', display_tcp_flags),
-        str(of13.oxm.bsn_tcp_flags_masked): ('tcp_flags', display_tcp_flags),
+        str(of13.oxm.bsn_tcp_flags): ('tcp_flags', display_hex),
+        str(of13.oxm.bsn_tcp_flags_masked): ('tcp_flags', display_hex),
         }
 
     rv = disp_flow_ob()
