@@ -97,3 +97,10 @@ class SLREST(object):
                                status=SLREST.Status.OK,
                                reason=reason,
                                data=data)
+
+    @staticmethod
+    def missing(path, reason=None):
+        return SLREST.response(path=path,
+                               status=SLREST.Status.MISSING,
+                               reason=reason)
+
