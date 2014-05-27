@@ -8,7 +8,7 @@
 # </bsn.cl>
 ############################################################
 ARCH=powerpc
-PACKAGE_NAMES=ofad-6.3.3-t5
+PACKAGE_NAMES=ofad-6.3.3-internal-t5
 export DEB_BUILD_OPTIONS=nostrip
 DEBUILD_ARGS=-eDEB_BUILD_OPTIONS
 include ../../../../../../make/debuild.mk

@@ -1,0 +1,7 @@
+[deb-powerpc]
+packages=brcmd-6.3.3-internal libbroadcom-6.3-kernel-85xx-modules libbroadcom-6.3-kernel-as-e500mc-modules ofad-6.3.3-internal-t5 snmpd sofcon lm-sensors fancontrol pciutils usbutils mtd-utils kexec-tools i2c-tools module-init-tools isc-dhcp-client ntp wget ethtool localepurge tcpdump telnetd python-pyinotify cpio util-linux dosfstools gnu-fdisk rssh u-boot-tools file gdb binutils ntpdate
+source=copy:__DIR__/powerpc/ ./
+omitdebsrc=true
+
+
+
