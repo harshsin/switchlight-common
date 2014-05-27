@@ -39,7 +39,8 @@ SWI_BUILD_PATHS := \
 	swi/powerpc/internal \
 	swi/powerpc/release \
 	swi/powerpc/bringup \
-	swi/powerpc/internal-t5
+	swi/powerpc/internal-bcf \
+	swi/powerpc/release-bcf
 #swi/i386/vm-internal
 
 #
