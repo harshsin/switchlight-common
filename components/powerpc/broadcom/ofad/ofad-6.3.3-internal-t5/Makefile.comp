@@ -8,7 +8,6 @@
 #
 # </bsn.cl>
 ############################################################
-############################################################
 #
 #  Makefile
 #
@@ -35,10 +34,10 @@ ifndef TOOLCHAIN
 TOOLCHAIN := powerpc-linux-gnu
 endif
 
-MODULE := ofad-6.3.3-t5
+MODULE := ofad-6.3.3-internal-t5
 include $(BUILDER)/standardinit.mk
 
-LIBRARY := ofad-6.3.3-t5-lib
+LIBRARY := ofad-6.3.3-internal-t5-lib
 $(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(BUILDER)/lib.mk
 
