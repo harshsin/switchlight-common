@@ -106,7 +106,7 @@ class v1_sys_file_syslog(SLAPIObject):
 class v1_sys_beacon(SLAPIObject):
     """Trigger LED beaconing."""
     route = "/api/v1/sys/beacon"
-    def POST(self):
+    def POST(self, sync=False):
         # FIXME use platform independent version
         cmd = "ofad-ctl modules brcm led-flash 3 100 100 10"
         (rc, out) = util.bash_command(cmd)

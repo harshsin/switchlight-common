@@ -22,7 +22,7 @@ import traceback
 class v1_status_cpu_load(SLAPIObject):
     """Get switch CPU load."""
     route = "/api/v1/status/cpu-load"
-    def GET(self):
+    def GET(self, sync=False):
         try:
             with open('/proc/loadavg', 'r') as data:
                 avgs = data.readline().split()[0:3]
@@ -38,7 +38,7 @@ class v1_status_cpu_load(SLAPIObject):
 class v1_status_memory(SLAPIObject):
     """Get switch memory usage."""
     route = "/api/v1/status/memory"
-    def GET(self):
+    def GET(self, sync=False):
         try:
             with open('/proc/meminfo', 'r') as data:
                 memtotal = data.readline().split(':')[1].strip()
@@ -98,7 +98,7 @@ class v1_status_tech_support(SLAPIObject):
 class v1_status_controller(SLAPIObject):
     """Get 'show controller' command output."""
     route = "/api/v1/status/controller"
-    def GET(self):
+    def GET(self, sync=False):
         try:
             out = util.pcli_command('show controller')
         except:
@@ -110,7 +110,7 @@ class v1_status_controller(SLAPIObject):
 class v1_status_environment(SLAPIObject):
     """Get 'show environment' command output."""
     route = "/api/v1/status/environment"
-    def GET(self):
+    def GET(self, sync=False):
         try:
             out = util.pcli_command('show environment')
         except:
@@ -122,7 +122,7 @@ class v1_status_environment(SLAPIObject):
 class v1_status_inventory(SLAPIObject):
     """Get 'show inventory' command output."""
     route = "/api/v1/status/inventory"
-    def GET(self):
+    def GET(self, sync=False):
         try:
             out = util.pcli_command('show inventory')
         except:
