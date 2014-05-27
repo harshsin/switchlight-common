@@ -15,7 +15,7 @@
 include $(SWITCHLIGHT)/make/config.mk
 
 
-SWI_FILES := $(wildcard $(SWITCHLIGHT)/builds/swi/powerpc/internal-t5/switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-*20*.swi)
+SWI_FILES := $(wildcard $(SWITCHLIGHT)/builds/swi/powerpc/release-bcf/switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-*20*.swi)
 ifndef SWI_FILES
 $(error "Could not find the correct SWI files for this package")
 endif
@@ -58,6 +58,6 @@ ztndeb:
 	echo "" >> $(DCHANGE)
 	echo " -- Support <support@bigswitch.com>  $(DDATE)" >> $(DCHANGE)
 
-
+export NO_PKG_INSTALL := 1
 include $(SWITCHLIGHT)/make/deb-subdir.mk
 
