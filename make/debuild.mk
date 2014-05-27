@@ -32,7 +32,9 @@ endif
 deb:
 	$(SL_V_at)$(MAKE) -C ../ $(SL_MAKEFLAGS)
 	cd $(DEBUILD_DIR); $(DEBUILD)
+ifndef NO_PKG_INSTALL
 	$(SWITCHLIGHT_PKG_INSTALL) --add-pkg *$(ARCH)*.deb
+endif
 ifdef NO_LOCAL_DEBS
 	# Remove local package after installing into the repository
 	rm *$(ARCH)*.deb
