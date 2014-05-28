@@ -60,6 +60,7 @@ class v1_sys_reboot(SLAPIObject):
         return SLREST.ok(self.route,
                          reason="Rebooting in %s seconds...\n" % delay)
 
+
 class v1_sys_file_syslog(SLAPIObject):
     """Get the current syslog."""
     route = "/api/v1/sys/file/syslog"
@@ -102,9 +103,15 @@ class v1_sys_file_syslog(SLAPIObject):
         return tt.response()
 
 
-
-
-
-
-
+class v1_sys_beacon(SLAPIObject):
+    """Trigger LED beaconing."""
+    route = "/api/v1/sys/beacon"
+    def POST(self, sync=False):
+        # FIXME use platform independent version
+        cmd = "ofad-ctl modules brcm led-flash 3 100 100 10"
+        (rc, out) = util.bash_command(cmd)
+        if rc:
+            return SLREST.error(self.route, reason=out)
+        return SLREST.ok(self.route,
+                         reason='Command successful.\n')
 
