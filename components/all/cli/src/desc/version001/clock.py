@@ -1,4 +1,4 @@
-# Copyright (c) 2013  BigSwitch Networks
+# Copyright (c) 2013-2014  BigSwitch Networks
 
 import os
 
@@ -6,6 +6,8 @@ from sl_util import shell, Service
 
 import command
 import run_config
+import signal
+import subprocess
 
 class UnknownServerError(Exception):
     def __init__ (self, server):
@@ -145,7 +147,13 @@ class _NTPConfig(object):
                 NTP.disable()
                 #allow large time difference, set clock and exit,
                 #run in foreground
-                shell.call('ntpd -g -q -n')
+                try:
+                    shell.call_poll('ntpd -g -q -n', timeout=10)
+                except subprocess.CalledProcessError, e:
+                    if e.returncode == -signal.SIGKILL:
+                        print "ntp sync timed out"
+                    else: 
+                        print "ntp sync failed, rc: %d" % e.returncode
                 NTP.enable()
             except:
                 pass
