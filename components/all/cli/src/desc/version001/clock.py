@@ -148,7 +148,7 @@ class _NTPConfig(object):
                 #allow large time difference, set clock and exit,
                 #run in foreground
                 try:
-                    shell.call_poll('ntpd -g -q -n', timeout=10)
+                    shell.call('ntpd -g -q -n', timeout=10)
                 except subprocess.CalledProcessError, e:
                     if e.returncode == -signal.SIGKILL:
                         print "ntp sync timed out"
