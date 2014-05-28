@@ -8,7 +8,6 @@ import subprocess
 import time
 import os
 import signal
-import error
 
 def call (cmd, show_cmd = False, show_output = False, raise_exc = True):
   if show_cmd:
