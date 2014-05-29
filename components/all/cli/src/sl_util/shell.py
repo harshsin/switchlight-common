@@ -15,7 +15,10 @@ def call (cmd, show_cmd = False, show_output = False, raise_exc = True, timeout 
   if timeout is not None:
     #adding "exec" to cmd will cause cmd to inherit the shell process,
     #instead of having the shell launch a child process, which does not get killed
-    p = subprocess.Popen("exec " + cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    if show_output:
+      p = subprocess.Popen("exec " + cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    else:
+      p = subprocess.Popen("exec " + cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     t_ = time.time() + timeout
     while p.poll() is None:
       if time.time() > t_:
@@ -26,8 +29,11 @@ def call (cmd, show_cmd = False, show_output = False, raise_exc = True, timeout 
         else:
           return (None, None, -signal.SIGKILL)
       time.sleep(1)
-  else:
+  elif show_output:
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+  else:
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+
   if show_output:
     soutl = []
     for line in iter(p.stdout.readline, ""):
