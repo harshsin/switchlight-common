@@ -284,22 +284,20 @@ installer_platform_swi() {
     local blockdev=$1
     local partno=$2
 
-    # Is there a platform-specific SWI?
-    if [ -f "${installer_platform_dir}/${installer_platform}.swi" ]; then
-        local swi="${installer_platform_dir}/${installer_platform}.swi"
-    # Is there a default SWI?
-    elif [ -f "${installer_dir}/switchlight-${installer_arch}.swi" ]; then
-        local swi="${installer_dir}/switchlight-${installer_arch}.swi"
+    # Is there a platform-specific swi-config file?
+    if [ -f "${installer_platform_dir}/swi-config" ]; then
+        . "${installer_platform_dir}/swi-config"
+    # Is there a base swi-config file?
+    elif [ -f "${installer_dir}/swi-config" ]; then
+        . "${installer_dir}/swi-config"
     fi
 
-    if [ -f "${swi}" ]; then
-        installer_say "Installing SwitchLight Software Image..."
-        if [ "${platform_swi_install_name}" ]; then
-            local swidst="${platform_swi_install_name}"
-        else
-            local swidst="switchlight-${installer_arch}.swi"
+    if [ -f "${SWISRC}" ]; then
+        if [ ! ${SWIDST} ]; then
+            SWIDST="$(basename ${SWISRC})"
         fi
-        installer_partition_cp ${blockdev} ${partno} ${swi} ${swidst}
+        installer_say "Installing SwitchLight Software Image (${SWIDST})..."
+        installer_partition_cp ${blockdev} ${partno} ${SWISRC} ${SWIDST}
     else
         installer_say "No SwitchLight Software Image available for installation. Post-install ZTN installation will be required."
     fi
