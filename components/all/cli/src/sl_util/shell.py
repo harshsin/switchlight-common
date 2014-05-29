@@ -12,12 +12,12 @@ import signal
 def call (cmd, show_cmd = False, show_output = False, raise_exc = True, timeout = None):
   if show_cmd:
     print cmd 
-  if timeout != None:
+  if timeout is not None:
     #adding "exec" to cmd will cause cmd to inherit the shell process,
     #instead of having the shell launch a child process, which does not get killed
     p = subprocess.Popen("exec " + cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     t_ = time.time() + timeout
-    while p.poll() == None:
+    while p.poll() is None:
       if time.time() > t_:
         p.kill()
         #A negative return value indicates that the child was terminated by SIGKILL
