@@ -5,6 +5,7 @@
 #
 ############################################################
 import json
+import cherrypy
 
 class SLREST(object):
     class Keys(object):
@@ -70,6 +71,7 @@ class SLREST(object):
             e[SLREST.Keys.DATA] = r
             r = e
 
+        cherrypy.response.headers['Content-Type'] = 'application/json'
         return json.dumps(r)
 
 
