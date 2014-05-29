@@ -1,5 +1,0 @@
-NETDEV=ma1
-BOOTMODE=swi
-SWI=flash2:switchlight-powerpc.swi
-
-
