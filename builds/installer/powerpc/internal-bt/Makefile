@@ -1,4 +1,3 @@
-#!/bin/bash -ex
 ############################################################
 # <bsn.cl fy=2013 v=none>
 #
@@ -8,10 +7,5 @@
 #
 # </bsn.cl>
 ############################################################
-WS_ROOT=$1
+include ../release-bt/Makefile
 
-# Custom ofad symlinks
-cp ofadsymlinks.py ${WS_ROOT}/etc/init.d
-
-# Fixme
-. ${SWITCHLIGHT}/builds/swi/powerpc/internal-bt/rootfs/cleanup

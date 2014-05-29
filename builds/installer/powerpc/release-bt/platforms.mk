@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+# -*- Makefile -*-
 ############################################################
 # <bsn.cl fy=2013 v=none>
 #
@@ -8,10 +8,9 @@
 #
 # </bsn.cl>
 ############################################################
-WS_ROOT=$1
+INSTALLER_PLATFORMS := powerpc-quanta-lb9-r0 powerpc-quanta-ly2-r0 powerpc-dni-7448-r0 powerpc-as6700-32x-r0 powerpc-as5710-54x-r0a powerpc-as6700-32x-r0b powerpc-as5710-54x-r0b
 
-# Custom ofad symlinks
-cp ofadsymlinks.py ${WS_ROOT}/etc/init.d
 
-# Fixme
-. ${SWITCHLIGHT}/builds/swi/powerpc/internal-bt/rootfs/cleanup
+
+
+

@@ -30,8 +30,8 @@ initrd-powerpc := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --fi
 KERNELS := $(kernel-85xx) $(kernel-e500mc)
 INITRD := $(initrd-powerpc)
 ARCH := powerpc
-SWITCHLIGHT_BUILD_CONFIG := powerpc.internal,BCF
-ZTN_PLATFORMS := powerpc-quanta-ly2-r0 powerpc-as6700-32x-r0 powerpc-as5710-54x-r0a powerpc-as5710-54x-r0b
+SWITCHLIGHT_BUILD_CONFIG := powerpc.internal,bcf
 
+include ../release-bcf/platforms.mk
 include $(SWITCHLIGHT)/make/swi.mk
 

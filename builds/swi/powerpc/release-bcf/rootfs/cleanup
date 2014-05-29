@@ -13,5 +13,5 @@ WS_ROOT=$1
 # Custom ofad symlinks
 cp ofadsymlinks.py ${WS_ROOT}/etc/init.d
 
-# User default release settings
-. ${SWITCHLIGHT}/builds/swi/powerpc/release/rootfs/cleanup
+# Fixme -- commonize
+. ${SWITCHLIGHT}/builds/swi/powerpc/release-bt/rootfs/cleanup
