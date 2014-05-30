@@ -94,7 +94,7 @@ class SLREST(object):
                                data=data)
 
     @staticmethod
-    def ok(path, reason, data=None):
+    def ok(path, reason=None, data=None):
         return SLREST.response(path=path,
                                status=SLREST.Status.OK,
                                reason=reason,
