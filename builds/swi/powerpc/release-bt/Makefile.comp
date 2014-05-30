@@ -9,7 +9,7 @@
 # </bsn.cl>
 ############################################################
 #
-# Switchlight Powerpc Release T5
+# Switchlight Powerpc Release
 #
 ############################################################
 ifndef SWITCHLIGHT
@@ -19,18 +19,17 @@ include $(SWITCHLIGHT)/make/config.mk
 export SWITCHLIGHT
 endif
 
-SWI := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-release-bcf
+SWI := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-release-bt
 
 # We need the following package binaries
 kernel-85xx    := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-85xx:powerpc --find-file kernel-85xx)
-kernel-e500mc  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-e500mc:powerpc --find-file kernel-e500mc)
+kernel-as-e500mc  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-as-e500mc:powerpc --find-file kernel-as-e500mc)
 initrd-powerpc := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
 
-KERNELS := $(kernel-85xx) $(kernel-e500mc)
+KERNELS := $(kernel-85xx) $(kernel-as-e500mc)
 INITRD := $(initrd-powerpc)
 ARCH := powerpc
-SWITCHLIGHT_BUILD_CONFIG := powerpc.release,bcf
+SWITCHLIGHT_BUILD_CONFIG := powerpc.release,bt
 
 include platforms.mk
 include $(SWITCHLIGHT)/make/swi.mk
-

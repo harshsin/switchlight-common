@@ -8,9 +8,8 @@
 #
 # </bsn.cl>
 ############################################################
-############################################################
 #
-# Build SwitchLight bringup installer for all supported powerpc platforms.
+# Build SwitchLight installer for all supported powerpc platforms.
 #
 ############################################################
 ifndef SWITCHLIGHT
@@ -21,9 +20,9 @@ endif
 
 include platforms.mk
 
-INSTALLER_SWI := $(SWITCHLIGHT)/builds/swi/powerpc/bringup/switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-bringup.swi
-INSTALLER_NAME := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-bringup-$(SWITCHLIGHT_BUILD_TIMESTAMP).installer
-SWITCHLIGHT_BUILD_CONFIG := powerpc.bringup
+INSTALLER_SWI := $(SWITCHLIGHT)/builds/swi/powerpc/internal-bt/switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-internal-bt.swi
+INSTALLER_NAME := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-internal-bt.$(SWITCHLIGHT_BUILD_TIMESTAMP).installer
+SWITCHLIGHT_BUILD_CONFIG := powerpc.internal,bt
 INSTALLER_EXTRA_FILES := boot-config swi-config
 INSTALLER_CLEAN_FILES := $(INSTALLER_EXTRA_FILES)
 
@@ -34,5 +33,9 @@ installer-setup::
 	echo "BOOTMODE=swi" >> boot-config
 	echo "SWI=flash2:$(notdir $(INSTALLER_SWI))" >> boot-config
 	echo "SWISRC=$(notdir $(INSTALLER_SWI))" >> swi-config
+
+
+
+
 
 

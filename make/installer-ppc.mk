@@ -33,12 +33,12 @@ MKSHAR = $(SWITCHLIGHT)/tools/mkshar
 ##MKSHAR_OPTS = --lazy --unzip-sfx --unzip-loop --unzip-pipe
 MKSHAR_OPTS = --lazy --unzip-pad
 
-$(INSTALLER_NAME): $(PLATFORM_DIRS) $(INSTALLER_SWI) $(ZTN_MANIFEST)
+$(INSTALLER_NAME): $(PLATFORM_DIRS) $(INSTALLER_SWI) $(ZTN_MANIFEST) installer-setup
 	$(SL_V_at)rm -rf *.installer
 	$(SL_V_at)cp $(PLATFORM_LOADERS) .
 	$(foreach p,$(INSTALLER_PLATFORMS), $(SWITCHLIGHT_PKG_INSTALL) platform-config-$(p):all --extract .;)
 ifdef INSTALLER_SWI
-	$(SL_V_at)cp $(INSTALLER_SWI) switchlight-powerpc.swi
+	$(SL_V_at)cp $(INSTALLER_SWI) .
 endif
 	$(SL_V_at)sed \
 	  -e 's^@SLVERSION@^$(RELEASE)^g' \
@@ -46,12 +46,14 @@ endif
 	>> installer.sh
 	$(SL_V_GEN)set -o pipefail ;\
 	if $(SL_V_P); then v="-v"; else v="--quiet"; fi ;\
-	$(MKSHAR) $(MKSHAR_OPTS) $@ $(SWITCHLIGHT)/tools/sfx.sh.in installer.sh *.loader lib switchlight-powerpc.swi $(ZTN_MANIFEST) $(INSTALLER_EXTRA_FILES)
+	$(MKSHAR) $(MKSHAR_OPTS) $@ $(SWITCHLIGHT)/tools/sfx.sh.in installer.sh *.loader lib *.swi $(ZTN_MANIFEST) $(INSTALLER_EXTRA_FILES)
 ifdef INSTALLER_SWI
-	$(SL_V_at)rm -f switchlight-powerpc.swi
+	$(SL_V_at)rm -f *.swi
 endif
 	$(SL_V_at)rm -rf installer.sh ./lib ./usr *.loader $(ZTN_MANIFEST)
-
+ifdef INSTALLER_CLEAN_FILES
+	$(SL_V_at)rm -rf $(INSTALLER_CLEAN_FILES)
+endif
 
 shar installer: $(INSTALLER_NAME)
 
@@ -77,4 +79,7 @@ $(ZTN_MANIFEST):
 
 clean:
 	rm -f *.jffs2 *.loader *.swi *.installer
+
+
+installer-setup::
 
