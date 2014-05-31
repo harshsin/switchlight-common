@@ -39,7 +39,7 @@ $(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(BUILDER)/lib.mk
 
 
-DEPENDMODULES := BRCM BRCMTest OS NSS AIM BigList uCli ELS IOF tagport cintm
+DEPENDMODULES := BRCM BRCMTest OS NSS AIM BigList uCli ELS IOF tagport cintm cjson cjson_util
 
 #
 # Resolve module dependencies
@@ -91,6 +91,7 @@ GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_KERNEL_MODULES_INIT=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_KERNEL_MODULES_INIT_SCRIPT="\"/usr/sbin/brcm-modules-init.sh\""
 GLOBAL_CFLAGS += -DBRCM_CONFIG_KERNEL_MODULES_INIT_SCRIPT_ARGS="\"6.3\""
 GLOBAL_CFLAGS += -DBRCM_CONFIG_POST_INIT_RC_SCRIPT="\"/mnt/flash/brcm.rc\""
+GLOBAL_CFLAGS += -DBRCM_CONFIG_1GSFP_FILE="\"/mnt/flash/1gsfp.conf\""
 GLOBAL_CFLAGS += -DCINT_CONFIG_INCLUDE_STDLIB=1
 GLOBAL_LINK_LIBS += -ledit -lncurses
 

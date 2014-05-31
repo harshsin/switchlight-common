@@ -40,7 +40,7 @@ $(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(BUILDER)/lib.mk
 
 DEPENDMODULES := SocketManager OFConnectionManager BRCM snmp BRCMDriver \
-	OFStateManager murmur NSS ELS AET Configuration cjson \
+	OFStateManager murmur NSS ELS AET Configuration cjson cjson_util \
 	loci indigo Faultd IOF PPE IVS uCli BigList BigRing OS AIM \
 	BigHash tagport pimu nwac ofadm debug_counter timer_wheel arpra
 
@@ -110,7 +110,7 @@ GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_DIAG_SHELL=0
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_KERNEL_MODULES_INIT=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_KERNEL_MODULES_INIT_SCRIPT="\"/usr/sbin/brcm-modules-init.sh\""
 GLOBAL_CFLAGS += -DBRCM_CONFIG_KERNEL_MODULES_INIT_SCRIPT_ARGS="\"6.3\""
-GLOBAL_CFLAGS += -DBRCM_CONFIG_POST_INIT_RC_SCRIPT="\"/mnt/flash/brcm.rc\""
+GLOBAL_CFLAGS += -DBRCM_CONFIG_1GSFP_FILE="\"/mnt/flash/1gsfp.conf\""
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_PVS_SYSLOG=1
 GLOBAL_CFLAGS += -DAIM_CONFIG_PVS_SYSLOG_IDENT_DEFAULT="\"ofad\""
 GLOBAL_CFLAGS += -DIVS_CONFIG_INCLUDE_CXN_LOG=1

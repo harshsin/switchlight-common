@@ -16,10 +16,14 @@ import loxi.of13 as of13
 
 import re
 import itertools
+import json
+import os
 
 OFAgentConfig = OFADConfig()
 PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
 PortManager.setLAGBase(OFAgentConfig.lag_base_name)
+
+SFP1GCONF="/mnt/flash/1gsfp.conf"
 
 # generate a regexp that only requires the first character of the name,
 # with all other characters are optional;
@@ -35,19 +39,19 @@ command.add_typedef({
         'name'      : 'interface-list',
         'help-name' : 'comma-separated list of port ranges',
         'base-type' : 'string',
-        'pattern'   : r'^('+ opt_re(OFAgentConfig.physical_base_name) + '|' + 
+        'pattern'   : r'^('+ opt_re(OFAgentConfig.physical_base_name) + '|' +
         opt_re(OFAgentConfig.lag_base_name) +')(\d+(-\d+)?,)*\d+(-\d+)?$',
         })
 
 
 def get_base_name(s):
-    # given a string, return the base name of an interface; 
+    # given a string, return the base name of an interface;
     # FIXME assumes it's all text...
     match = re.match(r'([A-Za-z-])+', s)
     return match.group() if match else ''
 
 def get_port_name(s):
-    # pyloxi returns the entire field, 
+    # pyloxi returns the entire field,
     # but we only want the part of the string before the null
     return s.split('\x00')[0]
 
@@ -60,7 +64,7 @@ def get_port_info():
     ports = {}
     num2name = {}
     for entrylist in conn.of13_multipart_request_generator(
-            of13.message.port_desc_stats_request()): 
+            of13.message.port_desc_stats_request()):
         for entry in entrylist:
             entry.name = get_port_name(entry.name)
             ports[get_port_name(entry.name)] = [entry]
@@ -100,7 +104,7 @@ def get_speed(bmap):
 def show_one_dp_intf_detail(port):
     # prints detailed info for the given (port_desc, port_stats) tuple
     print '%s is %s' % \
-        (port[0].name, 
+        (port[0].name,
          'admin down' if port[0].config & of13.OFPPC_PORT_DOWN
          else 'down' if port[0].state & of13.OFPPS_LINK_DOWN
          else 'up')
@@ -135,7 +139,7 @@ def show_one_dp_intf_summary(format_str, port):
     else:
         err = '      '
     print format_str % \
-        (str(port[0].port_no), state, 
+        (str(port[0].port_no), state,
          get_port_name(port[0].name), get_speed(port[0].curr),
          port[1].rx_packets, port[1].tx_packets, err)
 
@@ -145,7 +149,7 @@ def show_dp_intf_list(port_name_list, detail):
     if not detail:
         format_str = "%2s%s %-14s %-5s %20s %20s %7s"
         print '* = Link up, D = Disabled'
-        print format_str % ('#', ' ', 'Name', 'Speed', 
+        print format_str % ('#', ' ', 'Name', 'Speed',
                             'Rx Packets', 'Tx Packets', '  ')
 
     if port_name_list:
@@ -189,7 +193,17 @@ def parse_port_list(orig_port_list):
     return (base, port_list)
 
 def show_intf(data):
-    if 'intf-port-list' in data:
+    if '1g-sfp' in data:
+        try:
+            l = json.loads(open(SFP1GCONF).read())
+            if len(l) is 0:
+                print None
+            else:
+                print " ".join([str(x) for x in l])
+        except:
+            print None
+
+    elif 'intf-port-list' in data:
         base, port_list = parse_port_list(data['intf-port-list'])
 
         if base == const.MGMT_PORT_BASE:
@@ -220,6 +234,11 @@ SHOW_INTERFACE_COMMAND_DESCRIPTION = {
         {
             'optional'        : True,
             'choices' : (
+                    {
+                        'token'           : '1g-sfp',
+                        'short-help'      : 'Show ports configured for 1G sfp.',
+                        'data'            : { '1g-sfp' : True },
+                    },
                 (
                     {
                         'field'           : 'intf-port-list',
@@ -271,17 +290,48 @@ def shutdown_intf(no_command, port_list, is_init):
     OFAgentConfig.write(warn=True)
     OFAgentConfig.reload(deferred=is_init)
 
+
+def sfp_1g_intf(no_command, port_list, is_init):
+    data = []
+    if os.path.exists(SFP1GCONF):
+        try:
+            data = json.loads(open(SFP1GCONF).read())
+        except ValueError:
+            pass
+
+    data = list(set(data))
+
+    for port in port_list:
+        # Fixme
+        if port.startswith('ethernet'):
+            port = int(port.replace('ethernet',''))
+            if no_command:
+                if port in data:
+                    data.remove(port)
+                shell.call('ofad-ctl autoneg %d 0' % port)
+            else:
+                if not port in data:
+                    data.append(port)
+                shell.call('ofad-ctl autoneg %d 1' % port)
+
+    data = list(set(data))
+    open(SFP1GCONF,'w').write(json.dumps(data))
+
+
+
 def config_intf(no_command, data, is_init):
     base, port_list = parse_port_list(data['intf-port-list'])
 
     if base == const.MGMT_PORT_BASE:
         for port in port_list:
             data['ifname'] = port
-            command.action_invoke('implement-config-mgmt-intf', 
+            command.action_invoke('implement-config-mgmt-intf',
                                   (no_command, data))
     else:
         if 'shutdown' in data:
             shutdown_intf(no_command, port_list, is_init)
+        elif '1g-sfp' in data:
+            sfp_1g_intf(no_command, port_list, is_init)
         else:
             raise error.ActionError('Invalid action for dataplane interfaces')
 
@@ -308,10 +358,20 @@ CONFIG_IF_COMMAND_DESCRIPTION = {
             'doc'             : 'interface|config-intf-port-list',
         },
         {
-            'token'           : 'shutdown',
-            'data'            : { 'shutdown' : True },
-            'short-help'      : 'Shut down interface',
-            'doc'             : 'interface|shutdown',
+            'choices' : (
+                {
+                    'token'           : 'shutdown',
+                    'data'            : { 'shutdown' : True },
+                    'short-help'      : 'Shut down interface',
+                    'doc'             : 'interface|shutdown',
+                },
+                {
+                    'token'           : '1g-sfp',
+                    'data'            : { '1g-sfp' : True },
+                    'short-help'      : 'Assume 1G SFP',
+                    'doc'             : 'interface|1g-sfp',
+                },
+            ),
         },
     ),
 }
