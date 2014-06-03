@@ -1,11 +1,11 @@
-Source: orc-brcm
+Source: orc-brcm-6.3.3-internal
 Section: misc
 Priority: optional
 Maintainer: Support <support@bigswitch.com>
 Build-Depends: debhelper (>= 9)
 Standards-Version: 3.8.4
 
-Package: orc-brcm
+Package: orc-brcm-6.3.3-internal
 Architecture: powerpc
 Depends: orc
 Description: ORC Driver for BRCM.

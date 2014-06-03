@@ -175,7 +175,8 @@ ofad-6.3.3-internal:powerpc \
 ofad-6.3.3-internal-t5:powerpc \
 ofad-6.3.3-release-t5:powerpc \
 orc:powerpc \
-orc-brcm:powerpc \
+orc-brcm-6.3.3-internal:powerpc \
+orc-brcm-6.3.3-release:powerpc \
 pcli:all \
 slrest:all \
 t6-dump-flows:all \

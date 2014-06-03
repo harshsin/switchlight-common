@@ -1,0 +1,26 @@
+#!/usr/bin/make -f
+
+DEB_DH_INSTALL_SOURCEDIR = debian/tmp
+INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
+PACKAGE_NAME = orc-brcm-6.3.3-release
+
+ORC_BIN := $(SWITCHLIGHT)/components/powerpc/broadcom/orc/orc-brcm-6.3.3-release/build/$(DEB_HOST_GNU_TYPE)
+ORC_DRV := $(INSTALL_DIR)/usr/share/orc/drivers
+
+
+
+
+
+%:
+	dh $@
+
+build-arch:
+	dh build-arch
+
+clean:
+	dh clean
+
+override_dh_auto_install:
+	mkdir -p $(ORC_DRV)
+	cp $(ORC_BIN)/bin/orc_brcm.so $(ORC_DRV)
+

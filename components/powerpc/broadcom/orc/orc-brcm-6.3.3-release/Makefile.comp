@@ -9,10 +9,10 @@ include $(SWITCHLIGHT)/make/config.mk
 
 DEBUG := 1
 
-SDK := $(shell $(SWITCHLIGHT_PKG_INSTALL) libbroadcom-6.3-internal-dev:powerpc --find-dir libbroadcom-6.3-internal-sdk)
-SDK_BUILD_TARGET := switchlight-powerpc-internal
-LIBBROADCOM_A := libbroadcom-6.3-internal.a
-LIBBROADCOM_SO := libbroadcom-internal.so.6.3
+SDK := $(shell $(SWITCHLIGHT_PKG_INSTALL) libbroadcom-6.3-release-dev:powerpc --find-dir libbroadcom-6.3-release-sdk)
+SDK_BUILD_TARGET := switchlight-powerpc-release
+LIBBROADCOM_A := libbroadcom-6.3-release.a
+LIBBROADCOM_SO := libbroadcom-release.so.6.3
 include $(SWITCHLIGHT_SUBMODULE_BROADCOM)/tools/sdk.mk
 
 GLOBAL_CFLAGS += -DSDK_SIM_CONFIG_INCLUDE_SDK_$(SDK_UVERSION)=1
@@ -28,10 +28,10 @@ ifndef TOOLCHAIN
 TOOLCHAIN := powerpc-linux-gnu
 endif
 
-MODULE := brcmd-6.3.3-internal
+MODULE := orc-brcm-6.3.3-release
 include $(BUILDER)/standardinit.mk
 
-LIBRARY := brcmd-6.3.3-internal-lib
+LIBRARY := orc-brcm-6.3.3-release-lib
 $(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(BUILDER)/lib.mk
 
@@ -70,7 +70,7 @@ GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_RPC_SERVER=0
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_RPC_CLIENT=0
 #GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_RPC_SERVER=1
 #GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_RPC_CLIENT=1
-GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_NETWORK_DIAG_SHELL=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_NETWORK_DIAG_SHELL=0
 GLOBAL_CFLAGS += -DBRCM_CONFIG_TARGET_LINUX_USER=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LB9_R0=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LB9A_R0=1
