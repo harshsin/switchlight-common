@@ -171,6 +171,17 @@ class get_inventory(SLAPIObject):
             out = ''
         return out
 
+class get_version(SLAPIObject):
+    """Get 'show version' command output."""
+    route = "/api/status/version"
+    def GET(self):
+        cherrypy.response.headers['Content-Type']= 'text/plain'
+        try:
+            out = util.pcli_command('show version')
+        except:
+            out = ''
+        return out
+
 class v1_sleep(SLAPIObject):
     """Simply sleep for the given number of seconds."""
     route = "/api/v1/sleep"
