@@ -130,3 +130,16 @@ class v1_status_inventory(SLAPIObject):
                                 reason='Unable to get inventory.\n')
         return SLREST.ok(self.route, reason='Command successful.\n',
                          data=out)
+
+class v1_status_version(SLAPIObject):
+    """Get 'show version' command output."""
+    route = "/api/v1/status/version"
+    def GET(self, sync=False):
+        try:
+            out = util.pcli_command('show version')
+        except:
+            return SLREST.error(self.route, 
+                                reason='Unable to get version.\n')
+        return SLREST.ok(self.route, reason='Command successful.\n',
+                         data=out)
+
