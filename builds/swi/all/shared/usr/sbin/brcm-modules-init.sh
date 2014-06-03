@@ -19,7 +19,14 @@ fi
 [ -e /proc/linux-kernel-bde ] && rmmod linux-kernel-bde
 
 # Is there a platform-specific installation script?
-PLATFORM_SCRIPT=/lib/platform-config/$(cat /etc/sl_platform)/sbin/brcm-modules-init.sh
+if [ -f /etc/sl_platform ]; then
+    PLATFORM_NAME=$(cat /etc/sl_platform)
+elif [ -f /etc/onl_platform ]; then
+    PLATFORM_NAME=$(cat /etc/onl_platform)
+fi
+
+PLATFORM_SCRIPT=/lib/platform-config/${PLATFORM_NAME}/sbin/brcm-modules-init.sh
+
 if [ -e "$PLATFORM_SCRIPT" ]; then
     "$PLATFORM_SCRIPT" "$@"
 else
