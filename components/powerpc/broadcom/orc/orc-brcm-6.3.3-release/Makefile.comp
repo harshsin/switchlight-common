@@ -88,10 +88,9 @@ GLOBAL_CFLAGS += -DCINT_CONFIG_INCLUDE_STDLIB=1
 
 GLOBAL_CFLAGS += -I$(orc_BASEDIR)/module/inc
 GLOBAL_CFLAGS += -fPIC
-GLOBAL_CFLAGS += -g
 
 
-GLOBAL_LINK_LIBS += $(SDK_STATIC_LINK_LIBS)  -rdynamic -ledit -lc -g
+GLOBAL_LINK_LIBS += $(SDK_STATIC_LINK_LIBS)  -rdynamic -ledit -lc
 
 include $(SWITCHLIGHT)/make/deb-subdir.mk
 
