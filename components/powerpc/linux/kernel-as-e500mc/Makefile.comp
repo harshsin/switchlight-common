@@ -24,7 +24,7 @@ linux-as-e500mc-headers: $(COMPDIR)/linux-as-e500mc-headers
 
 KERNEL_AS_E500MC := $(COMPDIR)/kernel-as-e500mc
 KERNEL_AS_E500MC_HEADERS := $(COMPDIR)/linux-as-e500mc-headers
-DEFCONFIG := sl_as_e500mc_defconfig
+DEFCONFIG := onl_e500mc_defconfig
 
 $(COMPDIR)/kernel-as-e500mc: $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/arch/powerpc/configs/$(DEFCONFIG)
 	mkdir -p $(COMPDIR)/linux-build-as-e500mc
