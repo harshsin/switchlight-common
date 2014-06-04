@@ -30,7 +30,7 @@
 	url = git@github.com:floodlight/loxigen-artifacts
 [submodule "submodules/linux-3.8.13-accton"]
 	path = submodules/linux-3.8.13-accton
-	url = git@github.com:bigswitch/linux-3.8.13-accton
+	url = git@github.com:opennetworklinux/linux-3.8.13
 [submodule "submodules/t6-misc"]
 	path = submodules/t6-misc
 	url = git@github.com:bigswitch/t6-misc
