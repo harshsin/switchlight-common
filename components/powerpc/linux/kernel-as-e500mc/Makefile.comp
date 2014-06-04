@@ -24,7 +24,7 @@ linux-as-e500mc-headers: $(COMPDIR)/linux-as-e500mc-headers
 
 KERNEL_AS_E500MC := $(COMPDIR)/kernel-as-e500mc
 KERNEL_AS_E500MC_HEADERS := $(COMPDIR)/linux-as-e500mc-headers
-DEFCONFIG := sl_as_e500mc_defconfig
+DEFCONFIG := onl_e500mc_defconfig
 
 $(COMPDIR)/kernel-as-e500mc: $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/arch/powerpc/configs/$(DEFCONFIG)
 	mkdir -p $(COMPDIR)/linux-build-as-e500mc
@@ -47,7 +47,7 @@ $(COMPDIR)/linux-as-e500mc-headers: $(COMPDIR)/linux-as-e500mc-headers/.done
 
 
 # These are the dtb files built for this kernel configuration:
-DTS_LIST := powerpc-as6700-32x-r0 powerpc-as5710-54x-r0a
+DTS_LIST := powerpc-as6700-32x-r0 powerpc-as5710-54x-r0a powerpc-as5710-54x-r0b
 DTB_LIST := $(foreach dts,$(DTS_LIST),$(COMPDIR)/linux-as-e500mc-dtbs/$(dts).dtb)
 
 $(COMPDIR)/linux-as-e500mc-dtbs/%.dtb: $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/arch/powerpc/boot/dts/%.dts kernel-as-e500mc | $(shell mkdir -p $(COMPDIR)/linux-as-e500mc-dtbs)
