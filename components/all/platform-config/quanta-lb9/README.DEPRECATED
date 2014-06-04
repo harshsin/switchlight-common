@@ -1,6 +1,0 @@
-This platform definition is for backwards compatibility only for legacy flash-based systems. 
-There is no installer or detection script for this platform, and no new installs can be performed. 
-
-The Quanta LB9 platform is now handled by the powerpc-quanta-lb9-r0 package. 
-
-
