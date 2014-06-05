@@ -3,7 +3,7 @@
 	url = git@github.com:floodlight/bigcode
 [submodule "submodules/broadcom"]
 	path = submodules/broadcom
-	url = git@github.com:bigswitch/Broadcom
+	url = git@github.com:jnealtowns/Broadcom
 [submodule "submodules/loader"]
 	path = submodules/loader
 	url = git@github.com:bigswitch/pandora-loader
@@ -34,3 +34,9 @@
 [submodule "submodules/t6-misc"]
 	path = submodules/t6-misc
 	url = git@github.com:bigswitch/t6-misc
+[submodule "submodules/onlp"]
+	path = submodules/onlp
+	url = git@github.com:opennetworklinux/ONLP
+[submodule "submodules/onlp-accton"]
+	path = submodules/onlp-accton
+	url = git@github.com:opennetworklinux/onlp-accton
