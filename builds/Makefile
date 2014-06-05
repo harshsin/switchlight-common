@@ -31,7 +31,7 @@ NO_LOCAL_DEBS := 1
 SWI_ARCHS := $(filter-out swi/all,$(wildcard swi/*))
 
 # Build all powerpc swis
-SWI_BUILD_PATHS := $(wildcard swi/powerpc/*)
+SWI_BUILD_PATHS := $(filter-out swi/powerpc/basepackages.mk,$(wildcard swi/powerpc/*))
 
 #
 # Define a build template for each platform by name and build directory
