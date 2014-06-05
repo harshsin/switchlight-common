@@ -3,9 +3,7 @@
 #
 ############################################################
 include $(SWITCHLIGHT)/builds/swi/powerpc/basepackages.mk
-
-# Share the same platform list with the release configuration
-include ../release-bt/platforms.mk
+include platforms.mk
 
 SWI_PACKAGES_ALL += pcli slrest switchlight-internal-dbg-sources
 
