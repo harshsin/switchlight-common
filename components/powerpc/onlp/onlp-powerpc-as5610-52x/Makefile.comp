@@ -1,0 +1,31 @@
+# -*- Makefile -*-
+############################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not set)
+endif
+include $(SWITCHLIGHT)/make/config.mk
+
+TOOLCHAIN := powerpc-linux-gnu
+
+MODULE := libonlp-powerpc-as5610-52x
+include $(BUILDER)/standardinit.mk
+
+DEPENDMODULES := AIM powerpc_as5610_52x onlplib sff IOF
+
+include $(BUILDER)/dependmodules.mk
+
+SHAREDLIB := libonlp-powerpc-as5610-52x.so
+$(SHAREDLIB)_TARGETS := $(ALL_TARGETS)
+include $(BUILDER)/so.mk
+.DEFAULT_GOAL := $(SHAREDLIB)
+
+GLOBAL_CFLAGS += -I$(onlp_BASEDIR)/module/inc
+GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MODULES_INIT=1
+GLOBAL_CFLAGS += -fPIC
+GLOBAL_LINK_LIBS += -lpthread
+
+include $(BUILDER)/targets.mk
+
+.PHONY: deb
+deb:
+	$(MAKE) -C deb
