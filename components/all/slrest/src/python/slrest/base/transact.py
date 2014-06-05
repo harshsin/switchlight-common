@@ -83,7 +83,7 @@ class TransactionManagers(object):
         """
         tids = []
         for m in klass.managers.values():
-            tids = tids + m.get_tids()
+            tids = tids + m.get_tids_all()
         return tids
 
     @classmethod
