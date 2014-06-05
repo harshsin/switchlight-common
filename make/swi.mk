@@ -46,9 +46,13 @@ $(error $$ARCH is not defined.)
 endif
 
 # ZTN Platforms are required for the manifest
-ifndef ZTN_PLATFORMS
-$(error $$ZTN_PLATFORMS is not defined)
+ifndef SWI_PLATFORMS
+$(error $$SWI_PLATFORMS is not defined)
 endif
+
+export SWI_PLATFORMS
+export SWI_PACKAGES_ALL
+export SWI_PACKAGES_POWERPC
 
 ZTN_MANIFEST := zerotouch.json
 
@@ -56,7 +60,7 @@ ZTN_MANIFEST := zerotouch.json
 .PHONY: $(ZTN_MANIFEST)
 
 $(ZTN_MANIFEST):
-	$(SWITCHLIGHT)/tools/py/zerotouch.py --release "$(RELEASE)" --operation swi --platforms $(ZTN_PLATFORMS) --sha1 $(SWITCHLIGHT_BUILD_SHA1) > $(ZTN_MANIFEST)
+	$(SWITCHLIGHT)/tools/py/zerotouch.py --release "$(RELEASE)" --operation swi --platforms $(SWI_PLATFORMS) --sha1 $(SWITCHLIGHT_BUILD_SHA1) > $(ZTN_MANIFEST)
 
 $(SWI).swi: rootfs-$(ARCH).sqsh $(ZTN_MANIFEST)
 	rm -f $@.tmp

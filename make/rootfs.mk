@@ -58,24 +58,31 @@ ifndef NO_PACKAGE_DEPENDENCY
 PACKAGE_DEPENDENCY = $(SWITCHLIGHT_PACKAGE_MANIFEST)
 endif
 
+ifndef SWI_PACKAGES_ALL
+$(error $$SWI_PACKAGES_ALL is not set)
+endif
+
+
+ifndef SWI_PACKAGES_POWERPC
+$(error $$SWI_PACKAGES_POWERPC is not set)
+endif
+
+ifndef SWI_PLATFORMS
+$(error $$SWI_PLATFORMS is not set)
+endif
+
 $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done: $(PACKAGE_DEPENDENCY)
 	$(SL_V_at)sudo update-binfmts --enable
 	$(SL_V_at)sudo rm -rf $(ROOTFS_DIR)
-	$(SL_V_GEN)set -e ;\
-	if $(SL_V_P); then set -x; fi ;\
-	arch_repo=$$(mktemp) ;\
-	all_repo=$$(mktemp) ;\
-	trap "rm -f $$arch_repo $$all_repo" 0 1 ;\
-	echo $$arch_repo ;\
-	sed "s%__DIR__%$(SWITCHLIGHT_REPO)%g" $(ROOTFS_ARCH_REPO_PATH) >$$arch_repo ;\
-	sed "s%__DIR__%$(SWITCHLIGHT_REPO)%g" $(ROOTFS_ALL_REPO_PATH) >$$all_repo ;\
+	$(SWITCHLIGHT)/tools/py/repofilegen.py --dir $(SWITCHLIGHT_REPO) --arch all     --platforms $(SWI_PLATFORMS) --packages $(SWI_PACKAGES_ALL)     --out $(ROOTFS_ALL_REPO_PATH)
+	$(SWITCHLIGHT)/tools/py/repofilegen.py --dir $(SWITCHLIGHT_REPO) --arch powerpc --platforms $(SWI_PLATFORMS) --packages $(SWI_PACKAGES_POWERPC) --out $(ROOTFS_ARCH_REPO_PATH)
 	$(SWITCHLIGHT)/tools/mkws \
 	  -e SWITCHLIGHT=$(SWITCHLIGHT) \
 	  --apt-cache $(APT_CACHE) \
 	  --nested \
 	  -a $(ROOTFS_ARCH) \
-	  --extra-repo $$arch_repo \
-	  --extra-repo $$all_repo \
+	  --extra-repo $(ROOTFS_ALL_REPO_PATH) \
+	  --extra-repo $(ROOTFS_ARCH_REPO_PATH) \
 	  --extra-config $(ROOTFS_CLEANUP_PATH) \
 	  $(ROOTFS_DIR)
 	find $(ROOTFS_DIR)/etc/apt -name "*.list" -print0 | sudo xargs -0 sed -i 's/$(subst /,\/,$(APT_CACHE))//g'
