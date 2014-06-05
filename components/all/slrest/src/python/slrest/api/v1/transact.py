@@ -116,7 +116,6 @@ class v1_transaction_file(SLAPIObject):
     """Retrieve a transaction file."""
     route = "/api/v1/transactions/file"
     def GET(self, id, fid):
-        print id, fid
         tt = TransactionManagers.get_task(id)
         if tt:
             try:
