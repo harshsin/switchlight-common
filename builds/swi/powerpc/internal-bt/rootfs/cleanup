@@ -1,11 +1,11 @@
 #!/bin/bash -ex
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 LOCALDIR=$(dirname "$0")
@@ -47,6 +47,7 @@ chroot "${WS_ROOT}" /usr/sbin/update-rc.d checkroot.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d mountnfs-bootclean.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d mountnfs.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d lm-sensors remove
+chroot "${WS_ROOT}" /usr/sbin/update-rc.d platform-baseconf defaults
 
 # Root is enabled with password 'bsn' on internal images.
 ${RFSTOOL} -c user_password_set root bsn
