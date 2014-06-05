@@ -1,7 +1,0 @@
-[deb-all]
-packages=pcli t6-dump-flows python-cherrypy3 ztn python-tz slrest scapy python-pypcap platform-config-powerpc-quanta-ly2-r0 vendor-config-switchlight vendor-config-quanta vendor-config-accton platform-config-powerpc-as6700-32x-r0 platform-config-powerpc-as5710-54x-r0a platform-config-powerpc-as5710-54x-r0b
-
-source=copy:__DIR__/all ./
-omitdebsrc=true
-
-
