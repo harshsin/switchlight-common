@@ -1,19 +1,5 @@
-# -*- Makefile -*-
-############################################################
-# <bsn.cl fy=2013 v=none>
-#
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.
-#
-#
-#
-# </bsn.cl>
 ############################################################
 #
-# Same as release platforms.
-include ../release-bt/platforms.mk
-
-
-
-
-
-
+# Include the platform list from the bringup swi
+include $(SWITCHLIGHT)/builds/swi/powerpc/internal-bt/platforms.mk
+INSTALLER_PLATFORMS := $(SWI_PLATFORMS)
