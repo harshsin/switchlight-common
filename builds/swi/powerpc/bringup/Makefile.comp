@@ -8,9 +8,8 @@
 #
 # </bsn.cl>
 ############################################################
-############################################################
 #
-# Switchlight Powerpc Internal
+# Switchlight Powerpc Bringup
 #
 ############################################################
 ifndef SWITCHLIGHT
@@ -31,7 +30,7 @@ KERNELS := $(kernel-85xx) $(kernel-as-e500mc)
 INITRD := $(initrd-powerpc)
 ARCH := powerpc
 SWITCHLIGHT_BUILD_CONFIG := powerpc.bringup
-ZTN_PLATFORMS := powerpc-quanta-lb9-r0 powerpc-quanta-ly2-r0 powerpc-as6700-32x-r0 powerpc-as5710-54x-r0a powerpc-dni-7448-r0
 
+include packages.mk
 include $(SWITCHLIGHT)/make/swi.mk
 
