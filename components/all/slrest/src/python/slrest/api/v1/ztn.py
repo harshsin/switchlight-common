@@ -47,6 +47,30 @@ class v1_ztn_inventory(SLAPIObject):
                                    status=SLREST.Status.OK,
                                    data=d)
 
+    @staticmethod
+    def cliZtnInventory(hostname, port):
+        try:
+            response = SLAPIObject.get(hostname, port, v1_ztn_inventory.route)
+            rv = json.loads(response.read())
+            if rv['status'] == 'OK' and rv['data'] is not None:
+                data = SLAPIObject.fix_unicode(rv['data'])
+                for key in data:
+                    print key
+                    for keys in data[key]:
+                        print '%s: %s' % (keys, data[key][keys])
+            else:
+                print rv['reason']
+        except:
+            pass
+
+    @staticmethod
+    def cmdZtnInventory(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("ztn-inventory")
+            p.set_defaults(func=v1_ztn_inventory.cmdZtnInventory)
+        else:
+            v1_ztn_inventory.cliZtnInventory(sub_parser.hostname, sub_parser.port)
+
 class v1_ztn_discover(SLAPIObject):
     """Run ZTN discovery."""
     route = "/api/v1/ztn/discover"
@@ -79,6 +103,21 @@ class v1_ztn_discover(SLAPIObject):
         # Return the response
         return tt.response()
 
+    @staticmethod
+    def cliZtnDiscover(hostname, port):
+        try:
+            response = SLAPIObject.post(hostname, port, v1_ztn_discover.route, {"sync": True})
+            SLAPIObject.dataResult(response.read()) 
+        except:
+            pass    
+
+    @staticmethod
+    def cmdZtnDiscover(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("ztn-discover")
+            p.set_defaults(func=v1_ztn_discover.cmdZtnDiscover)
+        else:
+            v1_ztn_discover.cliZtnDiscover(sub_parser.hostname, sub_parser.port)
 
 class v1_ztn_transact_server(SLAPIObject):
     """Perform a manifest transaction using the given server."""
@@ -112,7 +151,23 @@ class v1_ztn_transact_server(SLAPIObject):
         # Return the response
         return tt.response()
 
+    @staticmethod
+    def cliZtnTransact(hostname, port, server):
+        try:
+            response = SLAPIObject.post(hostname, port, v1_ztn_transact_server.route,
+                                        {"server": server, "sync": True})
+            SLAPIObject.dataResult(response.read())
+        except:
+             pass
 
+    @staticmethod
+    def cmdZtnTransact(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("ztn-transact-server")
+            p.add_argument("server")
+            p.set_defaults(func=v1_ztn_transact_server.cmdZtnTransact)
+        else:
+            v1_ztn_transact_server.cliZtnTransact(sub_parser.hostname, sub_parser.port, sub_parser.server)
 
 class v1_ztn_transact_url(SLAPIObject):
     """Perform a manifest transaction using the given URL."""
@@ -146,4 +201,20 @@ class v1_ztn_transact_url(SLAPIObject):
         # Return the response
         return tt.response()
 
+    @staticmethod
+    def cliZtnTransactUrl(hostname, port, url):
+        try:
+            response = SLAPIObject.post(hostname, port, v1_ztn_transact_url.route,
+                                        {"url": url, "sync": True})
+            SLAPIObject.dataResult(response.read())     
+        except:
+            pass
 
+    @staticmethod
+    def cmdZtnTransactUrl(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("ztn-transact-url")
+            p.add_argument("url")
+            p.set_defaults(func=v1_ztn_transact_url.cmdZtnTransactUrl)
+        else:
+            v1_ztn_transact_url.cliZtnTransactUrl(sub_parser.hostname, sub_parser.port, sub_parser.url)
