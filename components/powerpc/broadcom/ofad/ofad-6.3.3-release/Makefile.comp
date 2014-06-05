@@ -8,14 +8,11 @@
 #
 # </bsn.cl>
 ############################################################
-############################################################
-#
-#  Makefile
-#
-############################################################
 include $(SWITCHLIGHT)/make/config.mk
 
 SDK := $(shell $(SWITCHLIGHT_PKG_INSTALL) libbroadcom-6.3-release-dev:powerpc --find-dir libbroadcom-6.3-release-sdk)
+LIBONLP := $(shell $(SWITCHLIGHT_PKG_INSTALL) onlp:powerpc --find-file libonlp.so)
+
 SDK_BUILD_TARGET := switchlight-powerpc-release
 LIBBROADCOM_A := libbroadcom-6.3-release.a
 LIBBROADCOM_SO := libbroadcom-release.so.6.3
@@ -42,7 +39,7 @@ include $(BUILDER)/lib.mk
 DEPENDMODULES := SocketManager OFConnectionManager BRCM snmp BRCMDriver \
 	OFStateManager murmur NSS ELS AET Configuration cjson cjson_util \
 	loci indigo Faultd IOF PPE IVS uCli BigList BigRing OS AIM \
-	BigHash tagport pimu nwac ofadm debug_counter timer_wheel arpra
+	BigHash tagport pimu nwac ofadm debug_counter timer_wheel arpra onlplib sff
 
 #
 # Resolve module dependencies
@@ -73,6 +70,7 @@ GLOBAL_CFLAGS += $(foreach mod,$(DEPENDMODULES_UPPER),-D$(mod)_CONFIG_INCLUDE_UC
 
 # These indicate Linux specific implementations to be used for
 # various features
+GLOBAL_CFLAGS += -I$(onlp_BASEDIR)/module/inc
 GLOBAL_CFLAGS += -DINDIGO_LINUX_LOGGING
 GLOBAL_CFLAGS += -DINDIGO_LINUX_TIME
 GLOBAL_CFLAGS += -DINDIGO_LINUX_TIME_MONOTONIC
@@ -104,6 +102,7 @@ GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LB9A_R0=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_QUANTA_LY2_R0=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_AS5610_52X=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_AS5710_54X_R0A=1
+GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_AS5710_54X_R0B=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_AS6700_32X_R0=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_PLATFORM_POWERPC_DNI_7448_R0=1
 GLOBAL_CFLAGS += -DBRCM_CONFIG_INCLUDE_DIAG_SHELL=0
@@ -133,7 +132,8 @@ ifdef OF_CXN_DUMP_ALL_OBJECTS
 GLOBAL_CFLAGS += -DOF_CXN_DUMP_ALL_OBJECTS
 endif
 
-GLOBAL_LINK_LIBS += -ledit -lncurses -rdynamic
+GLOBAL_LINK_LIBS += -Wl,--unresolved-symbols=ignore-in-shared-libs
+GLOBAL_LINK_LIBS += -ledit -lncurses $(LIBONLP)
 
 .PHONY: deb
 deb:
