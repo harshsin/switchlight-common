@@ -6,7 +6,7 @@ DIRECTORIES := $(notdir $(wildcard $(CURDIR)/*))
 FILTER := make Makefile Makefile~
 DIRECTORIES := $(filter-out $(FILTER),$(DIRECTORIES))
 
-$(MAKECMDGOALS):
+all $(MAKECMDGOALS):
 	$(foreach d,$(DIRECTORIES),$(MAKE) -C $(d) $(MAKECMDGOALS) || exit 1;)
 
 
