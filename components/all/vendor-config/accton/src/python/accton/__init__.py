@@ -1,11 +1,11 @@
 #!/usr/bin/python
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 #
@@ -29,10 +29,10 @@ class SwitchLightPlatformAccton(SwitchLightPlatformBase):
         if self.onie_base_address is None:
             return None
         else:
-            if not os.path.exists("/etc/onie.json"):
-                os.system("/sbin/mtool odump %s json > /etc/onie.json" % self.onie_base_address);
-            if os.path.exists("/etc/onie.json"):
-                od = json.load(file("/etc/onie.json"))
+            if not os.path.exists("/etc/.onie.json"):
+                os.system("/sbin/mtool odump %s json > /etc/.onie.json" % self.onie_base_address);
+            if os.path.exists("/etc/.onie.json"):
+                od = json.load(file("/etc/.onie.json"))
                 rv = {}
                 rv[sysinfo.PRODUCT_NAME] = od['Product Name']
                 rv[sysinfo.SERIAL_NUMBER] = od['Serial Number']
