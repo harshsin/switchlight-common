@@ -34,3 +34,9 @@
 [submodule "submodules/t6-misc"]
 	path = submodules/t6-misc
 	url = git@github.com:bigswitch/t6-misc
+[submodule "submodules/onlp"]
+	path = submodules/onlp
+	url = git@github.com:opennetworklinux/ONLP
+[submodule "submodules/onlp-accton"]
+	path = submodules/onlp-accton
+	url = git@github.com:opennetworklinux/onlp-accton

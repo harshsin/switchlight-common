@@ -31,7 +31,7 @@ NO_LOCAL_DEBS := 1
 SWI_ARCHS := $(filter-out swi/all,$(wildcard swi/*))
 
 # Build all powerpc swis
-SWI_BUILD_PATHS := $(wildcard swi/powerpc/*)
+SWI_BUILD_PATHS := $(filter-out swi/powerpc/basepackages.mk,$(wildcard swi/powerpc/*))
 
 #
 # Define a build template for each platform by name and build directory
@@ -148,12 +148,7 @@ initrd-powerpc:powerpc
 # kernel-x86-64:amd64 initrd-i386:i386 kernel-e500mc:powerpc
 $(foreach c,$(PARALLEL_0),$(eval $(call cbuild,$(c),submodules_init)))
 
-PARALLEL_1 := \
-platform-powerpc-quanta-lb9a-r0:powerpc \
-platform-powerpc-quanta-lb9-r0:powerpc \
-platform-powerpc-quanta-ly2-r0:powerpc \
-platform-powerpc-as6700-32x-r0:powerpc \
-platform-powerpc-as5710-54x-r0a:powerpc
+PARALLEL_1 := $(shell $(SWITCHLIGHT)/tools/spkg.py --list-all | grep platform-powerpc-)
 # loader-i386:i386
 $(foreach c,$(PARALLEL_1),$(eval $(call cbuild,$(c),$(PARALLEL_0))))
 
@@ -162,7 +157,8 @@ libbroadcom-6.3-internal:powerpc \
 libbroadcom-6.3-release:powerpc \
 libbroadcom-6.3-internal-src:all \
 libbroadcom-6.3-kernel-85xx-modules:powerpc \
-libbroadcom-6.3-kernel-as-e500mc-modules:powerpc
+libbroadcom-6.3-kernel-as-e500mc-modules:powerpc \
+$(shell $(SWITCHLIGHT)/tools/spkg.py --list-all | grep onlp-)
 
 $(foreach c,$(PARALLEL_2),$(eval $(call cbuild,$(c),$(PARALLEL_1))))
 

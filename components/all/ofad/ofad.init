@@ -20,6 +20,7 @@ OFAD_EXTRA_OPTS=
 QUIET=
 
 test -x $DAEMON || exit 5
+test -f /mnt/flash/no-service-ofad && exit 5
 
 RUNASUSER=root
 UGID=$(getent passwd $RUNASUSER | cut -f 3,4 -d:) || true

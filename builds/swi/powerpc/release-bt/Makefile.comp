@@ -31,5 +31,5 @@ INITRD := $(initrd-powerpc)
 ARCH := powerpc
 SWITCHLIGHT_BUILD_CONFIG := powerpc.release,bt
 
-include platforms.mk
+include packages.mk
 include $(SWITCHLIGHT)/make/swi.mk

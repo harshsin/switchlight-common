@@ -417,12 +417,11 @@ else
     installer_arch=powerpc
 fi
 
-
 #
 # Remount tmpfs larger if possible.
 # We will be doing all of our work out of /tmp
 #
-mount -o remount,size=512M /tmp || true
+mount -o remount,size=1024M /tmp || true
 
 
 

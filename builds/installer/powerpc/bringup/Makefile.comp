@@ -19,8 +19,10 @@ else
 include $(SWITCHLIGHT)/make/config.mk
 endif
 
-include platforms.mk
+# Include the platform list from the bringup swi
+include $(SWITCHLIGHT)/builds/swi/powerpc/bringup/platforms.mk
 
+INSTALLER_PLATFORMS := $(SWI_PLATFORMS)
 INSTALLER_SWI := $(SWITCHLIGHT)/builds/swi/powerpc/bringup/switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-bringup.swi
 INSTALLER_NAME := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-powerpc-bringup-$(SWITCHLIGHT_BUILD_TIMESTAMP).installer
 SWITCHLIGHT_BUILD_CONFIG := powerpc.bringup

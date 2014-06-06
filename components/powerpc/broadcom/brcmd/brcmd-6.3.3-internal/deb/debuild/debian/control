@@ -7,7 +7,7 @@ Standards-Version: 3.8.4
 
 Package: brcmd-6.3.3-internal
 Architecture: powerpc
-Depends: libc6, python, libedit2, libncurses5, libsnmp15, libbroadcom-6.3-internal
+Depends: libc6, python, libedit2, libncurses5, libsnmp15, libbroadcom-6.3-internal, onlp
 Description: Broadcom Agent for SwitchLight
  This package provides the Broadcom agent for the SwitchLight switch platform.
 
