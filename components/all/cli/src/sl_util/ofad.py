@@ -309,6 +309,7 @@ class PortManager(object):
 
         for p in ports:
             phy_port = PortManager.getPhysicalName(p)
+            # For interface ethernetN, the corresponding OF Port no. is N
             of_port = p
 
             if phy_port not in self.phys:
