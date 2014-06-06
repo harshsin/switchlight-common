@@ -3,7 +3,7 @@
 	url = git@github.com:floodlight/bigcode
 [submodule "submodules/broadcom"]
 	path = submodules/broadcom
-	url = git@github.com:jnealtowns/Broadcom
+	url = git@github.com:bigswitch/Broadcom
 [submodule "submodules/loader"]
 	path = submodules/loader
 	url = git@github.com:bigswitch/pandora-loader
