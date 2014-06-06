@@ -1,12 +1,11 @@
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
-############################################################
 ############################################################
 #
 # Installer scriptlet for the powerpc-as4600-54t
@@ -18,4 +17,13 @@ platform_bootcmd='usb start; fatload usb 0:1 0x10000000 switchlight-loader; sete
 platform_installer() {
     # Standard installation to usb storage
     installer_standard_blockdev_install sda 16M 64M ""
+
+    #
+    # Hack die die
+    # Get the mac address currently used by ONIE
+    local macaddr=$(ifconfig eth0 | awk '/HWaddr/ { print tolower($5) }')
+
+    # We need to set eth1addr in order for our interfaces to come up.
+    # This should be fixed properly in the DTS file in the future.
+    fw_setenv -f eth1addr $macaddr
 }
