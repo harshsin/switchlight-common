@@ -417,16 +417,6 @@ else
     installer_arch=powerpc
 fi
 
-
-#
-# Remount tmpfs larger if possible.
-# We will be doing all of our work out of /tmp
-#
-mount -o remount,size=512M /tmp || true
-
-
-
-
 # Unpack our distribution
 installer_say "Unpacking SwitchLight installer files..."
 installer_dir=`pwd`
