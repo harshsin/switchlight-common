@@ -244,6 +244,10 @@ class PortManager(object):
                 return d[name]
         return None
 
+    @staticmethod
+    def getTunnelPortDependency ():
+        return json.loads(OFADCtl.run("tunnel port-dep", show_output=False)[0].strip())
+
     @classmethod
     def setPhysicalBase (cls, base):
         # str conversion is needed to strip "unicode"
@@ -297,6 +301,7 @@ class PortManager(object):
 
     # FIXME: optimize on updating an existing LAG
     def configureLAGPort (self, id_, ports, hash_=None, mode=None):
+        tunnel_map = PortManager.getTunnelPortDependency()
         name = PortManager.getLAGName(id_)
         port_num = const.LAG_BASE_OF_PORT_NUM + id_
         if name in self.lags:
@@ -304,19 +309,33 @@ class PortManager(object):
 
         for p in ports:
             phy_port = PortManager.getPhysicalName(p)
+            # For interface ethernetN, the corresponding OF Port no. is N
+            of_port = p
+
             if phy_port not in self.phys:
                 raise error.ActionError("%s is already in use" % phy_port)
+
+            for tunnel, port_list in tunnel_map.items():
+                if of_port in port_list:
+                    raise error.ActionError("%s is used by tunnel port %s" % (phy_port, tunnel))
 
         self.__addLAGPort(name, ports, port_num, hash_, mode)
 
     def unconfigureLAGPort (self, id_, ports=None):
+        tunnel_map = PortManager.getTunnelPortDependency()
         name = PortManager.getLAGName(id_)
         if name not in self.lags:
             return
 
         lag_port = self.lags[name]
+        of_port = lag_port._port_number
+
         if ports and ports != lag_port.componentPorts:
             raise error.ActionError("Port list specified does not match configured value")
+
+        for tunnel, port_list in tunnel_map.items():
+            if of_port in port_list:
+                raise error.ActionError("%s is used by tunnel port %s" % (name, tunnel))
 
         self.__removeLAGPort(name)
 
@@ -411,7 +430,7 @@ class UnknownVersionError(Exception):
 class OFADCtl(object):
     @staticmethod
     def run(cmd, show_output=True):
-        shell.call("/usr/bin/ofad-ctl %s" % cmd, show_output=show_output)
+        return shell.call("/usr/bin/ofad-ctl %s" % cmd, show_output=show_output)
 
 class OFADConfig(object):
     PATH = "/etc/ofad.conf"
