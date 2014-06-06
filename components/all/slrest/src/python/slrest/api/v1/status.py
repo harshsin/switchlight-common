@@ -127,6 +127,30 @@ class v1_status_tech_support(SLAPIObject):
 
         return tt.response()
 
+    @staticmethod
+    def cliTechSupport(hostname, port, location):
+        try:
+            path = "%s?sync=True" % v1_status_tech_support.route 
+            response = SLAPIObject.get(hostname, port, path)
+            rv = json.loads(response.read())
+            if rv['status'] == 'OK':
+                result = SLAPIObject.get(hostname, port, rv['data'])
+                dst = "%s/tech-support.gz" % location
+                with open(dst, "w") as f:
+                    f.write(result.read())
+            else:
+                print rv['reason']
+        except:
+            pass
+    
+    @staticmethod
+    def cmdTechSupport(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("tech-support")
+            p.add_argument("location", help='file storage location')
+            p.set_defaults(func=v1_status_tech_support.cmdTechSupport)
+        else:
+            v1_status_tech_support.cliTechSupport(sub_parser.hostname, sub_parser.port, sub_parser.location)
 
 class v1_status_controller(SLAPIObject):
     """Get 'show controller' command output."""

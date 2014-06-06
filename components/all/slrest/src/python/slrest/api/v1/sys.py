@@ -136,6 +136,31 @@ class v1_sys_file_syslog(SLAPIObject):
             tt.join()
         return tt.response()
 
+    @staticmethod
+    def cliFileSyslog(hostname, port, location, gzip):
+        try:
+            path = "%s?gzip=%s&sync=True" % (v1_sys_file_syslog.route, gzip)
+            response = SLAPIObject.get(hostname, port, path)
+            rv = json.loads(response.read())
+            if rv['status'] == 'OK':
+                result = SLAPIObject.get(hostname, port, rv['data'])
+                dst = "%s/syslog.%s" % (location, "gz" if gzip else "txt")
+                with open(dst, "w") as f:
+                    f.write(result.read())
+            else:
+                print rv['reason']
+        except:
+            pass
+
+    @staticmethod
+    def cmdFileSyslog(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("syslog")
+            p.add_argument("location", help='file storage location')
+            p.add_argument("-gzip", action='store_true')
+            p.set_defaults(func=v1_sys_file_syslog.cmdFileSyslog)
+        else:
+            v1_sys_file_syslog.cliFileSyslog(sub_parser.hostname, sub_parser.port, sub_parser.location, sub_parser.gzip)
 
 class v1_sys_beacon(SLAPIObject):
     """Trigger LED beaconing."""
