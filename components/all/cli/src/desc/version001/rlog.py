@@ -4,6 +4,7 @@ import os
 
 import command
 import run_config
+import error
 
 from sl_util import Service
 
@@ -211,3 +212,11 @@ run_config.register_running_config('logging', 2500,  None,
                                    LoggingConfig.cli_show_running,
                                    logging_running_config_tuple)
 
+def rsyslog_restart(data):
+    if 'is_init' in data:
+        RSyslog.restart(deferred=data['is_init'])
+    else:
+        raise error.ActionError('Unable to restart syslog')
+
+command.add_action('implement-rsyslog-restart', rsyslog_restart,
+                   {'kwargs': {'data'    : '$data',} } )
