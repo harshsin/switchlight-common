@@ -56,7 +56,7 @@ class SLAPIObject(object):
     @staticmethod
     def mount_cmds(sub_parser):
         """Mount all slrest cli handlers"""
-        for klass in SLAPIObject.mounted:
+        for klass in SLAPIObject.__subclasses__():
             for f in dir(klass):
                 if f.startswith("cmd"):
                     getattr(klass, f)(sub_parser, True)
