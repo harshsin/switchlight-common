@@ -11,7 +11,7 @@ ifndef SWITCHLIGHT
 $(error $$SWITCHLIGHT is undefined.)
 endif
 
-SWITCHLIGHT_REQUIRED_SUBMODULES := broadcom bigcode indigo bigcode-internal infra switchlight-common loxigen-artifacts
+SWITCHLIGHT_REQUIRED_SUBMODULES := broadcom bigcode indigo bigcode-internal infra switchlight-common loxigen-artifacts onlp
 SWITCHLIGHT_REQUIRED_PACKAGES := libbroadcom-6.3-internal-dev:powerpc onlp:powerpc
 include $(SWITCHLIGHT)/make/component.mk
 
