@@ -17,7 +17,6 @@ from sl_util.ofad import OFADConfig, PortManager
 from switchlight.platform.current import SwitchLightPlatform
 import re
 import pytz
-from desc.version001.rlog import RSyslog
 
 import sys
 
@@ -752,7 +751,8 @@ def set_timezone(no_command, data, is_init):
         with open('/etc/timezone', 'w') as fd:
             fd.write(timezone)
         shell.call('dpkg-reconfigure -f noninteractive tzdata')
-        RSyslog.restart(deferred=is_init)
+        command.action_invoke('implement-rsyslog-restart',
+                              ({'is_init': is_init},))
     except subprocess.CalledProcessError:
         raise error.ActionError('Unable to set timezone')
 
