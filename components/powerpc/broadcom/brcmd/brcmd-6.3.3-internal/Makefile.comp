@@ -42,7 +42,7 @@ $(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(BUILDER)/lib.mk
 
 
-DEPENDMODULES := BRCM BRCMTest OS NSS AIM BigList uCli ELS IOF tagport cintm cjson cjson_util onlplib sff snmp
+DEPENDMODULES := BRCM BRCMTest OS NSS AIM BigList uCli ELS IOF tagport cintm cjson cjson_util onlplib snmp
 
 #
 # Resolve module dependencies
@@ -73,6 +73,7 @@ include $(BUILDER)/targets.mk
 GLOBAL_CFLAGS += $(foreach mod,$(DEPENDMODULES_UPPER),-D$(mod)_CONFIG_INCLUDE_UCLI=1)
 
 GLOBAL_CFLAGS += -I$(onlp_BASEDIR)/module/inc
+GLOBAL_CFLAGS += -I$(sff_BASEDIR)/module/inc
 GLOBAL_CFLAGS += -DOS_CONFIG_INCLUDE_POSIX=1
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MODULES_INIT=1
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MAIN=1

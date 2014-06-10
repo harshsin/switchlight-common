@@ -43,7 +43,7 @@ DEPENDMODULES := snmp SocketManager OFConnectionManager BRCM BRCMDriver \
 	OFStateManager murmur NSS ELS AET Configuration cjson \
 	indigo loci Faultd IOF PPE IVS uCli BigList BigRing OS AIM \
 	BigHash tagport pimu nwac cintm sl ofadm debug_counter \
-	timer_wheel arpra cjson_util onlplib sff
+	timer_wheel arpra cjson_util onlplib
 
 #
 # Resolve module dependencies
@@ -75,6 +75,7 @@ GLOBAL_CFLAGS += $(foreach mod,$(DEPENDMODULES_UPPER),-D$(mod)_CONFIG_INCLUDE_UC
 # These indicate Linux specific implementations to be used for
 # various features
 GLOBAL_CFLAGS += -I$(onlp_BASEDIR)/module/inc
+GLOBAL_CFLAGS += -I$(sff_BASEDIR)/module/inc
 GLOBAL_CFLAGS += -DINDIGO_LINUX_LOGGING
 GLOBAL_CFLAGS += -DINDIGO_LINUX_TIME
 GLOBAL_CFLAGS += -DINDIGO_LINUX_TIME_MONOTONIC

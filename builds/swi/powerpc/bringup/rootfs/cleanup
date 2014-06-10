@@ -1,11 +1,11 @@
 #!/bin/bash -ex
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 LOCALDIR=$(dirname "$0")
@@ -17,6 +17,7 @@ RFSTOOL="python ${SWITCHLIGHT}/tools/py/rfstool.py --chroot ${WS_ROOT}"
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d initdev defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d restorepersist defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d rc.boot defaults
+chroot "${WS_ROOT}" /usr/sbin/update-rc.d platform-baseconf defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d sensors-baseconf defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d loadstartupconfig defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d ssh defaults
@@ -36,7 +37,7 @@ chroot "${WS_ROOT}" /usr/sbin/update-rc.d checkroot.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d mountnfs-bootclean.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d mountnfs.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d lm-sensors remove
-chroot "${WS_ROOT}" /usr/sbin/update-rc.d platform-baseconf defaults
+
 
 ${RFSTOOL} -c user_password_set root bsn
 # Standard admin and recovery accounts
