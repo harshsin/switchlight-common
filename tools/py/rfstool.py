@@ -96,18 +96,20 @@ def useradd(username, uid, password, shell, deleteFirst=True):
 #
 # Add the recovery user
 #
+def user_recovery_password(sha1):
+    password="slrecovery@[%s]" % sha1
+    logger.info("Recovery password input is '%s'", password)
+    hash_=md5.new(password).hexdigest()
+    logger.info("Recovery password hash is '%s'", hash_)
+    password=hash_[0:8]
+    logger.info("Recovery password is %s", password)
+
 def user_recovery_add(password):
     if password == 'standard':
         # The standard recovery password is the first eight characters
         # of the md5sum of the string 'slrecovery@[sha1]'
         sha1 = subprocess.check_output(['git', 'rev-list', 'HEAD', '-1']).strip()
-        password="slrecovery@[%s]" % sha1
-        logger.info("Recovery password input is '%s'", password)
-        hash_=md5.new(password).hexdigest()
-        logger.info("Recovery password hash is '%s'", hash_)
-        password=hash_[0:8]
-        logger.info("Recovery password is %s", password)
-
+        password = user_recovery_password(sha1)
     useradd(username='recovery', uid=0, password=password,
             shell='/bin/sh')
 
@@ -219,10 +221,14 @@ if __name__ == '__main__':
     ap.add_argument('--execute', help='Execute python call.')
     ap.add_argument('-c', help='evaluate',
                     nargs='+')
-
+    ap.add_argument("--recovery", help='Show recovery password.');
     ops = ap.parse_args()
 
     dry = ops.dry
+
+    if ops.recovery:
+        user_recovery_password(ops.recovery)
+        sys.exit(0)
 
     if ops.chroot:
         # The whole command must be invoked under chroot.
