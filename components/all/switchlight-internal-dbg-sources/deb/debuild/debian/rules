@@ -32,6 +32,8 @@ SRC_SUBMODULES := \
 	infra \
 	loxigen-artifacts \
 	SL \
+	onlp \
+	onlp-accton \
 	switchlight-common
 
 SRC_SDKS := sdk-6.3.3
