@@ -16,5 +16,7 @@ clean:
 	dh clean
 
 override_dh_auto_install:
-	@echo "Fill me out."
-
+	mkdir -p  $(INSTALL_DIR)/lib/platform-config/powerpc-as5710-54x-r0b/lib
+	cp ../../build/powerpc-linux-gnu/bin/libonlp-powerpc-as5710-54x-r0b.so $(INSTALL_DIR)/lib/platform-config/powerpc-as5710-54x-r0b/lib
+	mkdir -p  $(INSTALL_DIR)/lib/platform-config/powerpc-as5710-54x-r0b/bin
+	cp ../../onlpdump $(INSTALL_DIR)/lib/platform-config/powerpc-as5710-54x-r0b/bin/onlpdump

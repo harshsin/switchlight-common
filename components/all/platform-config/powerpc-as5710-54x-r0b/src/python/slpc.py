@@ -1,4 +1,4 @@
-#!/usr/bin/python
+2#!/usr/bin/python
 ############################################################
 #
 # Platform Driver for powerpc-as5710-54x-r0b
@@ -14,7 +14,7 @@ from switchlight.vendor.accton import *
 class SwitchLightPlatformImplementation(SwitchLightPlatformAccton):
 
     def model(self):
-        return "Accton AS5710-54X"
+        return "AS5710-54X"
 
     def platform(self):
         return 'powerpc-as5710-54x-r0b'
@@ -29,13 +29,9 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformAccton):
         return None
 
     def get_environment(self):
-        return "Not implemented."
+        return subprocess.check_output(['/usr/bin/ofad-ctl', 'environment'])
 
 
 
 if __name__ == "__main__":
-    from switchlight.platform.main import main
-    main(SwitchLightPlatformImplementation())
-
-
-
+    print SwitchLightPlatformImplementation()

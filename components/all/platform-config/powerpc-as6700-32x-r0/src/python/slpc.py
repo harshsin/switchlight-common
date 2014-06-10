@@ -22,7 +22,7 @@ from switchlight.vendor.accton import *
 class SwitchLightPlatformImplementation(SwitchLightPlatformAccton):
 
     def model(self):
-        return "Accton AS6700-32X"
+        return "AS6700-32X"
 
     def platform(self):
         return 'powerpc-as6700-32x-r0'
@@ -37,8 +37,7 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformAccton):
         raise Exception()
 
     def get_environment(self):
-        return "Not implemented."
-
+        return subprocess.check_output(['/usr/bin/ofad-ctl', 'environment'])
 
 if __name__ == "__main__":
     from switchlight.platform.main import main

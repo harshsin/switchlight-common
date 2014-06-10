@@ -13,6 +13,7 @@ import sys
 import os
 from switchlight.platform.base import *
 from switchlight.platform.current import SwitchLightPlatform
+import shutil
 
 platform=SwitchLightPlatform()
 
@@ -29,6 +30,13 @@ if os.path.exists(PLATFORM_ONLP_LIB):
     sys.stderr.write("    %s -> %s\n" % (DEFAULT_ONLP_LIB, PLATFORM_ONLP_LIB))
     sys.stderr.flush()
     os.symlink(PLATFORM_ONLP_LIB, DEFAULT_ONLP_LIB)
+
+shutil.copyfile("/etc/sl_platform", "/etc/onl_platform")
+
+ONLPDUMP = "%s/bin/onlpdump" % (platform.platform_basedir())
+
+if os.path.exists(ONLPDUMP):
+    os.system("%s -o -j > /etc/.onie.json" % ONLPDUMP)
 
 sys.stderr.write("Setting up base platform configuration for %s: done\n" %
                  platform.platform())

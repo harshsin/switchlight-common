@@ -23,7 +23,7 @@
 #
 ############################################################
 include $(SWITCHLIGHT)/make/config.mk
-
+DEBUG:=1
 TOOLCHAIN=powerpc-linux-gnu
 MODULE := libonlp-module
 include $(BUILDER)/standardinit.mk

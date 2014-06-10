@@ -2,7 +2,7 @@
 
 ### BEGIN INIT INFO
 # Provides:        ofad-baseconf
-# Required-Start:  initdev
+# Required-Start:  initdev platform-baseconf
 # Required-Stop:
 # Default-Start:   S
 # Default-Stop:
@@ -58,7 +58,7 @@ except IOError:
 
 conf["controllers"] = []
 conf["failover_mode"] = "serial"
-conf["keepalive_period_ms"] = 10000
+conf["keepalive_period_ms"] = 2000
 conf["of_dp_desc"] = ""
 conf["table_miss_action"] = "drop"
 conf["full_match_table"] = "all"
