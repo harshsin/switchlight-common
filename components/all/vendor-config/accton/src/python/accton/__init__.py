@@ -26,23 +26,18 @@ class SwitchLightPlatformAccton(SwitchLightPlatformBase):
         return "Accton"
 
     def _sys_info_dict(self):
-        if self.onie_base_address is None:
-            return None
+        if os.path.exists("/etc/.onie.json"):
+            od = json.load(file("/etc/.onie.json"))
+            rv = {}
+            rv[sysinfo.PRODUCT_NAME] = od['Product Name']
+            rv[sysinfo.SERIAL_NUMBER] = od['Serial Number']
+            if rv[sysinfo.SERIAL_NUMBER] is None:
+                rv[sysinfo.SERIAL_NUMBER] = "UNKNOWN"
+            rv[sysinfo.MAC_ADDRESS] = od['MAC']
+            rv[sysinfo.PART_NUMBER] = od['Part Number']
+            rv[sysinfo.MANUFACTURE_DATE] = od['Manufacture Date']
+            rv[sysinfo.HARDWARE_VERSION] = od['Label Revision']
+            return rv;
         else:
-            if not os.path.exists("/etc/.onie.json"):
-                os.system("/sbin/mtool odump %s json > /etc/.onie.json" % self.onie_base_address);
-            if os.path.exists("/etc/.onie.json"):
-                od = json.load(file("/etc/.onie.json"))
-                rv = {}
-                rv[sysinfo.PRODUCT_NAME] = od['Product Name']
-                rv[sysinfo.SERIAL_NUMBER] = od['Serial Number']
-                if rv[sysinfo.SERIAL_NUMBER] is None:
-                    rv[sysinfo.SERIAL_NUMBER] = "UNKNOWN"
-                rv[sysinfo.MAC_ADDRESS] = od['MAC']
-                rv[sysinfo.PART_NUMBER] = od['Part Number']
-                rv[sysinfo.MANUFACTURE_DATE] = od['Manufacture Date']
-                rv[sysinfo.HARDWARE_VERSION] = od['Label Revision']
-                return rv;
-            else:
-                return None
+            return None
 
