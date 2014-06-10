@@ -22,6 +22,7 @@ ${HRFSTOOL} -c overlay "${INTERNAL_SHARED_DIR}" "${WS_ROOT}"
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d initdev defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d restorepersist defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d rc.boot defaults
+chroot "${WS_ROOT}" /usr/sbin/update-rc.d platform-baseconf defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d ofad-baseconf defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d sensors-baseconf defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d snmpd-baseconf defaults
@@ -47,7 +48,7 @@ chroot "${WS_ROOT}" /usr/sbin/update-rc.d checkroot.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d mountnfs-bootclean.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d mountnfs.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d lm-sensors remove
-chroot "${WS_ROOT}" /usr/sbin/update-rc.d platform-baseconf defaults
+
 
 # Root is enabled with password 'bsn' on internal images.
 ${RFSTOOL} -c user_password_set root bsn
