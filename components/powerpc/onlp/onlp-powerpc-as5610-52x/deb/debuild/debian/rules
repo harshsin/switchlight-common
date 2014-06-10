@@ -18,3 +18,5 @@ clean:
 override_dh_auto_install:
 	mkdir -p  $(INSTALL_DIR)/lib/platform-config/powerpc-as5610-52x/lib
 	cp ../../build/powerpc-linux-gnu/bin/libonlp-powerpc-as5610-52x.so $(INSTALL_DIR)/lib/platform-config/powerpc-as5610-52x/lib
+	mkdir -p  $(INSTALL_DIR)/lib/platform-config/powerpc-as5610-52x/bin
+	cp ../../onlpdump $(INSTALL_DIR)/lib/platform-config/powerpc-as5610-52x/bin/onlpdump

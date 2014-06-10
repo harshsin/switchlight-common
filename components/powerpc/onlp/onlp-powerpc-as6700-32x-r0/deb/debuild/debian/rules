@@ -16,5 +16,9 @@ clean:
 	dh clean
 
 override_dh_auto_install:
-	@echo "Fill me out."
+	mkdir -p  $(INSTALL_DIR)/lib/platform-config/powerpc-as6700-32x-r0/lib
+	cp ../../build/powerpc-linux-gnu/bin/libonlp-powerpc-as6700-32x-r0.so $(INSTALL_DIR)/lib/platform-config/powerpc-as6700-32x-r0/lib
+	mkdir -p  $(INSTALL_DIR)/lib/platform-config/powerpc-as6700-32x-r0/bin
+	cp ../../onlpdump $(INSTALL_DIR)/lib/platform-config/powerpc-as6700-32x-r0/bin/onlpdump
+
 

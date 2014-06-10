@@ -26,6 +26,22 @@ GLOBAL_LINK_LIBS += -lpthread
 
 include $(BUILDER)/targets.mk
 
-.PHONY: deb
+############################################################
+#
+# Build both the shared library and the onlpdump binary
+#
+############################################################
+
+.DEFAULT_GOAL=__start__
+
+__start__: $(SHAREDLIB) onlpdump
+ONLPDUMP_DIR := $(SWITCHLIGHT_SUBMODULE_ONLP_ACCTON)/targets/powerpc_as5610_52x/onlpdump
+
+onlpdump:
+	$(MAKE) -C $(ONLPDUMP_DIR)
+	cp $(ONLPDUMP_DIR)/build/$(TOOLCHAIN)/bin/onlpdump .
+
+
+.PHONY: deb onlpdump
 deb:
 	$(MAKE) -C deb
