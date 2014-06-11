@@ -396,3 +396,12 @@ aet_port_status_enqueue(of_port_status_t *port_status, of_port_no_t of_port)
     }
     notify();
 }
+
+
+/* statistics */
+void aet_stats_print(aim_pvs_t *apvs)
+{
+    aim_printf(apvs, "pkt_in drops    %10lu\n", as.pkt_in_drops);
+    aim_printf(apvs, "port_msg drops  %10lu\n", as.port_message_drops);
+}
+
