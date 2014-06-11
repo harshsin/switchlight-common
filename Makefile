@@ -14,7 +14,10 @@
 
 all:
 	@echo "targets:"
-	@echo "install-build-deps	Install build dependencies into your local workspace"
+	@echo
+	@echo "  install-build-deps       Install build dependencies into your local workspace"
+	@echo "  update                   Run the debian repo update script."
+	@echo
 
 install-build-deps:
 	echo 'APT::Get::AllowUnauthenticated "true";\nAPT::Get::Assume-Yes "true";' | sudo tee /etc/apt/apt.conf.d/99pandora
@@ -25,3 +28,7 @@ install-build-deps:
 	f=$$(mktemp); wget -O $$f "https://launchpad.net/ubuntu/+source/qemu/1.4.0+dfsg-1expubuntu3/+build/4336762/+files/qemu-user-static_1.4.0%2Bdfsg-1expubuntu3_amd64.deb" && sudo dpkg -i $$f
 	sudo update-alternatives --install /usr/bin/powerpc-linux-gnu-gcc powerpc-linux-gnu-gcc /usr/bin/powerpc-linux-gnu-gcc-4.7 10
 	sudo xapt -a powerpc libedit-dev ncurses-dev libsensors4-dev libwrap0-dev libssl-dev libsnmp-dev
+
+
+update:
+	cd $(SWITCHLIGHT)/debian/repo && ./update.sh
