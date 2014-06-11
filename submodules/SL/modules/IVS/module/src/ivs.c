@@ -1045,7 +1045,8 @@ status_log_callback__(void* cookie)
     for (cxn = list; cxn; cxn = cxn->next) { 
         if (! (cxn->cxn_config_params.listen &&
                cxn->cxn_config_params.local) ) {
-            drops += cxn->cxn_status.packet_in_drop;
+            //FIXME: replace with the value of debug counter for packet_in_drops
+            //drops += cxn->cxn_status.packet_in_drop;
         }
     }
     indigo_cxn_list_destroy(list); 
