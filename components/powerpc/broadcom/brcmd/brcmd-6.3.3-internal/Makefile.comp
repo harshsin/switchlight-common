@@ -42,7 +42,7 @@ $(LIBRARY)_SUBDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(BUILDER)/lib.mk
 
 
-DEPENDMODULES := BRCM BRCMTest OS NSS AIM BigList uCli ELS IOF tagport cintm cjson cjson_util onlplib snmp
+DEPENDMODULES := BRCM BRCMTest OS NSS AIM BigList uCli ELS IOF tagport cintm cjson cjson_util onlplib
 
 #
 # Resolve module dependencies
