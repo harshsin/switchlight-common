@@ -37,9 +37,9 @@ def config_port_channel(no_command, data, is_init):
     hashType = data.get("hash-type", None)
 
     if no_command:
-        portManager.unconfigureLAGPort(int(portId), componentPorts)
+        portManager.unconfigureLAGPort(int(portId), componentPorts, is_init=is_init)
     else:
-        portManager.configureLAGPort(int(portId), componentPorts, hashType)
+        portManager.configureLAGPort(int(portId), componentPorts, hashType, is_init=is_init)
 
     OFAgentConfig.port_list = portManager.toJSON()
     OFAgentConfig.write(warn=True)
