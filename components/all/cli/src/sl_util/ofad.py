@@ -300,12 +300,13 @@ class PortManager(object):
         port.setDisableOnAdd(None)
 
     # FIXME: optimize on updating an existing LAG
-    def configureLAGPort (self, id_, ports, hash_=None, mode=None, is_init=False):
+    def configureLAGPort (self, id_, ports, hash_=None, mode=None,
+                          is_init=False):
         tunnel_map = {}
         if not is_init:
             tunnel_map = PortManager.getTunnelPortDependency()
         else:
-            print "Warning: tunnel port dependency check is skipped during init."
+            print "Warning: skipping tunnel port dependency check during init."
 
         name = PortManager.getLAGName(id_)
         port_num = const.LAG_BASE_OF_PORT_NUM + id_
@@ -331,7 +332,7 @@ class PortManager(object):
         if not is_init:
             tunnel_map = PortManager.getTunnelPortDependency()
         else:
-            print "Warning: tunnel port dependency check is skipped during init."
+            print "Warning: skipping tunnel port dependency check during init."
 
         name = PortManager.getLAGName(id_)
         if name not in self.lags:
