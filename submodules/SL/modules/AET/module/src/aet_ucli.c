@@ -11,10 +11,21 @@
 #include <uCli/ucli_argparse.h>
 #include <uCli/ucli_handler_macros.h>
 
+#include "aet_int.h"
+
 static ucli_status_t 
 aet_ucli_ucli__config__(ucli_context_t* uc)
 {
     UCLI_HANDLER_MACRO_MODULE_CONFIG(aet)
+}
+
+static ucli_status_t 
+aet_ucli_ucli__stats__(ucli_context_t* uc)
+{
+    UCLI_COMMAND_INFO(uc, "stats", 0,
+                      "$summary#Show stats."); 
+    aet_stats_print(uc->epvs);
+    return UCLI_STATUS_OK;
 }
 
 /* <auto.ucli.handlers.start> */
@@ -27,6 +38,7 @@ aet_ucli_ucli__config__(ucli_context_t* uc)
 static ucli_command_handler_f aet_ucli_ucli_handlers__[] = 
 {
     aet_ucli_ucli__config__,
+    aet_ucli_ucli__stats__,
     NULL
 };
 /******************************************************************************/
