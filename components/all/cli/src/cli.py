@@ -453,7 +453,6 @@ class MainSh():
         # in the configured locale for the returned locale value.
         lc = locale.getdefaultlocale()
         if lc == None or lc[0] == None:
-            print 'Locale not configured ', lc
             lc = ('en_US', 'UTF8')
         doc_dir = 'documentation/%s' % lc[0]
         if doc_dir is None:
