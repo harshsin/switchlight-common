@@ -12,12 +12,10 @@ import inspect
 import logging
 import threading
 import signal
-import locale
 
 
 def pcli_command(cmd):
     """Execute a PCLI command and return the results."""
-    locale.setlocale(locale.LC_ALL, '')
     out = subprocess.check_output(('/usr/bin/pcli', '--init', '--mode=config',
                                    '--command', cmd),
                                   stderr=subprocess.STDOUT)
