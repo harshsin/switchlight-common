@@ -64,12 +64,14 @@ $(ZTN_MANIFEST):
 
 $(SWI).swi: rootfs-$(ARCH).sqsh $(ZTN_MANIFEST)
 	rm -f $@.tmp
-	rm -f *.swi
+	rm -f *.swi *.swi.md5sum
 	cp $(KERNELS) $(INITRD) .
 	zip -n $(INITRD_LOCAL):rootfs-$(ARCH).sqsh - $(KERNELS_LOCAL) $(INITRD_LOCAL) rootfs-$(ARCH).sqsh $(ZTN_MANIFEST) >$@.tmp
 	$(SWITCHLIGHT)/tools/swiver $@.tmp $(SWI)-$(SWITCHLIGHT_BUILD_TIMESTAMP).swi "$(RELEASE)"
 	ln -s $(SWI)-$(SWITCHLIGHT_BUILD_TIMESTAMP).swi $@
 	rm $(KERNELS_LOCAL) $(INITRD_LOCAL) rootfs-$(ARCH).sqsh *.tmp $(ZTN_MANIFEST)
+	md5sum $(SWI)-$(SWITCHLIGHT_BUILD_TIMESTAMP).swi | awk '{ print $$1 }' > $(SWI)-$(SWITCHLIGHT_BUILD_TIMESTAMP).swi.md5sum
+	ln -s $(SWI)-$(SWITCHLIGHT_BUILD_TIMESTAMP).swi.md5sum $@.md5sum
 
 rootfs-$(ARCH).sqsh:
 	$(MAKE) -C rootfs rootfs.all

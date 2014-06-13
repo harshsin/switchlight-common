@@ -54,6 +54,8 @@ endif
 ifdef INSTALLER_CLEAN_FILES
 	$(SL_V_at)rm -rf $(INSTALLER_CLEAN_FILES)
 endif
+	md5sum $@ | awk '{ print $$1 }' > $@.md5sum
+
 
 shar installer: $(INSTALLER_NAME)
 

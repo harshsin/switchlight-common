@@ -6,6 +6,7 @@ rootfs-*/
 *.deb
 *.build
 *.changes
+*.md5sum
 BUILDS/*
 zerotouch.json
 Packages
