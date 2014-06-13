@@ -41,7 +41,7 @@ define swi_build_template
 swi-$(1):
 	$(MAKE) -C $(2)
 	mkdir -p $(BUILDDIR)
-	cp $(2)/*20*.swi $(BUILDDIR)
+	cp $(2)/*20*.swi* $(BUILDDIR)
 endef
 
 $(foreach plat,$(SWI_BUILD_PATHS),$(eval $(call swi_build_template,$(notdir $(plat)),$(plat))))
@@ -76,7 +76,7 @@ define installer_build_template
 installer-$(1):
 	$(MAKE) -C $(2)
 	mkdir -p $(BUILDDIR)
-	cp $(2)/*.installer $(BUILDDIR)
+	cp $(2)/*.installer* $(BUILDDIR)
 endef
 
 $(foreach inst,$(INST_BUILD_PATHS),$(eval $(call installer_build_template,$(notdir $(inst)),$(inst))))
