@@ -15,6 +15,9 @@ SWI_PACKAGES_POWERPC += \
 	ofad-6.3.3-internal-t5 \
 	sofcon \
 	orc-brcm-6.3.3-internal \
+	gdb \
+	binutils \
+	file \
 	orc
 
 
