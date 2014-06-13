@@ -103,6 +103,7 @@ def user_recovery_password(sha1):
     logger.info("Recovery password hash is '%s'", hash_)
     password=hash_[0:8]
     logger.info("Recovery password is %s", password)
+    return password
 
 def user_recovery_add(password):
     if password == 'standard':
