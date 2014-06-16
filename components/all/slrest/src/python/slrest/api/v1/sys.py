@@ -15,26 +15,6 @@ from slrest.base.response import SLREST
 from slrest.base import params
 
 
-class v1_sys_bash(SLAPIObject):
-    """Execute a bash command and return the results."""
-    route="/api/v1/sys/bash"
-    def POST(self, cmd, sync=False):
-        out = util.bash_command(cmd)[1]
-        return SLREST.ok(self.route,
-                         reason='Command successful.\n',
-                         data=out)
-
-
-class v1_sys_pcli(SLAPIObject):
-    """Execute a PCLI command and return the results."""
-    route="/api/v1/sys/pcli"
-    def POST(self, cmd, sync=False):
-        out = util.pcli_command(cmd)
-        return SLREST.ok(self.route,
-                         reason='Command successful.\n',
-                         data=out)
-
-
 class v1_sys_sleep(SLAPIObject):
     """Simply sleep for the given number of seconds."""
     route = "/api/v1/sys/sleep"
@@ -71,6 +51,40 @@ class v1_sys_sleep(SLAPIObject):
             tt.join()
 
         # Return the response
+        return tt.response()
+
+
+class v1_sys_bash(SLAPIObject):
+    """Execute a bash command and return the results."""
+    route="/api/v1/sys/bash"
+    def POST(self, cmd, sync=False):
+        class Bash(TransactionTask):
+            def handler(self):
+                self.data = util.bash_command(self.args)[1]
+                self.status = SLREST.Status.OK
+                self.reason = 'Command successful.\n'
+                self.finish()
+        tm = TransactionManagers.get(self.route)
+        (tid, tt) = tm.new_task(Bash, self.route, cmd)
+        if sync:
+            tt.join()
+        return tt.response()
+
+
+class v1_sys_pcli(SLAPIObject):
+    """Execute a PCLI command and return the results."""
+    route="/api/v1/sys/pcli"
+    def POST(self, cmd, sync=False):
+        class Pcli(TransactionTask):
+            def handler(self):
+                self.data = util.pcli_command(self.args)
+                self.status = SLREST.Status.OK
+                self.reason = 'Command successful.\n'
+                self.finish()
+        tm = TransactionManagers.get(self.route)
+        (tid, tt) = tm.new_task(Pcli, self.route, cmd)
+        if sync:
+            tt.join()
         return tt.response()
 
 
