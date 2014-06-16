@@ -14,6 +14,66 @@ from slrest.base.transact import *
 from slrest.base.response import SLREST
 from slrest.base import params
 
+
+class v1_sys_bash(SLAPIObject):
+    """Execute a bash command and return the results."""
+    route="/api/v1/sys/bash"
+    def POST(self, cmd, sync=False):
+        out = util.bash_command(cmd)[1]
+        return SLREST.ok(self.route,
+                         reason='Command successful.\n',
+                         data=out)
+
+
+class v1_sys_pcli(SLAPIObject):
+    """Execute a PCLI command and return the results."""
+    route="/api/v1/sys/pcli"
+    def POST(self, cmd, sync=False):
+        out = util.pcli_command(cmd)
+        return SLREST.ok(self.route,
+                         reason='Command successful.\n',
+                         data=out)
+
+
+class v1_sys_sleep(SLAPIObject):
+    """Simply sleep for the given number of seconds."""
+    route = "/api/v1/sys/sleep"
+    def GET(self, seconds, sync=False):
+
+        #
+        # Declare a subclass of TransactionTask
+        # to contain your task's functionality
+        #
+        class Sleep(TransactionTask):
+            #
+            # This handler performs the actual work
+            #
+            def handler(self):
+                time.sleep(self.args)
+                self.status = SLREST.Status.OK
+                self.reason = "Sleep %d seconds completed." % self.args
+                self.finish()
+
+        # Get a transaction manager. We just instance one per our route
+        # Normally this would be per transaction group.
+        tm = TransactionManagers.get(self.route)
+
+        # Generate a new task and return the task response.
+        # The first argument is the TransactionTask class.
+        # The second argument is the path for the response.
+        # Its just easiest to specify it here, where we already know the route.
+        # The first argument is optional, but will be passed to the subclass
+        # as the .args member
+        (tid, tt) = tm.new_task(Sleep, self.route, int(seconds))
+
+        # If the response should be syncronous then join the task:
+        if sync:
+            tt.join()
+
+        # Return the response
+        return tt.response()
+
+
 class v1_sys_uninstall(SLAPIObject):
     """Uninstall SwitchLight."""
     route = "/api/v1/sys/uninstall"
