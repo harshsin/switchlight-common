@@ -1,0 +1,205 @@
+#!/bin/sh
+############################################################
+# <bsn.cl fy=2014 v=onl>
+# </bsn.cl>
+############################################################
+#
+# Manage the boot-config file
+#
+############################################################
+
+#
+# Source the current boot-config
+#
+BOOTCONFIG=${BOOTCONFIG:-/mnt/flash/boot-config}
+
+if [ -f "$BOOTCONFIG" ]; then
+   . "$BOOTCONFIG"
+fi
+
+__help__="
+Usage: $0 [OPTIONS]
+
+Options:
+  --mode [swi|ztn-auto|ztn|ztn-disc|ztn-dhcp|ztn-servers|ztn-static]
+  --swi [swi-path]
+  --swi-boot [swi-path]
+  --dhcp             Sets NETAUTO=dhcp
+  --ztn-servers [servers]
+  --netdev      [device]
+  --netauto     [dhcp|auto]
+  --netip       [ip]
+  --netmask     [netmask]
+  --netgw       [gateway]
+  --netdns      [dns]
+  --nethw       [MAC]
+   -x           Debugging
+  --help        This help message.
+"
+
+#
+# Command line arguments
+#
+
+while [ "${1#-}" != "$1" ]; do
+    case "$1" in
+        -h|--help)
+            echo "${__help__}"
+            exit 0
+            ;;
+        -x)
+            set -x
+            ;;
+        --mode)
+            shift
+            BOOTMODE=$1
+            ;;
+        --swi-boot)
+            shift
+            SWI=$1
+            BOOTMODE=swi
+            ;;
+        --swi)
+            shift
+            SWI=$1
+            ;;
+        --dhcp)
+            NETAUTO=dhcp
+            ;;
+        --ztn-servers)
+            shift
+            ZTNSERVERS=$1
+            ;;
+        --netdev)
+            shift
+            NETDEV=$1
+            ;;
+        --netauto)
+            shift
+            NETAUTO=$1
+            ;;
+        --netip)
+            shift
+            NETIP=$1
+            ;;
+        --netmask)
+            shift
+            NETMASK=$1
+            ;;
+        --netgw)
+            shift
+            NETGW=$1
+            ;;
+        --netdns)
+            shift
+            NETDNS=$1
+            ;;
+        --nethw)
+            shift
+            NETHW=$1
+            ;;
+        --silent)
+            SILENT=1
+            ;;
+        *)
+            echo "Unrecognized option $1" 2>&1
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+#
+# Write the new boot-config file
+#
+BC="$BOOTCONFIG.tmp"
+if [ -f "$BC" ]; then
+    rm "$BC"
+fi
+
+if [ ! "$NETDEV" ]; then
+    NETDEV=ma1
+fi
+
+if [ "$NETDEV" ]; then
+    echo "NETDEV=$NETDEV" >> "$BC"
+fi
+
+if [ "$NETAUTO" ]; then
+    case "$NETAUTO" in
+        dhcp|auto)
+            echo "NETAUTO=$NETAUTO" >> "$BC"
+            ;;
+        *)
+            echo "NETAUTO must be 'dhcp' or 'auto'"
+            exit 1
+            ;;
+    esac
+fi
+
+if [ "$NETIP" ]; then
+    # Validate
+    echo "NETIP=$NETIP" >> "$BC"
+fi
+
+if [ "$NETMASK" ]; then
+    # Validate
+    echo "NETMASK=$NETMASK" >> "$BC"
+fi
+
+if [ "$NETGW" ]; then
+    # Validate
+    echo "NETGW=$NETGW" >> "$BC"
+fi
+
+if [ "$NETDOMAIN" ]; then
+    echo "NETDOMAIN=$NETDOMAIN" >> "$BC"
+fi
+
+if [ "$NETDNS" ]; then
+    # Validate
+    echo "NETDNS=$NETDNS" >> "$BC"
+fi
+
+if [ "$NETHW" ]; then
+    # Validate
+    echo "NETHW=$NETHW" >> "$BC"
+fi
+
+if [ "$BOOTMODE" ]; then
+    case "$BOOTMODE" in
+        swi|ztn-auto|ztn|ztn-disc|ztn-dhcp|ztn-servers|ztn-static)
+            echo "BOOTMODE=$BOOTMODE" >> "$BC";
+            ;;
+        *)
+            echo "Invalid BOOTMODE setting '$BOOTMODE'"
+            exit 1
+            ;;
+    esac
+fi
+
+if [ "$SWI" ]; then
+    echo "SWI=$SWI" >> "$BC"
+fi
+
+if [ "$ZTNSERVERS" ]; then
+    echo "ZTNSERVERS=$ZTNSERVERS" >> "$BC"
+fi
+
+
+#
+# All good.
+#
+mv "$BC" "$BOOTCONFIG"
+sync
+
+if [ ! "$SILENT" ]; then
+    cat "$BOOTCONFIG"
+fi
+
+
+
+
+
+
+

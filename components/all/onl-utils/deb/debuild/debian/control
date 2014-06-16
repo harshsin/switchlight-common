@@ -1,0 +1,12 @@
+Source: onl-utils
+Section: misc
+Priority: optional
+Maintainer: Support <support@bigswitch.com>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.8.4
+
+Package: onl-utils
+Architecture: all
+Depends: 
+Description: ONL Management Utilities.
+ ONL Management Utilities.
