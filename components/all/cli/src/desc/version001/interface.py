@@ -23,7 +23,7 @@ OFAgentConfig = OFADConfig()
 PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
 PortManager.setLAGBase(OFAgentConfig.lag_base_name)
 
-SFP1GCONF="/mnt/flash/1gsfp.conf"
+BRCM_JSON="/mnt/flash/brcm.json"
 
 # generate a regexp that only requires the first character of the name,
 # with all other characters are optional;
@@ -195,11 +195,11 @@ def parse_port_list(orig_port_list):
 def show_intf(data):
     if '1g-sfp' in data:
         try:
-            l = json.loads(open(SFP1GCONF).read())
-            if len(l) is 0:
-                print None
-            else:
-                print " ".join([str(x) for x in l])
+            c = json.load(open(BRCM_JSON))
+            if 'port' in c:
+                for (p,v) in c['port'].iteritems():
+                    if '1gsfp' in v and v['1gsfp']:
+                        print p
         except:
             print None
 
@@ -292,30 +292,34 @@ def shutdown_intf(no_command, port_list, is_init):
 
 
 def sfp_1g_intf(no_command, port_list, is_init):
-    data = []
-    if os.path.exists(SFP1GCONF):
+    data = {}
+    if os.path.exists(BRCM_JSON):
         try:
-            data = json.loads(open(SFP1GCONF).read())
+            data = json.load(open(BRCM_JSON))
         except ValueError:
             pass
-
-    data = list(set(data))
+    if data is None:
+        data = {}
 
     for port in port_list:
         # Fixme
         if port.startswith('ethernet'):
-            port = int(port.replace('ethernet',''))
+            port = port.replace('ethernet','')
             if no_command:
-                if port in data:
-                    data.remove(port)
-                shell.call('ofad-ctl autoneg %d 0' % port)
+                try:
+                    data['port'][port].remove('1gsfp')
+                except:
+                    pass
+                shell.call('ofad-ctl autoneg %s 0' % port)
             else:
-                if not port in data:
-                    data.append(port)
-                shell.call('ofad-ctl autoneg %d 1' % port)
+                if not 'port' in data:
+                    data['port'] = {}
+                if not port in data['port']:
+                    data['port'][port] = {}
+                data['port'][port]['1gsfp'] = True
+                shell.call('ofad-ctl autoneg %s 1' % port)
 
-    data = list(set(data))
-    open(SFP1GCONF,'w').write(json.dumps(data))
+    open(BRCM_JSON,'w').write(json.dumps(data))
 
 
 
