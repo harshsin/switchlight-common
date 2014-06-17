@@ -121,6 +121,24 @@ class v1_sys_uninstall(SLAPIObject):
             return SLREST.ok(self.route,
                              reason="The system will be uninstalled after the next reboot.")
 
+    @staticmethod
+    def cliUninstall(hostname, port, factory, reboot):
+        try:
+            response = SLAPIObject.post(hostname, port, v1_sys_uninstall.route,
+                                        {"factory": factory, "reboot":reboot})
+            SLAPIObject.dataResult(response.read())
+        except:
+             pass
+
+    @staticmethod
+    def cmdUninstall(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("uninstall")
+            p.add_argument("-factory", action='store_true')
+            p.add_argument("-reboot", action='store_true')
+            p.set_defaults(func=v1_sys_uninstall.cmdUninstall)
+        else:
+            v1_sys_uninstall.cliUninstall(sub_parser.hostname, sub_parser.port, sub_parser.factory, sub_parser.reboot)
 
 class v1_sys_reboot(SLAPIObject):
     """Reboot the system, with delay."""
@@ -134,6 +152,22 @@ class v1_sys_reboot(SLAPIObject):
         return SLREST.ok(self.route,
                          reason="Rebooting in %s seconds...\n" % delay)
 
+    @staticmethod
+    def cliReboot(hostname, port, delay):
+        try:
+            response = SLAPIObject.post(hostname, port, v1_sys_reboot.route, {"delay": delay})
+            SLAPIObject.dataResult(response.read())
+        except:
+            pass
+
+    @staticmethod
+    def cmdReboot(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("reboot")
+            p.add_argument("delay")
+            p.set_defaults(func=v1_sys_reboot.cmdReboot)
+        else:
+            v1_sys_reboot.cliReboot(sub_parser.hostname, sub_parser.port, sub_parser.delay)
 
 class v1_sys_file_syslog(SLAPIObject):
     """Get the current syslog."""
@@ -176,6 +210,31 @@ class v1_sys_file_syslog(SLAPIObject):
             tt.join()
         return tt.response()
 
+    @staticmethod
+    def cliFileSyslog(hostname, port, location, gzip):
+        try:
+            path = "%s?gzip=%s&sync=True" % (v1_sys_file_syslog.route, gzip)
+            response = SLAPIObject.get(hostname, port, path)
+            rv = json.loads(response.read())
+            if rv['status'] == 'OK':
+                result = SLAPIObject.get(hostname, port, rv['data'])
+                dst = "%s/syslog.%s" % (location, "gz" if gzip else "txt")
+                with open(dst, "w") as f:
+                    f.write(result.read())
+            else:
+                print rv['reason']
+        except:
+            pass
+
+    @staticmethod
+    def cmdFileSyslog(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("syslog")
+            p.add_argument("location", help='file storage location')
+            p.add_argument("-gzip", action='store_true')
+            p.set_defaults(func=v1_sys_file_syslog.cmdFileSyslog)
+        else:
+            v1_sys_file_syslog.cliFileSyslog(sub_parser.hostname, sub_parser.port, sub_parser.location, sub_parser.gzip)
 
 class v1_sys_beacon(SLAPIObject):
     """Trigger LED beaconing."""
@@ -189,3 +248,18 @@ class v1_sys_beacon(SLAPIObject):
         return SLREST.ok(self.route,
                          reason='Command successful.\n')
 
+    @staticmethod
+    def cliBeacon(hostname, port):
+        try:
+            response = SLAPIObject.post(hostname, port, v1_sys_beacon.route, {"sync": True})
+            SLAPIObject.dataResult(response.read())
+        except:
+            pass
+
+    @staticmethod
+    def cmdBeacon(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("beacon")
+            p.set_defaults(func=v1_sys_beacon.cmdBeacon)
+        else:
+            v1_sys_beacon.cliBeacon(sub_parser.hostname, sub_parser.port)

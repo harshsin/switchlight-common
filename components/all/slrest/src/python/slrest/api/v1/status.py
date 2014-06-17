@@ -35,6 +35,23 @@ class v1_status_cpu_load(SLAPIObject):
         return SLREST.ok(self.route, reason='Command successful.\n',
                          data=json.dumps(out))
 
+    @staticmethod
+    def cliCpuLoad(hostname, port):
+        try:
+            path = "%s?sync=True" % v1_status_cpu_load.route
+            response = SLAPIObject.get(hostname, port, path)
+            SLAPIObject.dataResult(response.read(), json_output=True)
+        except:
+            pass
+
+    @staticmethod
+    def cmdCpuLoad(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("cpu-load")
+            p.set_defaults(func=v1_status_cpu_load.cmdCpuLoad)
+        else:
+            v1_status_cpu_load.cliCpuLoad(sub_parser.hostname, sub_parser.port)
+
 class v1_status_memory(SLAPIObject):
     """Get switch memory usage."""
     route = "/api/v1/status/memory"
@@ -50,6 +67,22 @@ class v1_status_memory(SLAPIObject):
         return SLREST.ok(self.route, reason='Command successful.\n',
                          data=json.dumps(out))
 
+    @staticmethod
+    def cliMemory(hostname, port):
+        try:
+            path = "%s?sync=True" % v1_status_memory.route
+            response = SLAPIObject.get(hostname, port, path)
+            SLAPIObject.dataResult(response.read(), json_output=True)
+        except:
+            pass
+
+    @staticmethod
+    def cmdMemory(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("memory")
+            p.set_defaults(func=v1_status_memory.cmdMemory)
+        else:
+            v1_status_memory.cliMemory(sub_parser.hostname, sub_parser.port)
 
 class v1_status_tech_support(SLAPIObject):
     """Get switch tech support info."""
@@ -94,6 +127,30 @@ class v1_status_tech_support(SLAPIObject):
 
         return tt.response()
 
+    @staticmethod
+    def cliTechSupport(hostname, port, location):
+        try:
+            path = "%s?sync=True" % v1_status_tech_support.route 
+            response = SLAPIObject.get(hostname, port, path)
+            rv = json.loads(response.read())
+            if rv['status'] == 'OK':
+                result = SLAPIObject.get(hostname, port, rv['data'])
+                dst = "%s/tech-support.gz" % location
+                with open(dst, "w") as f:
+                    f.write(result.read())
+            else:
+                print rv['reason']
+        except:
+            pass
+    
+    @staticmethod
+    def cmdTechSupport(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("tech-support")
+            p.add_argument("location", help='file storage location')
+            p.set_defaults(func=v1_status_tech_support.cmdTechSupport)
+        else:
+            v1_status_tech_support.cliTechSupport(sub_parser.hostname, sub_parser.port, sub_parser.location)
 
 class v1_status_controller(SLAPIObject):
     """Get 'show controller' command output."""
@@ -107,6 +164,23 @@ class v1_status_controller(SLAPIObject):
         return SLREST.ok(self.route, reason='Command successful.\n',
                          data=out)
 
+    @staticmethod
+    def cliController(hostname, port):
+        try:
+            path = "%s?sync=True" % v1_status_controller.route
+            response = SLAPIObject.get(hostname, port, path)
+            SLAPIObject.dataResult(response.read())
+        except:
+            pass
+
+    @staticmethod
+    def cmdController(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("controller")
+            p.set_defaults(func=v1_status_controller.cmdController)
+        else:
+            v1_status_controller.cliController(sub_parser.hostname, sub_parser.port)
+
 class v1_status_environment(SLAPIObject):
     """Get 'show environment' command output."""
     route = "/api/v1/status/environment"
@@ -118,6 +192,23 @@ class v1_status_environment(SLAPIObject):
                                 reason='Unable to get environment.\n')
         return SLREST.ok(self.route, reason='Command successful.\n',
                          data=out)
+
+    @staticmethod
+    def cliEnvironment(hostname, port):
+        try:
+            path = "%s?sync=True" % v1_status_environment.route
+            response = SLAPIObject.get(hostname, port, path)
+            SLAPIObject.dataResult(response.read())
+        except:
+            pass
+
+    @staticmethod
+    def cmdEnvironment(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("environment")
+            p.set_defaults(func=v1_status_environment.cmdEnvironment)
+        else:
+            v1_status_environment.cliEnvironment(sub_parser.hostname, sub_parser.port)
 
 class v1_status_inventory(SLAPIObject):
     """Get 'show inventory' command output."""
@@ -131,6 +222,23 @@ class v1_status_inventory(SLAPIObject):
         return SLREST.ok(self.route, reason='Command successful.\n',
                          data=out)
 
+    @staticmethod
+    def cliInventory(hostname, port):
+        try:
+            path = "%s?sync=True" % v1_status_inventory.route
+            response = SLAPIObject.get(hostname, port, path)
+            SLAPIObject.dataResult(response.read())
+        except:
+            pass
+
+    @staticmethod
+    def cmdInventory(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("inventory")
+            p.set_defaults(func=v1_status_inventory.cmdInventory)
+        else:
+            v1_status_inventory.cliInventory(sub_parser.hostname, sub_parser.port)
+
 class v1_status_version(SLAPIObject):
     """Get 'show version' command output."""
     route = "/api/v1/status/version"
@@ -143,3 +251,19 @@ class v1_status_version(SLAPIObject):
         return SLREST.ok(self.route, reason='Command successful.\n',
                          data=out)
 
+    @staticmethod
+    def cliVersion(hostname, port):
+        try:
+            path = "%s?sync=True" % v1_status_version.route
+            response = SLAPIObject.get(hostname, port, path)
+            SLAPIObject.dataResult(response.read())
+        except:
+            pass
+
+    @staticmethod
+    def cmdVersion(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("version")
+            p.set_defaults(func=v1_status_version.cmdVersion)
+        else:
+            v1_status_version.cliVersion(sub_parser.hostname, sub_parser.port)
