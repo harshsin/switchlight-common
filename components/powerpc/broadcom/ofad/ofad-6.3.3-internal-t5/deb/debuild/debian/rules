@@ -29,6 +29,7 @@ override_dh_auto_install:
 	cp $(OFAD_6_3_3_DIR)/build/$(DEB_HOST_GNU_TYPE)/bin/ofad.shared $(INSTALL_DIR)/usr/bin/ofad-6.3-internal-t5
 	cp $(SWITCHLIGHT)/components/all/ofad/ofad-ctl $(INSTALL_DIR)/usr/bin/ofad-ctl
 	cp $(SWITCHLIGHT)/components/all/ofad/ofad.init debian
+	cp $(SWITCHLIGHT)/components/all/ofad/t5-brcm.json $(INSTALL_DIR)/etc/brcm.json
 
 override_dh_installinit:
 	dh_installinit --name=ofad
