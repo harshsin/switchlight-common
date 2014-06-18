@@ -9,6 +9,7 @@
 # </bsn.cl>
 ############################################################
 INSTALLER_PLATFORMS :=  powerpc-quanta-lb9-r0 \
+			powerpc-quanta-lb9a-r0 \
 			powerpc-quanta-ly2-r0 \
 	 		powerpc-dni-7448-r0 \
 			powerpc-as6700-32x-r0 \
