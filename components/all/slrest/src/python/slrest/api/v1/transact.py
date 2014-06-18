@@ -129,3 +129,12 @@ class v1_transaction_file(SLAPIObject):
                 return SLREST.missing(self.route, "The file is not recognized for this transaction.")
         else:
             return SLREST.missing(self.route, "The transaction id does not exist.")
+
+    #dummy functions
+    @staticmethod
+    def cliFileTransactions():
+        return
+
+    @staticmethod
+    def cmdFileTransactions(sub_parser, register=False):
+        return
