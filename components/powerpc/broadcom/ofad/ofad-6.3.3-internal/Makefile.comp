@@ -43,7 +43,7 @@ DEPENDMODULES := snmp SocketManager OFConnectionManager BRCM BRCMDriver \
 	OFStateManager murmur NSS ELS AET Configuration cjson \
 	indigo loci Faultd IOF PPE IVS uCli BigList BigRing OS AIM \
 	BigHash tagport pimu nwac cintm sl ofadm debug_counter \
-	timer_wheel arpra cjson_util onlplib
+	timer_wheel arpra cjson_util onlplib minimatch
 
 #
 # Resolve module dependencies
