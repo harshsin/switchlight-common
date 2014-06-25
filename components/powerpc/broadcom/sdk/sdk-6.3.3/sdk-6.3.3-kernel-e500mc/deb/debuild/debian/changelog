@@ -1,4 +1,4 @@
-libbroadcom-6.3-kernel-as-e500mc-modules (6.3.3bsn1~ubuntu1) UNRELEASED; urgency=low
+libbroadcom-6.3-kernel-e500mc-modules (6.3.3bsn1~ubuntu1) UNRELEASED; urgency=low
 
   * Initial release.
 
