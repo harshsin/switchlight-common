@@ -18,9 +18,9 @@ else
 include $(SWITCHLIGHT)/make/config.mk
 endif
 
-KERNEL.BIN.GZ := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-as-e500mc:powerpc --find-file kernel-as-e500mc.bin.gz)
+KERNEL.BIN.GZ := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-e500mc:powerpc --find-file kernel-e500mc.bin.gz)
 INITRD := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-powerpc:powerpc --find-file initrd-powerpc)
-DTB := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-as-e500mc-dtbs:powerpc --find-file powerpc-as5710-54x-r0a.dtb)
+DTB := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-e500mc-dtbs:powerpc --find-file powerpc-as5710-54x-r0a.dtb)
 PLATFORM_NAME := powerpc-as5710-54x-r0a
 
 $(info $(KERNEL.BIN.GZ) $(DTB))

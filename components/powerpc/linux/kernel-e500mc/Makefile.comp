@@ -1,55 +1,56 @@
 # -*- Makefile -*-
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
-############################################################
 #
-# Powerpc Linux for e500mc
+# Powerpc Linux for the Accton P2041-based platforms
 #
 ############################################################
-BUILD_POWERPC_LINUX_E500MC := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+COMPDIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 include $(SWITCHLIGHT)/make/config.mk
 
 all: kernel-e500mc linux-e500mc-headers dtbs
 
-kernel-e500mc: $(BUILD_POWERPC_LINUX_E500MC)/kernel-e500mc
-linux-e500mc-headers: $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
+kernel-e500mc: $(COMPDIR)/kernel-e500mc
+linux-e500mc-headers: $(COMPDIR)/linux-e500mc-headers
 
-KERNEL_E500MC := $(BUILD_POWERPC_LINUX_E500MC)/kernel-e500mc
-KERNEL_E500MC_HEADERS := $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
+KERNEL_AS_E500MC := $(COMPDIR)/kernel-e500mc
+KERNEL_AS_E500MC_HEADERS := $(COMPDIR)/linux-e500mc-headers
+DEFCONFIG := onl_e500mc_defconfig
 
-$(BUILD_POWERPC_LINUX_E500MC)/kernel-e500mc: $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/powerpc/configs/85xx/pandora_e500mc_defconfig
-	mkdir -p $(BUILD_POWERPC_LINUX_E500MC)/linux-build-e500mc
-	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) 85xx/pandora_e500mc_defconfig ARCH=powerpc O=$(BUILD_POWERPC_LINUX_E500MC)/linux-build-e500mc
-	PATH=$$PATH:$(SWITCHLIGHT)/tools $(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) uImage ARCH=powerpc O=$(BUILD_POWERPC_LINUX_E500MC)/linux-build-e500mc
-	powerpc-linux-gnu-strip -o $(BUILD_POWERPC_LINUX_E500MC)/kernel-e500mc $(BUILD_POWERPC_LINUX_E500MC)/linux-build-e500mc/vmlinux
-	cp $(BUILD_POWERPC_LINUX_E500MC)/linux-build-e500mc/vmlinux.bin.gz $(BUILD_POWERPC_LINUX_E500MC)/kernel-e500mc.bin.gz
+$(COMPDIR)/kernel-e500mc: $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/arch/powerpc/configs/$(DEFCONFIG)
+	mkdir -p $(COMPDIR)/linux-build-e500mc
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON) $(DEFCONFIG) ARCH=powerpc O=$(COMPDIR)/linux-build-e500mc
+	PATH=$$PATH:$(SWITCHLIGHT)/tools $(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON) uImage ARCH=powerpc O=$(COMPDIR)/linux-build-e500mc
+	powerpc-linux-gnu-strip -o $(COMPDIR)/kernel-e500mc $(COMPDIR)/linux-build-e500mc/vmlinux
+	cp $(COMPDIR)/linux-build-e500mc/vmlinux.bin.gz $(COMPDIR)/kernel-e500mc.bin.gz
 
-$(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers/.done: $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/powerpc/configs/85xx/pandora_e500mc_defconfig
-	mkdir -p $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
-	cp -a $(SWITCHLIGHT_SUBMODULE_LINUX)/include $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/powerpc/include $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
-	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) ARCH=powerpc O=$(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers 85xx/pandora_e500mc_defconfig
-	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX) ARCH=powerpc O=$(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers headers_install modules_prepare arch/powerpc/lib/crtsavres.o
-	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX)/scripts $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
-	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX)/Makefile $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers
-	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/powerpc/Makefile $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers/arch/powerpc
+$(COMPDIR)/linux-e500mc-headers/.done: $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/arch/powerpc/configs/$(DEFCONFIG)
+	mkdir -p $(COMPDIR)/linux-e500mc-headers
+	cp -a $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/include $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/arch/powerpc/include $(COMPDIR)/linux-e500mc-headers
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON) ARCH=powerpc O=$(COMPDIR)/linux-e500mc-headers $(DEFCONFIG)
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON) ARCH=powerpc O=$(COMPDIR)/linux-e500mc-headers headers_install modules_prepare arch/powerpc/lib/crtsavres.o
+	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/scripts $(COMPDIR)/linux-e500mc-headers
+	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/Makefile $(COMPDIR)/linux-e500mc-headers
+	cp -R $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/arch/powerpc/Makefile $(COMPDIR)/linux-e500mc-headers/arch/powerpc
 	touch $@
 
-$(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers: $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-headers/.done
+$(COMPDIR)/linux-e500mc-headers: $(COMPDIR)/linux-e500mc-headers/.done
 
 
 # These are the dtb files built for this kernel configuration:
-DTS_LIST := quanta_ly5 powerpc-as6700-32x-r0
-DTB_LIST := $(foreach dts,$(DTS_LIST),$(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-dtbs/$(dts).dtb)
+DTS_LIST := powerpc-as6700-32x-r0 powerpc-as5710-54x-r0a powerpc-as5710-54x-r0b
+DTB_LIST := $(foreach dts,$(DTS_LIST),$(COMPDIR)/linux-e500mc-dtbs/$(dts).dtb)
 
-$(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-dtbs/%.dtb: $(SWITCHLIGHT_SUBMODULE_LINUX)/arch/powerpc/boot/dts/%.dts kernel-e500mc | $(shell mkdir -p $(BUILD_POWERPC_LINUX_E500MC)/linux-e500mc-dtbs)
+$(COMPDIR)/linux-e500mc-dtbs/%.dtb: $(SWITCHLIGHT_SUBMODULE_LINUX_3_8_13_ACCTON)/arch/powerpc/boot/dts/%.dts kernel-e500mc | $(shell mkdir -p $(COMPDIR)/linux-e500mc-dtbs)
 	linux-build-e500mc/scripts/dtc/dtc -I dts -O dtb -o $@ $<
 
 dtbs: $(DTB_LIST)

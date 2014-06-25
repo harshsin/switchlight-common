@@ -13,7 +13,7 @@ SWI_PACKAGES_POWERPC += brcmd-6.3.3-internal \
 			ofad-6.3.3-internal-dbg \
 			libbroadcom-6.3-internal-dbg \
 			libbroadcom-6.3-kernel-85xx-modules \
-			libbroadcom-6.3-kernel-as-e500mc-modules \
+			libbroadcom-6.3-kernel-e500mc-modules \
 			sofcon \
 			orc \
 			orc-brcm-6.3.3-internal \
