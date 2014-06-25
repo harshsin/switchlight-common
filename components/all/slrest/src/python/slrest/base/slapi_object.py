@@ -36,11 +36,27 @@ class SLAPIObject(object):
         self.logger = logger
 
     @staticmethod
+    def num_instances(klass, prefix):
+        count = 0
+        for f in dir(klass):
+            if f.startswith(prefix):
+                count += 1
+        return count
+
+    @staticmethod
+    def validate_class(klass):
+        if klass.route is None:
+            raise ValueError("There is no route specified for the class %s" % klass)
+        for p in ["cmd", "cli"]:
+            n = SLAPIObject.num_instances(klass, p)
+            if n != 1:
+                raise ValueError("There needs to be one %s method for the class %s" % (p, klass))
+
+    @staticmethod
     def mount_all(logger):
         """Mount all subclasses"""
         for klass in SLAPIObject.__subclasses__():
-            if klass.route is None:
-                raise ValueError("There is no route specified for the class %s" % klass)
+            SLAPIObject.validate_class(klass)
 
             logger.info("Mounting class %s @ %s" % (klass.__name__, klass.route))
             cherrypy.tree.mount(

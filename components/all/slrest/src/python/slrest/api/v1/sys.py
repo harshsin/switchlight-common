@@ -53,6 +53,23 @@ class v1_sys_sleep(SLAPIObject):
         # Return the response
         return tt.response()
 
+    @staticmethod
+    def cliSleep(hostname, port, seconds):
+        try:
+            path = "%s?seconds=%s&sync=True" % (v1_sys_sleep.route, seconds)
+            response = SLAPIObject.get(hostname, port, path)
+            SLAPIObject.dataResult(response.read())
+        except:
+            pass
+
+    @staticmethod
+    def cmdSleep(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("sleep")
+            p.add_argument("seconds")
+            p.set_defaults(func=v1_sys_sleep.cmdSleep)
+        else:
+            v1_sys_sleep.cliSleep(sub_parser.hostname, sub_parser.port, sub_parser.seconds)
 
 class v1_sys_bash(SLAPIObject):
     """Execute a bash command and return the results."""
@@ -70,6 +87,23 @@ class v1_sys_bash(SLAPIObject):
             tt.join()
         return tt.response()
 
+    @staticmethod
+    def cliBash(hostname, port, cmd):
+        try:
+            response = SLAPIObject.post(hostname, port, v1_sys_bash.route,
+                                        {"cmd": cmd, "sync": True})
+            SLAPIObject.dataResult(response.read())
+        except:
+             pass
+
+    @staticmethod
+    def cmdBash(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("bash")
+            p.add_argument("cmd")
+            p.set_defaults(func=v1_sys_bash.cmdBash)
+        else:
+            v1_sys_bash.cliBash(sub_parser.hostname, sub_parser.port, sub_parser.cmd)
 
 class v1_sys_pcli(SLAPIObject):
     """Execute a PCLI command and return the results."""
@@ -87,6 +121,23 @@ class v1_sys_pcli(SLAPIObject):
             tt.join()
         return tt.response()
 
+    @staticmethod
+    def cliPcli(hostname, port, cmd):
+        try:
+            response = SLAPIObject.post(hostname, port, v1_sys_pcli.route,
+                                        {"cmd": cmd, "sync": True})
+            SLAPIObject.dataResult(response.read())
+        except:
+             pass
+
+    @staticmethod
+    def cmdPcli(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("pcli")
+            p.add_argument("cmd")
+            p.set_defaults(func=v1_sys_pcli.cmdPcli)
+        else:
+            v1_sys_pcli.cliPcli(sub_parser.hostname, sub_parser.port, sub_parser.cmd)
 
 class v1_sys_uninstall(SLAPIObject):
     """Uninstall SwitchLight."""
