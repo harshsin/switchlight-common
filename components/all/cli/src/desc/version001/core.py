@@ -354,7 +354,7 @@ def show_tech_support(data):
 command.add_action('implement-show-tech-support', show_tech_support,
                     {'kwargs': {'data'      : '$data',}})
 
-SHOW_STARTUP_CONFIG_COMMAND_DESCRIPTION = {
+SHOW_TECH_SUPPORT_COMMAND_DESCRIPTION = {
     'name'         : 'show',
     'mode'         : 'login',
     'action'       : 'implement-show-tech-support',
