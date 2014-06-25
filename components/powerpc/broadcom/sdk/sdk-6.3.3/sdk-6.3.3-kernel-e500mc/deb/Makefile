@@ -8,7 +8,7 @@
 # </bsn.cl>
 ############################################################
 ARCH=powerpc
-PACKAGE_NAMES=libbroadcom-6.3-kernel-as6700-modules
+PACKAGE_NAMES=libbroadcom-6.3-kernel-e500mc-modules
 DEBUILD_ARGS=-eSDK
 include ../../../../../../../make/debuild.mk
 

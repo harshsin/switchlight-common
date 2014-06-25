@@ -142,7 +142,7 @@ endef
 
 PARALLEL_0 := \
 kernel-85xx:powerpc \
-kernel-as-e500mc:powerpc \
+kernel-e500mc:powerpc \
 initrd-powerpc:powerpc
 
 # kernel-x86-64:amd64 initrd-i386:i386 kernel-e500mc:powerpc
@@ -157,7 +157,7 @@ libbroadcom-6.3-internal:powerpc \
 libbroadcom-6.3-release:powerpc \
 libbroadcom-6.3-internal-src:all \
 libbroadcom-6.3-kernel-85xx-modules:powerpc \
-libbroadcom-6.3-kernel-as-e500mc-modules:powerpc \
+libbroadcom-6.3-kernel-e500mc-modules:powerpc \
 $(shell $(SWITCHLIGHT)/tools/spkg.py --list-all | grep onlp-)
 
 $(foreach c,$(PARALLEL_2),$(eval $(call cbuild,$(c),$(PARALLEL_1))))

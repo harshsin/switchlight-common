@@ -8,17 +8,17 @@ Standards-Version: 3.8.4
 Package: kernel-e500mc
 Architecture: powerpc
 Depends: 
-Description: SwitchLight Kernel for PowerPC e500mc
- This package provides the SwitchLight Kernel for PowerPC e500mc
+Description: SwitchLight Kernel for the AS6700
+ This package provides the SwitchLight Kernel for the AS6700
 
 Package: kernel-e500mc-headers
 Architecture: powerpc
 Depends: 
-Description: SwitchLight Kernel for PowerPC e500mc (Headers)
- This package provides the SwitchLight Kernel for PowerPC e500mc (Headers)
+Description: SwitchLight Kernel for the AS6700
+ This package provides the SwitchLight Kernel for the AS6700 (Headers)
 
 Package: kernel-e500mc-dtbs
 Architecture: powerpc
 Depends:
-Description: SwitchLight DTBs for PowerPC e500mc Platforms
- This package provides the DTBs for supported platforms based on teh e500mc kernel. 
+Description: SwitchLight DTBs for the AS6700 platform
+ This package provides the DTB for the AS6700 platform.
