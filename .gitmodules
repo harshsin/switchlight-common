@@ -9,7 +9,7 @@
 	url = git@github.com:bigswitch/pandora-loader
 [submodule "submodules/linux"]
 	path = submodules/linux
-	url = git@github.com:bigswitch/pandora-linux
+	url = git@github.com:opennetworklinux/linux-3.9.6
 [submodule "submodules/infra"]
 	path = submodules/infra
 	url = git@github.com:floodlight/infra
