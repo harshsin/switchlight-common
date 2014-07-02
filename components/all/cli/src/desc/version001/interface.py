@@ -70,22 +70,22 @@ def get_port_info():
             ports[get_port_name(entry.name)] = [entry]
             num2name[entry.port_no] = get_port_name(entry.name)
 
-    # merge in rx and tx packet counts
+    # merge in rx and tx packet counters
     for entrylist in conn.of13_multipart_request_generator(
-            of13.message.port_stats_request( \
-            port_no=of13.OFPP_ANY)):
+            of13.message.bsn_port_counter_stats_request( \
+            port_no=of13.OFPP_ALL)):
         for entry in entrylist:
-            ports[num2name[entry.port_no]].append(entry)
+            ports[num2name[entry.port_no]].append(entry.values)
 
     conn.close()
 
     return ports
 
 def is_err(val):
-    return val != 0xffffffffffffffff and val > 0
+    return val.value != 0xffffffffffffffff and val.value > 0
 
 def display(val):
-    return str(val) if val != 0xffffffffffffffff else '---'
+    return str(val.value) if val.value != 0xffffffffffffffff else '---'
 
 def get_speed(bmap):
     if bmap & of13.OFPPF_40GB_FD:
@@ -103,45 +103,72 @@ def get_speed(bmap):
 
 def show_one_dp_intf_detail(port):
     # prints detailed info for the given (port_desc, port_stats) tuple
+    pd = port[0]
+    ps = port[1]
+
     print '%s is %s' % \
-        (port[0].name,
-         'admin down' if port[0].config & of13.OFPPC_PORT_DOWN
-         else 'down' if port[0].state & of13.OFPPS_LINK_DOWN
+        (pd.name,
+         'admin down' if pd.config & of13.OFPPC_PORT_DOWN
+         else 'down' if pd.state & of13.OFPPS_LINK_DOWN
          else 'up')
-    print '  Hardware Address: %s' % of13.util.pretty_mac(port[0].hw_addr)
-    print '  Speed: %s' % get_speed(port[0].curr)
-    print '  Received: %s bytes, %s packets' % \
-        (display(port[1].rx_bytes), display(port[1].rx_packets))
-    print '            %s errors, %s drops' % \
-        (display(port[1].rx_errors), display(port[1].rx_dropped))
-    print '            %s frame, %s overruns, %s crc' % \
-        (display(port[1].rx_frame_err),
-         display(port[1].rx_over_err), display(port[1].rx_crc_err))
-    print '  Sent:     %s bytes, %s packets' % \
-        (display(port[1].tx_bytes), display(port[1].tx_packets))
-    print '            %s errors, %s drops' % \
-        (display(port[1].tx_errors), display(port[1].tx_dropped))
-    print '            %s collisions' % display(port[1].collisions)
+    print '  Hardware Address: %s' % of13.util.pretty_mac(pd.hw_addr)
+    print '  Speed: %s' % get_speed(pd.curr)
+    print '  Received %s bytes, %s unicast' % \
+        (display(ps[of13.OFP_BSN_PORT_COUNTER_RX_BYTES]),
+         display(ps[of13.OFP_BSN_PORT_COUNTER_RX_PACKETS_UNICAST]))
+    print '    %s broadcast, %s multicast' % \
+        (display(ps[of13.OFP_BSN_PORT_COUNTER_RX_PACKETS_BROADCAST]),
+         display(ps[of13.OFP_BSN_PORT_COUNTER_RX_PACKETS_MULTICAST]))
+    print '    %s runt, %s giant' % \
+        (display(ps[of13.OFP_BSN_PORT_COUNTER_RX_RUNTS]),
+         display(ps[of13.OFP_BSN_PORT_COUNTER_RX_GIANTS]))
+    print '    %s error, %s CRC, %s alignment' % \
+        (display(ps[of13.OFP_BSN_PORT_COUNTER_RX_ERRORS]),
+         display(ps[of13.OFP_BSN_PORT_COUNTER_RX_CRC_ERRORS]),
+         display(ps[of13.OFP_BSN_PORT_COUNTER_RX_ALIGNMENT_ERRORS]))
+    print '    %s symbol, %s discard, %s pause' % \
+        (display(ps[of13.OFP_BSN_PORT_COUNTER_RX_SYMBOL_ERRORS]),
+         display(ps[of13.OFP_BSN_PORT_COUNTER_RX_DROPPED]),
+         display(ps[of13.OFP_BSN_PORT_COUNTER_RX_PAUSE_INPUT]))
+    print '  Sent %s bytes, %s unicast' % \
+        (display(ps[of13.OFP_BSN_PORT_COUNTER_TX_BYTES]),
+         display(ps[of13.OFP_BSN_PORT_COUNTER_TX_PACKETS_UNICAST]))
+    print '    %s broadcast, %s multicast' % \
+        (display(ps[of13.OFP_BSN_PORT_COUNTER_TX_PACKETS_BROADCAST]),
+         display(ps[of13.OFP_BSN_PORT_COUNTER_TX_PACKETS_MULTICAST]))
+    print '    %s error, %s collision' % \
+        (display(ps[of13.OFP_BSN_PORT_COUNTER_TX_ERRORS]),
+         display(ps[of13.OFP_BSN_PORT_COUNTER_TX_COLLISIONS]))
+    print '    %s late collision, %s deferred' % \
+        (display(ps[of13.OFP_BSN_PORT_COUNTER_TX_LATE_COLLISIONS]),
+         display(ps[of13.OFP_BSN_PORT_COUNTER_TX_DEFERRED]))
+    print '    %s discard, %s pause' % \
+        (display(ps[of13.OFP_BSN_PORT_COUNTER_TX_DROPPED]),
+         display(ps[of13.OFP_BSN_PORT_COUNTER_TX_PAUSE_OUTPUT]))
 
 def show_one_dp_intf_summary(format_str, port):
     # prints summary info for the given (port_desc, port_stats) tuple
+    pd = port[0]
+    ps = port[1]
 
-    if port[0].config & of13.OFPPC_PORT_DOWN:
+    if pd.config & of13.OFPPC_PORT_DOWN:
         state = 'D'
-    elif (port[0].state & of13.OFPPS_LINK_DOWN) == 0:
+    elif (pd.state & of13.OFPPS_LINK_DOWN) == 0:
         state = '*'
     else:
         state = ' '
-    if is_err(port[1].rx_errors) or is_err(port[1].tx_errors) or \
-            is_err(port[1].rx_frame_err) or is_err(port[1].rx_over_err) or \
-            is_err(port[1].rx_crc_err):
+    if is_err(ps[of13.OFP_BSN_PORT_COUNTER_RX_ERRORS]) or \
+      is_err(ps[of13.OFP_BSN_PORT_COUNTER_TX_ERRORS]) or \
+      is_err(ps[of13.OFP_BSN_PORT_COUNTER_RX_CRC_ERRORS]) or \
+      is_err(ps[of13.OFP_BSN_PORT_COUNTER_RX_ALIGNMENT_ERRORS]) or \
+      is_err(ps[of13.OFP_BSN_PORT_COUNTER_RX_SYMBOL_ERRORS]):
         err = '+Errors'
     else:
         err = '      '
     print format_str % \
-        (str(port[0].port_no), state,
-         get_port_name(port[0].name), get_speed(port[0].curr),
-         port[1].rx_packets, port[1].tx_packets, err)
+        (str(pd.port_no), state, get_port_name(pd.name), get_speed(pd.curr),
+         ps[of13.OFP_BSN_PORT_COUNTER_RX_PACKETS].value,
+         ps[of13.OFP_BSN_PORT_COUNTER_TX_PACKETS].value, err)
 
 def show_dp_intf_list(port_name_list, detail):
     ports = get_port_info()
