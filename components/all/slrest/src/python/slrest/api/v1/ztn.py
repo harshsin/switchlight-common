@@ -328,3 +328,56 @@ class v1_ztn_fake_reload(SLAPIObject):
         else:
             v1_ztn_fake_reload.cliReload(sub_parser.hostname, sub_parser.port)
 
+class v1_ztn_preflight(SLAPIObject):
+    """Perform the preflight operation.
+
+    Download the selected SWI URL to the ZTN cache.
+    """
+    route = "/api/v1/ztn/preflight"
+    def POST(self, url, sync=False):
+
+        class PreflightUrl(TransactionTask):
+            #
+            # This handler performs the actual work
+            #
+            def handler(self):
+                (rc, out) = util.bash_command("ztn --add-swi %s" % self.args)
+                if rc:
+                    self.status = SLREST.Status.ERROR
+                else:
+                    self.status = SLREST.Status.OK
+                self.reason = out
+                self.finish()
+
+        tm = ztn_transaction_manager_get()
+        (tid, tt) = tm.new_task(PreflightUrl, self.route, url)
+
+        if tid is None:
+            # Transaction already in progress
+            return SLREST.pending(self.route)
+
+        # If the response should be syncronous then join the task:
+        if sync:
+            tt.join()
+
+        # Return the response
+        return tt.response()
+
+    @staticmethod
+    def cliZtnPreflightUrl(hostname, port, url):
+        try:
+            response = SLAPIObject.post(hostname, port, v1_ztn_preflight_url.route,
+                                        {"url": url, "sync": True})
+            SLAPIObject.dataResult(response.read())
+        except:
+            pass
+
+    @staticmethod
+    def cmdZtnPreflightUrl(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("ztn-preflight")
+            p.add_argument("url")
+            p.set_defaults(func=v1_ztn_preflight_url.cmdZtnPreflightUrl)
+        else:
+            v1_ztn_transact_url.cliZtnPreflightUrl(sub_parser.hostname, sub_parser.port, sub_parser.url)
+
