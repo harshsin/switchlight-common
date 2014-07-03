@@ -113,9 +113,9 @@ def show_one_dp_intf_detail(port):
          else 'up')
     print '  Hardware Address: %s' % of13.util.pretty_mac(pd.hw_addr)
     print '  Speed: %s' % get_speed(pd.curr)
-    print '  Received %s bytes, %s unicast' % \
+    print '  Received %s bytes, %s packets' % \
         (display(ps[of13.OFP_BSN_PORT_COUNTER_RX_BYTES]),
-         display(ps[of13.OFP_BSN_PORT_COUNTER_RX_PACKETS_UNICAST]))
+         display(ps[of13.OFP_BSN_PORT_COUNTER_RX_PACKETS]))
     print '    %s broadcast, %s multicast' % \
         (display(ps[of13.OFP_BSN_PORT_COUNTER_RX_PACKETS_BROADCAST]),
          display(ps[of13.OFP_BSN_PORT_COUNTER_RX_PACKETS_MULTICAST]))
@@ -130,9 +130,9 @@ def show_one_dp_intf_detail(port):
         (display(ps[of13.OFP_BSN_PORT_COUNTER_RX_SYMBOL_ERRORS]),
          display(ps[of13.OFP_BSN_PORT_COUNTER_RX_DROPPED]),
          display(ps[of13.OFP_BSN_PORT_COUNTER_RX_PAUSE_INPUT]))
-    print '  Sent %s bytes, %s unicast' % \
+    print '  Sent %s bytes, %s packets' % \
         (display(ps[of13.OFP_BSN_PORT_COUNTER_TX_BYTES]),
-         display(ps[of13.OFP_BSN_PORT_COUNTER_TX_PACKETS_UNICAST]))
+         display(ps[of13.OFP_BSN_PORT_COUNTER_TX_PACKETS]))
     print '    %s broadcast, %s multicast' % \
         (display(ps[of13.OFP_BSN_PORT_COUNTER_TX_PACKETS_BROADCAST]),
          display(ps[of13.OFP_BSN_PORT_COUNTER_TX_PACKETS_MULTICAST]))
