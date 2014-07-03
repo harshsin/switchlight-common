@@ -81,11 +81,13 @@ def get_port_info():
 
     return ports
 
+UNSUPPORTED = 0xffffffffffffffff
+
 def is_err(val):
-    return val.value != 0xffffffffffffffff and val.value > 0
+    return val.value != UNSUPPORTED and val.value > 0
 
 def display(val):
-    return str(val.value) if val.value != 0xffffffffffffffff else '---'
+    return str(val.value) if val.value != UNSUPPORTED else '---'
 
 def get_speed(bmap):
     if bmap & of13.OFPPF_40GB_FD:
