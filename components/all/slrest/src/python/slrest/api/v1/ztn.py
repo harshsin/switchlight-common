@@ -34,7 +34,11 @@ def ztn_transaction_manager_get():
 class v1_ztn_inventory(SLAPIObject):
     """Get the current ZTN inventory."""
     route = "/api/v1/ztn/inventory"
-    def GET(self):
+    def GET(self, sync=True):
+        if not sync:
+            return SLREST.response(path=self.route,
+                                   status=SLREST.Status.ERROR,
+                                   reason="async not supported")
         # The ZTN inventory is returned in YAML format.
         (rc, out) = util.bash_command("ztn --inventory")
         if rc:
@@ -70,6 +74,51 @@ class v1_ztn_inventory(SLAPIObject):
             p.set_defaults(func=v1_ztn_inventory.cmdZtnInventory)
         else:
             v1_ztn_inventory.cliZtnInventory(sub_parser.hostname, sub_parser.port)
+
+class v1_ztn_manifest(SLAPIObject):
+    """Get the current ZTN manifest."""
+    route = "/api/v1/ztn/manifest"
+    def GET(self, sync=True):
+        if not sync:
+            return SLREST.response(path=self.route,
+                                   status=SLREST.Status.ERROR,
+                                   reason="async not supported")
+
+        # The ZTN manifest is returned in YAML format.
+        (rc, out) = util.bash_command("ztn --manifest")
+        if rc:
+            return SLREST.response(path=self.route,
+                                   status=SLREST.Status.ERROR,
+                                   reason=out)
+        else:
+            d = json.loads(out)
+            return SLREST.response(path=self.route,
+                                   status=SLREST.Status.OK,
+                                   data=d)
+
+    @staticmethod
+    def cliZtnManifest(hostname, port):
+        try:
+            response = SLAPIObject.get(hostname, port, v1_ztn_manifest.route)
+            rv = json.loads(response.read())
+            if rv['status'] == 'OK' and rv['data'] is not None:
+                data = SLAPIObject.fix_unicode(rv['data'])
+                for key in data:
+                    print key
+                    for keys in data[key]:
+                        print '%s: %s' % (keys, data[key][keys])
+            else:
+                print rv['reason']
+        except:
+            pass
+
+    @staticmethod
+    def cmdZtnManifest(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("ztn-manifest")
+            p.set_defaults(func=v1_ztn_manifest.cmdZtnManifest)
+        else:
+            v1_ztn_manifest.cliZtnManifest(sub_parser.hostname, sub_parser.port)
 
 class v1_ztn_discover(SLAPIObject):
     """Run ZTN discovery."""
@@ -218,3 +267,64 @@ class v1_ztn_transact_url(SLAPIObject):
             p.set_defaults(func=v1_ztn_transact_url.cmdZtnTransactUrl)
         else:
             v1_ztn_transact_url.cliZtnTransactUrl(sub_parser.hostname, sub_parser.port, sub_parser.url)
+
+class v1_ztn_fake_reload(SLAPIObject):
+    """Pretend to reload.
+
+    Simply sleep for the given number of seconds.
+    """
+    route = "/api/v1/ztn/reload"
+    def POST(self, sync=False):
+
+        RELOAD_DELAY = 10
+
+        #
+        # Declare a subclass of TransactionTask
+        # to contain your task's functionality
+        #
+        class Reload(TransactionTask):
+            #
+            # This handler performs the actual work
+            #
+            def handler(self):
+                time.sleep(self.args)
+                self.status = SLREST.Status.OK
+                self.reason = "Sleep %d seconds completed." % self.args
+                self.finish()
+
+        # Get a transaction manager. We just instance one per our route
+        # Normally this would be per transaction group.
+        tm = TransactionManagers.get(self.route)
+
+        # Generate a new task and return the task response.
+        # The first argument is the TransactionTask class.
+        # The second argument is the path for the response.
+        # Its just easiest to specify it here, where we already know the route.
+        # The first argument is optional, but will be passed to the subclass
+        # as the .args member
+        (tid, tt) = tm.new_task(Reload, self.route, RELOAD_DELAY)
+
+        # If the response should be syncronous then join the task:
+        if sync:
+            tt.join()
+
+        # Return the response
+        return tt.response()
+
+    @staticmethod
+    def cliReload(hostname, port):
+        try:
+            path = "%s?sync=True" % (v1_ztn_fake_reload.route)
+            response = SLAPIObject.get(hostname, port, path)
+            SLAPIObject.dataResult(response.read())
+        except:
+            pass
+
+    @staticmethod
+    def cmdReload(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("reload")
+            p.set_defaults(func=v1_ztn_fake_reload.cmdReload)
+        else:
+            v1_ztn_fake_reload.cliReload(sub_parser.hostname, sub_parser.port)
+

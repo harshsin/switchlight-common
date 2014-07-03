@@ -314,3 +314,4 @@ class v1_sys_beacon(SLAPIObject):
             p.set_defaults(func=v1_sys_beacon.cmdBeacon)
         else:
             v1_sys_beacon.cliBeacon(sub_parser.hostname, sub_parser.port)
+
