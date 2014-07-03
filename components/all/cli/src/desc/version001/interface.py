@@ -167,8 +167,8 @@ def show_one_dp_intf_summary(format_str, port):
         err = '      '
     print format_str % \
         (str(pd.port_no), state, get_port_name(pd.name), get_speed(pd.curr),
-         ps[of13.OFP_BSN_PORT_COUNTER_RX_PACKETS].value,
-         ps[of13.OFP_BSN_PORT_COUNTER_TX_PACKETS].value, err)
+         display(ps[of13.OFP_BSN_PORT_COUNTER_RX_PACKETS]),
+         display(ps[of13.OFP_BSN_PORT_COUNTER_TX_PACKETS]), err)
 
 def show_dp_intf_list(port_name_list, detail):
     ports = get_port_info()
