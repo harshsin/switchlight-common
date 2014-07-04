@@ -218,3 +218,56 @@ class v1_ztn_transact_url(SLAPIObject):
             p.set_defaults(func=v1_ztn_transact_url.cmdZtnTransactUrl)
         else:
             v1_ztn_transact_url.cliZtnTransactUrl(sub_parser.hostname, sub_parser.port, sub_parser.url)
+
+class v1_ztn_reload(SLAPIObject):
+    """Perform a config reload."""
+    route = "/api/v1/ztn/reload"
+    def POST(self, server=None, sync=False):
+
+        class Reload(TransactionTask):
+            #
+            # This hanlder performs the actual work
+            #
+            def handler(self):
+                (rc, error) = config.reload_config(server)
+                if rc:
+                    self.status = SLREST.Status.ERROR
+                    self.reason = error
+                else:
+                    self.status = SLREST.Status.OK
+                self.finish()
+
+        # Use requester IP as server if server is not provided
+        if server is None:
+            server = cherrypy.request.remote.ip
+
+        tm = ztn_transaction_manager_get()
+        (tid, tt) = tm.new_task(Reload, self.route, server)
+
+        if tid is None:
+            # Transaction already in progress
+            return SLREST.pending(self.route)
+
+        # If the response should be synchronous then join the task:
+        if sync:
+            tt.join()
+
+        # Return the response
+        return tt.response()
+
+    @staticmethod
+    def cliZtnReload(hostname, port):
+        try:
+            response = SLAPIObject.post(hostname, port, v1_ztn_reload.route,
+                                        {"sync": True})
+            SLAPIObject.dataResult(response.read())
+        except:
+            pass
+
+    @staticmethod
+    def cmdZtnReload(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("ztn-reload")
+            p.set_defaults(func=v1_ztn_reload.cmdZtnReload)
+        else:
+            v1_ztn_reload.cliZtnReload(sub_parser.hostname, sub_parser.port)

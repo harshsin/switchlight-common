@@ -6,86 +6,24 @@
 ############################################################
 
 from slrest.base import util
-
-from datetime import datetime
 import logging
 import re
-import urllib2
-import threading
-import Queue
+import yaml
 
-# Used for filtering out unneeded lines in config
-FILTER_REGEX = re.compile(r"^SwitchLight.*|^.*?\(config\).*|^Exiting.*|^\!|^[\s]*$")
+from datetime import datetime
 
 # Set default logger
 logger = logging.getLogger("config")
 
-# worker thread and data structures
-worker = None
-worker_id = None
-worker_lock = threading.Lock()
-
-# worker result queue
-result_queue = Queue.Queue()
-
-class ResultQueueEntry(object):
-    def __init__(self, transaction_id, exception=None):
-        self.transaction_id = transaction_id
-        self.finished = datetime.utcnow()
-        self.exception = exception
-
-class TransactionEntry(object):
-    def __init__(self, transaction_id):
-        self.lock = threading.Lock()
-        self.transaction_id = transaction_id
-        self.started = datetime.utcnow()
-        self.finished = None
-        self.error = None
-
-    def to_json(self):
-        return dict([(k, str(v)) for k, v in self.__dict__.items() if k != "lock"])
-
-class Transactions(object):
-    transactions = {}
-    counter = 1
-    counter_lock = threading.Lock()
-
-    @classmethod
-    def new_entry(klass):
-        with klass.counter_lock:
-            transaction_id = klass.counter
-            klass.counter += 1
-
-        entry = TransactionEntry(transaction_id)
-        klass.transactions[transaction_id] = entry
-        logger.debug("transaction created: %d" % transaction_id)
-        return transaction_id
-
-    @classmethod
-    def get_entry(klass, transaction_id):
-        if transaction_id not in klass.transactions:
-            # FIXME: consider other exception classes?
-            raise ValueError("transaction id %d is not found" % transaction_id)
-
-        entry = klass.transactions[transaction_id]
-        with entry.lock:
-            return entry.to_json()
-
-    @classmethod
-    def update_entry(klass, transaction_id, finished, error=None):
-        if transaction_id not in klass.transactions:
-           # FIXME: consider other exception classes?
-            raise ValueError("transaction id %d is not found" % transaction_id)
-
-        entry = klass.transactions[transaction_id]
-        with entry.lock:
-            entry.finished = finished
-            entry.error = error
-        logger.debug("transaction updated: %d" % transaction_id)
-
 def set_logger(logger_):
     global logger
     logger = logger_
+
+# Used for filtering out unneeded lines in config
+FILTER_REGEX = re.compile(r"^SwitchLight.*|^.*?\(config\).*|^Exiting.*|^\!|^[\s]*$")
+
+# Used for converting date string into datetime object
+DATETIME_FMT_STR = "%a %b %d %X %Z %Y"
 
 def compare_configs(old_cfg, new_cfg):
     """
@@ -108,23 +46,44 @@ def verify_configs(expected_cfg, actual_cfg):
         logger.error("Extra lines:\n%s" % lines2)
         raise ValueError("Verify configs failed.")
 
-def get_config_from_url(url):
+def get_config_from_ztn_server(ztn_server):
     """
-    Fetch config from a url.
+    Fetch config from ZTN server.
     Filter out unneeded lines.
     Return config as a list of config lines (strings).
     """
-    logger.debug("Fetching config from url: %s" % url)
+    logger.debug("Fetching config from ztn server: %s" % ztn_server)
 
-    try:
-        f = urllib2.urlopen(url)
-        cfg = [l for l in f.read().splitlines() if not FILTER_REGEX.match(l)]
+    (rc, out) = util.bash_command("ztn --transact --server %s" % ztn_server)
+    if rc:
+        raise IOError("Failed to transact with ZTN server (%s): %s" % \
+                      (ztn_server, out))
 
-    except (urllib2.HTTPError, urllib2.URLError):
-        logger.exception("Error getting config from url.\n%s" % url)
-        raise
+    (rc, out) = util.bash_command("ztn --inventory")
+    if rc:
+        raise IOError("Failed to get ZTN inventory: %s" % out)
 
-    return cfg
+    inv = yaml.load(out)
+    logger.debug("ztn inv: %s" % inv)
+
+    # get the latest entry
+    md5sum = None
+    path = None
+    latest = None
+    for k, v in inv.get("startup-config", {}).items():
+        curr = datetime.strptime(str(v["date"]), DATETIME_FMT_STR)
+        if (latest is None) or (curr > latest):
+            latest = curr
+            md5sum = k
+            path = str(v["path"])
+
+    if latest is None:
+        raise IOError("Failed to find startup-config entries in ZTN inv")
+
+    # parse config
+    f = open(path)
+    cfg = [l for l in f.read().splitlines() if not FILTER_REGEX.match(l)]
+    return (cfg, md5sum)
 
 def get_startup_config():
     """
@@ -157,10 +116,16 @@ def create_patch_config(old_cfg, new_cfg):
     logger.debug("new_lines:\n%s" % new_lines)
 
     # create patch config:
-    # - remove a config line by prepending it with a "no"
-    # - add a config line as is
+    # (1) for old lines:
+    #   -if regular (non-"no") command, prepend with "no" to remove
+    #   -if "no" command, reverse by removing "no" from head
+    #
+    # (2) for new lines:
+    #   - apply as is
+    #
     # FIXME: logic might need to be revisited
-    return ["no %s" % l for l in old_lines] + new_lines
+    return [l[3:] if l.startswith("no ") else "no %s" % l \
+            for l in old_lines] + new_lines
 
 def apply_config(cfg):
     """
@@ -178,12 +143,16 @@ def save_running_config():
     out = util.pcli_command("copy running-config startup-config")
     logger.debug("pcli output:\n%s" % out)
 
-def update_config_worker(url, transaction_id, result_queue):
+def reload_config(ztn_server):
     """
-    Get config from url and update switch with config.
+    Get config from ZTN server and reload config.
+    Return a tuple of (rc, error), where rc is 0 on success and 1 on failure.
     """
+    rc = 0
+    error = None
+
     try:
-        new_cfg = get_config_from_url(url)
+        new_cfg, md5sum = get_config_from_ztn_server(ztn_server)
         old_cfg = get_running_config()
         logger.debug("old_cfg:\n%s" % old_cfg)
         logger.debug("new_cfg:\n%s" % new_cfg)
@@ -193,67 +162,13 @@ def update_config_worker(url, transaction_id, result_queue):
 
         apply_config(patch_cfg)
         post_cfg = get_running_config()
-        verify_configs(post_cfg, new_cfg)
+        verify_configs(new_cfg, post_cfg)
         save_running_config()
         logger.debug("update config finished.")
-        result_queue.put(ResultQueueEntry(transaction_id))
 
-    except Exception as e:
+    except Exception, e:
         logger.exception("update config failed.")
-        result_queue.put(ResultQueueEntry(transaction_id, e))
+        rc = 1
+        error = str(e)
 
-def start_update_config_task(url):
-    """
-    Start a worker thread to update switch config.
-    Returns the transaction id associated with the worker.
-    """
-    global worker
-    global worker_id
-
-    with worker_lock:
-        if worker is not None:
-            if worker.is_alive():
-                raise Exception("Update config is already running. Transaction id: %d" % worker_id)
-            else:
-                logger.debug("Joining worker. Transaction id: %d" % worker_id)
-                worker.join()
-                worker = None
-                worker_id = None
-
-        worker_id = Transactions.new_entry()
-        worker = threading.Thread(target=update_config_worker, args=(url, worker_id, result_queue,))
-        logger.debug("Starting worker. Transaction id: %d" % worker_id)
-        worker.start()
-
-    return worker_id
-
-def wait_for_update_config_task():
-    """
-    Wait until the current worker thread finishes, if it exists.
-    """
-    global worker
-    global worker_id
-
-    with worker_lock:
-        if worker is not None:
-            logger.debug("Joining worker. Transaction id: %d" % worker_id)
-            worker.join()
-            worker = None
-            worker_id = None
-
-def get_update_config_status(transaction_id):
-    """
-    Get update status associated with transaction_id.
-    """
-    # check result queue and update transactions.
-    while True:
-        try:
-            result = result_queue.get(True, 1) # block for 1 second
-            result_queue.task_done()
-            Transactions.update_entry(result.transaction_id, result.finished, result.exception)
-
-        except Queue.Empty:
-            logger.debug("result queue is empty")
-            break
-
-    return Transactions.get_entry(transaction_id)
+    return (rc, error)
