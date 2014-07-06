@@ -29,7 +29,7 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformDNI):
         return None
 
     def get_environment(self):
-        return "Not implemented."
+        return subprocess.check_output(['/usr/bin/ofad-ctl', 'environment'])
 
 
 
