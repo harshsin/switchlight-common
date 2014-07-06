@@ -22,9 +22,6 @@ sysDescr ${descr}
 sysLocation Not set
 sysContact Not set
 
-# Access control
-rocommunity public
-
 agentSecName disman
 createUser disman MD5 "internal user for monitoring"
 rouser disman auth
