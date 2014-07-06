@@ -70,11 +70,11 @@ def show_version(data):
         sli=fw_getenv('sl_installer_version')
         if sli:
             fs_ver = parse_sl_version(sli)
-            out.append("Switch Light OS Loader Version: %s %s" % (fs_ver[0], fs_ver[1]))
-            out.append("Switch Light OS Loader Build: %s" % (fs_ver[2]))
+            out.append("Loader Version: %s %s" % (fs_ver[0], fs_ver[1]))
+            out.append("Loader Build: %s" % (fs_ver[2]))
         else:
-            out.append("Switch Light OS Loader Version: Not available on this platform.")
-            out.append("Switch Light OS Loader Build: Not available on this platform.")
+            out.append("Loader Version: Not available on this platform.")
+            out.append("Loader Build: Not available on this platform.")
         out.append("")
 
         fs_ver = parse_sl_version(sl_version);
