@@ -39,7 +39,7 @@ def fw_getenv(var):
 
 def parse_sl_version(ver):
     try:
-        m = re.match(r"(SwitchLight) (.*?) (\(.*?\))", ver)
+        m = re.match(r"(Switch Light OS) (.*?) \((.*?)\)", ver)
         return m.group(1,2,3)
     except Exception, e:
         return (ver, "", "")
@@ -60,7 +60,8 @@ def show_version(data):
 
         # UBoot version, if available.
         uver=fw_getenv('ver')
-        out.append("UBoot Version: %s" % (uver if uver else "Not available on this platform."))
+        if uver:
+            out.append("UBoot Version: %s" % (uver))
 
         # Platform Information
         out.append(str(Platform))
@@ -69,11 +70,11 @@ def show_version(data):
         sli=fw_getenv('sl_installer_version')
         if sli:
             fs_ver = parse_sl_version(sli)
-            out.append("SwitchLight Loader Version: %s %s" % (fs_ver[0], fs_ver[1]))
-            out.append("SwitchLight Loader Build: %s" % (fs_ver[2]))
+            out.append("Switch Light OS Loader Version: %s %s" % (fs_ver[0], fs_ver[1]))
+            out.append("Switch Light OS Loader Build: %s" % (fs_ver[2]))
         else:
-            out.append("SwitchLight Loader Version: Not available on this platform.")
-            out.append("SwitchLight Loader Build: Not available on this platform.")
+            out.append("Switch Light OS Loader Version: Not available on this platform.")
+            out.append("Switch Light OS Loader Build: Not available on this platform.")
         out.append("")
 
         fs_ver = parse_sl_version(sl_version);
