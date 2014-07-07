@@ -40,7 +40,7 @@ class v1_status_cpu_load(SLAPIObject):
         try:
             path = "%s?sync=True" % v1_status_cpu_load.route
             response = SLAPIObject.get(hostname, port, path)
-            SLAPIObject.dataResult(response.read(), json_output=True)
+            SLAPIObject.dataResult(response.read())
         except:
             pass
 
@@ -72,7 +72,7 @@ class v1_status_memory(SLAPIObject):
         try:
             path = "%s?sync=True" % v1_status_memory.route
             response = SLAPIObject.get(hostname, port, path)
-            SLAPIObject.dataResult(response.read(), json_output=True)
+            SLAPIObject.dataResult(response.read())
         except:
             pass
 
