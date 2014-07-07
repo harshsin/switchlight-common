@@ -8,7 +8,6 @@
 #
 # </bsn.cl>
 ############################################################
-############################################################
 #
 # SwitchLightPlatform support for DNI platforms.
 #
@@ -24,7 +23,7 @@ class SwitchLightPlatformDNI(SwitchLightPlatformBase):
 
     def _sys_info_dict(self):
         return {
-            sysinfo.PRODUCT_NAME : "DNINotImplemented",
+            sysinfo.PRODUCT_NAME : "7448"
             }
 
 # Vendor classes here
