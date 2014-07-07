@@ -328,7 +328,7 @@ class v1_ztn_fake_reload(SLAPIObject):
         else:
             v1_ztn_fake_reload.cliReload(sub_parser.hostname, sub_parser.port)
 
-class v1_ztn_preflight(SLAPIObject):
+class v1_ztn_preflight_url(SLAPIObject):
     """Perform the preflight operation.
 
     Download the selected SWI URL to the ZTN cache.
