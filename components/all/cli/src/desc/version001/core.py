@@ -783,7 +783,7 @@ TIMEZONE_COMMAND_DESCRIPTION = {
 }
 
 def locate ():
-    shell.call("ofad-ctl modules brcm led-flash 3 100 100 10")
+    shell.call("ofad-ctl beacon")
 
 command.add_action('implement-locate', locate)
 
