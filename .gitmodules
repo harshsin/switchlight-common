@@ -43,3 +43,6 @@
 [submodule "submodules/onlp-dni"]
 	path = submodules/onlp-dni
 	url = git@github.com:opennetworklinux/onlp-dni
+[submodule "submodules/onlp-quanta"]
+	path = submodules/onlp-quanta
+	url = git@github.com:opennetworklinux/onlp-quanta

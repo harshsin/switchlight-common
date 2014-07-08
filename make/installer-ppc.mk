@@ -34,7 +34,7 @@ MKSHAR = $(SWITCHLIGHT)/tools/mkshar
 MKSHAR_OPTS = --lazy --unzip-pad
 
 $(INSTALLER_NAME): $(PLATFORM_DIRS) $(INSTALLER_SWI) $(ZTN_MANIFEST) installer-setup
-	$(SL_V_at)rm -rf *.installer
+	$(SL_V_at)rm -rf *.installer *.installer.md5sum
 	$(SL_V_at)cp $(PLATFORM_LOADERS) .
 	$(foreach p,$(INSTALLER_PLATFORMS), $(SWITCHLIGHT_PKG_INSTALL) platform-config-$(p):all --extract .;)
 ifdef INSTALLER_SWI
