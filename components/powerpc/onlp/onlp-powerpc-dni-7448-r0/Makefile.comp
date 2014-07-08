@@ -34,13 +34,17 @@ include $(BUILDER)/targets.mk
 ############################################################
 .DEFAULT_GOAL=__start__
 
-__start__: $(SHAREDLIB) onlpdump
+__start__: $(SHAREDLIB) onlpdump debug
 ONLPDUMP_DIR := $(SWITCHLIGHT_SUBMODULE_ONLP_DNI)/targets/powerpc_dni_7448_r0/onlpdump
-
+DEBUG_DIR := $(SWITCHLIGHT_SUBMODULE_ONLP_DNI)/targets/powerpc_dni_7448_r0/debug
 onlpdump:
 	$(MAKE) -C $(ONLPDUMP_DIR) SUBMODULE_ONLP=$(SWITCHLIGHT_SUBMODULE_ONLP) SUBMODULE_INFRA=$(SWITCHLIGHT_SUBMODULE_INFRA) SUBMODULE_BIGCODE=$(SWITCHLIGHT_SUBMODULE_BIGCODE)
 	cp $(ONLPDUMP_DIR)/build/$(TOOLCHAIN)/bin/onlpdump .
 
-.PHONY: deb onlpdump
+debug:
+	$(MAKE) -C $(DEBUG_DIR) SUBMODULE_ONLP=$(SWITCHLIGHT_SUBMODULE_ONLP) SUBMODULE_INFRA=$(SWITCHLIGHT_SUBMODULE_INFRA) SUBMODULE_BIGCODE=$(SWITCHLIGHT_SUBMODULE_BIGCODE)
+	cp $(DEBUG_DIR)/build/$(TOOLCHAIN)/bin/debug .
+
+.PHONY: deb onlpdump debug
 deb:
 	$(MAKE) -C deb
