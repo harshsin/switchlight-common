@@ -13,18 +13,7 @@ from switchlight.platform.current import SwitchLightPlatform
 
 Platform=SwitchLightPlatform()
 
-# FIXME STUB
 SNMP_CONFIG_FILE = '/etc/snmp/snmpd.conf'
-#SNMP_CONFIG_FILE = './unittest/snmpd.conf'
-
-# FIXME STUB
-#SNMP_SYS_DESC = "Indigo v0.01"
-# FIXME verify the following values are necessary for snmpd.conf
-# agentAddress udp::161,udp6:[::1]:161
-#BSN_ENTERPRISE_OID = '.1.3.6.1.4.1.37538'
-#BSN_ENTERPRISE_OID_SWITCH = BSN_ENTERPRISE_OID + '.2'
-# sysObjectID BSN_ENTERPRISE_OID_SWITCH
-# sysDescr SNMP_SYS_DESC
 
 LINK_UP_DOWN_CLI              = 'linkUpDown'
 #Used to be: LINK_UP_DOWN_NOTIFICATION_CMD = 'linkUpDownNotifications'
@@ -327,7 +316,6 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                     {
                         'field'           : 'community',
                         'type'            : 'string',
-                        'optional-for-no' : True,
                         'syntax-help'     : 'Value for the SNMP community string',
                     },
                 ),
