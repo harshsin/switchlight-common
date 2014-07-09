@@ -61,7 +61,6 @@ class oids(object):
     LINK_TABLE_UTILIZATION='link_table_util'
 
 
-
 ############################################################
 #
 # Symbolic port base
@@ -105,6 +104,14 @@ class SwitchLightPlatformBase(object):
     def hw_description(self):
         return "%s (%s)" % (self.sys_info_get(sysinfo.PRODUCT_NAME),
                             self.sys_info_get(sysinfo.PART_NUMBER))
+
+
+    def sys_object_id(self):
+        return "1.3.6.1.4.1.37538.2"
+
+    def ifnumber(self):
+        # Front-panel port count + 4
+        return self.portcount() + 4
 
     def portcount(self):
         return self.plat_info_get(platinfo.PORT_COUNT)
