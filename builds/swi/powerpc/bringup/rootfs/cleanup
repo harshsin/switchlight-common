@@ -37,6 +37,7 @@ chroot "${WS_ROOT}" /usr/sbin/update-rc.d checkroot.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d mountnfs-bootclean.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d mountnfs.sh remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d lm-sensors remove
+chroot "${WS_ROOT}" /usr/sbin/update-rc.d netplug defaults
 
 
 ${RFSTOOL} -c user_password_set root bsn
