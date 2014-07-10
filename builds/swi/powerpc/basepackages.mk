@@ -3,7 +3,7 @@
 # Common packages for all Powerpc SWI builds
 #
 ############################################################
-SWI_PACKAGES_ALL := python-cherrypy3 python-tz slrest scapy ztn python-pypcap netplug
+SWI_PACKAGES_ALL := python-cherrypy3 python-tz slrest scapy ztn python-pypcap
 
 SWI_PACKAGES_POWERPC := \
 	snmpd \
@@ -30,5 +30,6 @@ SWI_PACKAGES_POWERPC := \
 	rssh \
 	u-boot-tools \
 	ntpdate \
-	onlp
+	onlp \
+	netplug
 
