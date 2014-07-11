@@ -444,7 +444,6 @@ class OFADCtl(object):
         return shell.call("/usr/bin/ofad-ctl %s" % cmd, show_output=show_output)
 
 class OFADConfig(object):
-    PATH = "/etc/ofad.conf"
     VERSION = 2
 
     deferred_reload = False
@@ -561,7 +560,7 @@ class OFADConfig(object):
 
     @property
     def needs_update (self):
-        stat = os.stat(OFADConfig.PATH)
+        stat = os.stat(const.OFAD_CFG_PATH)
         if ((stat.st_ctime != self._cache_tinfo[0]) or
             (stat.st_mtime != self._cache_tinfo[1])):
             return True
@@ -570,7 +569,7 @@ class OFADConfig(object):
 
     @property
     def _data (self):
-        stat = os.stat(OFADConfig.PATH)
+        stat = os.stat(const.OFAD_CFG_PATH)
         if self.needs_update:
             self._rebuild_cache()
             if self._warn_on_changed:
@@ -582,11 +581,11 @@ class OFADConfig(object):
             self._rebuild_cache()
 
     def _rebuild_cache (self):
-        stat = os.stat(OFADConfig.PATH)
+        stat = os.stat(const.OFAD_CFG_PATH)
         self._cache_tinfo = (stat.st_ctime, stat.st_mtime)
 
         old = self._data_cache
-        with open(OFADConfig.PATH, "r") as cfg:
+        with open(const.OFAD_CFG_PATH, "r") as cfg:
             self._data_cache = json.load(cfg)
             self._data_cache['of_datapath_id'] = \
                 DPID(int(self._data_cache['of_datapath_id'], 16))
@@ -608,7 +607,7 @@ class OFADConfig(object):
         # FIXME: Should lock the file before we start
         with self.warnOnChanged(warn):
             data = copy.copy(self._data)
-            with open(OFADConfig.PATH, 'w+') as cfg:
+            with open(const.OFAD_CFG_PATH, 'w+') as cfg:
                 data['of_datapath_id'] = data['of_datapath_id'].hexstr()
                 json.dump(data, cfg, sort_keys=True, indent=4, separators=(',', ': '))
             self._rebuild_cache()
@@ -624,6 +623,32 @@ class OFADConfig(object):
             shell.call('service ofad reload')
         except subprocess.CalledProcessError:
             raise error.ActionError('Cannot reload openflow agent configuration')
+
+    @classmethod
+    def save_default_settings (klass):
+        ws = os.path.join(const.DEFAULT_DIR, "ofad")
+        if os.path.exists(ws):
+            print "Default settings for ofad already exist."
+            return
+
+        print "Saving default settings for ofad..."
+
+        shell.call("mkdir -p %s" % ws)
+        dst = os.path.join(ws, os.path.basename(const.OFAD_CFG_PATH))
+        shell.call("cp %s %s" % (const.OFAD_CFG_PATH, dst))
+
+    @classmethod
+    def revert_default_settings (klass):
+        ws = os.path.join(const.DEFAULT_DIR, "ofad")
+        if not os.path.exists(ws):
+            print "Default settings for ofad do not exist."
+            return
+
+        print "Reverting default settings for ofad..."
+
+        src = os.path.join(ws, os.path.basename(const.OFAD_CFG_PATH))
+        shell.call("cp %s %s" % (src, const.OFAD_CFG_PATH))
+        klass.reload()
 
     @classmethod
     def handle_deferred_reload (klass):

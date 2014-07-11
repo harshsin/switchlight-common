@@ -6,14 +6,13 @@ import command
 import run_config
 import error
 
-from sl_util import Service
+from sl_util import Service, const
 
 class RSyslog(Service):
     SVC_NAME = "rsyslog"
+    CFG_PATH = const.RLOG_CFG_PATH
 
 class _LoggingConfig(object):
-    RPATH = "/etc/rsyslog.d/10-switchlight-remote.conf"
-
     def __init__ (self):
         pass
 
@@ -21,7 +20,7 @@ class _LoggingConfig(object):
     def remotes (self):
         remotes = []
         try:
-            with open(_LoggingConfig.RPATH, "r") as cfg:
+            with open(RSyslog.CFG_PATH, "r") as cfg:
                 for line in cfg:
                     remotes.append(self.parseHost(line.strip()))
         except IOError:
@@ -34,7 +33,7 @@ class _LoggingConfig(object):
         vals = set(vals)
         if vals == old_remotes:
             return
-        with open(_LoggingConfig.RPATH, "w+") as cfg:
+        with open(RSyslog.CFG_PATH, "w+") as cfg:
             for remote in vals:
                 cfg.write("%s\n" % (remote.conf_entry))
         

@@ -3,11 +3,17 @@
 from __future__ import absolute_import
 
 from sl_util.shell import call
+from sl_util import const
+
+import os
 
 deferred_restart = []
 
+UNSET = "UNSET"
+
 class Service(object):
-    SVC_NAME = "UNSET"
+    SVC_NAME = UNSET
+    CFG_PATH = UNSET
     RUNNING = True
     HALTED = False
 
@@ -41,6 +47,59 @@ class Service(object):
     def reload (klass):
         (sout, serr, ret) = call("service %s reload" % (klass.SVC_NAME))
 
+    @classmethod
+    def save_default_settings (klass):
+        ws = os.path.join(const.DEFAULT_DIR, klass.SVC_NAME)
+        if os.path.exists(ws):
+            print "Default settings for %s already exist." % klass.SVC_NAME
+            return
+
+        print "Saving default settings for %s..." % klass.SVC_NAME
+
+        conf_dir = os.path.join(ws, "conf")
+        state_dir = os.path.join(ws, "state")
+        call("mkdir -p %s" % conf_dir)
+        call("mkdir -p %s" % state_dir)
+
+        # save config
+        if klass.CFG_PATH != UNSET:
+            dst = os.path.join(conf_dir, os.path.basename(klass.CFG_PATH))
+            if os.path.exists(klass.CFG_PATH):
+                call("cp %s %s" % (klass.CFG_PATH, dst))
+        else:
+            print "CFG_PATH of %s is not set." % klass.SVC_NAME
+
+        # save state
+        running = os.path.join(state_dir, "running")
+        if klass.status() == Service.RUNNING:
+            call("touch %s" % running)
+
+    @classmethod
+    def revert_default_settings (klass):
+        ws = os.path.join(const.DEFAULT_DIR, klass.SVC_NAME)
+        if not os.path.exists(ws):
+            print "Default settings for %s do not exist." % klass.SVC_NAME
+            return
+
+        print "Reverting default settings for %s..." % klass.SVC_NAME
+
+        conf_dir = os.path.join(ws, "conf")
+        state_dir = os.path.join(ws, "state")
+
+        # revert config
+        if klass.CFG_PATH != UNSET:
+            src = os.path.join(conf_dir, os.path.basename(klass.CFG_PATH))
+            if os.path.exists(src):
+                call("cp %s %s" % (src, klass.CFG_PATH))
+            else:
+                call("rm -f %s" % klass.CFG_PATH)
+
+        # revert state
+        running = os.path.join(state_dir, "running")
+        if os.path.exists(running):
+            klass.restart()
+        else:
+            klass.disable()
 
     @staticmethod
     def handle_deferred_restart ():

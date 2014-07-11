@@ -2,7 +2,7 @@
 
 import os
 
-from sl_util import shell, Service
+from sl_util import shell, Service, const
 
 import command
 import run_config
@@ -19,16 +19,15 @@ class KnownServerError(Exception):
 
 class NTP(Service):
     SVC_NAME = "ntp"
+    CFG_PATH = const.NTP_CFG_PATH
 
 class _NTPConfig(object):
-    PATH = "/etc/ntp.conf"
-
     def __init__ (self):
         self._server_cache = set()
         self._cache_tinfo = (0,0)
 
         firstboot = False
-        with open(_NTPConfig.PATH, "r") as cfg:
+        with open(NTP.CFG_PATH, "r") as cfg:
             try:
                 line = cfg.readlines()[0]
                 if not line.startswith("### Switch Light"):
@@ -43,7 +42,7 @@ class _NTPConfig(object):
 
     @property
     def servers (self):
-        stat = os.stat(_NTPConfig.PATH)
+        stat = os.stat(NTP.CFG_PATH)
         if ((stat.st_ctime != self._cache_tinfo[0]) or
             (stat.st_mtime != self._cache_tinfo[1])):
             self._rebuild_cache()
@@ -51,11 +50,11 @@ class _NTPConfig(object):
         
     def _rebuild_cache (self):
         ### FIXME: Log this
-        stat = os.stat(_NTPConfig.PATH)
+        stat = os.stat(NTP.CFG_PATH)
         self._cache_tinfo = (stat.st_ctime, stat.st_mtime)
 
         self._server_cache = set()
-        with open(_NTPConfig.PATH, "r") as cfg:
+        with open(NTP.CFG_PATH, "r") as cfg:
             for line in cfg.readlines():
                 if line.startswith("server"):
                     d = line.split()
@@ -69,7 +68,7 @@ class _NTPConfig(object):
                 
 
     def _firstboot (self):
-        with open(_NTPConfig.PATH, "r+") as cfg:
+        with open(NTP.CFG_PATH, "r+") as cfg:
             newcfg = ["### Switch Light\n"]
             for line in cfg.readlines():
                 if line.startswith("#") or not line.strip():
@@ -81,7 +80,7 @@ class _NTPConfig(object):
 
     def _write_cache (self):
         newcfg = []
-        with open(_NTPConfig.PATH, "rw+") as cfg:
+        with open(NTP.CFG_PATH, "rw+") as cfg:
             for line in cfg.readlines():
                 if line.startswith("server"):
                     continue

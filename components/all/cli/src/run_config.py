@@ -15,6 +15,7 @@ import socket
 import traceback
 import utif
 
+from sl_util import const
 
 def init_running_config(bs):
     global bigsh
@@ -111,8 +112,8 @@ def implement_show_running_config(words):
             prefix.append("!\n")
             prefix.append("! hostname: %s\n" % socket.gethostname())
             try:
-                prefix.append("! version: %s\n" % file(
-                        "/etc/sl_version").read().strip())
+                prefix.append("! version: %s\n" % \
+                              file(const.VERSION_PATH).read().strip())
             except IOError:
                 pass
             prefix.append("! current time: %s\n" % time.strftime(

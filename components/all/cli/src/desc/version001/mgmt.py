@@ -338,15 +338,13 @@ class KnownServerError(Exception):
         self.server = server
 
 class _DNSConfig(object):
-    PATH = "/etc/resolv.conf"
-
     def __init__(self):
         self._domain_cache = ''
         self._server_cache = []
         self._cache_tinfo = (0, 0)
 
         firstboot = False
-        with open(_DNSConfig.PATH, "r") as cfg:
+        with open(const.DNS_CFG_PATH, "r") as cfg:
             try:
                 line = cfg.readlines()[0]
                 if not line.startswith("### Switch Light"):
@@ -361,7 +359,7 @@ class _DNSConfig(object):
 
     @property
     def servers(self):
-        stat = os.stat(_DNSConfig.PATH)
+        stat = os.stat(const.DNS_CFG_PATH)
         if ((stat.st_ctime != self._cache_tinfo[0]) or
             (stat.st_mtime != self._cache_tinfo[1])):
             self._rebuild_cache()
@@ -369,7 +367,7 @@ class _DNSConfig(object):
         
     @property
     def domain(self):
-        stat = os.stat(_DNSConfig.PATH)
+        stat = os.stat(const.DNS_CFG_PATH)
         if ((stat.st_ctime != self._cache_tinfo[0]) or
             (stat.st_mtime != self._cache_tinfo[1])):
             self._rebuild_cache()
@@ -382,11 +380,11 @@ class _DNSConfig(object):
         
     def _rebuild_cache(self):
         ### FIXME: Log this
-        stat = os.stat(_DNSConfig.PATH)
+        stat = os.stat(const.DNS_CFG_PATH)
         self._cache_tinfo = (stat.st_ctime, stat.st_mtime)
         self._domain_cache = ''
         self._server_cache = []
-        with open(_DNSConfig.PATH, "r") as cfg:
+        with open(const.DNS_CFG_PATH, "r") as cfg:
             for line in cfg.readlines():
                 if line.startswith("nameserver"):
                     d = line.split()
@@ -404,7 +402,7 @@ class _DNSConfig(object):
                         continue
 
     def _firstboot(self):
-        with open(_DNSConfig.PATH, "r+") as cfg:
+        with open(const.DNS_CFG_PATH, "r+") as cfg:
             newcfg = ["### Switch Light\n"]
             for line in cfg.readlines():
                 if line.startswith("#") or not line.strip():
@@ -415,7 +413,7 @@ class _DNSConfig(object):
             cfg.write("".join(newcfg))
 
     def _write_cache(self):
-        with open(_DNSConfig.PATH, "w+") as cfg:
+        with open(const.DNS_CFG_PATH, "w+") as cfg:
             cl = ["### Switch Light\n"]
             # MUST GRAB THE INTERNAL CACHE!
             # We've whacked it by this point, so ctime/mtime will have changed
@@ -561,6 +559,21 @@ IP_DEFAULT_GATEWAY_COMMAND_DESCRIPTION = {
         },
     ),
 }
+
+
+def revert_default_mgmt():
+    print "Reverting default settings for management interfaces..."
+
+    for ifname in const.MGMT_PORTS:
+        intf = NetworkConfig.get_interface(ifname)
+
+        if intf.dhcp_enabled:
+            intf.dhcp_enabled = False
+        else:
+            clear_mgmt_intf_config(ifname)
+
+command.add_action('revert-default-mgmt', revert_default_mgmt)
+
 
 def running_config_interface(context, runcfg, words):
     comp_runcfg = []

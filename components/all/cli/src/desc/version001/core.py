@@ -11,7 +11,7 @@ import socket
 import cfgfile
 from datetime import timedelta,datetime
 
-from sl_util import shell
+from sl_util import shell, const
 from sl_util.ofad import OFADConfig, PortManager
 
 from switchlight.platform.current import SwitchLightPlatform
@@ -44,12 +44,10 @@ def parse_sl_version(ver):
     except Exception, e:
         return (ver, "", "")
 
-VERSION_FILE = '/etc/sl_version'
-
 def show_version(data):
     out = []
 
-    with open(VERSION_FILE, "r") as f:
+    with open(const.VERSION_PATH, "r") as f:
         sl_version = f.readline().strip()
 
     if not 'full' in data:
@@ -374,14 +372,15 @@ SHOW_TECH_SUPPORT_COMMAND_DESCRIPTION = {
 tech_support_tmpfile = 'tech-support.tmp'
 tech_support_scripts = [
     'date',
-    'cat /etc/sl_version',
+    'cat ' + const.VERSION_PATH,
     'cat /mnt/flash/boot-config',
     'cat /mnt/flash/startup-config',
     'cat /var/log/dmesg',
     'cat /etc/network/interfaces',
     'ifconfig ma1',
-    'cat /etc/resolv.conf',
-    'cat /etc/ntp.conf',
+    'cat ' + const.DNS_CFG_PATH,
+    'cat ' + const.NTP_CFG_PATH,
+    'cat ' + const.RLOG_CFG_PATH,
     'uptime',
     'cat /proc/meminfo',
     'lsmod',
@@ -390,8 +389,8 @@ tech_support_scripts = [
     'sensors',
     'ntpdc -p',
     'cat /etc/rsyslog.conf',
-    'cat /etc/ofad.conf',
-    'cat /etc/snmp/snmpd.conf',
+    'cat ' + const.OFAD_CFG_PATH,
+    'cat ' + const.SNMP_CFG_PATH,
     'cat /var/log/syslog',
     # Older, compressed logs, too?
     'ofad-ctl controller show CONNECT',
@@ -739,7 +738,7 @@ DEFAULT_TIMEZONE =  'Etc/UTC'
 def set_timezone(no_command, data, is_init):
     if no_command:
         if 'timezone' in data:
-            with open('/etc/timezone', 'r') as fd:
+            with open(const.TZ_CFG_PATH, 'r') as fd:
                 timezone = fd.readline().strip()
             if data['timezone'] != timezone:
                 raise error.ActionError('Timezone does not match existing zone')
@@ -749,7 +748,7 @@ def set_timezone(no_command, data, is_init):
         if timezone not in pytz.all_timezones:
             raise error.ActionError('Invalid timezone')
     try:
-        with open('/etc/timezone', 'w') as fd:
+        with open(const.TZ_CFG_PATH, 'w') as fd:
             fd.write(timezone)
         shell.call('dpkg-reconfigure -f noninteractive tzdata')
         command.action_invoke('implement-rsyslog-restart',
@@ -781,6 +780,36 @@ TIMEZONE_COMMAND_DESCRIPTION = {
         },
     ),
 }
+
+def save_default_timezone():
+    ws = os.path.join(const.DEFAULT_DIR, 'tz')
+    if os.path.exists(ws):
+        print 'Default timezone already exists.'
+        return
+
+    print "Saving default timezone..."
+
+    shell.call('mkdir -p %s' % ws)
+    dst = os.path.join(ws, os.path.basename(const.TZ_CFG_PATH))
+    shell.call('cp %s %s' % (const.TZ_CFG_PATH, dst))
+
+command.add_action('save-default-timezone', save_default_timezone)
+
+def revert_default_timezone():
+    ws = os.path.join(const.DEFAULT_DIR, 'tz')
+    if not os.path.exists(ws):
+        print 'Default timezone does not exist.'
+        return
+
+    print "Reverting default timezone..."
+
+    src = os.path.join(ws, os.path.basename(const.TZ_CFG_PATH))
+    shell.call('cp %s %s' % (src, const.TZ_CFG_PATH))
+    shell.call('dpkg-reconfigure -f noninteractive tzdata')
+    command.action_invoke('implement-rsyslog-restart',
+                          ({'is_init': False},))
+
+command.add_action('revert-default-timezone', revert_default_timezone)
 
 def locate ():
     shell.call("ofad-ctl beacon")
@@ -833,7 +862,7 @@ def running_config_timezone(context, runcfg, words):
 
     # collect component-specific config
     try:
-        with open('/etc/timezone', 'r') as fd:
+        with open(const.TZ_CFG_PATH, 'r') as fd:
             timezone = fd.readline().strip()
         comp_runcfg.append('timezone %s\n' % timezone)
     except:

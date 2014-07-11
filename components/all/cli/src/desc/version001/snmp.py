@@ -3,8 +3,7 @@
 import command
 import run_config
 import subprocess
-from sl_util import Service
-from sl_util import utils
+from sl_util import Service, utils, const
 import utif
 import cfgfile
 import error
@@ -12,8 +11,6 @@ from switchlight.platform.base import *
 from switchlight.platform.current import SwitchLightPlatform
 
 Platform=SwitchLightPlatform()
-
-SNMP_CONFIG_FILE = '/etc/snmp/snmpd.conf'
 
 LINK_UP_DOWN_CLI              = 'linkUpDown'
 #Used to be: LINK_UP_DOWN_NOTIFICATION_CMD = 'linkUpDownNotifications'
@@ -33,6 +30,7 @@ LINK_DOWN_MONITOR = 'monitor -r %%d -e linkDownTrap "Generate linkDown" %s == 2\
 
 class Snmp(Service):
     SVC_NAME = "snmpd"
+    CFG_PATH = const.SNMP_CFG_PATH
 
 def get_snmp_status():
     st = Snmp.status()
@@ -68,7 +66,7 @@ def parse_snmpd_conf(lines):
 
 def show_snmp_server(data):
     try:
-        with cfgfile.FileLock(SNMP_CONFIG_FILE) as f:
+        with cfgfile.FileLock(Snmp.CFG_PATH) as f:
             lines = cfgfile.get_line_list_from_file(f)
     except:
         raise error.ActionError('Cannot access SNMP configuration')
@@ -139,7 +137,7 @@ command.add_action('implement-enable-snmp', enable_snmp,
 # Add or remove the given line from the config file
 def config_line(no_cmd, li):
     try:
-        with cfgfile.FileLock(SNMP_CONFIG_FILE) as f:
+        with cfgfile.FileLock(Snmp.CFG_PATH) as f:
             lines = cfgfile.get_line_list_from_file(f)
 
             if no_cmd:
@@ -246,7 +244,7 @@ def config_snmp(no_command, data, is_init):
 
     else:
         try:
-            with cfgfile.FileLock(SNMP_CONFIG_FILE) as f:
+            with cfgfile.FileLock(Snmp.CFG_PATH) as f:
                 lines = cfgfile.get_line_list_from_file(f)
                 cfg = parse_snmpd_conf(lines)
 
@@ -430,7 +428,7 @@ def running_config_snmp(context, runcfg, words):
     comp_runcfg = []
 
     try:
-        with cfgfile.FileLock(SNMP_CONFIG_FILE) as f:
+        with cfgfile.FileLock(Snmp.CFG_PATH) as f:
             lines = cfgfile.get_line_list_from_file(f)
     except:
         raise error.ActionError('Cannot access SNMP configuration')

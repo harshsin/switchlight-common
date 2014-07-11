@@ -4,6 +4,9 @@
 
 import command
 
+from sl_util import Service
+from sl_util.ofad import OFADConfig
+
 INTERNAL_SUBMODE_COMMAND_DESCRIPTION = {
     'name'                : '_internal',
     'mode'                : 'config',
@@ -82,6 +85,60 @@ INTERNAL_QUALIFY_COMMAND_DESCRIPTION = {
             'type'     : 'string',
         },
     )
+}
+
+
+def save_default_action(data):
+    # save settings for all subclasses of Service
+    for klass in Service.__subclasses__():
+        klass.save_default_settings()
+
+    # save settings for OFAD
+    OFADConfig.save_default_settings()
+
+    # save timezone
+    command.action_invoke('save-default-timezone', ())
+
+command.add_action('save-default-action', save_default_action,
+                   {'kwargs' : { 'data' : '$data' } } )
+
+
+INTERNAL_SAVE_DEFAULT_COMMAND_DESCRIPTION = {
+    'name'         : 'save-default',
+    'mode'         : 'config-internal',
+    'no-supported' : False,
+    'action'       : 'save-default-action',
+    'args'         : (),
+}
+
+
+def revert_default_action(data):
+    # revert settings for management interfaces
+    command.action_invoke("revert-default-mgmt", ())
+
+    # revert settings for interfaces
+    command.action_invoke("revert-default-interface", ())
+
+    # revert settings for all subclasses of Service
+    for klass in Service.__subclasses__():
+        klass.revert_default_settings()
+
+    # revert settings for OFAD
+    OFADConfig.revert_default_settings()
+
+    # revert timezone
+    command.action_invoke('revert-default-timezone', ())
+
+command.add_action('revert-default-action', revert_default_action,
+                   {'kwargs' : { 'data' : '$data' } } )
+
+
+INTERNAL_REVERT_DEFAULT_COMMAND_DESCRIPTION = {
+    'name'         : 'revert-default',
+    'mode'         : 'config-internal',
+    'no-supported' : False,
+    'action'       : 'revert-default-action',
+    'args'         : (),
 }
 
 
