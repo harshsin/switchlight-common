@@ -110,8 +110,11 @@ class SwitchLightPlatformBase(object):
         return "1.3.6.1.4.1.37538.2"
 
     def ifnumber(self):
-        # Front-panel port count + 4
-        return self.portcount() + 4
+        #
+        # The default assumption for any platform
+        # is ma1, lo, and all front-panel ports.
+        #
+        return self.portcount() + 2
 
     def portcount(self):
         return self.plat_info_get(platinfo.PORT_COUNT)
