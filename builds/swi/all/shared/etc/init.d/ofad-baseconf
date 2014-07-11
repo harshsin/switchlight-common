@@ -46,7 +46,7 @@ try:
         ma1hash = h.hexdigest()
         macbase = "5c:16:c7:1%s:%s%s:%s%s" % tuple(ma1hash[:5])
         conf["of_mac_addr_base"] = macbase
-        conf["of_datapath_id"] = "0x0000" + macbase.replace(":", "")
+        conf["of_datapath_id"] = "0x0000" + ma1mac.replace(":", "")
 except (OSError, subprocess.CalledProcessError):
     pass
 
