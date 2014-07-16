@@ -7,9 +7,7 @@ import error
 import utif
 
 import subprocess
-from sl_util import shell
-from sl_util import OFConnection
-from sl_util import const
+from sl_util import shell, OFConnection, const, state
 from sl_util.ofad import OFADConfig, PortManager
 
 import loxi.of13 as of13
@@ -491,10 +489,9 @@ CLEAR_INTERFACE_COMMAND_DESCRIPTION = {
 
 
 def revert_default_interface():
-    print "Reverting default settings for interfaces..."
     shell.call('rm -f %s' % const.BRCM_JSON)
 
-command.add_action('revert-default-interface', revert_default_interface)
+state.register_revert("intf", revert_default_interface)
 
 
 def running_config_interface(context, runcfg, words):

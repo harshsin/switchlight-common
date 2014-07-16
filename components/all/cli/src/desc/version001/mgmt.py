@@ -6,8 +6,7 @@ import os
 import os.path
 import glob
 
-from sl_util import shell
-from sl_util import const
+from sl_util import shell, const, state
 
 import command
 import run_config
@@ -562,8 +561,6 @@ IP_DEFAULT_GATEWAY_COMMAND_DESCRIPTION = {
 
 
 def revert_default_mgmt():
-    print "Reverting default settings for management interfaces..."
-
     for ifname in const.MGMT_PORTS:
         intf = NetworkConfig.get_interface(ifname)
 
@@ -572,7 +569,7 @@ def revert_default_mgmt():
         else:
             clear_mgmt_intf_config(ifname)
 
-command.add_action('revert-default-mgmt', revert_default_mgmt)
+state.register_revert("mgmt", revert_default_mgmt)
 
 
 def running_config_interface(context, runcfg, words):

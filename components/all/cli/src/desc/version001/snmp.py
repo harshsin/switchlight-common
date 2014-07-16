@@ -3,7 +3,7 @@
 import command
 import run_config
 import subprocess
-from sl_util import Service, utils, const
+from sl_util import Service, utils, const, state
 import utif
 import cfgfile
 import error
@@ -31,6 +31,9 @@ LINK_DOWN_MONITOR = 'monitor -r %%d -e linkDownTrap "Generate linkDown" %s == 2\
 class Snmp(Service):
     SVC_NAME = "snmpd"
     CFG_PATH = const.SNMP_CFG_PATH
+
+state.register_save("snmp", Snmp.save_default_settings)
+state.register_revert("snmp", Snmp.revert_default_settings)
 
 def get_snmp_status():
     st = Snmp.status()

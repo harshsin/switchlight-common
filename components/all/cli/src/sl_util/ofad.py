@@ -631,8 +631,6 @@ class OFADConfig(object):
             print "Default settings for ofad already exist."
             return
 
-        print "Saving default settings for ofad..."
-
         shell.call("mkdir -p %s" % ws)
         dst = os.path.join(ws, os.path.basename(const.OFAD_CFG_PATH))
         shell.call("cp %s %s" % (const.OFAD_CFG_PATH, dst))
@@ -643,8 +641,6 @@ class OFADConfig(object):
         if not os.path.exists(ws):
             print "Default settings for ofad do not exist."
             return
-
-        print "Reverting default settings for ofad..."
 
         src = os.path.join(ws, os.path.basename(const.OFAD_CFG_PATH))
         shell.call("cp %s %s" % (src, const.OFAD_CFG_PATH))

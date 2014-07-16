@@ -6,11 +6,14 @@ import command
 import run_config
 import error
 
-from sl_util import Service, const
+from sl_util import Service, const, state
 
 class RSyslog(Service):
     SVC_NAME = "rsyslog"
     CFG_PATH = const.RLOG_CFG_PATH
+
+state.register_save("rlog", RSyslog.save_default_settings)
+state.register_revert("rlog", RSyslog.revert_default_settings)
 
 class _LoggingConfig(object):
     def __init__ (self):

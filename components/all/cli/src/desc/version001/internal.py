@@ -4,7 +4,7 @@
 
 import command
 
-from sl_util import Service
+from sl_util import Service, state
 from sl_util.ofad import OFADConfig
 
 INTERNAL_SUBMODE_COMMAND_DESCRIPTION = {
@@ -89,15 +89,9 @@ INTERNAL_QUALIFY_COMMAND_DESCRIPTION = {
 
 
 def save_default_action(data):
-    # save settings for all subclasses of Service
-    for klass in Service.__subclasses__():
-        klass.save_default_settings()
-
-    # save settings for OFAD
-    OFADConfig.save_default_settings()
-
-    # save timezone
-    command.action_invoke('save-default-timezone', ())
+    for name, proc in state.get_save_registry():
+        print "Running save handler for %s..." % name
+        proc()
 
 command.add_action('save-default-action', save_default_action,
                    {'kwargs' : { 'data' : '$data' } } )
@@ -113,21 +107,9 @@ INTERNAL_SAVE_DEFAULT_COMMAND_DESCRIPTION = {
 
 
 def revert_default_action(data):
-    # revert settings for management interfaces
-    command.action_invoke("revert-default-mgmt", ())
-
-    # revert settings for interfaces
-    command.action_invoke("revert-default-interface", ())
-
-    # revert settings for all subclasses of Service
-    for klass in Service.__subclasses__():
-        klass.revert_default_settings()
-
-    # revert settings for OFAD
-    OFADConfig.revert_default_settings()
-
-    # revert timezone
-    command.action_invoke('revert-default-timezone', ())
+    for name, proc in state.get_revert_registry():
+        print "Running revert handler for %s..." % name
+        proc()
 
 command.add_action('revert-default-action', revert_default_action,
                    {'kwargs' : { 'data' : '$data' } } )

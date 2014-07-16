@@ -54,8 +54,6 @@ class Service(object):
             print "Default settings for %s already exist." % klass.SVC_NAME
             return
 
-        print "Saving default settings for %s..." % klass.SVC_NAME
-
         conf_dir = os.path.join(ws, "conf")
         state_dir = os.path.join(ws, "state")
         call("mkdir -p %s" % conf_dir)
@@ -80,8 +78,6 @@ class Service(object):
         if not os.path.exists(ws):
             print "Default settings for %s do not exist." % klass.SVC_NAME
             return
-
-        print "Reverting default settings for %s..." % klass.SVC_NAME
 
         conf_dir = os.path.join(ws, "conf")
         state_dir = os.path.join(ws, "state")
