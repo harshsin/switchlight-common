@@ -6,7 +6,7 @@ import os
 import os.path
 import glob
 
-from sl_util import shell, const, state
+from sl_util import shell, const, conf_state
 
 import command
 import run_config
@@ -569,7 +569,7 @@ def revert_default_mgmt():
         else:
             clear_mgmt_intf_config(ifname)
 
-state.register_revert("mgmt", revert_default_mgmt)
+conf_state.register_revert("mgmt", revert_default_mgmt)
 
 
 def running_config_interface(context, runcfg, words):

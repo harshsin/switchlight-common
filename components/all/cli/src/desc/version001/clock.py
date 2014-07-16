@@ -2,7 +2,7 @@
 
 import os
 
-from sl_util import shell, Service, const, state
+from sl_util import shell, Service, const, conf_state
 
 import command
 import run_config
@@ -21,8 +21,8 @@ class NTP(Service):
     SVC_NAME = "ntp"
     CFG_PATH = const.NTP_CFG_PATH
 
-state.register_save("ntp", NTP.save_default_settings)
-state.register_revert("ntp", NTP.revert_default_settings)
+conf_state.register_save("ntp", NTP.save_default_settings)
+conf_state.register_revert("ntp", NTP.revert_default_settings)
 
 class _NTPConfig(object):
     def __init__ (self):

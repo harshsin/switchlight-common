@@ -2,6 +2,7 @@
 
 import os
 import os.path
+import shutil
 from contextlib import contextmanager
 import json
 import copy
@@ -631,9 +632,9 @@ class OFADConfig(object):
             print "Default settings for ofad already exist."
             return
 
-        shell.call("mkdir -p %s" % ws)
+        os.makedirs(ws)
         dst = os.path.join(ws, os.path.basename(const.OFAD_CFG_PATH))
-        shell.call("cp %s %s" % (const.OFAD_CFG_PATH, dst))
+        shutil.copy(const.OFAD_CFG_PATH, dst)
 
     @classmethod
     def revert_default_settings (klass):
@@ -643,7 +644,7 @@ class OFADConfig(object):
             return
 
         src = os.path.join(ws, os.path.basename(const.OFAD_CFG_PATH))
-        shell.call("cp %s %s" % (src, const.OFAD_CFG_PATH))
+        shutil.copy(src, const.OFAD_CFG_PATH)
         klass.reload()
 
     @classmethod

@@ -4,7 +4,7 @@
 
 import command
 
-from sl_util import Service, state
+from sl_util import Service, conf_state
 from sl_util.ofad import OFADConfig
 
 INTERNAL_SUBMODE_COMMAND_DESCRIPTION = {
@@ -89,9 +89,11 @@ INTERNAL_QUALIFY_COMMAND_DESCRIPTION = {
 
 
 def save_default_action(data):
-    for name, proc in state.get_save_registry():
-        print "Running save handler for %s..." % name
+    for name, proc in conf_state.get_save_registry():
+        s = "Saving %s..." % name
+        print s,
         proc()
+        print "done."
 
 command.add_action('save-default-action', save_default_action,
                    {'kwargs' : { 'data' : '$data' } } )
@@ -107,9 +109,11 @@ INTERNAL_SAVE_DEFAULT_COMMAND_DESCRIPTION = {
 
 
 def revert_default_action(data):
-    for name, proc in state.get_revert_registry():
-        print "Running revert handler for %s..." % name
+    for name, proc in conf_state.get_revert_registry():
+        s = "Reverting %s..." % name
+        print s,
         proc()
+        print "done."
 
 command.add_action('revert-default-action', revert_default_action,
                    {'kwargs' : { 'data' : '$data' } } )

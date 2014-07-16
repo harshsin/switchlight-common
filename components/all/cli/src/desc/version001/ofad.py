@@ -4,7 +4,7 @@ import os
 import json
 
 import subprocess
-from sl_util import shell, state
+from sl_util import shell, conf_state
 
 import cfgfile
 from contextlib import contextmanager
@@ -20,8 +20,8 @@ from sl_util.ofad import OFADConfig, Controller
 
 import loxi.of13 as ofp13
 
-state.register_save("ofad", OFADConfig.save_default_settings)
-state.register_revert("ofad", OFADConfig.revert_default_settings)
+conf_state.register_save("ofad", OFADConfig.save_default_settings)
+conf_state.register_revert("ofad", OFADConfig.revert_default_settings)
 
 OFAgentConfig = OFADConfig()
 

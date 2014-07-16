@@ -1,5 +1,11 @@
 # Copyright (c) 2014  Big Switch Networks
 
+# This module is used for registering hooks for saving and reverting submodule
+# states.
+#
+# FIXME: we might need to register the submodule hooks with ordering if saving
+# or reverting of submodule states need to happen in a particular sequence.
+
 save_registry = []
 revert_registry = []
 

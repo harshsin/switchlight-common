@@ -2,14 +2,14 @@
 
 import command
 import run_config
-from sl_util import Service, state
+from sl_util import Service, conf_state
 
 
 class SSH(Service):
     SVC_NAME = "ssh" 
 
-state.register_save("ssh", SSH.save_default_settings)
-state.register_revert("ssh", SSH.revert_default_settings)
+conf_state.register_save("ssh", SSH.save_default_settings)
+conf_state.register_revert("ssh", SSH.revert_default_settings)
 
 class Telnet(Service):
     # This is preposterously heavyhanded, but telnet is the only thing
@@ -18,8 +18,8 @@ class Telnet(Service):
     # useful abstraction class for things that run out of inet.
     SVC_NAME = "openbsd-inetd"
 
-state.register_save("telnet", Telnet.save_default_settings)
-state.register_revert("telnet", Telnet.revert_default_settings)
+conf_state.register_save("telnet", Telnet.save_default_settings)
+conf_state.register_revert("telnet", Telnet.revert_default_settings)
 
 def config_ssh(no_command, data):
     if no_command:

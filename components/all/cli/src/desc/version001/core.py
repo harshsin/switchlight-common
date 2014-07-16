@@ -7,11 +7,12 @@ import run_config
 import error
 import subprocess
 import os
+import shutil
 import socket
 import cfgfile
 from datetime import timedelta,datetime
 
-from sl_util import shell, const, state
+from sl_util import shell, const, conf_state
 from sl_util.ofad import OFADConfig, PortManager
 
 from switchlight.platform.current import SwitchLightPlatform
@@ -787,9 +788,12 @@ def save_default_timezone():
         print 'Default timezone already exists.'
         return
 
-    shell.call('mkdir -p %s' % ws)
+    os.makedirs(ws)
     dst = os.path.join(ws, os.path.basename(const.TZ_CFG_PATH))
-    shell.call('cp %s %s' % (const.TZ_CFG_PATH, dst))
+    with open(const.TZ_CFG_PATH, 'r') as f:
+        print "default tz: %s" % f.read().strip()
+
+    shutil.copy(const.TZ_CFG_PATH, dst)
 
 def revert_default_timezone():
     ws = os.path.join(const.DEFAULT_DIR, 'tz')
@@ -798,13 +802,16 @@ def revert_default_timezone():
         return
 
     src = os.path.join(ws, os.path.basename(const.TZ_CFG_PATH))
-    shell.call('cp %s %s' % (src, const.TZ_CFG_PATH))
+    with open(src, 'r') as f:
+        print "default tz: %s" % f.read().strip()
+
+    shutil.copy(src, const.TZ_CFG_PATH)
     shell.call('dpkg-reconfigure -f noninteractive tzdata')
     command.action_invoke('implement-rsyslog-restart',
                           ({'is_init': False},))
 
-state.register_save("tz", save_default_timezone)
-state.register_revert("tz", revert_default_timezone)
+conf_state.register_save("tz", save_default_timezone)
+conf_state.register_revert("tz", revert_default_timezone)
 
 def locate ():
     shell.call("ofad-ctl beacon")

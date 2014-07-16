@@ -6,6 +6,7 @@ from sl_util.shell import call
 from sl_util import const
 
 import os
+import shutil
 
 deferred_restart = []
 
@@ -56,14 +57,14 @@ class Service(object):
 
         conf_dir = os.path.join(ws, "conf")
         state_dir = os.path.join(ws, "state")
-        call("mkdir -p %s" % conf_dir)
-        call("mkdir -p %s" % state_dir)
+        os.makedirs(conf_dir)
+        os.makedirs(state_dir)
 
         # save config
         if klass.CFG_PATH != UNSET:
             dst = os.path.join(conf_dir, os.path.basename(klass.CFG_PATH))
             if os.path.exists(klass.CFG_PATH):
-                call("cp %s %s" % (klass.CFG_PATH, dst))
+                shutil.copy(klass.CFG_PATH, dst)
         else:
             print "CFG_PATH of %s is not set." % klass.SVC_NAME
 
@@ -86,9 +87,9 @@ class Service(object):
         if klass.CFG_PATH != UNSET:
             src = os.path.join(conf_dir, os.path.basename(klass.CFG_PATH))
             if os.path.exists(src):
-                call("cp %s %s" % (src, klass.CFG_PATH))
-            else:
-                call("rm -f %s" % klass.CFG_PATH)
+                shutil.copy(src, klass.CFG_PATH)
+            elif os.path.exists(klass.CFG_PATH):
+                os.unlink(klass.CFG_PATH)
 
         # revert state
         running = os.path.join(state_dir, "running")

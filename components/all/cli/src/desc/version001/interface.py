@@ -7,7 +7,7 @@ import error
 import utif
 
 import subprocess
-from sl_util import shell, OFConnection, const, state
+from sl_util import shell, OFConnection, const, conf_state
 from sl_util.ofad import OFADConfig, PortManager
 
 import loxi.of13 as of13
@@ -489,9 +489,10 @@ CLEAR_INTERFACE_COMMAND_DESCRIPTION = {
 
 
 def revert_default_interface():
-    shell.call('rm -f %s' % const.BRCM_JSON)
+    if os.path.exists(const.BRCM_JSON):
+        os.unlink(const.BRCM_JSON)
 
-state.register_revert("intf", revert_default_interface)
+conf_state.register_revert("intf", revert_default_interface)
 
 
 def running_config_interface(context, runcfg, words):
