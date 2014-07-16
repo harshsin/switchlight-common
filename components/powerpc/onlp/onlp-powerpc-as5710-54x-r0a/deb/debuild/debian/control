@@ -8,5 +8,5 @@ Standards-Version: 3.8.4
 Package: onlp-powerpc-as5710-54x-r0a
 Architecture: powerpc
 Depends: 
-Description: AS5710-54X R0A
- AS5710-54X R0A
+Description: AS5710-54X R0B
+ AS5710-54X R0B

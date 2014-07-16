@@ -30,5 +30,6 @@ SWI_PACKAGES_POWERPC := \
 	rssh \
 	u-boot-tools \
 	ntpdate \
-	onlp
+	onlp \
+	netplug
 
