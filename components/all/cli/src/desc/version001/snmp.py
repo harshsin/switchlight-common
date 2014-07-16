@@ -25,8 +25,13 @@ LINK_UP_NOTIFICATION   = 'notificationEvent linkUpTrap %s %s %s %s\n' % \
 LINK_DOWN_NOTIFICATION = 'notificationEvent linkDownTrap %s %s %s %s\n' % \
     (trapLinkDown, ifIndex, ifAdminStatus, ifOperStatus)
 LINK_UP_MONITOR   = 'monitor -r %%d -e linkUpTrap "Generate linkUp" %s != 2\n' % ifOperStatus
-LINK_UP_MONITOR_TOKEN_NUM = LINK_UP_MONITOR.split(' ').__len__()
+LINK_UP_MONITOR_TOKEN_NUM = len(LINK_UP_MONITOR.split(' '))
 LINK_DOWN_MONITOR = 'monitor -r %%d -e linkDownTrap "Generate linkDown" %s == 2\n' % ifOperStatus
+
+AUTH_FAIL_CLI = 'authenticationFailure'
+AUTH_FAIL_NOTIFICATION = 'authtrapenable 1\n'
+AUTH_FAIL_NOTIFICATION_TOKEN_NUM = len(AUTH_FAIL_NOTIFICATION.split(' '))
+
 
 class Snmp(Service):
     SVC_NAME = "snmpd"
@@ -61,7 +66,7 @@ def parse_snmpd_conf(lines):
     for (idx, line) in enumerate(lines):
         tokens = line.split(None, 1)
         if len(tokens) == 2 and tokens[0] in snmpkeywords:
-            # FIXME handle rocommunity/rwcommunity additional params?
+            # WARNING no handling of other rocommunity/rwcommunity params
             val = tokens[1].strip()
             dt[datakeywords[snmpkeywords.index(tokens[0])]] = (val, idx)
     return dt
@@ -160,25 +165,19 @@ def config_line(no_cmd, li):
 
 
 # Add or remove a trap/inform destination
-def trap_dest(no_cmd, ip_addr, type, community, port):
+def trap_dest(no_cmd, ip_addr, traptype, community, port):
     # Compose config file line for trap/inform dest,
     # and add it or remove it from the config file
     config_line(no_cmd,
-                "%s %s:%s %s\n" % ('trap2sink' if type == 'traps' else 'informsink',
-                                   ip_addr,
-                                   str(port),
-                                   community
-                                   )
-                )
-
+                "%s %s:%s %s\n" % ('trap2sink' if traptype == 'traps' \
+                                       else 'informsink',
+                                   ip_addr, str(port), community))
 
 # Add or remove a community
 def community(no_cmd, community, access):
     # Compose config file line for community,
     # and add it or remove it from the config file
-    config_line(no_cmd,
-                "%scommunity %s\n" % (access, community)
-                )
+    config_line(no_cmd, "%scommunity %s\n" % (access, community))
 
 
 Mon_Ops = {
@@ -231,11 +230,13 @@ def config_snmp(no_command, data, is_init):
                   )
 
     elif 'trap' in data:
-        if data['trap'] is LINK_UP_DOWN_CLI:
+        if data['trap'] == LINK_UP_DOWN_CLI:
             config_line(no_command, LINK_UP_NOTIFICATION)
             config_line(no_command, LINK_DOWN_NOTIFICATION)
             config_line(no_command, LINK_UP_MONITOR % data['interval'])
             config_line(no_command, LINK_DOWN_MONITOR % data['interval'])
+        elif data['trap'] == AUTH_FAIL_CLI:
+            config_line(no_command, AUTH_FAIL_NOTIFICATION)
         else:
             trap_set(no_command,
                      data['trap'],
@@ -388,16 +389,19 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         'tag'             : 'trap',
                         'short-help'      : 'Trap type',
                         'type'            : 'enum',
-                        'values'          : (oids.TEMP_SENSORS, oids.CHASSIS_FAN_SENSORS,
-                                             oids.POWER_FAN_SENSORS, oids.POWER_SENSORS,
-                                             oids.CPU_LOAD, oids.MEM_TOTAL_FREE,
+                        'values'          : (oids.TEMP_SENSORS,
+                                             oids.CHASSIS_FAN_SENSORS,
+                                             oids.POWER_FAN_SENSORS,
+                                             oids.POWER_SENSORS,
+                                             oids.CPU_LOAD,
+                                             oids.MEM_TOTAL_FREE,
                                              oids.FLOW_TABLE_L2_UTILIZATION,
                                              oids.FLOW_TABLE_TCAM_FM_UTILIZATION),
                         'doc'             : 'snmp|+',
                     },
                     {
                         'field'           : 'threshold',
-                        'tag'             : 'threshold', #tag makes it 'as if' token
+                        'tag'             : 'threshold',
                         'short-help'      : 'Threshold value',
                         'base-type'       : 'integer',
                         'doc'             : 'snmp|snmp-threshold',
@@ -411,14 +415,26 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                     {
                         'token'           : LINK_UP_DOWN_CLI,
                         'short-help'      : 'Link up/down notification',
-                        'data'            : { 'trap' : LINK_UP_DOWN_CLI }, #set data['trap']
+                        'data'            : { 'trap' : LINK_UP_DOWN_CLI },
                         'doc'             : 'snmp|snmp-linkUpDown',
                     },
                     {
                         'field'           : 'interval',
-                        'tag'             : 'interval', #tag makes it 'as if' token
+                        'tag'             : 'interval',
                         'short-help'      : 'Polling interval in seconds',
                         'base-type'       : 'integer',
+                    },
+                ),
+                (
+                    {
+                        'token'           : 'trap',
+                        'short-help'      : 'Enable trap',
+                    },
+                    {
+                        'token'           : AUTH_FAIL_CLI,
+                        'short-help'      : 'Authentication failure notification',
+                        'data'            : { 'trap' : AUTH_FAIL_CLI },
+                        'doc'             : 'snmp|snmp-authFail',
                     },
                 ),
             ), # snmp choices: enable, host, location, trap
@@ -466,7 +482,12 @@ def running_config_snmp(context, runcfg, words):
                                (ww[0], w[2], ww[1])
                                )
             continue
-        if w[0] == 'monitor' and w.__len__() == LINK_UP_MONITOR_TOKEN_NUM and w[4] == 'linkUpTrap':
+        if w[0] == 'authtrapenable' and \
+                len(w) == AUTH_FAIL_NOTIFICATION_TOKEN_NUM and w[1] == '1':
+            comp_runcfg.append('snmp-server trap %s\n' % (AUTH_FAIL_CLI))
+            continue
+        if w[0] == 'monitor' and len(w) == LINK_UP_MONITOR_TOKEN_NUM \
+                and w[4] == 'linkUpTrap':
             comp_runcfg.append('snmp-server trap %s interval %s\n' %
                                (LINK_UP_DOWN_CLI, w[2])
                                )
