@@ -3,12 +3,45 @@
 ifndef SWITCHLIGHT
 $(error $$SWITCHLIGHT is not set)
 endif
-
 include $(SWITCHLIGHT)/make/config.mk
 
-all:
-	@echo Nothing to be done.
+TOOLCHAIN := powerpc-linux-gnu
 
-.PHONY: deb
+MODULE := libonlp-powerpc-as5710-54x-r0a
+include $(BUILDER)/standardinit.mk
+
+DEPENDMODULES := AIM powerpc_as5710_54x_r0a onlplib sff IOF
+
+include $(BUILDER)/dependmodules.mk
+
+SHAREDLIB := libonlp-powerpc-as5710-54x-r0a.so
+$(SHAREDLIB)_TARGETS := $(ALL_TARGETS)
+include $(BUILDER)/so.mk
+.DEFAULT_GOAL := $(SHAREDLIB)
+
+GLOBAL_CFLAGS += -I$(onlp_BASEDIR)/module/inc
+GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MODULES_INIT=1
+GLOBAL_CFLAGS += -fPIC
+GLOBAL_LINK_LIBS += -lpthread
+
+include $(BUILDER)/targets.mk
+
+
+############################################################
+#
+# Build both the shared library and the onlpdump binary
+#
+############################################################
+
+.DEFAULT_GOAL=__start__
+
+__start__: $(SHAREDLIB) onlpdump
+ONLPDUMP_DIR := $(SWITCHLIGHT_SUBMODULE_ONLP_ACCTON)/targets/powerpc_as5710_54x_r0a/onlpdump
+
+onlpdump:
+	$(MAKE) -C $(ONLPDUMP_DIR) SUBMODULE_ONLP=$(SWITCHLIGHT_SUBMODULE_ONLP) SUBMODULE_INFRA=$(SWITCHLIGHT_SUBMODULE_INFRA) SUBMODULE_BIGCODE=$(SWITCHLIGHT_SUBMODULE_BIGCODE)
+	cp $(ONLPDUMP_DIR)/build/$(TOOLCHAIN)/bin/onlpdump .
+
+.PHONY: deb onlpdump
 deb:
 	$(MAKE) -C deb
