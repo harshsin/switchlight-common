@@ -4,6 +4,9 @@
 
 import command
 
+from sl_util import Service, conf_state
+from sl_util.ofad import OFADConfig
+
 INTERNAL_SUBMODE_COMMAND_DESCRIPTION = {
     'name'                : '_internal',
     'mode'                : 'config',
@@ -82,6 +85,46 @@ INTERNAL_QUALIFY_COMMAND_DESCRIPTION = {
             'type'     : 'string',
         },
     )
+}
+
+
+def save_default_action(data):
+    for name, proc in conf_state.get_save_registry():
+        s = "Saving %s..." % name
+        print s,
+        proc()
+        print "done."
+
+command.add_action('save-default-action', save_default_action,
+                   {'kwargs' : { 'data' : '$data' } } )
+
+
+INTERNAL_SAVE_DEFAULT_COMMAND_DESCRIPTION = {
+    'name'         : 'save-default',
+    'mode'         : 'config-internal',
+    'no-supported' : False,
+    'action'       : 'save-default-action',
+    'args'         : (),
+}
+
+
+def revert_default_action(data):
+    for name, proc in conf_state.get_revert_registry():
+        s = "Reverting %s..." % name
+        print s,
+        proc()
+        print "done."
+
+command.add_action('revert-default-action', revert_default_action,
+                   {'kwargs' : { 'data' : '$data' } } )
+
+
+INTERNAL_REVERT_DEFAULT_COMMAND_DESCRIPTION = {
+    'name'         : 'revert-default',
+    'mode'         : 'config-internal',
+    'no-supported' : False,
+    'action'       : 'revert-default-action',
+    'args'         : (),
 }
 
 

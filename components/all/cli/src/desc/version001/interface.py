@@ -7,9 +7,7 @@ import error
 import utif
 
 import subprocess
-from sl_util import shell
-from sl_util import OFConnection
-from sl_util import const
+from sl_util import shell, OFConnection, const, conf_state
 from sl_util.ofad import OFADConfig, PortManager
 
 import loxi.of13 as of13
@@ -22,8 +20,6 @@ import os
 OFAgentConfig = OFADConfig()
 PortManager.setPhysicalBase(OFAgentConfig.physical_base_name)
 PortManager.setLAGBase(OFAgentConfig.lag_base_name)
-
-BRCM_JSON="/mnt/flash/brcm.json"
 
 # generate a regexp that only requires the first character of the name,
 # with all other characters are optional;
@@ -224,7 +220,7 @@ def parse_port_list(orig_port_list):
 def show_intf(data):
     if '1g-sfp' in data:
         try:
-            c = json.load(open(BRCM_JSON))
+            c = json.load(open(const.BRCM_JSON))
             if 'port' in c:
                 for (p,v) in c['port'].iteritems():
                     if '1gsfp' in v and v['1gsfp']:
@@ -322,9 +318,9 @@ def shutdown_intf(no_command, port_list, is_init):
 
 def sfp_1g_intf(no_command, port_list, is_init):
     data = {}
-    if os.path.exists(BRCM_JSON):
+    if os.path.exists(const.BRCM_JSON):
         try:
-            data = json.load(open(BRCM_JSON))
+            data = json.load(open(const.BRCM_JSON))
         except ValueError:
             pass
     if data is None:
@@ -348,7 +344,7 @@ def sfp_1g_intf(no_command, port_list, is_init):
                 data['port'][port]['1gsfp'] = True
                 shell.call('ofad-ctl autoneg %s 1' % port)
 
-    open(BRCM_JSON,'w').write(json.dumps(data))
+    open(const.BRCM_JSON,'w').write(json.dumps(data))
 
 
 
@@ -490,6 +486,13 @@ CLEAR_INTERFACE_COMMAND_DESCRIPTION = {
         },
     )
 }
+
+
+def revert_default_interface():
+    if os.path.exists(const.BRCM_JSON):
+        os.unlink(const.BRCM_JSON)
+
+conf_state.register_revert("intf", revert_default_interface)
 
 
 def running_config_interface(context, runcfg, words):

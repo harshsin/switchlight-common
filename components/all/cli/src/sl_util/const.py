@@ -15,3 +15,15 @@ MGMT_PORT_BASE  = "ma"
 MGMT_PORTS      = ["ma1"]
 
 PLATFORM_PATH   = "/etc/sl_platform"
+VERSION_PATH    = "/etc/sl_version"
+
+TZ_CFG_PATH     = "/etc/timezone"
+DNS_CFG_PATH    = "/etc/resolv.conf"
+NTP_CFG_PATH    = "/etc/ntp.conf"
+RLOG_CFG_PATH   = "/etc/rsyslog.d/10-switchlight-remote.conf"
+SNMP_CFG_PATH   = "/etc/snmp/snmpd.conf"
+OFAD_CFG_PATH   = "/etc/ofad.conf"
+
+BRCM_JSON       = "/mnt/flash/brcm.json"
+
+DEFAULT_DIR     = "/var/run/default"
