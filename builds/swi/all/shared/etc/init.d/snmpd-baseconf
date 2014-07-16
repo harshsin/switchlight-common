@@ -1,36 +1,49 @@
-#!/bin/sh
+#!/usr/bin/python
 
 ### BEGIN INIT INFO
 # Provides:        snmpd-baseconf
 # Required-Start:  initdev
-# Required-Stop:   
+# Required-Stop:
 # Default-Start:   S
-# Default-Stop:    
+# Default-Stop:
 # Short-Description: Set up snmpd.conf
 ### END INIT INFO
 
-. /lib/lsb/init-functions
+import sys
 
-log_action_begin_msg "Setting up base snmpd configuration"
+from switchlight.platform.base import *
+from switchlight.platform.current import SwitchLightPlatform
 
-unset descr
-descr=$(cat /etc/sl_version 2>/dev/null)
+platform=SwitchLightPlatform()
 
-cat >/etc/snmp/snmpd.conf <<EOF
-# System information
-sysDescr ${descr}
-sysLocation Not set
-sysContact Not set
+sys.stderr.write("Setting up base snmpd configuration...")
+sys.stderr.flush()
 
-# Access control
-rocommunity public
+sysDescr = open("/etc/sl_version").read()
 
-agentSecName disman
-createUser disman MD5 "internal user for monitoring"
-rouser disman auth
+def write_snmpd_conf(f):
+    f.write("""############################################################\n""")
+    f.write("""#\n""")
+    f.write("""# SNMP Configuration\n""")
+    f.write("""#\n""");
+    f.write("""############################################################\n""");
+    f.write("""\n""");
+    f.write("""sysDescr %s""" % sysDescr)
+    f.write("""sysLocation Not set\n""")
+    f.write("""sysContact Not set\n""")
+    f.write("""sysObjectId %s\n""" % platform.sys_object_id())
+    f.write("""\n""");
+    f.write("""agentSecName disman\n""")
+    f.write("""createUser disman MD5 "internal user for monitoring"\n""")
+    f.write("""rouser disman auth\n""")
+    f.write("""\n""");
+    f.write("""# Number of ifIndexes on this platform\n""")
+    f.write("""override .1.3.6.1.2.1.2.1.0 integer %s""" % platform.ifnumber())
+    f.write("""\n""");
+    f.write("""# Enable sub-agents\n""");
+    f.write("""master agentx\n""");
+    f.flush()
 
-override .1.3.6.1.2.1.2.1.0 integer 56
-
-# Enable sub-agents
-master agentx
-EOF
+f = sys.stderr if 'test' in sys.argv else open("/etc/snmp/snmpd.conf", "w")
+write_snmpd_conf(f)
+sys.stderr.write("done.\n")

@@ -39,6 +39,11 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformAccton):
     def get_environment(self):
         return subprocess.check_output(['/usr/bin/ofad-ctl', 'environment'])
 
+    def ifnumber(self):
+        # The current setup has ma1, eth0, and lo.
+        # The eth0 should be removed.
+        return self.portcount() + 3
+
 if __name__ == "__main__":
     from switchlight.platform.main import main
     main(SwitchLightPlatformImplementation())

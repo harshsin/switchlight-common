@@ -3,8 +3,7 @@
 import command
 import run_config
 import subprocess
-from sl_util import Service
-from sl_util import utils
+from sl_util import Service, utils, const, conf_state
 import utif
 import cfgfile
 import error
@@ -12,19 +11,6 @@ from switchlight.platform.base import *
 from switchlight.platform.current import SwitchLightPlatform
 
 Platform=SwitchLightPlatform()
-
-# FIXME STUB
-SNMP_CONFIG_FILE = '/etc/snmp/snmpd.conf'
-#SNMP_CONFIG_FILE = './unittest/snmpd.conf'
-
-# FIXME STUB
-#SNMP_SYS_DESC = "Indigo v0.01"
-# FIXME verify the following values are necessary for snmpd.conf
-# agentAddress udp::161,udp6:[::1]:161
-#BSN_ENTERPRISE_OID = '.1.3.6.1.4.1.37538'
-#BSN_ENTERPRISE_OID_SWITCH = BSN_ENTERPRISE_OID + '.2'
-# sysObjectID BSN_ENTERPRISE_OID_SWITCH
-# sysDescr SNMP_SYS_DESC
 
 LINK_UP_DOWN_CLI              = 'linkUpDown'
 #Used to be: LINK_UP_DOWN_NOTIFICATION_CMD = 'linkUpDownNotifications'
@@ -44,6 +30,10 @@ LINK_DOWN_MONITOR = 'monitor -r %%d -e linkDownTrap "Generate linkDown" %s == 2\
 
 class Snmp(Service):
     SVC_NAME = "snmpd"
+    CFG_PATH = const.SNMP_CFG_PATH
+
+conf_state.register_save("snmp", Snmp.save_default_settings)
+conf_state.register_revert("snmp", Snmp.revert_default_settings)
 
 def get_snmp_status():
     st = Snmp.status()
@@ -79,7 +69,7 @@ def parse_snmpd_conf(lines):
 
 def show_snmp_server(data):
     try:
-        with cfgfile.FileLock(SNMP_CONFIG_FILE) as f:
+        with cfgfile.FileLock(Snmp.CFG_PATH) as f:
             lines = cfgfile.get_line_list_from_file(f)
     except:
         raise error.ActionError('Cannot access SNMP configuration')
@@ -150,7 +140,7 @@ command.add_action('implement-enable-snmp', enable_snmp,
 # Add or remove the given line from the config file
 def config_line(no_cmd, li):
     try:
-        with cfgfile.FileLock(SNMP_CONFIG_FILE) as f:
+        with cfgfile.FileLock(Snmp.CFG_PATH) as f:
             lines = cfgfile.get_line_list_from_file(f)
 
             if no_cmd:
@@ -257,7 +247,7 @@ def config_snmp(no_command, data, is_init):
 
     else:
         try:
-            with cfgfile.FileLock(SNMP_CONFIG_FILE) as f:
+            with cfgfile.FileLock(Snmp.CFG_PATH) as f:
                 lines = cfgfile.get_line_list_from_file(f)
                 cfg = parse_snmpd_conf(lines)
 
@@ -327,7 +317,6 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                     {
                         'field'           : 'community',
                         'type'            : 'string',
-                        'optional-for-no' : True,
                         'syntax-help'     : 'Value for the SNMP community string',
                     },
                 ),
@@ -442,7 +431,7 @@ def running_config_snmp(context, runcfg, words):
     comp_runcfg = []
 
     try:
-        with cfgfile.FileLock(SNMP_CONFIG_FILE) as f:
+        with cfgfile.FileLock(Snmp.CFG_PATH) as f:
             lines = cfgfile.get_line_list_from_file(f)
     except:
         raise error.ActionError('Cannot access SNMP configuration')

@@ -292,7 +292,7 @@ class v1_sys_beacon(SLAPIObject):
     route = "/api/v1/sys/beacon"
     def POST(self, sync=False):
         # FIXME use platform independent version
-        cmd = "ofad-ctl modules brcm led-flash 3 100 100 10"
+        cmd = "/usr/bin/ofad-ctl beacon"
         (rc, out) = util.bash_command(cmd)
         if rc:
             return SLREST.error(self.route, reason=out)
@@ -314,3 +314,4 @@ class v1_sys_beacon(SLAPIObject):
             p.set_defaults(func=v1_sys_beacon.cmdBeacon)
         else:
             v1_sys_beacon.cliBeacon(sub_parser.hostname, sub_parser.port)
+
