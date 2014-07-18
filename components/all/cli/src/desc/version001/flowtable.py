@@ -177,8 +177,8 @@ def get_format_string(disp_config):
     this based on configuration
     """
     if disp_config == 'detail':
-        # FIXME: only UDF3,4,6,7 are used
-        return "{0.prio:<5} {0.table_id:<1} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.eth_type:<6} {0.vid:<5} {0.vpcp:<3} {0.dip:<40} {0.sip:<40} {0.ipproto:<4} {0.ipdscp:<4} {0.l4_dst:<6} {0.l4_src:<6} {0.tcp_flags:<6} {0.udf3:<10} {0.udf4:<10} {0.udf6:<10} {0.udf7:<10} {0.output:<16} {0.modifications:<3} {0.packets:<10} {0.hard_to:<6} {0.idle_to:<6} {0.duration:<10} "
+        # FIXME: only UDFs 0-3 are used
+        return "{0.prio:<5} {0.table_id:<1} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.eth_type:<6} {0.vid:<5} {0.vpcp:<3} {0.dip:<40} {0.sip:<40} {0.ipproto:<4} {0.ipdscp:<4} {0.l4_dst:<6} {0.l4_src:<6} {0.tcp_flags:<6} {0.udf0:<10} {0.udf1:<10} {0.udf2:<10} {0.udf3:<10} {0.output:<16} {0.modifications:<3} {0.packets:<10} {0.hard_to:<6} {0.idle_to:<6} {0.duration:<10} "
     else:
         return "{0.prio:<5} {0.inport:<3} {0.dmac:<17} {0.smac:<17} {0.dip:<40} {0.sip:<40} {0.output:<16} {0.packets:<10} {0.duration:<10}"
 
