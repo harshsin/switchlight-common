@@ -142,7 +142,7 @@ class v1_sys_pcli(SLAPIObject):
 class v1_sys_uninstall(SLAPIObject):
     """Uninstall SwitchLight."""
     route = "/api/v1/sys/uninstall"
-    def POST(self, factory, reboot, sync=False):
+    def POST(self, factory, reboot, sync=True):
 
         if not sync:
             return SLREST.response(path=self.route,
