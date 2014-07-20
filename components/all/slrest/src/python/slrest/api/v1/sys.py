@@ -142,7 +142,12 @@ class v1_sys_pcli(SLAPIObject):
 class v1_sys_uninstall(SLAPIObject):
     """Uninstall SwitchLight."""
     route = "/api/v1/sys/uninstall"
-    def POST(self, factory, reboot):
+    def POST(self, factory, reboot, sync=True):
+
+        if not sync:
+            return SLREST.response(path=self.route,
+                                   status=SLREST.Status.ERROR,
+                                   reason="async not supported")
 
         (factory, error) = params.boolean('factory', factory)
         if error:
@@ -194,7 +199,13 @@ class v1_sys_uninstall(SLAPIObject):
 class v1_sys_reboot(SLAPIObject):
     """Reboot the system, with delay."""
     route = "/api/v1/sys/reboot"
-    def POST(self, delay='3'):
+    def POST(self, sync=True, delay='3'):
+
+        if not sync:
+            return SLREST.response(path=self.route,
+                                   status=SLREST.Status.ERROR,
+                                   reason="async not supported")
+
         (delay, error) = params.uinteger('delay', delay)
         if error:
             return SLREST.error(self.route, reason=error)
