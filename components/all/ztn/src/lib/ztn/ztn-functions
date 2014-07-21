@@ -413,7 +413,7 @@ ztn_cache_install_url()
 ztn_manifest_valid()
 {
     man=${1:-${ZTN_MANIFEST}}
-    jq -M -r .not-a-key ${man} 1>/dev/null 2>&1
+    jq -M -r .not_a_key ${man} 1>/dev/null 2>&1
     return $?
 }
 
