@@ -4,12 +4,12 @@
  *
  *
  *****************************************************************************/
-#include <IVS/ivs_config.h> 
-#include <IVS/ivs.h> 
+#include <IVS/ivs_config.h>
+#include <IVS/ivs.h>
 #include <IVS/uCli/ivs_ucli.h>
 #include <Configuration/configuration.h>
 #include <loci/loci.h>
-#include "ivs_int.h" 
+#include "ivs_int.h"
 #include "ivs_util.h"
 #include "ivs_log.h"
 
@@ -65,18 +65,18 @@ static void
 ivs_cxn_state_log__(indigo_cxn_id_t              cxn_id,
                     indigo_cxn_protocol_params_t *cxn_proto_params,
                     indigo_cxn_state_t           cxn_state,
-                    void                         *cookie); 
+                    void                         *cookie);
 #endif
 
 #if IVS_CONFIG_INCLUDE_NETWORK_CLI == 1
-static void ivs_nss_callback__(void*); 
+static void ivs_nss_callback__(void*);
 #endif
 
 #if IVS_CONFIG_INCLUDE_CONSOLE_CLI == 1
 #if ELS_CONFIG_INCLUDE_EVENTFD == 1
-static void ivs_els_eventfd_callback__(int socket_id, void *cookie, 
-                                       int read_ready, int write_ready, 
-                                       int error_seen); 
+static void ivs_els_eventfd_callback__(int socket_id, void *cookie,
+                                       int read_ready, int write_ready,
+                                       int error_seen);
 #endif /* ELS_CONFIG_INCLUDE_EVENTFD */
 static void ivs_els_callback__(void*);
 #endif /* IVS_CONFIG_INCLUDE_CONSOLE_CLI */
@@ -84,46 +84,46 @@ static void ivs_els_callback__(void*);
 static int
 ivs_option__(ivs_t* ivs, ivs_option_t* options, char* type)
 {
-    ivs_option_t* op;   
-    int rv = 0; 
+    ivs_option_t* op;
+    int rv = 0;
 
-    if(options) { 
-        for(op = options; op->string && rv >= 0; op++) { 
-            if(op->processed) { 
-                continue; 
+    if(options) {
+        for(op = options; op->string && rv >= 0; op++) {
+            if(op->processed) {
+                continue;
             }
             if(type == NULL ||
-               !IVS_STRNCMP(op->string, type, IVS_STRLEN(type))) { 
-                aim_printf(&aim_pvs_stdout, "[ %s ]\n", op->string); 
-                rv = ucli_dispatch_string(ivs->ucli, &aim_pvs_stdout, op->string); 
-                ucli_reset(ivs->ucli); 
-                op->processed = 1; 
+               !IVS_STRNCMP(op->string, type, IVS_STRLEN(type))) {
+                aim_printf(&aim_pvs_stdout, "[ %s ]\n", op->string);
+                rv = ucli_dispatch_string(ivs->ucli, &aim_pvs_stdout, op->string);
+                ucli_reset(ivs->ucli);
+                op->processed = 1;
             }
         }
     }
-    return rv; 
+    return rv;
 }
 
 static int
 ivs_options__(ivs_t* ivs, char* type)
 {
     /**
-     * argv options have higher priority than string options. 
+     * argv options have higher priority than string options.
      */
-    TRY(ivs_option__(ivs, ivs->string_options, type)); 
-    TRY(ivs_option__(ivs, ivs->argv_options, type)); 
-    return 0; 
+    TRY(ivs_option__(ivs, ivs->string_options, type));
+    TRY(ivs_option__(ivs, ivs->argv_options, type));
+    return 0;
 }
 
 static void
 ivs_options_init__(ivs_option_t** dst, char** strings)
 {
-    if(strings) { 
+    if(strings) {
         int i = 0;
         while(strings[i]) i++;
-        *dst = ivs_zmalloc(sizeof(ivs_option_t)*(i+1)); 
-        for(i = 0; strings[i]; i++) { 
-            (*dst)[i].string = aim_strdup(strings[i]); 
+        *dst = ivs_zmalloc(sizeof(ivs_option_t)*(i+1));
+        for(i = 0; strings[i]; i++) {
+            (*dst)[i].string = aim_strdup(strings[i]);
         }
     }
 }
@@ -131,76 +131,76 @@ ivs_options_init__(ivs_option_t** dst, char** strings)
 static void
 ivs_options_free__(ivs_option_t* opts)
 {
-    if(opts) { 
-        int i; 
-        for(i = 0; opts[i].string; i++) { 
-            IVS_FREE(opts[i].string); 
+    if(opts) {
+        int i;
+        for(i = 0; opts[i].string; i++) {
+            IVS_FREE(opts[i].string);
         }
-        IVS_FREE(opts); 
+        IVS_FREE(opts);
     }
 }
 
 int
 ivs_create(ivs_t** rv, char** string_options, char** argv_options)
 {
-    ivs_t* ivs = ivs_zmalloc(sizeof(*ivs)); 
-    ucli_node_t* n; 
+    ivs_t* ivs = ivs_zmalloc(sizeof(*ivs));
+    ucli_node_t* n;
 
-    if(ivs == NULL) { 
-        IVS_ERROR("allocation failed."); 
-        return -1; 
+    if(ivs == NULL) {
+        IVS_ERROR("allocation failed.");
+        return -1;
     }
 
     /**
-     * Initialize all defaults. 
+     * Initialize all defaults.
      */
     memset(&ivs->port, 0, sizeof(ivs->port));
-    ivs->port.of_version = OF_VERSION_1_3; 
-    ivs->port.max_ports = IVS_CONFIG_PORT_MAX_PORTS_DEFAULT; 
-    
+    ivs->port.of_version = OF_VERSION_1_3;
+    ivs->port.max_ports = IVS_CONFIG_PORT_MAX_PORTS_DEFAULT;
+
     memset(&ivs->fwd, 0, sizeof(ivs->fwd));
-    ivs->fwd.of_version = OF_VERSION_1_3; 
-    ivs->fwd.max_flows = IVS_CONFIG_FWD_MAX_FLOWS_DEFAULT; 
-    
+    ivs->fwd.of_version = OF_VERSION_1_3;
+    ivs->fwd.max_flows = IVS_CONFIG_FWD_MAX_FLOWS_DEFAULT;
+
     memset(&ivs->core, 0, sizeof(ivs->core));
     ivs->core.expire_flows = IVS_CONFIG_CORE_EXPIRE_FLOWS_DEFAULT;
     ivs->core.stats_check_ms = IVS_CONFIG_CORE_STATS_CHECK_MS_DEFAULT;
     ivs->core.max_flowtable_entries = IVS_CONFIG_FWD_MAX_FLOWS_DEFAULT;
-    
+
     memset(&ivs->port_add_config, 0, sizeof(ivs->port_add_config));
     ivs->port_add_config.disable_on_add = 0;
 
     ivs->interface_counter = 0;
 
 
-    ivs_options_init__(&ivs->string_options, string_options); 
+    ivs_options_init__(&ivs->string_options, string_options);
     if(argv_options) {
-        char** argv_strings = ucli_argv_to_strings(argv_options); 
-        ivs_options_init__(&ivs->argv_options, argv_strings); 
-        ucli_argv_to_strings_free(argv_strings); 
+        char** argv_strings = ucli_argv_to_strings(argv_options);
+        ivs_options_init__(&ivs->argv_options, argv_strings);
+        ucli_argv_to_strings_free(argv_strings);
     }
 
-    n = ivs_ucli_node_create(ivs); 
+    n = ivs_ucli_node_create(ivs);
     ivs->ucli = ucli_create("ivs", NULL, n);
 
     /* fixme */
-    if(argv_options && argv_options[0] && !(IVS_STRCMP(argv_options[0], "-help") && IVS_STRCMP(argv_options[0], "-h"))) { 
-        aim_printf(&aim_pvs_stdout, "Options: \n"); 
-        ucli_group_help(ivs->ucli, "argv", &aim_pvs_stdout, "    -"); 
-        exit(0);        
+    if(argv_options && argv_options[0] && !(IVS_STRCMP(argv_options[0], "-help") && IVS_STRCMP(argv_options[0], "-h"))) {
+        aim_printf(&aim_pvs_stdout, "Options: \n");
+        ucli_group_help(ivs->ucli, "argv", &aim_pvs_stdout, "    -");
+        exit(0);
     }
 
 #if IVS_CONFIG_INCLUDE_WATCHDOG == 1
     ivs->watchdog_seconds = IVS_CONFIG_WATCHDOG_SECONDS;
 #endif
 
-    TRY(ivs_options__(ivs, "e ")); 
-    TRY(ivs_options__(ivs, "min ")); 
+    TRY(ivs_options__(ivs, "e "));
+    TRY(ivs_options__(ivs, "min "));
     TRY(ivs_options__(ivs, "name "));
-    TRY(ivs_options__(ivs, "wd")); 
+    TRY(ivs_options__(ivs, "wd"));
 
 #if IVS_CONFIG_INCLUDE_CXN_LOG == 1
-    ivs->cxn_log_ring = bigring_create(IVS_CONFIG_CXN_LOG_SIZE, bigring_aim_free_entry); 
+    ivs->cxn_log_ring = bigring_create(IVS_CONFIG_CXN_LOG_SIZE, bigring_aim_free_entry);
 #endif
 
 #if IVS_CONFIG_INCLUDE_STATUS_LOG == 1
@@ -208,8 +208,8 @@ ivs_create(ivs_t** rv, char** string_options, char** argv_options)
                                           bigring_aim_free_entry);
 #endif
 
-    *rv = ivs; 
-    return 0; 
+    *rv = ivs;
+    return 0;
 }
 
 #if IVS_CONFIG_INCLUDE_CONSOLE_CLI == 1
@@ -217,19 +217,19 @@ ivs_create(ivs_t** rv, char** string_options, char** argv_options)
 static int
 ivs_console_prompt__(char* p, int size, void* cookie)
 {
-    ivs_t* ivs = (ivs_t*)cookie; 
-    ucli_prompt_get(ivs->consif.ucli, p, size, 
-                    IVS_CONFIG_CONSOLE_PROMPT_DEFAULT); 
-    return 0; 
+    ivs_t* ivs = (ivs_t*)cookie;
+    ucli_prompt_get(ivs->consif.ucli, p, size,
+                    IVS_CONFIG_CONSOLE_PROMPT_DEFAULT);
+    return 0;
 }
 
 #endif
-    
-int 
+
+int
 ivs_init(ivs_t* ivs)
 {
-    /** 
-     * Init all Indigo Modules. 
+    /**
+     * Init all Indigo Modules.
      */
     TRY(ind_soc_init(&ivs->soc));
     TRY(ind_cxn_init(&ivs->cxn));
@@ -268,7 +268,7 @@ ivs_init(ivs_t* ivs)
     TRY(ind_cfg_install_sighup_handler());
 
     /* Process the configuration file option if present */
-    TRY(ivs_options__(ivs, "f ")); 
+    TRY(ivs_options__(ivs, "f "));
 
 #ifdef DEPENDMODULE_INCLUDE_AET
     {
@@ -288,16 +288,16 @@ ivs_init(ivs_t* ivs)
 #endif
 
     /* Process interface options */
-    TRY(ivs_options__(ivs, "interface add")); 
-    TRY(ivs_options__(ivs, "i ")); 
-    
+    TRY(ivs_options__(ivs, "interface add"));
+    TRY(ivs_options__(ivs, "i "));
+
 #if IVS_CONFIG_INCLUDE_INTERFACE_VETH_DEFAULT == 1
 
-    if(ivs->interface_counter == 0 && ivs->min == 0) { 
-        ivs_interface_add(ivs, "veth0", 1); 
-        ivs_interface_add(ivs, "veth2", 2); 
-        ivs_interface_add(ivs, "veth4", 3); 
-        ivs_interface_add(ivs, "veth6", 4); 
+    if(ivs->interface_counter == 0 && ivs->min == 0) {
+        ivs_interface_add(ivs, "veth0", 1);
+        ivs_interface_add(ivs, "veth2", 2);
+        ivs_interface_add(ivs, "veth4", 3);
+        ivs_interface_add(ivs, "veth6", 4);
     }
 
 #endif
@@ -305,33 +305,33 @@ ivs_init(ivs_t* ivs)
 #if IVS_CONFIG_INCLUDE_NETWORK_CLI == 1
     /* Backdoor for SwitchLight. Fixme with ZTN. */
     {
-        FILE* fp; 
-        char* listenon = "127.0.0.1"; 
+        FILE* fp;
+        char* listenon = "127.0.0.1";
         if((fp=fopen("/mnt/flash/promiscuous-internal-cli", "r"))) {
-	  AIM_LOG_WARN("promiscuous-cli mode."); 
-	  listenon = "0.0.0.0"; 
-	  fclose(fp); 
-        }    
-        nss_create(&ivs->netif.nss, IVS_CONFIG_NSS_PORT_DEFAULT, listenon); 
-        ivs->netif.ucli = ucli_copy(ivs->ucli); 
+	  AIM_LOG_WARN("promiscuous-cli mode.");
+	  listenon = "0.0.0.0";
+	  fclose(fp);
+        }
+        nss_create(&ivs->netif.nss, IVS_CONFIG_NSS_PORT_DEFAULT, listenon);
+        ivs->netif.ucli = ucli_copy(ivs->ucli);
     }
 #endif
 
 #if IVS_CONFIG_INCLUDE_CONSOLE_CLI == 1
     /* Pseudohack -- only start the CLI if stdout is a tty */
-    if(aim_pvs_isatty(&aim_pvs_stdout)) { 
+    if(aim_pvs_isatty(&aim_pvs_stdout)) {
         ivs->consif.els = els_create("ivs", ivs_console_prompt__, ivs);
-        ivs->consif.ucli = ucli_copy(ivs->ucli); 
-        ucli_pvs_set(ivs->consif.ucli, &aim_pvs_stdout); 
-        els_complete_set(ivs->consif.els, (els_complete_f)ucli_complete_hook, 
+        ivs->consif.ucli = ucli_copy(ivs->ucli);
+        ucli_pvs_set(ivs->consif.ucli, &aim_pvs_stdout);
+        els_complete_set(ivs->consif.els, (els_complete_f)ucli_complete_hook,
                          ivs->consif.ucli);
     }
-#endif 
-    return 0; 
+#endif
+    return 0;
 }
 
 
-int 
+int
 ivs_enable(ivs_t* ivs, int enable)
 {
     /* Enable everyone */
@@ -353,24 +353,24 @@ ivs_enable(ivs_t* ivs, int enable)
     /*
      * Process remaining options
      */
-    TRY(ivs_options__(ivs, NULL)); 
+    TRY(ivs_options__(ivs, NULL));
 
     /*
-     * Disable ARGV group 
+     * Disable ARGV group
      */
-    ucli_group_enable(ivs->ucli, "argv", 0); 
+    ucli_group_enable(ivs->ucli, "argv", 0);
 
 #if IVS_CONFIG_INCLUDE_CONTROLLER_DEFAULT == 1
-    if(ivs->connection_count == 0 && ivs->min == 0) { 
-        ivs_controller_add(ivs, IVS_CXN_TYPE_CONNECT, 
-                           IVS_CONFIG_CONTROLLER_IP_DEFAULT, 
-                           IVS_CONFIG_CONTROLLER_PORT_DEFAULT); 
+    if(ivs->connection_count == 0 && ivs->min == 0) {
+        ivs_controller_add(ivs, IVS_CXN_TYPE_CONNECT,
+                           IVS_CONFIG_CONTROLLER_IP_DEFAULT,
+                           IVS_CONFIG_CONTROLLER_PORT_DEFAULT);
     }
 #endif
 
 #if IVS_CONFIG_INCLUDE_NETWORK_CLI == 1
-    if(ivs->netif.nss) { 
-        if(nss_start(ivs->netif.nss) >= 0) { 
+    if(ivs->netif.nss) {
+        if(nss_start(ivs->netif.nss) >= 0) {
             TRY(ind_soc_timer_event_register_with_priority(
                     ivs_nss_callback__, ivs, 100, IND_SOC_HIGH_PRIORITY));
         }
@@ -379,71 +379,71 @@ ivs_enable(ivs_t* ivs, int enable)
 
 #if IVS_CONFIG_INCLUDE_CONSOLE_CLI == 1
     if(ivs->consif.els) {
-        els_start(ivs->consif.els); 
+        els_start(ivs->consif.els);
         #if ELS_CONFIG_INCLUDE_EVENTFD == 1
-        TRY(ind_soc_socket_register(ivs->consif.els->eventfd, 
-                                    ivs_els_eventfd_callback__, 
-                                    ivs)); 
+        TRY(ind_soc_socket_register(ivs->consif.els->eventfd,
+                                    ivs_els_eventfd_callback__,
+                                    ivs));
         #else
-        TRY(ind_soc_timer_event_register(ivs_els_callback__, ivs, 100)); 
+        TRY(ind_soc_timer_event_register(ivs_els_callback__, ivs, 100));
         #endif
     }
 #endif
 
 #if IVS_CONFIG_INCLUDE_CXN_LOG == 1
-    indigo_cxn_status_change_register(ivs_cxn_state_log__, ivs); 
+    indigo_cxn_status_change_register(ivs_cxn_state_log__, ivs);
 #endif
-    return 0; 
+    return 0;
 }
 
 static indigo_controller_info_t*
-ivs_controller_find_type__(ivs_t* ivs, ivs_cxn_type_t type, 
-                           const char* caddr, int cport, 
+ivs_controller_find_type__(ivs_t* ivs, ivs_cxn_type_t type,
+                           const char* caddr, int cport,
                            indigo_controller_info_t* rv)
 {
-    indigo_controller_info_t* ctrl; 
-    indigo_controller_info_t* list = NULL; 
+    indigo_controller_info_t* ctrl;
+    indigo_controller_info_t* list = NULL;
 
-    indigo_controller_list(&list); 
+    indigo_controller_list(&list);
 
-    for(ctrl = list; ctrl; ctrl = ctrl->next) { 
-        if(!IVS_STRCMP(caddr, ctrl->protocol_params.tcp_over_ipv4.controller_ip) && 
-           ctrl->protocol_params.tcp_over_ipv4.controller_port == cport) { 
+    for(ctrl = list; ctrl; ctrl = ctrl->next) {
+        if(!IVS_STRCMP(caddr, ctrl->protocol_params.tcp_over_ipv4.controller_ip) &&
+           ctrl->protocol_params.tcp_over_ipv4.controller_port == cport) {
 
-            if( (type == IVS_CXN_TYPE_LISTEN) == ctrl->config_params.listen) { 
-                if(rv) { 
-                    IVS_MEMCPY(rv, ctrl, sizeof(*rv)); 
-                    break; 
+            if( (type == IVS_CXN_TYPE_LISTEN) == ctrl->config_params.listen) {
+                if(rv) {
+                    IVS_MEMCPY(rv, ctrl, sizeof(*rv));
+                    break;
                 }
             }
-        }   
+        }
     }
-    indigo_controller_list_destroy(list); 
-    return (ctrl) ? rv : NULL; 
+    indigo_controller_list_destroy(list);
+    return (ctrl) ? rv : NULL;
 }
 
 
-int 
+int
 ivs_controller_show(ivs_t* ivs, ivs_cxn_type_t type, aim_pvs_t* pvs)
 {
-    indigo_controller_info_t* ctrl; 
-    indigo_controller_info_t* list = NULL; 
+    indigo_controller_info_t* ctrl;
+    indigo_controller_info_t* list = NULL;
     int typecount = 0;
     indigo_cxn_status_t status;
     int rv;
     const char* statename;
     const char* rolename;
 
-    indigo_controller_list(&list); 
+    indigo_controller_list(&list);
 
     aim_printf(pvs, "    %15s:%-5s  %-14s  %-8s  %-s\n",
                "IP", "Port", "State", "Role", "#Aux");
 
-    for(ctrl = list; ctrl; ctrl = ctrl->next) { 
-        ivs_cxn_type_t ctype = (ctrl->config_params.listen == 1) ? 
-            IVS_CXN_TYPE_LISTEN : IVS_CXN_TYPE_CONNECT; 
-        if(ctype == type) { 
-            typecount++; 
+    for(ctrl = list; ctrl; ctrl = ctrl->next) {
+        ivs_cxn_type_t ctype = (ctrl->config_params.listen == 1) ?
+            IVS_CXN_TYPE_LISTEN : IVS_CXN_TYPE_CONNECT;
+        if(ctype == type) {
+            typecount++;
 
             rv = indigo_cxn_connection_status_get(ctrl->main_cxn_id, &status);
             if (rv == INDIGO_ERROR_NONE) {
@@ -454,119 +454,119 @@ ivs_controller_show(ivs_t* ivs, ivs_cxn_type_t type, aim_pvs_t* pvs)
                 rolename = "UNKNOWN";
             }
 
-            aim_printf(pvs, "    %15s:%-5d  %-14s  %-8s  %-d\n", 
-                       ctrl->protocol_params.tcp_over_ipv4.controller_ip, 
+            aim_printf(pvs, "    %15s:%-5d  %-14s  %-8s  %-d\n",
+                       ctrl->protocol_params.tcp_over_ipv4.controller_ip,
                        ctrl->protocol_params.tcp_over_ipv4.controller_port,
                        statename, rolename, ctrl->num_aux);
         }
     }
 
-    indigo_controller_list_destroy(list); 
+    indigo_controller_list_destroy(list);
 
-    return INDIGO_ERROR_NONE; 
+    return INDIGO_ERROR_NONE;
 }
 
-                    
-int 
+
+int
 ivs_controller_add(ivs_t* ivs, ivs_cxn_type_t type,
                    const char* caddr, int cport)
 {
-    int rv; 
-    indigo_controller_info_t ctrl; 
+    int rv;
+    indigo_controller_info_t ctrl;
 
     if( ivs == NULL || caddr == NULL || cport < 0 ||
-        !IVS_CXN_TYPE_VALID(type) ) { 
-        return INDIGO_ERROR_PARAM; 
+        !IVS_CXN_TYPE_VALID(type) ) {
+        return INDIGO_ERROR_PARAM;
     }
 
-    if(ivs_controller_find_type__(ivs, type, caddr, cport, &ctrl)) { 
+    if(ivs_controller_find_type__(ivs, type, caddr, cport, &ctrl)) {
         /* Controller exists */
-        return INDIGO_ERROR_EXISTS; 
+        return INDIGO_ERROR_EXISTS;
     }
-    
-    IVS_MEMSET(&ctrl, 0, sizeof(ctrl)); 
-    ctrl.config_params.version = OF_VERSION_1_0; 
-    ctrl.protocol_params.tcp_over_ipv4.protocol = 
-        INDIGO_CXN_PROTO_TCP_OVER_IPV4; 
-    IVS_STRCPY(ctrl.protocol_params.tcp_over_ipv4.controller_ip, caddr); 
-    ctrl.protocol_params.tcp_over_ipv4.controller_port = cport; 
-    
+
+    IVS_MEMSET(&ctrl, 0, sizeof(ctrl));
+    ctrl.config_params.version = OF_VERSION_1_0;
+    ctrl.protocol_params.tcp_over_ipv4.protocol =
+        INDIGO_CXN_PROTO_TCP_OVER_IPV4;
+    IVS_STRCPY(ctrl.protocol_params.tcp_over_ipv4.controller_ip, caddr);
+    ctrl.protocol_params.tcp_over_ipv4.controller_port = cport;
+
     switch (type)
         {
         case IVS_CXN_TYPE_INVALID:
         case IVS_CXN_TYPE_COUNT:
-            { 
+            {
                 /* shouldn't get here */
-                break; 
+                break;
             }
 
         case IVS_CXN_TYPE_CONNECT:
             {
-                ctrl.config_params.periodic_echo_ms = IVS_CONFIG_CXN_PERIODIC_ECHO_MS_DEFAULT; 
+                ctrl.config_params.periodic_echo_ms = IVS_CONFIG_CXN_PERIODIC_ECHO_MS_DEFAULT;
                 ctrl.config_params.reset_echo_count = IVS_CONFIG_CXN_RESET_ECHO_COUNT;
-                break; 
+                break;
             }
         case IVS_CXN_TYPE_LISTEN:
             {
-                ctrl.config_params.local = 1; 
-                ctrl.config_params.listen = 1; 
-                break; 
+                ctrl.config_params.local = 1;
+                ctrl.config_params.listen = 1;
+                break;
             }
         }
 
-    if( (rv = indigo_controller_add(&ctrl.protocol_params, 
-                                    &ctrl.config_params, 
-                                    &ctrl.controller_id)) < 0) { 
-        return rv; 
+    if( (rv = indigo_controller_add(&ctrl.protocol_params,
+                                    &ctrl.config_params,
+                                    &ctrl.controller_id)) < 0) {
+        return rv;
     }
-    else {    
-        ivs->connection_count++; 
-        return INDIGO_ERROR_NONE; 
+    else {
+        ivs->connection_count++;
+        return INDIGO_ERROR_NONE;
     }
 }
 
 
-int 
-ivs_controller_remove(ivs_t* ivs, ivs_cxn_type_t type, 
+int
+ivs_controller_remove(ivs_t* ivs, ivs_cxn_type_t type,
                       const char* caddr, int cport)
 {
-    int rv; 
-    indigo_controller_info_t ctrl; 
+    int rv;
+    indigo_controller_info_t ctrl;
 
     if( ivs == NULL || caddr == NULL || cport < 0 ||
-        !IVS_CXN_TYPE_VALID(type) ) { 
-        return INDIGO_ERROR_PARAM; 
+        !IVS_CXN_TYPE_VALID(type) ) {
+        return INDIGO_ERROR_PARAM;
     }
 
-    if(ivs_controller_find_type__(ivs, type, caddr, cport, &ctrl)) { 
-        if( (rv = indigo_controller_remove(ctrl.controller_id)) < 0) { 
-            return rv; 
+    if(ivs_controller_find_type__(ivs, type, caddr, cport, &ctrl)) {
+        if( (rv = indigo_controller_remove(ctrl.controller_id)) < 0) {
+            return rv;
         }
         else {
-            ivs->connection_count--; 
-            return INDIGO_ERROR_NONE; 
+            ivs->connection_count--;
+            return INDIGO_ERROR_NONE;
         }
     }
     else {
-        /* not found */        
-        return INDIGO_ERROR_NOT_FOUND; 
+        /* not found */
+        return INDIGO_ERROR_NOT_FOUND;
     }
 }
 
 #if IVS_CONFIG_INCLUDE_NETWORK_CLI == 1
-static void 
+static void
 ivs_nss_callback__(void* cookie)
 {
-    char line[256];     
-    int rv;  
-    ivs_t* ivs = (ivs_t*) cookie; 
+    char line[256];
+    int rv;
+    ivs_t* ivs = (ivs_t*) cookie;
 
-    IVS_MEMSET(line, 0, sizeof(line)); 
-    rv = nss_poll(ivs->netif.nss, (uint8_t*)line, sizeof(line)); 
-    if(rv > 0) { 
-        ucli_dispatch_string(ivs->netif.ucli, &ivs->netif.nss->pvs, line); 
-        nss_close(ivs->netif.nss); 
-        ucli_reset(ivs->netif.ucli); 
+    IVS_MEMSET(line, 0, sizeof(line));
+    rv = nss_poll(ivs->netif.nss, (uint8_t*)line, sizeof(line));
+    if(rv > 0) {
+        ucli_dispatch_string(ivs->netif.ucli, &ivs->netif.nss->pvs, line);
+        nss_close(ivs->netif.nss);
+        ucli_reset(ivs->netif.ucli);
     }
 }
 #endif
@@ -576,16 +576,16 @@ ivs_nss_callback__(void* cookie)
 static void
 ivs_els_callback__(void* cookie)
 {
-    ivs_t* ivs = (ivs_t*)cookie; 
+    ivs_t* ivs = (ivs_t*)cookie;
     char* line = els_getline(ivs->consif.els);
-    if(line) { 
-        if(line && line[0] == '^' && line[1] == 'D') { 
-            aim_printf(&aim_pvs_stdout, "\n"); 
-            ind_soc_run_status_set(IND_SOC_RUN_STATUS_EXIT); 
+    if(line) {
+        if(line && line[0] == '^' && line[1] == 'D') {
+            aim_printf(&aim_pvs_stdout, "\n");
+            ind_soc_run_status_set(IND_SOC_RUN_STATUS_EXIT);
         }
-        else { 
-            ucli_dispatch_string(ivs->consif.ucli, &aim_pvs_stdout, line); 
-            els_prompt(ivs->consif.els); 
+        else {
+            ucli_dispatch_string(ivs->consif.ucli, &aim_pvs_stdout, line);
+            els_prompt(ivs->consif.els);
         }
     }
 }
@@ -593,44 +593,48 @@ ivs_els_callback__(void* cookie)
 #if ELS_CONFIG_INCLUDE_EVENTFD == 1
 #include <unistd.h>
 static void
-ivs_els_eventfd_callback__(int socket_id, void *cookie, 
+ivs_els_eventfd_callback__(int socket_id, void *cookie,
                            int read_ready, int write_ready, int error_seen)
 {
-    if(read_ready) { 
-        uint64_t v; 
-        ivs_t* ivs = (ivs_t*)cookie; 
+    if(read_ready) {
+        uint64_t v;
+        ivs_t* ivs = (ivs_t*)cookie;
         if (read(ivs->consif.els->eventfd, &v, sizeof(v)) < 0) {
             /* silence warn_unused_result */
         }
-        ivs_els_callback__(cookie); 
+        ivs_els_callback__(cookie);
     }
 }
 #endif /* ELS_CONFIG_INCLUDE_EVENTFD */
 #endif /* IVS_CONFIG_INCLUDE_CONSOLE_CLI */
 
 
-static void 
+static void
 sighandler__(int sig)
 {
-    ind_soc_run_status_set(IND_SOC_RUN_STATUS_EXIT); 
+    ind_soc_run_status_set(IND_SOC_RUN_STATUS_EXIT);
 }
 
-int 
+int
 ivs_run(ivs_t* ivs, int ms)
 {
-    int rv; 
+    int rv;
 
-    void (*previous)(int) = signal(SIGUSR1, sighandler__);
+#if IVS_CONFIG_INCLUDE_SIGTERM_HANDLER == 1
+    void (*previous_sigterm_handler)(int) = signal(SIGTERM, sighandler__);
+#endif
+
+    void (*previous_sigusr1_handler)(int) = signal(SIGUSR1, sighandler__);
 
 #if IVS_CONFIG_INCLUDE_CONSOLE_CLI == 1
-    if(ivs->consif.els) { 
-        els_prompt(ivs->consif.els); 
+    if(ivs->consif.els) {
+        els_prompt(ivs->consif.els);
     }
 #endif
 
 #if IVS_CONFIG_INCLUDE_WATCHDOG == 1
-    if(ivs->watchdog_seconds) { 
-        ivs_watchdog_enable(ivs, ivs->watchdog_seconds); 
+    if(ivs->watchdog_seconds) {
+        ivs_watchdog_enable(ivs, ivs->watchdog_seconds);
     }
 #endif
 
@@ -641,16 +645,21 @@ ivs_run(ivs_t* ivs, int ms)
     rv = ind_soc_select_and_run(ms);
 
 #if IVS_CONFIG_INCLUDE_WATCHDOG == 1
-    if(ivs->watchdog_seconds) { 
+    if(ivs->watchdog_seconds) {
         /* Just cancel existing alarm */
-        alarm(0); 
+        alarm(0);
     }
-#endif          
-    signal(SIGUSR1, previous); 
-    return rv; 
+#endif
+
+#if IVS_CONFIG_INCLUDE_SIGTERM_HANDLER == 1
+    signal(SIGTERM, previous_sigterm_handler);
+#endif
+
+    signal(SIGUSR1, previous_sigusr1_handler);
+    return rv;
 }
 
-int 
+int
 ivs_denit(ivs_t* ivs)
 {
     int rv;
@@ -692,18 +701,18 @@ ivs_denit(ivs_t* ivs)
     }
 
 #ifdef DEPENDMODULE_INCLUDE_AET
-    if ((rv = aet_finish()) < 0) { 
-        AIM_LOG_ERROR("Error in aet_finish"); 
+    if ((rv = aet_finish()) < 0) {
+        AIM_LOG_ERROR("Error in aet_finish");
     }
 #endif
 
-    return rv; 
+    return rv;
 }
 
-int 
+int
 ivs_destroy(ivs_t* ivs)
 {
-    int rv; 
+    int rv;
     if ((rv = ind_core_finish()) < 0) {
         AIM_LOG_ERROR("Error in ind_core_finish");
     }
@@ -715,8 +724,8 @@ ivs_destroy(ivs_t* ivs)
     }
 
 #ifdef DEPENDMODULE_INCLUDE_AET
-    if ((rv = aet_finish()) < 0) { 
-        AIM_LOG_ERROR("Error in aet_finish"); 
+    if ((rv = aet_finish()) < 0) {
+        AIM_LOG_ERROR("Error in aet_finish");
     }
 #endif
 
@@ -729,20 +738,20 @@ ivs_destroy(ivs_t* ivs)
     }
 
 
-    ivs_options_free__(ivs->string_options); 
-    ivs_options_free__(ivs->argv_options); 
+    ivs_options_free__(ivs->string_options);
+    ivs_options_free__(ivs->argv_options);
 
 #if IVS_CONFIG_INCLUDE_NETWORK_CLI == 1
     nss_destroy(ivs->netif.nss);
-    ucli_destroy(ivs->netif.ucli); 
+    ucli_destroy(ivs->netif.ucli);
 #endif
 
 #if IVS_CONFIG_INCLUDE_CONSOLE_CLI == 1
-    els_destroy(ivs->consif.els); 
-    ucli_destroy(ivs->consif.ucli); 
+    els_destroy(ivs->consif.els);
+    ucli_destroy(ivs->consif.ucli);
 #endif
 
-    ucli_destroy(ivs->ucli); 
+    ucli_destroy(ivs->ucli);
 
 #if IVS_CONFIG_INCLUDE_CXN_LOG == 1
     bigring_destroy(ivs->cxn_log_ring);
@@ -753,99 +762,99 @@ ivs_destroy(ivs_t* ivs)
 #endif
 
     IVS_FREE(ivs);
-    return 0; 
+    return 0;
 }
 
-int 
+int
 ivs_interface_add(ivs_t* ivs, const char* interface, int index)
 {
-    if(index == -1) {   
+    if(index == -1) {
         index = ivs->interface_counter + 1;
     }
 
-    TRY(indigo_port_interface_add((char*)interface, 
-                                  index, 
+    TRY(indigo_port_interface_add((char*)interface,
+                                  index,
                                   &ivs->port_add_config));
-    ivs->interface_counter++; 
-    return INDIGO_ERROR_NONE; 
+    ivs->interface_counter++;
+    return INDIGO_ERROR_NONE;
 }
 
 
 int
-ivs_interface_find__(ivs_t* ivs, char* ifname, int of_port, 
+ivs_interface_find__(ivs_t* ivs, char* ifname, int of_port,
                      indigo_port_info_t* pi)
 {
-    int rv; 
-    indigo_port_info_t* list; 
-    if(indigo_port_interface_list(&list) == INDIGO_ERROR_NONE) { 
-        indigo_port_info_t* p; 
-        for(p = list; p; p = p->next) { 
-            if(of_port > 0) { 
+    int rv;
+    indigo_port_info_t* list;
+    if(indigo_port_interface_list(&list) == INDIGO_ERROR_NONE) {
+        indigo_port_info_t* p;
+        for(p = list; p; p = p->next) {
+            if(of_port > 0) {
                 /* Check port number */
-                if(p->of_port != of_port) { 
-                    continue; 
+                if(p->of_port != of_port) {
+                    continue;
                 }
             }
-            if(ifname) { 
+            if(ifname) {
                 /* Check interface name */
-                if(IVS_STRCMP(p->port_name, ifname)) { 
-                    continue; 
+                if(IVS_STRCMP(p->port_name, ifname)) {
+                    continue;
                 }
             }
-            if(pi) { 
-                IVS_MEMCPY(pi, p, sizeof(*pi)); 
+            if(pi) {
+                IVS_MEMCPY(pi, p, sizeof(*pi));
             }
-            rv = 1; 
+            rv = 1;
         }
     }
-    else { 
-        rv = 0; 
+    else {
+        rv = 0;
     }
-    indigo_port_interface_list_destroy(list); 
-    return rv; 
+    indigo_port_interface_list_destroy(list);
+    return rv;
 }
-            
-int 
+
+int
 ivs_interface_remove(ivs_t* ivs, int of_port)
 {
     /* The port manager should have a remove-by of_port */
-    indigo_port_info_t pi; 
-    if(ivs_interface_find__(ivs, NULL, of_port, &pi)) { 
-        TRY(indigo_port_interface_remove(pi.port_name)); 
+    indigo_port_info_t pi;
+    if(ivs_interface_find__(ivs, NULL, of_port, &pi)) {
+        TRY(indigo_port_interface_remove(pi.port_name));
     }
-    return INDIGO_ERROR_NONE; 
+    return INDIGO_ERROR_NONE;
 }
 
-int 
+int
 ivs_interface_show(ivs_t* ivs, aim_pvs_t* pvs)
 {
-    indigo_port_info_t* p; 
-    indigo_port_info_t* list = NULL; 
+    indigo_port_info_t* p;
+    indigo_port_info_t* list = NULL;
 
-    indigo_port_interface_list(&list); 
-    
-    if(list == NULL) { 
-        aim_printf(pvs, "    None\n"); 
+    indigo_port_interface_list(&list);
+
+    if(list == NULL) {
+        aim_printf(pvs, "    None\n");
     }
-    else { 
-        for(p = list; p; p = p->next) { 
-            aim_printf(pvs, "    %d: %s\n", p->of_port, p->port_name); 
+    else {
+        for(p = list; p; p = p->next) {
+            aim_printf(pvs, "    %d: %s\n", p->of_port, p->port_name);
         }
     }
-    indigo_port_interface_list_destroy(list); 
-    return INDIGO_ERROR_NONE; 
+    indigo_port_interface_list_destroy(list);
+    return INDIGO_ERROR_NONE;
 }
 
-int 
+int
 ivs_interface_exists(ivs_t* ivs, int index)
 {
-    return ivs_interface_find__(ivs, NULL, index, NULL); 
+    return ivs_interface_find__(ivs, NULL, index, NULL);
 }
 
-int 
+int
 ivs_command(ivs_t* ivs, const char* cmd)
 {
-    return ucli_dispatch_string(ivs->ucli, &aim_pvs_stdout, cmd); 
+    return ucli_dispatch_string(ivs->ucli, &aim_pvs_stdout, cmd);
 }
 
 static int
@@ -883,53 +892,53 @@ ivs_loci_logger(loci_log_level_t level,
     return 0;
 }
 
-int 
+int
 ivs_main(char** string_options, char** argv_options)
 {
-    ivs_t* ivs; 
+    ivs_t* ivs;
 
     loci_logger = ivs_loci_logger;
 
     TRY(ucli_init());
-    TRY(ivs_create(&ivs, string_options, argv_options)); 
-    TRY(ivs_init(ivs)); 
-    TRY(ivs_enable(ivs, 1)); 
-    TRY(ivs_run(ivs, -1)); 
-    TRY(ivs_destroy(ivs)); 
-    ucli_denit(); 
+    TRY(ivs_create(&ivs, string_options, argv_options));
+    TRY(ivs_init(ivs));
+    TRY(ivs_enable(ivs, 1));
+    TRY(ivs_run(ivs, -1));
+    TRY(ivs_destroy(ivs));
+    ucli_denit();
     return 0;
 }
-    
+
 #if IVS_CONFIG_INCLUDE_WATCHDOG == 1
 
 /**
  * Watchdog Processing
  *
  * We want to detect when the indigo main select loop
- * has gone off in the weeds -- this can happen 
+ * has gone off in the weeds -- this can happen
  * with bugs that introduce stack corruption, or event handlers
- * that fail to return due to their own bugs or unanticipated 
- * circumstances. 
+ * that fail to return due to their own bugs or unanticipated
+ * circumstances.
  *
  * We detect and recover from hangs in the main loop as follows:
  *
  * 1. Set an alarm signal for the maximum allowable time T
- *    we think any handler should execute. 
+ *    we think any handler should execute.
  * 2. Set an indigo timer event callback to re-arm the given
- *    alarm every T/2 seconds. 
+ *    alarm every T/2 seconds.
  * 3. Make SIGALRM cause termination (do not catch or ignore).
  *
- * If the maximum time has elapsed, SIGALRM will be raised, and 
+ * If the maximum time has elapsed, SIGALRM will be raised, and
  * the entire process will exit. The restart daemon will then automatically
- * restart the entire process. 
+ * restart the entire process.
  *
  *
- * TODO: determine the appropriate value for the maximum 
-'* allowable execution time. 
+ * TODO: determine the appropriate value for the maximum
+'* allowable execution time.
  */
 
 /**
- * Calling alarm resets the watchdog.  It is expected that 
+ * Calling alarm resets the watchdog.  It is expected that
  * alarm_watchdog_callback__ is called at half the watchdog
  * timeout time.
  */
@@ -937,41 +946,41 @@ ivs_main(char** string_options, char** argv_options)
 static void
 alarm_watchdog_callback__(void* cookie)
 {
-    ivs_t* ivs = (ivs_t*)(cookie); 
+    ivs_t* ivs = (ivs_t*)(cookie);
     alarm(ivs->watchdog_seconds);
 }
 
 int
 ivs_watchdog_enable(ivs_t* ivs, int seconds)
 {
-    ivs->watchdog_seconds = seconds; 
+    ivs->watchdog_seconds = seconds;
     TRY(ind_soc_timer_event_register_with_priority(alarm_watchdog_callback__,
-                                                   ivs, 
+                                                   ivs,
                                                    seconds*1000 /2,
                                                    IND_SOC_HIGHEST_PRIORITY));
-    return 0; 
+    return 0;
 }
 
 #endif
-                                     
+
 #if IVS_CONFIG_INCLUDE_CXN_LOG == 1
 
-int 
+int
 ivs_cxn_log_show(ivs_t* ivs, aim_pvs_t* pvs)
 {
-    int iter; 
+    int iter;
     char* s;
-    int count = 0; 
+    int count = 0;
 
-    bigring_lock(ivs->cxn_log_ring); 
-    bigring_iter_start(ivs->cxn_log_ring, &iter); 
-    while( (s = bigring_iter_next(ivs->cxn_log_ring, &iter)) ) { 
-        aim_printf(pvs, "%s\n", s); 
-        count++; 
+    bigring_lock(ivs->cxn_log_ring);
+    bigring_iter_start(ivs->cxn_log_ring, &iter);
+    while( (s = bigring_iter_next(ivs->cxn_log_ring, &iter)) ) {
+        aim_printf(pvs, "%s\n", s);
+        count++;
     }
-    bigring_unlock(ivs->cxn_log_ring); 
-    if(count == 0) { 
-        aim_printf(pvs, "None.\n"); 
+    bigring_unlock(ivs->cxn_log_ring);
+    if(count == 0) {
+        aim_printf(pvs, "None.\n");
     }
     return count;
 }
@@ -982,10 +991,10 @@ ivs_cxn_state_log__(indigo_cxn_id_t              cxn_id,
                     indigo_cxn_state_t           cxn_state,
                     void                         *cookie)
 {
-    ivs_t* ivs = (ivs_t*) cookie; 
+    ivs_t* ivs = (ivs_t*) cookie;
     time_t now;
-    struct tm nowtm; 
-    char timestamp[64]; 
+    struct tm nowtm;
+    char timestamp[64];
     char* msg;
     indigo_cxn_config_params_t cfg;
 
@@ -1003,22 +1012,22 @@ ivs_cxn_state_log__(indigo_cxn_id_t              cxn_id,
         return;
     }
 
-    time(&now); 
-    asctime_r(localtime_r(&now, &nowtm), timestamp); 
+    time(&now);
+    asctime_r(localtime_r(&now, &nowtm), timestamp);
     /* Remove newline */
     timestamp[strlen(timestamp)-1]=' ';
-    msg = aim_fstrdup("%s%s:%u - %s", 
+    msg = aim_fstrdup("%s%s:%u - %s",
                       timestamp,
-                      cxn_proto_params->tcp_over_ipv4.controller_ip, 
-                      cxn_proto_params->tcp_over_ipv4.controller_port, 
+                      cxn_proto_params->tcp_over_ipv4.controller_ip,
+                      cxn_proto_params->tcp_over_ipv4.controller_port,
                       (cxn_state == INDIGO_CXN_S_HANDSHAKE_COMPLETE) ?
-                      "Connected" : "Disconnected"); 
+                      "Connected" : "Disconnected");
 
     bigring_push(ivs->cxn_log_ring, msg);
 }
 
 #endif /* IVS_CONFIG_INCLUDE_CXN_LOG */
-    
+
 
 #if IVS_CONFIG_INCLUDE_STATUS_LOG == 1
 
@@ -1027,12 +1036,12 @@ uint64_t prev_drops = 0;
 static void
 status_log_callback__(void* cookie)
 {
-    indigo_cxn_info_t* cxn; 
-    indigo_cxn_info_t* list = NULL; 
+    indigo_cxn_info_t* cxn;
+    indigo_cxn_info_t* list = NULL;
     time_t now;
-    struct tm nowtm; 
-    char timestamp[64]; 
-    ivs_t* ivs = (ivs_t*)(cookie); 
+    struct tm nowtm;
+    char timestamp[64];
+    ivs_t* ivs = (ivs_t*)(cookie);
     char* msg;
     uint32_t total_flows, flow_mods, packet_ins, packet_outs;
     uint64_t drops;
@@ -1040,22 +1049,22 @@ status_log_callback__(void* cookie)
     indigo_core_stats_get(&total_flows, &flow_mods,
                           &packet_ins, &packet_outs);
 
-    indigo_cxn_list(&list); 
+    indigo_cxn_list(&list);
     drops = 0;
-    for (cxn = list; cxn; cxn = cxn->next) { 
+    for (cxn = list; cxn; cxn = cxn->next) {
         if (! (cxn->cxn_config_params.listen &&
                cxn->cxn_config_params.local) ) {
             //FIXME: replace with the value of debug counter for packet_in_drops
             //drops += cxn->cxn_status.packet_in_drop;
         }
     }
-    indigo_cxn_list_destroy(list); 
+    indigo_cxn_list_destroy(list);
 
     time(&now);
     strftime(timestamp, sizeof(timestamp), "%T", localtime_r(&now, &nowtm));
 
     msg = aim_fstrdup("%10s %10u %10u %10u %10u %10u", timestamp,
-                      total_flows, flow_mods, packet_ins, packet_outs, 
+                      total_flows, flow_mods, packet_ins, packet_outs,
                       (int) (drops - prev_drops));
     bigring_push(ivs->status_log_ring, msg);
 }
@@ -1064,31 +1073,31 @@ int
 ivs_status_log_enable(ivs_t* ivs)
 {
     TRY(ind_soc_timer_event_register_with_priority(status_log_callback__,
-                                                   ivs, 
+                                                   ivs,
                                                    IVS_CONFIG_STATUS_LOG_PERIOD_S*1000,
                                                    IND_SOC_HIGH_PRIORITY));
-    return 0; 
+    return 0;
 }
 
-int 
+int
 ivs_status_log_show(ivs_t* ivs, aim_pvs_t* pvs)
 {
-    int iter; 
+    int iter;
     char* s;
-    int count = 0; 
+    int count = 0;
 
     aim_printf(pvs, "%10s %10s %10s %10s %10s %10s\n", "Time",
                "Flows", "FlowMods", "PacketIns", "PacketOuts", "Drops");
 
-    bigring_lock(ivs->status_log_ring); 
-    bigring_iter_start(ivs->status_log_ring, &iter); 
-    while( (s = bigring_iter_next(ivs->status_log_ring, &iter)) ) { 
-        aim_printf(pvs, "%s\n", s); 
-        count++; 
+    bigring_lock(ivs->status_log_ring);
+    bigring_iter_start(ivs->status_log_ring, &iter);
+    while( (s = bigring_iter_next(ivs->status_log_ring, &iter)) ) {
+        aim_printf(pvs, "%s\n", s);
+        count++;
     }
-    bigring_unlock(ivs->status_log_ring); 
-    if(count == 0) { 
-        aim_printf(pvs, "None.\n"); 
+    bigring_unlock(ivs->status_log_ring);
+    if(count == 0) {
+        aim_printf(pvs, "None.\n");
     }
     return count;
 }

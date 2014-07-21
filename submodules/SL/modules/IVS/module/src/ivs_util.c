@@ -14,9 +14,9 @@ void*
 ivs_zmalloc(int size)
 {
     void* p;
-    p = IVS_MALLOC(size); 
-    if(p) { 
-        IVS_MEMSET(p, 0, size); 
+    p = IVS_MALLOC(size);
+    if(p) {
+        IVS_MEMSET(p, 0, size);
     }
     return p; 
 }

@@ -97,6 +97,9 @@ cdefs: &cdefs
 - IVS_CONFIG_STATUS_LOG_PERIOD_S:
     doc: "Time between successive status logs, in seconds."
     default: 5
+- IVS_CONFIG_INCLUDE_SIGTERM_HANDLER:
+    doc: "Graceful exit on SIGTERM."
+    default: 1
 
 cxn_types: &cxn_types
 - CONNECT
@@ -117,13 +120,13 @@ cxn_roles: &cxn_roles
 
 definitions:
   cdefs:
-    IVS_CONFIG_HEADER: 
+    IVS_CONFIG_HEADER:
       defs: *cdefs
       basename: ivs_config
 
   logger:
     ivs:
-   
+
   portingmacro:
     IVS:
       macros:
@@ -155,7 +158,7 @@ definitions:
   xmacro:
     IVS_CXN_TYPE_ENTRY:
       members: *cxn_types
-    
+
   xenum:
     IVS_ENUMERATION_ENTRY:
       members: *enums
