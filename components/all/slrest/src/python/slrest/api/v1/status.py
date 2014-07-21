@@ -25,7 +25,7 @@ class v1_status_cpu_load(SLAPIObject):
     def GET(self, sync=False):
         try:
             with open('/proc/loadavg', 'r') as data:
-                avgs = data.readline().split()[0:3]
+                avgs = [float(x) for x in data.readline().split()[0:3]]
                 out = { '1-min-average': avgs[0],
                         '5-min-average': avgs[1],
                         '15-min-average': avgs[2] }
@@ -56,15 +56,24 @@ class v1_status_memory(SLAPIObject):
     """Get switch memory usage."""
     route = "/api/v1/status/memory"
     def GET(self, sync=False):
+
+        def _tup(line):
+            key, val = line.split(':')
+            val = val.strip()
+            if val.endswith(' kB'):
+                return (key, 1024*int(val[:-3]),)
+            raise ValueError("invalid output from meminfo: %s" % line)
+
         try:
-            with open('/proc/meminfo', 'r') as data:
-                memtotal = data.readline().split(':')[1].strip()
-                memfree = data.readline().split(':')[1].strip()
-                out = { 'total': memtotal, 'free': memfree }
-        except:
-            return SLREST.error(self.route, 
-                                reason='Unable to get memory usage.\n')
-        return SLREST.ok(self.route, reason='Command successful.\n',
+            with open('/proc/meminfo', 'r') as fd:
+                meminfo = dict(map(_tup, fd.read().strip().splitlines()))
+                out = dict(total=meminfo['MemTotal'],
+                           free=meminfo['MemFree'])
+        except Exception, e:
+            msg = "Unable to get memory usage: %s" % str(e)
+            return SLREST.error(self.route, reason=msg)
+        return SLREST.ok(self.route,
+                         reason='Command successful.\n',
                          data=out)
 
     @staticmethod
