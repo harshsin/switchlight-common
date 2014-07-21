@@ -32,3 +32,10 @@ install-build-deps:
 
 update:
 	cd $(SWITCHLIGHT)/debian/repo && ./update.sh
+
+ztn:
+	$(MAKE) -C components/all/ztn deb
+	$(MAKE) -C components/powerpc/linux/initrd-powerpc deb
+	$(MAKE) -C components/powerpc/platform/powerpc-as5710-54x-r0b deb
+	$(MAKE) -C builds/installer/powerpc/ztn
+	url builds/installer/powerpc/ztn/*.installer

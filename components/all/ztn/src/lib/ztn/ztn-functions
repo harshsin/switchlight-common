@@ -56,7 +56,7 @@ ZTN_DISCOVERY_RESPONSE_WAIT=${ZTN_DISCOVERY_RESPONSE_WAIT:-0}
 #
 # This is the default timeout for ZTN Manifest Transactions
 #
-ZTN_MANIFEST_TIMEOUT=${ZTN_MANIFEST_TIMEOUT:-2}
+ZTN_MANIFEST_TIMEOUT=${ZTN_MANIFEST_TIMEOUT:-4}
 
 #
 # This is the default timeout for ZTN image download transactions
