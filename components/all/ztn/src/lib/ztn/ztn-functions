@@ -145,9 +145,17 @@ ztn_wget()
     fi
 
     if [ "$silent" ]; then
-        timeout "$targs" wget -O "${dst}" "${url}" > /dev/null 2>&1
+        if test -x /usr/bin/python; then
+            timeout "$targs" /usr/bin/python /lib/ztn/wget.py "${dst}" "${url}" > /dev/null 2>&1
+        else
+            timeout "$targs" wget -O "${dst}" "${url}" > /dev/null 2>&1
+        fi
     else
-        timeout "$targs" wget -O "${dst}" "${url}"
+        if test -x /usr/bin/python; then
+            timeout "$targs" /usr/bin/python /lib/ztn/wget.py "${dst}" "${url}"
+        else
+            timeout "$targs" wget -O "${dst}" "${url}"
+        fi
     fi
 
     rv=$?
@@ -395,6 +403,17 @@ ztn_cache_install_url()
 
 ##############################
 #
+# ztn_manifest_valid
+#
+ztn_manifest_valid()
+{
+    man=${1:-${ZTN_MANIFEST}}
+    jq -M -r .not-a-key ${man} 1>/dev/null 2>&1
+    return $?
+}
+
+##############################
+#
 # ztn_manifest_key_get
 #
 ztn_manifest_key_get()
@@ -450,6 +469,11 @@ ztn_transact_url()
         echo "Trying manifest ${murl}"
         ztn_wget "${manifest}" "$murl" 1
         test $? -eq 0 || return 2
+    fi
+
+    if ! ztn_manifest_valid ${manifest}; then
+        echo "Not a valid manifest (invalid json), continuing..."
+        return 2
     fi
 
     echo "Discovered Switch Light manifest from url $murl"
