@@ -428,12 +428,10 @@ def save_tech_support(data):
     for lag in portManager.getLAGs():
         scripts.append('ofad-ctl port %s' % lag.portName)
 
-    if os.path.exists(DUMP_FLOWS_PATH):
-        scripts.append('%s/dumpt6.py -p 6634' % DUMP_FLOWS_PATH) 
-        scripts.append('%s/dumpflows.py -p 6634' % DUMP_FLOWS_PATH) 
-        scripts.append('%s/dumpdebugcounters.py -p 6634' % DUMP_FLOWS_PATH) 
-        scripts.append('%s/dumpgentables.py -p 6634' % DUMP_FLOWS_PATH) 
-        scripts.append('%s/dumpgroups.py -p 6634' % DUMP_FLOWS_PATH) 
+    if os.path.isdir(DUMP_FLOWS_PATH):
+        for script in ['dumpt6.py', 'dumpflows.py', 'dumpdebugcounters.py', \
+            'dumpgentables.py', 'dumpgroups.py']: 
+            scripts.append('%s/%s -p 6634' % (DUMP_FLOWS_PATH, script))
 
     p = subprocess.Popen(args=['/bin/bash'],
                          bufsize=1,
