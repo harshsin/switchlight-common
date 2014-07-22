@@ -429,7 +429,7 @@ def save_tech_support(data):
         scripts.append('ofad-ctl port %s' % lag.portName)
 
     if os.path.isdir(DUMP_FLOWS_PATH):
-        for script in ['dumpt6.py', 'dumpflows.py', 'dumpdebugcounters.py', \
+        for script in ['dumpt6.py', 'dumpflows.py', 'dumpdebugcounters.py',
             'dumpgentables.py', 'dumpgroups.py']: 
             scripts.append('%s/%s -p 6634' % (DUMP_FLOWS_PATH, script))
 
