@@ -13,7 +13,7 @@ echo "" >/etc/sl_crashkernel
 echo "# MTD device name       Device offset   Env. size       Flash sector size" >  /etc/fw_env.config
 echo "/dev/mtd1               0x00000000      0x00002000      0x00010000"        >> /etc/fw_env.config
 
-if fw_printenv sl_installer_use_mmc; then
+if fw_printenv sl_installer_use_mmc > /dev/null 2>&1; then
     echo "block/mmcblk0 mmcblk0p2 flash" > /etc/sl_mounts
     echo "block/mmcblk0 mmcblk0p3 flash2" >> /etc/sl_mounts
 else
