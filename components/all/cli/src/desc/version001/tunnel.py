@@ -1,7 +1,5 @@
 # Copyright (c) 2014  BigSwitch Networks
 
-import command
-
 SHOW_TUNNEL_COMMAND_DESCRIPTION = {
     'name'          : 'show',
     'mode'          : 'login',
