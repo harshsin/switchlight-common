@@ -16,5 +16,7 @@ clean:
 	dh clean
 
 override_dh_auto_install:
-	@echo "Fill me out."
-
+	mkdir -p  $(INSTALL_DIR)/lib/platform-config/powerpc-quanta-lb9-r0/lib
+	mkdir -p  $(INSTALL_DIR)/lib/platform-config/powerpc-quanta-lb9-r0/bin
+	cp ../../build/powerpc-linux-gnu/bin/libonlp-powerpc-quanta-lb9-r0.so $(INSTALL_DIR)/lib/platform-config/powerpc-quanta-lb9-r0/lib
+	cp ../../onlpdump $(INSTALL_DIR)/lib/platform-config/powerpc-quanta-lb9-r0/bin/onlpdump
