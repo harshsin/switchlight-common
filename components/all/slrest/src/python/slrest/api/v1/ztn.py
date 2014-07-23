@@ -275,7 +275,7 @@ class v1_ztn_reload(SLAPIObject):
 
         class Reload(TransactionTask):
             #
-            # This hanlder performs the actual work
+            # This handler performs the actual work
             #
             def handler(self):
                 (rc, error) = config.reload_config(server)
@@ -284,6 +284,7 @@ class v1_ztn_reload(SLAPIObject):
                     self.reason = error
                 else:
                     self.status = SLREST.Status.OK
+                    self.reason = "ZTN reload completed successfully."
                 self.finish()
 
         # Use requester IP as server if server is not provided
@@ -292,6 +293,17 @@ class v1_ztn_reload(SLAPIObject):
 
         tm = ztn_transaction_manager_get()
         (tid, tt) = tm.new_task(Reload, self.route, server)
+
+        if tid is None:
+            # Transaction already in progress
+            return SLREST.pending(self.route)
+
+        # If the response should be synchronous then join the task:
+        if sync:
+            tt.join()
+
+        # Return the response
+        return tt.response()
 
     @staticmethod
     def cliZtnReload(hostname, port, server):
