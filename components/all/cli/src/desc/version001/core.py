@@ -417,6 +417,8 @@ tech_support_scripts = [
     'ofad-ctl bigwire qinq',
 ]
 
+DUMP_FLOWS_PATH = '/usr/local/bin/dump-flows'
+
 def save_tech_support(data):
     tech_support_file = '/mnt/flash2/tech-support_%s.gz' % \
         datetime.now().strftime('%y%m%d%H%M%S')
@@ -425,6 +427,11 @@ def save_tech_support(data):
     scripts = list(tech_support_scripts)
     for lag in portManager.getLAGs():
         scripts.append('ofad-ctl port %s' % lag.portName)
+
+    if os.path.isdir(DUMP_FLOWS_PATH):
+        for script in ['dumpt6.py', 'dumpflows.py', 'dumpdebugcounters.py',
+            'dumpgentables.py', 'dumpgroups.py']: 
+            scripts.append('%s/%s -p 6634' % (DUMP_FLOWS_PATH, script))
 
     p = subprocess.Popen(args=['/bin/bash'],
                          bufsize=1,
