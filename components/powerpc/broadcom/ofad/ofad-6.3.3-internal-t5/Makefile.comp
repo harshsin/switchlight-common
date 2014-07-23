@@ -46,6 +46,7 @@ DEPENDMODULES := SocketManager OFConnectionManager BRCM snmp BRCMDriver3 \
 	tagport pimu nwac cintm sl ofadm BigHash lacpa lldpa \
 	arpa dhcpra router_ip_table icmpa debug_counter timer_wheel onlplib \
 	minimatch
+DEPENDMODULE_HEADERS := onlp sff
 
 #
 # Resolve module dependencies
@@ -76,8 +77,6 @@ GLOBAL_CFLAGS += $(foreach mod,$(DEPENDMODULES_UPPER),-D$(mod)_CONFIG_INCLUDE_UC
 
 # These indicate Linux specific implementations to be used for
 # various features
-GLOBAL_CFLAGS += -I$(onlp_BASEDIR)/module/inc
-GLOBAL_CFLAGS += -I$(sff_BASEDIR)/module/inc
 GLOBAL_CFLAGS += -DINDIGO_LINUX_LOGGING
 GLOBAL_CFLAGS += -DINDIGO_LINUX_TIME
 GLOBAL_CFLAGS += -DINDIGO_LINUX_TIME_MONOTONIC
