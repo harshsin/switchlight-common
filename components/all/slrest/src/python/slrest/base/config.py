@@ -14,7 +14,7 @@ import os
 # Set default logger
 logger = logging.getLogger("config")
 
-def set_logger(logger_):
+def setLogger(logger_):
     global logger
     logger = logger_
 
@@ -23,24 +23,19 @@ FILTER_REGEX = re.compile(r"^SwitchLight.*|^.*?\(config\).*|^Exiting.*|^\!|^[\s]
 
 ZTN_JSON = "/mnt/flash/boot/ztn.json"
 
-def read_ztn_json():
+def read_ztn_json(path=ZTN_JSON):
     """
     Read ZTN JSON file.
     """
-    if not os.path.exists(ZTN_JSON):
-        raise IOError("ZTN json file not found")
+    with open(path, "r") as f:
+        data = json.loads(f.read())
+    return data
 
-    with open(ZTN_JSON, "r") as f:
-        return json.loads(f.read())
-
-def write_ztn_json(data):
+def write_ztn_json(data, path=ZTN_JSON):
     """
     Write ZTN JSON file.
     """
-    if not os.path.exists(ZTN_JSON):
-        raise IOError("ZTN json file not found")
-
-    with open(ZTN_JSON, "w") as f:
+    with open(path, "w") as f:
         f.write(json.dumps(data))
 
 def compare_configs(old_cfg, new_cfg):
@@ -87,10 +82,10 @@ def get_config_from_ztn_server(ztn_server):
     md5sum = os.path.basename(path).split(".")[0]
     logger.debug("startup config md5sum: %s" % md5sum)
 
-    # parse config
     with open(path, "r") as f:
         cfg = [l for l in f.read().splitlines() if not FILTER_REGEX.match(l)]
-        return (cfg, md5sum)
+
+    return (cfg, md5sum)
 
 def get_running_config():
     """
@@ -134,8 +129,11 @@ def reload_config(ztn_server):
     error = None
 
     try:
-        # read ZTN JSON file, get startup config from ZTN
-        ztn_json = read_ztn_json()
+        # save states for roll-back
+        old_cfg = get_running_config()
+        old_ztn_json = read_ztn_json()
+
+        # get startup config from ZTN
         new_cfg, md5sum = get_config_from_ztn_server(ztn_server)
 
         # revert to default, apply new config
@@ -147,9 +145,10 @@ def reload_config(ztn_server):
         verify_configs(new_cfg, post_cfg)
 
         # update ZTN JSON file, save config
-        ztn_json["startup_config_md5"] = md5sum
-        write_ztn_json(ztn_json)
+        new_ztn_json = old_ztn_json.copy()
+        new_ztn_json["startup_config_md5"] = md5sum
         save_running_config()
+        write_ztn_json(new_ztn_json)
 
         logger.debug("update config finished.")
 
@@ -157,5 +156,23 @@ def reload_config(ztn_server):
         logger.exception("update config failed.")
         rc = 1
         error = str(e)
+
+        # attempt roll-back
+        try:
+            revert_default_config()
+            apply_config(old_cfg)
+
+            post_cfg = get_running_config()
+            verify_configs(old_cfg, post_cfg)
+
+            save_running_config()
+            write_ztn_json(old_ztn_json)
+
+            logger.debug("roll-back config finished.")
+
+        except Exception, e2:
+            logger.exception("roll-back config failed.")
+            rc = 2
+            error += "\n%s" % str(e2)
 
     return (rc, error)

@@ -161,7 +161,7 @@ class SwitchLightRestServer(object):
         SLAPIObject.mount_all(self.logger)
 
         # Set config logger
-        config.set_logger(self.logger)
+        config.setLogger(self.logger)
 
         return True
 
