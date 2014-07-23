@@ -55,8 +55,8 @@ def verify_configs(expected_cfg, actual_cfg):
     """
     lines1, lines2 = compare_configs(expected_cfg, actual_cfg)
     if len(lines1) != 0 or len(lines2) != 0:
-        logger.error("Missing lines:\n%s" % lines1)
-        logger.error("Extra lines:\n%s" % lines2)
+        logger.error("Missing lines:\n%s", lines1)
+        logger.error("Extra lines:\n%s", lines2)
         raise ValueError("Verify configs failed.")
 
 def get_config_from_ztn_server(ztn_server):
@@ -65,7 +65,7 @@ def get_config_from_ztn_server(ztn_server):
     Filter out unneeded lines.
     Return config as a list of config lines (strings) and md5sum.
     """
-    logger.debug("Fetching config from ztn server: %s" % ztn_server)
+    logger.debug("Fetching config from ztn server: %s", ztn_server)
 
     (rc, out) = util.bash_command("ztn --transact --server %s" % ztn_server)
     if rc:
@@ -77,10 +77,10 @@ def get_config_from_ztn_server(ztn_server):
         raise IOError("Failed to get ZTN startup config path: %s" % out)
 
     path = out.strip()
-    logger.debug("startup config path: %s" % path)
+    logger.debug("startup config path: %s", path)
 
     md5sum = os.path.basename(path).split(".")[0]
-    logger.debug("startup config md5sum: %s" % md5sum)
+    logger.debug("startup config md5sum: %s", md5sum)
 
     with open(path, "r") as f:
         cfg = [l for l in f.read().splitlines() if not FILTER_REGEX.match(l)]
@@ -104,21 +104,21 @@ def apply_config(cfg):
     """
     cmd = ";".join(cfg)
     out = util.pcli_command(cmd)
-    logger.debug("pcli output:\n%s" % out)
+    logger.debug("pcli output:\n%s", out)
 
 def revert_default_config():
     """
     Revert to default config via pcli.
     """
     out = util.pcli_command("_internal; revert-default")
-    logger.debug("pcli output:\n%s" % out)
+    logger.debug("pcli output:\n%s", out)
 
 def save_running_config():
     """
     Save running config as startup config via pcli.
     """
     out = util.pcli_command("copy running-config startup-config")
-    logger.debug("pcli output:\n%s" % out)
+    logger.debug("pcli output:\n%s", out)
 
 def reload_config(ztn_server):
     """
