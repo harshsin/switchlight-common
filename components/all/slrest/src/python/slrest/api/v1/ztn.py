@@ -294,78 +294,23 @@ class v1_ztn_reload(SLAPIObject):
         (tid, tt) = tm.new_task(Reload, self.route, server)
 
     @staticmethod
-    def cliZtnReload(hostname, port):
+    def cliZtnReload(hostname, port, server):
         try:
             response = SLAPIObject.post(hostname, port, v1_ztn_reload.route,
-                                        {"sync": True})
-
-    @staticmethod
-    def cmdZtnReload(sub_parser, register=False):
-        if register:
-            p = sub_parser.add_parser("ztn-reload")
-            p.set_defaults(func=v1_ztn_reload.cmdZtnReload)
-        else:
-            v1_ztn_reload.cliZtnReload(sub_parser.hostname, sub_parser.port)
-
-class v1_ztn_fake_reload(SLAPIObject):
-    """Pretend to reload.
-
-    Simply sleep for the given number of seconds.
-    """
-    route = "/api/v1/ztn/reload"
-    def POST(self, sync=False):
-
-        RELOAD_DELAY = 10
-
-        #
-        # Declare a subclass of TransactionTask
-        # to contain your task's functionality
-        #
-        class Reload(TransactionTask):
-            #
-            # This handler performs the actual work
-            #
-            def handler(self):
-                time.sleep(self.args)
-                self.status = SLREST.Status.OK
-                self.reason = "Sleep %d seconds completed." % self.args
-                self.finish()
-
-        # Get a transaction manager. We just instance one per our route
-        # Normally this would be per transaction group.
-        tm = TransactionManagers.get(self.route)
-
-        # Generate a new task and return the task response.
-        # The first argument is the TransactionTask class.
-        # The second argument is the path for the response.
-        # Its just easiest to specify it here, where we already know the route.
-        # The first argument is optional, but will be passed to the subclass
-        # as the .args member
-        (tid, tt) = tm.new_task(Reload, self.route, RELOAD_DELAY)
-
-        # If the response should be syncronous then join the task:
-        if sync:
-            tt.join()
-
-        # Return the response
-        return tt.response()
-
-    @staticmethod
-    def cliReload(hostname, port):
-        try:
-            path = "%s?sync=True" % (v1_ztn_fake_reload.route)
-            response = SLAPIObject.get(hostname, port, path)
+                                        {"server": server, "sync": True})
             SLAPIObject.dataResult(response.read())
         except:
             pass
 
     @staticmethod
-    def cmdReload(sub_parser, register=False):
+    def cmdZtnReload(sub_parser, register=False):
         if register:
-            p = sub_parser.add_parser("reload")
-            p.set_defaults(func=v1_ztn_fake_reload.cmdReload)
+            p = sub_parser.add_parser("ztn-reload")
+            p.add_argument("server", default=None)
+            p.set_defaults(func=v1_ztn_reload.cmdZtnReload)
         else:
-            v1_ztn_fake_reload.cliReload(sub_parser.hostname, sub_parser.port)
+            v1_ztn_reload.cliZtnReload(sub_parser.hostname, sub_parser.port,
+                                       sub_parser.server)
 
 class v1_ztn_preflight_url(SLAPIObject):
     """Perform the preflight operation.

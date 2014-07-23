@@ -8,9 +8,8 @@
 from slrest.base import util
 import logging
 import re
-import yaml
-
-from datetime import datetime
+import json
+import os
 
 # Set default logger
 logger = logging.getLogger("config")
@@ -22,8 +21,27 @@ def set_logger(logger_):
 # Used for filtering out unneeded lines in config
 FILTER_REGEX = re.compile(r"^SwitchLight.*|^.*?\(config\).*|^Exiting.*|^\!|^[\s]*$")
 
-# Used for converting date string into datetime object
-DATETIME_FMT_STR = "%a %b %d %X %Z %Y"
+ZTN_JSON = "/mnt/flash/boot/ztn.json"
+
+def read_ztn_json():
+    """
+    Read ZTN JSON file.
+    """
+    if not os.path.exists(ZTN_JSON):
+        raise IOError("ZTN json file not found")
+
+    with open(ZTN_JSON, "r") as f:
+        return json.loads(f.read())
+
+def write_ztn_json(data):
+    """
+    Write ZTN JSON file.
+    """
+    if not os.path.exists(ZTN_JSON):
+        raise IOError("ZTN json file not found")
+
+    with open(ZTN_JSON, "w") as f:
+        f.write(json.dumps(data))
 
 def compare_configs(old_cfg, new_cfg):
     """
@@ -50,7 +68,7 @@ def get_config_from_ztn_server(ztn_server):
     """
     Fetch config from ZTN server.
     Filter out unneeded lines.
-    Return config as a list of config lines (strings).
+    Return config as a list of config lines (strings) and md5sum.
     """
     logger.debug("Fetching config from ztn server: %s" % ztn_server)
 
@@ -59,41 +77,20 @@ def get_config_from_ztn_server(ztn_server):
         raise IOError("Failed to transact with ZTN server (%s): %s" % \
                       (ztn_server, out))
 
-    (rc, out) = util.bash_command("ztn --inventory")
+    (rc, out) = util.bash_command("ztn --startup")
     if rc:
-        raise IOError("Failed to get ZTN inventory: %s" % out)
+        raise IOError("Failed to get ZTN startup config path: %s" % out)
 
-    inv = yaml.load(out)
-    logger.debug("ztn inv: %s" % inv)
+    path = out.strip()
+    logger.debug("startup config path: %s" % path)
 
-    # get the latest entry
-    md5sum = None
-    path = None
-    latest = None
-    for k, v in inv.get("startup-config", {}).items():
-        curr = datetime.strptime(str(v["date"]), DATETIME_FMT_STR)
-        if (latest is None) or (curr > latest):
-            latest = curr
-            md5sum = k
-            path = str(v["path"])
-
-    if latest is None:
-        raise IOError("Failed to find startup-config entries in ZTN inv")
+    md5sum = os.path.basename(path).split(".")[0]
+    logger.debug("startup config md5sum: %s" % md5sum)
 
     # parse config
-    f = open(path)
-    cfg = [l for l in f.read().splitlines() if not FILTER_REGEX.match(l)]
-    return (cfg, md5sum)
-
-def get_startup_config():
-    """
-    Get startup config from pcli.
-    Filter out unneeded lines.
-    Return config as a list of config lines (strings).
-    """
-    out = util.pcli_command("show running-config")
-    cfg = [l for l in out.splitlines() if not FILTER_REGEX.match(l)]
-    return cfg
+    with open(path, "r") as f:
+        cfg = [l for l in f.read().splitlines() if not FILTER_REGEX.match(l)]
+        return (cfg, md5sum)
 
 def get_running_config():
     """
@@ -105,28 +102,6 @@ def get_running_config():
     cfg = [l for l in out.splitlines() if not FILTER_REGEX.match(l)]
     return cfg
 
-def create_patch_config(old_cfg, new_cfg):
-    """
-    Create patch config from old_cfg and new_cfg.
-    old_cfg and new_cfg are lists of config lines (strings).
-    Return patch config as a list of config lines (strings).
-    """
-    old_lines, new_lines = compare_configs(old_cfg, new_cfg)
-    logger.debug("old_lines:\n%s" % old_lines)
-    logger.debug("new_lines:\n%s" % new_lines)
-
-    # create patch config:
-    # (1) for old lines:
-    #   -if regular (non-"no") command, prepend with "no" to remove
-    #   -if "no" command, reverse by removing "no" from head
-    #
-    # (2) for new lines:
-    #   - apply as is
-    #
-    # FIXME: logic might need to be revisited
-    return [l[3:] if l.startswith("no ") else "no %s" % l \
-            for l in old_lines] + new_lines
-
 def apply_config(cfg):
     """
     Apply config in cfg via pcli.
@@ -134,6 +109,13 @@ def apply_config(cfg):
     """
     cmd = ";".join(cfg)
     out = util.pcli_command(cmd)
+    logger.debug("pcli output:\n%s" % out)
+
+def revert_default_config():
+    """
+    Revert to default config via pcli.
+    """
+    out = util.pcli_command("_internal; revert-default")
     logger.debug("pcli output:\n%s" % out)
 
 def save_running_config():
@@ -152,18 +134,23 @@ def reload_config(ztn_server):
     error = None
 
     try:
+        # read ZTN JSON file, get startup config from ZTN
+        ztn_json = read_ztn_json()
         new_cfg, md5sum = get_config_from_ztn_server(ztn_server)
-        old_cfg = get_running_config()
-        logger.debug("old_cfg:\n%s" % old_cfg)
-        logger.debug("new_cfg:\n%s" % new_cfg)
 
-        patch_cfg = create_patch_config(old_cfg, new_cfg)
-        logger.debug("patch_cfg:\n%s" % patch_cfg)
+        # revert to default, apply new config
+        revert_default_config()
+        apply_config(new_cfg)
 
-        apply_config(patch_cfg)
+        # verify config
         post_cfg = get_running_config()
         verify_configs(new_cfg, post_cfg)
+
+        # update ZTN JSON file, save config
+        ztn_json["startup_config_md5"] = md5sum
+        write_ztn_json(ztn_json)
         save_running_config()
+
         logger.debug("update config finished.")
 
     except Exception, e:
