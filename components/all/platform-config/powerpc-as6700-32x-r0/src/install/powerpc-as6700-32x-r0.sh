@@ -35,6 +35,6 @@ platform_installer() {
     # We need to set eth2addr and eth3addr in order for our interfaces to come up.
     # eth2addr is unused. eth3addr is ma1.
     # Fixme.
-    fw_setenv -f eth2addr 00:00:00:FF:FF:FF
+    fw_setenv -f eth2addr 00:00:00:00:00:00
     fw_setenv -f eth3addr $macaddr
 }
