@@ -151,6 +151,8 @@ class Interface(object):
             clear_mgmt_intf_config(self.name)
             shell.call("touch /etc/sl-dhcp-enabled-%s" % (self.name))
             shell.call(Interface.START_DHCLIENT % ({"name" : self.name}))
+            # This is required to repopulate /etc/resolv.conf
+            shell.call("resolvconf -u")
         else:
             shell.call(Interface.STOP_DHCLIENT % ({"name" : self.name}))
             clear_mgmt_intf_config(self.name)
