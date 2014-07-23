@@ -54,10 +54,15 @@ ZTN_DISCOVERY_RESPONSE_WAIT=${ZTN_DISCOVERY_RESPONSE_WAIT:-0}
 
 
 #
-# This is the default timeout value for
-# network transactions (120 seconds)
+# This is the default timeout for ZTN Manifest Transactions
 #
-ZTN_TIMEOUT=${ZTN_TIMEOUT:-120}
+ZTN_MANIFEST_TIMEOUT=${ZTN_MANIFEST_TIMEOUT:-4}
+
+#
+# This is the default timeout for ZTN image download transactions
+#
+ZTN_DOWNLOAD_TIMEOUT=${ZTN_DOWNLOAD_TIMEOUT:-120}
+
 
 
 #
@@ -123,7 +128,7 @@ ztn_init()
 
 ##############################
 #
-# ztn_wget <dst> <url> <silent>
+# ztn_wget <dst> <url> <silent> <timeout>
 #
 # Perform a wget operation with
 # timeout and cleanup.
@@ -132,9 +137,9 @@ ztn_wget()
 {
     local dst=$1
     local url=$2
-    local silent=$3
+    local timeout=$3
+    local silent=$4
 
-    local timeout=$ZTN_TIMEOUT
     local rv=0
     local targs
 
@@ -145,9 +150,17 @@ ztn_wget()
     fi
 
     if [ "$silent" ]; then
-        timeout "$targs" wget -O "${dst}" "${url}" > /dev/null 2>&1
+        if test -x /usr/bin/python; then
+            timeout "$targs" /usr/bin/python /lib/ztn/wget.py "${dst}" "${url}" > /dev/null 2>&1
+        else
+            timeout "$targs" wget -O "${dst}" "${url}" > /dev/null 2>&1
+        fi
     else
-        timeout "$targs" wget -O "${dst}" "${url}"
+        if test -x /usr/bin/python; then
+            timeout "$targs" /usr/bin/python /lib/ztn/wget.py "${dst}" "${url}"
+        else
+            timeout "$targs" wget -O "${dst}" "${url}"
+        fi
     fi
 
     rv=$?
@@ -335,7 +348,7 @@ ztn_download_url()
     case "${url}" in
         http:*|ftp:*)
             echo "Downloading ${url}...."
-            if ! ztn_wget "${localdst}" "${url}"; then
+            if ! ztn_wget "${localdst}" "${url}" ${ZTN_DOWNLOAD_TIMEOUT}; then
                 return 2
             fi
             ;;
@@ -395,6 +408,17 @@ ztn_cache_install_url()
 
 ##############################
 #
+# ztn_manifest_valid
+#
+ztn_manifest_valid()
+{
+    man=${1:-${ZTN_MANIFEST}}
+    jq -M -r .not_a_key ${man} 1>/dev/null 2>&1
+    return $?
+}
+
+##############################
+#
 # ztn_manifest_key_get
 #
 ztn_manifest_key_get()
@@ -448,8 +472,13 @@ ztn_transact_url()
         cp "${murl}" "${manifest}"
     else
         echo "Trying manifest ${murl}"
-        ztn_wget "${manifest}" "$murl" 1
+        ztn_wget "${manifest}" "$murl" ${ZTN_MANIFEST_TIMEOUT} 1
         test $? -eq 0 || return 2
+    fi
+
+    if ! ztn_manifest_valid ${manifest}; then
+        echo "Not a valid manifest (invalid json), continuing..."
+        return 2
     fi
 
     echo "Discovered Switch Light manifest from url $murl"

@@ -10,7 +10,7 @@
 #
 # Installer scriptlet for the powerpc-as6700-32x
 #
-if fw_printenv sl_installer_use_mmc; then
+if fw_printenv sl_installer_use_mmc > /dev/null 2>&1; then
     # The loader is installed in the fat partition of the first MMC device.
     # This is a workaround for early samples that had a broken flash device.
     # It requires manually inserted an SD card.

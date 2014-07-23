@@ -17,7 +17,7 @@ RFSTOOL="${HRFSTOOL} --chroot ${WS_ROOT}"
 
 ${HRFSTOOL} -c overlay "${SHARED_DIR}" "${WS_ROOT}"
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d initdev defaults
-chroot "${WS_ROOT}" /usr/sbin/update-rc.d restorepersist defaults
+chroot "${WS_ROOT}" /usr/sbin/update-rc.d restorepersist remove
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d rc.boot defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d platform-baseconf defaults
 chroot "${WS_ROOT}" /usr/sbin/update-rc.d ofad-baseconf defaults

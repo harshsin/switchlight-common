@@ -5,7 +5,7 @@
 include $(SWITCHLIGHT)/builds/swi/powerpc/basepackages.mk
 include platforms.mk
 
-SWI_PACKAGES_ALL += pcli slrest switchlight-internal-dbg-sources t6-dump-flows
+SWI_PACKAGES_ALL += pcli slrest t6-dump-flows switchlight-internal-dbg-sources
 
 SWI_PACKAGES_POWERPC += \
 	brcmd-6.3.3-internal \
