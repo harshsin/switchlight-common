@@ -28,7 +28,7 @@ TOOLCHAIN=powerpc-linux-gnu
 MODULE := libonlp-module
 include $(BUILDER)/standardinit.mk
 
-DEPENDMODULES := AIM onlplib onlp cjson cjson_util sff IOF
+DEPENDMODULES := AIM onlplib onlp cjson cjson_util sff IOF timer_wheel OS
 
 LIBONLP_PLATFORM_DEFAULTS := $(shell $(SWITCHLIGHT_PKG_INSTALL) onlp-platform-defaults:powerpc --find-file libonlp-platform-defaults.so)
 LIBONLP_PLATFORM := $(shell $(SWITCHLIGHT_PKG_INSTALL) onlp-platform:powerpc --find-file libonlp-platform.so)
