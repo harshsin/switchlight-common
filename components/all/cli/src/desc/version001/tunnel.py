@@ -9,7 +9,7 @@ SHOW_TUNNEL_COMMAND_DESCRIPTION = {
             'token'         : 'tunnel',
             'action'        : 'ofad-ctl-command',
             'command'       : 'tunnel summary',
-            'short-help'    : 'Show Tunnel statistics',
+            'short-help'    : 'Show tunnel summary',
             'doc'           : 'tunnel|show',
         },
     ),
