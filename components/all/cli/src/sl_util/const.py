@@ -14,7 +14,7 @@ OF_MAX_PORT     = LAG_BASE_OF_PORT_NUM + LAG_MAX_NUM
 MGMT_PORT_BASE  = "ma"
 MGMT_PORTS      = ["ma1"]
 
-TUN_PORT_BASE   = "tun"
+TUN_PORT_BASE   = "tunnel"
 
 PLATFORM_PATH   = "/etc/sl_platform"
 VERSION_PATH    = "/etc/sl_version"
