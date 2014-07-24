@@ -36,8 +36,7 @@ command.add_typedef({
         'help-name' : 'comma-separated list of port ranges',
         'base-type' : 'string',
         'pattern'   : r'^('+ opt_re(OFAgentConfig.physical_base_name) + '|' +
-        opt_re(OFAgentConfig.lag_base_name) + '|' +
-        opt_re(const.TUN_PORT_BASE) + ')(\d+(-\d+)?,)*\d+(-\d+)?$',
+        opt_re(OFAgentConfig.lag_base_name) + ')(\d+(-\d+)?,)*\d+(-\d+)?$',
         })
 
 
@@ -196,8 +195,7 @@ def parse_port_list(orig_port_list):
 
     # extract the interface base name
     short_base = get_base_name(orig_port_list)
-    all_bases = [const.MGMT_PORT_BASE, const.TUN_PORT_BASE] + \
-                PortManager.getAllPortBases()
+    all_bases = [const.MGMT_PORT_BASE] + PortManager.getAllPortBases()
     base = None
     for b in all_bases:
         if b.startswith(short_base):
@@ -214,9 +212,6 @@ def parse_port_list(orig_port_list):
     # check that each port exists
     all_ports = const.MGMT_PORTS + portMgr.getExistingPorts()
     for port in port_list:
-        if port.startswith(const.TUN_PORT_BASE):
-            continue
-
         if port not in all_ports:
             raise error.ActionError('%s is not an existing interface' % port)
 
