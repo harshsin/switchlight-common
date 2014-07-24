@@ -337,13 +337,16 @@ ivs_enable(ivs_t* ivs, int enable)
     /* Enable everyone */
     TRY(ind_soc_enable_set(enable));
     TRY(ind_cxn_enable_set(enable));
-    TRY(ind_fwd_enable_set(enable));
-    TRY(ind_port_enable_set(enable));
-    TRY(ind_core_enable_set(enable));
 
+    /* Enable aet before fwd and port to handle
+     * packet-ins and async port notifications. */
 #ifdef DEPENDMODULE_INCLUDE_AET
     TRY(aet_enable_set(enable));
 #endif
+
+    TRY(ind_fwd_enable_set(enable));
+    TRY(ind_port_enable_set(enable));
+    TRY(ind_core_enable_set(enable));
 
 #ifdef DEPENDMODULE_INCLUDE_SNMP
     TRY(snmp_enable_set(enable));
