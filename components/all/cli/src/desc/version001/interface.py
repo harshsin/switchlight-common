@@ -36,7 +36,7 @@ command.add_typedef({
         'help-name' : 'comma-separated list of port ranges',
         'base-type' : 'string',
         'pattern'   : r'^('+ opt_re(OFAgentConfig.physical_base_name) + '|' +
-        opt_re(OFAgentConfig.lag_base_name) + ')(\d+(-\d+)?,)*\d+(-\d+)?$',
+        opt_re(OFAgentConfig.lag_base_name) +')(\d+(-\d+)?,)*\d+(-\d+)?$',
         })
 
 
