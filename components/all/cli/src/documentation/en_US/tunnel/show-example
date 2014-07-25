@@ -1,0 +1,15 @@
+show tunnel 1
+
+tunnel1:
+  OF Port:    200  Parent:    1  Loopback:    7
+  VPN:     0xbeef  DSCP:      0  TTL:        64
+  Flags:   0x0000000a
+  MAC:     5c:16:c7:1a:e9:e0
+  NextHop: 00:00:00:aa:bb:cc
+  SIP:     10.0.0.1
+  DIP:     10.0.0.2
+  Encap enabled: 1
+  Encap stats:
+           0 pkts         0 bytes
+  Decap stats:
+           0 pkts         0 bytes
