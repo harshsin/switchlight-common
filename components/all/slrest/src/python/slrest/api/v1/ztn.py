@@ -305,43 +305,37 @@ class v1_ztn_transact_url(SLAPIObject):
         else:
             v1_ztn_transact_url.cliZtnTransactUrl(sub_parser.hostname, sub_parser.port, sub_parser.url)
 
-class v1_ztn_fake_reload(SLAPIObject):
-    """Pretend to reload.
-
-    Simply sleep for the given number of seconds.
-    """
+class v1_ztn_reload(SLAPIObject):
+    """Perform a config reload."""
     route = "/api/v1/ztn/reload"
-    def POST(self, sync=False):
+    def POST(self, server=None, sync=False):
 
-        RELOAD_DELAY = 10
-
-        #
-        # Declare a subclass of TransactionTask
-        # to contain your task's functionality
-        #
         class Reload(TransactionTask):
             #
             # This handler performs the actual work
             #
             def handler(self):
-                time.sleep(self.args)
-                self.status = SLREST.Status.OK
-                self.reason = "Sleep %d seconds completed." % self.args
+                (rc, error) = config.reload_config(server)
+                if rc:
+                    self.status = SLREST.Status.ERROR
+                    self.reason = error
+                else:
+                    self.status = SLREST.Status.OK
+                    self.reason = "ZTN reload completed successfully."
                 self.finish()
 
-        # Get a transaction manager. We just instance one per our route
-        # Normally this would be per transaction group.
-        tm = TransactionManagers.get(self.route)
+        # Use requester IP as server if server is not provided
+        if server is None:
+            server = cherrypy.request.remote.ip
 
-        # Generate a new task and return the task response.
-        # The first argument is the TransactionTask class.
-        # The second argument is the path for the response.
-        # Its just easiest to specify it here, where we already know the route.
-        # The first argument is optional, but will be passed to the subclass
-        # as the .args member
-        (tid, tt) = tm.new_task(Reload, self.route, RELOAD_DELAY)
+        tm = ztn_transaction_manager_get()
+        (tid, tt) = tm.new_task(Reload, self.route, server)
 
-        # If the response should be syncronous then join the task:
+        if tid is None:
+            # Transaction already in progress
+            return SLREST.pending(self.route)
+
+        # If the response should be synchronous then join the task:
         if sync:
             tt.join()
 
@@ -349,21 +343,23 @@ class v1_ztn_fake_reload(SLAPIObject):
         return tt.response()
 
     @staticmethod
-    def cliReload(hostname, port):
+    def cliZtnReload(hostname, port, server):
         try:
-            path = "%s?sync=True" % (v1_ztn_fake_reload.route)
-            response = SLAPIObject.get(hostname, port, path)
+            response = SLAPIObject.post(hostname, port, v1_ztn_reload.route,
+                                        {"server": server, "sync": True})
             SLAPIObject.dataResult(response.read())
         except:
             pass
 
     @staticmethod
-    def cmdReload(sub_parser, register=False):
+    def cmdZtnReload(sub_parser, register=False):
         if register:
-            p = sub_parser.add_parser("reload")
-            p.set_defaults(func=v1_ztn_fake_reload.cmdReload)
+            p = sub_parser.add_parser("ztn-reload")
+            p.add_argument("server", default=None)
+            p.set_defaults(func=v1_ztn_reload.cmdZtnReload)
         else:
-            v1_ztn_fake_reload.cliReload(sub_parser.hostname, sub_parser.port)
+            v1_ztn_reload.cliZtnReload(sub_parser.hostname, sub_parser.port,
+                                       sub_parser.server)
 
 class v1_ztn_preflight_url(SLAPIObject):
     """Perform the preflight operation.
@@ -393,7 +389,7 @@ class v1_ztn_preflight_url(SLAPIObject):
             # Transaction already in progress
             return SLREST.pending(self.route)
 
-        # If the response should be syncronous then join the task:
+        # If the response should be synchronous then join the task:
         if sync:
             tt.join()
 

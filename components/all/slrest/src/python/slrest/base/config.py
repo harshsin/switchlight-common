@@ -6,86 +6,37 @@
 ############################################################
 
 from slrest.base import util
-
-from datetime import datetime
 import logging
 import re
-import urllib2
-import threading
-import Queue
-
-# Used for filtering out unneeded lines in config
-FILTER_REGEX = re.compile(r"^SwitchLight.*|^.*?\(config\).*|^Exiting.*|^\!|^[\s]*$")
+import json
+import os
 
 # Set default logger
 logger = logging.getLogger("config")
 
-# worker thread and data structures
-worker = None
-worker_id = None
-worker_lock = threading.Lock()
-
-# worker result queue
-result_queue = Queue.Queue()
-
-class ResultQueueEntry(object):
-    def __init__(self, transaction_id, exception=None):
-        self.transaction_id = transaction_id
-        self.finished = datetime.utcnow()
-        self.exception = exception
-
-class TransactionEntry(object):
-    def __init__(self, transaction_id):
-        self.lock = threading.Lock()
-        self.transaction_id = transaction_id
-        self.started = datetime.utcnow()
-        self.finished = None
-        self.error = None
-
-    def to_json(self):
-        return dict([(k, str(v)) for k, v in self.__dict__.items() if k != "lock"])
-
-class Transactions(object):
-    transactions = {}
-    counter = 1
-    counter_lock = threading.Lock()
-
-    @classmethod
-    def new_entry(klass):
-        with klass.counter_lock:
-            transaction_id = klass.counter
-            klass.counter += 1
-
-        entry = TransactionEntry(transaction_id)
-        klass.transactions[transaction_id] = entry
-        logger.debug("transaction created: %d" % transaction_id)
-        return transaction_id
-
-    @classmethod
-    def get_entry(klass, transaction_id):
-        if transaction_id not in klass.transactions:
-            # FIXME: consider other exception classes?
-            raise ValueError("transaction id %d is not found" % transaction_id)
-
-        entry = klass.transactions[transaction_id]
-        with entry.lock:
-            return entry.to_json()
-
-    @classmethod
-    def update_entry(klass, transaction_id, finished, error=None):
-        if transaction_id not in klass.transactions:
-           # FIXME: consider other exception classes?
-            raise ValueError("transaction id %d is not found" % transaction_id)
-
-        entry = klass.transactions[transaction_id]
-        with entry.lock:
-            entry.finished = finished
-            entry.error = error
-        logger.debug("transaction updated: %d" % transaction_id)
-
-def set_logger(logger_):
+def setLogger(logger_):
     global logger
     logger = logger_
+
+# Used for filtering out unneeded lines in config
+FILTER_REGEX = re.compile(r"^SwitchLight.*|^.*?\(config\).*|^Exiting.*|^\!|^[\s]*$")
+
+ZTN_JSON = "/mnt/flash/boot/ztn.json"
+
+def read_ztn_json(path=ZTN_JSON):
+    """
+    Read ZTN JSON file.
+    """
+    with open(path, "r") as f:
+        data = json.loads(f.read())
+    return data
+
+def write_ztn_json(data, path=ZTN_JSON):
+    """
+    Write ZTN JSON file.
+    """
+    with open(path, "w") as f:
+        f.write(json.dumps(data))
 
 def compare_configs(old_cfg, new_cfg):
     """
@@ -104,37 +55,37 @@ def verify_configs(expected_cfg, actual_cfg):
     """
     lines1, lines2 = compare_configs(expected_cfg, actual_cfg)
     if len(lines1) != 0 or len(lines2) != 0:
-        logger.error("Missing lines:\n%s" % lines1)
-        logger.error("Extra lines:\n%s" % lines2)
+        logger.error("Missing lines:\n%s", lines1)
+        logger.error("Extra lines:\n%s", lines2)
         raise ValueError("Verify configs failed.")
 
-def get_config_from_url(url):
+def get_config_from_ztn_server(ztn_server):
     """
-    Fetch config from a url.
+    Fetch config from ZTN server.
     Filter out unneeded lines.
-    Return config as a list of config lines (strings).
+    Return config as a list of config lines (strings) and md5sum.
     """
-    logger.debug("Fetching config from url: %s" % url)
+    logger.debug("Fetching config from ztn server: %s", ztn_server)
 
-    try:
-        f = urllib2.urlopen(url)
+    (rc, out) = util.bash_command("ztn --transact --server %s" % ztn_server)
+    if rc:
+        raise IOError("Failed to transact with ZTN server (%s): %s" % \
+                      (ztn_server, out))
+
+    (rc, out) = util.bash_command("ztn --startup")
+    if rc:
+        raise IOError("Failed to get ZTN startup config path: %s" % out)
+
+    path = out.strip()
+    logger.debug("startup config path: %s", path)
+
+    md5sum = os.path.basename(path).split(".")[0]
+    logger.debug("startup config md5sum: %s", md5sum)
+
+    with open(path, "r") as f:
         cfg = [l for l in f.read().splitlines() if not FILTER_REGEX.match(l)]
 
-    except (urllib2.HTTPError, urllib2.URLError):
-        logger.exception("Error getting config from url.\n%s" % url)
-        raise
-
-    return cfg
-
-def get_startup_config():
-    """
-    Get startup config from pcli.
-    Filter out unneeded lines.
-    Return config as a list of config lines (strings).
-    """
-    out = util.pcli_command("show running-config")
-    cfg = [l for l in out.splitlines() if not FILTER_REGEX.match(l)]
-    return cfg
+    return (cfg, md5sum)
 
 def get_running_config():
     """
@@ -146,22 +97,6 @@ def get_running_config():
     cfg = [l for l in out.splitlines() if not FILTER_REGEX.match(l)]
     return cfg
 
-def create_patch_config(old_cfg, new_cfg):
-    """
-    Create patch config from old_cfg and new_cfg.
-    old_cfg and new_cfg are lists of config lines (strings).
-    Return patch config as a list of config lines (strings).
-    """
-    old_lines, new_lines = compare_configs(old_cfg, new_cfg)
-    logger.debug("old_lines:\n%s" % old_lines)
-    logger.debug("new_lines:\n%s" % new_lines)
-
-    # create patch config:
-    # - remove a config line by prepending it with a "no"
-    # - add a config line as is
-    # FIXME: logic might need to be revisited
-    return ["no %s" % l for l in old_lines] + new_lines
-
 def apply_config(cfg):
     """
     Apply config in cfg via pcli.
@@ -169,91 +104,75 @@ def apply_config(cfg):
     """
     cmd = ";".join(cfg)
     out = util.pcli_command(cmd)
-    logger.debug("pcli output:\n%s" % out)
+    logger.debug("pcli output:\n%s", out)
+
+def revert_default_config():
+    """
+    Revert to default config via pcli.
+    """
+    out = util.pcli_command("_internal; revert-default")
+    logger.debug("pcli output:\n%s", out)
 
 def save_running_config():
     """
     Save running config as startup config via pcli.
     """
     out = util.pcli_command("copy running-config startup-config")
-    logger.debug("pcli output:\n%s" % out)
+    logger.debug("pcli output:\n%s", out)
 
-def update_config_worker(url, transaction_id, result_queue):
+def reload_config(ztn_server):
     """
-    Get config from url and update switch with config.
+    Get config from ZTN server and reload config.
+    Return a tuple of (rc, error), where rc is 0 on success and 1 on failure.
     """
+    rc = 0
+    error = None
+
     try:
-        new_cfg = get_config_from_url(url)
+        # save states for roll-back
         old_cfg = get_running_config()
-        logger.debug("old_cfg:\n%s" % old_cfg)
-        logger.debug("new_cfg:\n%s" % new_cfg)
+        old_ztn_json = read_ztn_json()
 
-        patch_cfg = create_patch_config(old_cfg, new_cfg)
-        logger.debug("patch_cfg:\n%s" % patch_cfg)
+        # get startup config from ZTN
+        new_cfg, md5sum = get_config_from_ztn_server(ztn_server)
 
-        apply_config(patch_cfg)
+        # revert to default, apply new config
+        revert_default_config()
+        apply_config(new_cfg)
+
+        # verify config
         post_cfg = get_running_config()
-        verify_configs(post_cfg, new_cfg)
+        verify_configs(new_cfg, post_cfg)
+
+        # update ZTN JSON file, save config
+        new_ztn_json = old_ztn_json.copy()
+        new_ztn_json["startup_config_md5"] = md5sum
         save_running_config()
+        write_ztn_json(new_ztn_json)
+
         logger.debug("update config finished.")
-        result_queue.put(ResultQueueEntry(transaction_id))
 
-    except Exception as e:
+    except Exception, e:
         logger.exception("update config failed.")
-        result_queue.put(ResultQueueEntry(transaction_id, e))
+        rc = 1
+        error = str(e)
 
-def start_update_config_task(url):
-    """
-    Start a worker thread to update switch config.
-    Returns the transaction id associated with the worker.
-    """
-    global worker
-    global worker_id
-
-    with worker_lock:
-        if worker is not None:
-            if worker.is_alive():
-                raise Exception("Update config is already running. Transaction id: %d" % worker_id)
-            else:
-                logger.debug("Joining worker. Transaction id: %d" % worker_id)
-                worker.join()
-                worker = None
-                worker_id = None
-
-        worker_id = Transactions.new_entry()
-        worker = threading.Thread(target=update_config_worker, args=(url, worker_id, result_queue,))
-        logger.debug("Starting worker. Transaction id: %d" % worker_id)
-        worker.start()
-
-    return worker_id
-
-def wait_for_update_config_task():
-    """
-    Wait until the current worker thread finishes, if it exists.
-    """
-    global worker
-    global worker_id
-
-    with worker_lock:
-        if worker is not None:
-            logger.debug("Joining worker. Transaction id: %d" % worker_id)
-            worker.join()
-            worker = None
-            worker_id = None
-
-def get_update_config_status(transaction_id):
-    """
-    Get update status associated with transaction_id.
-    """
-    # check result queue and update transactions.
-    while True:
+        # attempt roll-back
         try:
-            result = result_queue.get(True, 1) # block for 1 second
-            result_queue.task_done()
-            Transactions.update_entry(result.transaction_id, result.finished, result.exception)
+            revert_default_config()
+            apply_config(old_cfg)
 
-        except Queue.Empty:
-            logger.debug("result queue is empty")
-            break
+            post_cfg = get_running_config()
+            verify_configs(old_cfg, post_cfg)
 
-    return Transactions.get_entry(transaction_id)
+            save_running_config()
+            write_ztn_json(old_ztn_json)
+
+            logger.debug("roll-back config finished.")
+
+        except Exception, e2:
+            logger.exception("roll-back config failed.")
+            rc = 2
+            error += "\n%s" % str(e2)
+
+    return (rc, error)
