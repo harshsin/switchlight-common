@@ -29,6 +29,8 @@ SHOW_TUNNEL_COMMAND_DESCRIPTION = {
         {
             'field'         : 'tunnel-id',
             'base-type'     : 'integer',
+            # FIXME: Perform range check. Ideally at some point we can
+            #        get the tun min and max from ofad.
             'syntax-help'   : 'Tunnel ID',
             'optional'      : True,
         },
