@@ -311,7 +311,7 @@ ztn_cache_class_inventory()
         path=$(ztn_cache_path ${class} ${k})
         if [ "${path}" ]; then
             echo "  ${k} :"
-            echo "    date : \"$(date -r $path)\""
+            echo "    date : \"$(date --rfc-3339=seconds -r $path)\""
             echo "    url : \"$(cat ${path}.url)\""
             echo "    path : \"${path}\""
         fi

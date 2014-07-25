@@ -10,6 +10,7 @@ import json
 import yaml
 import re
 import os
+import zipfile
 
 from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
@@ -45,11 +46,37 @@ class v1_ztn_inventory(SLAPIObject):
             return SLREST.response(path=self.route,
                                    status=SLREST.Status.ERROR,
                                    reason=out)
-        else:
+
+        try:
             d = yaml.load(out)
+
+            # XXX roth -- ha ha, 'date --rfc-3339=seconds' will
+            # *almost* represent the date in an RFC3339 format
+            # that JodaTime understands
+            for n, d2 in d.iteritems():
+                for ck, d3 in d2.iteritems():
+                    date = d3['date']
+                    date = date.replace(' ', 'T')
+                    d3['date'] = date
+
+            for ck, d3 in d.get('swi').iteritems():
+                path = d3.get('path', None)
+                if path is not None:
+                    with zipfile.ZipFile(path, "r") as zf:
+                        with zf.open("zerotouch.json", "r") as fd:
+                            mf = json.loads(fd.read())
+                            if 'version' in mf:
+                                d3['version'] = mf['version']
+                            elif 'release' in mf:
+                                d3['version'] = mf['release']
+        except Exception, e:
             return SLREST.response(path=self.route,
-                                   status=SLREST.Status.OK,
-                                   data=d)
+                                   status=SLREST.Status.ERROR,
+                                   reason=str(e))
+
+        return SLREST.response(path=self.route,
+                               status=SLREST.Status.OK,
+                               data=d)
 
     @staticmethod
     def cliZtnInventory(hostname, port):
@@ -58,10 +85,12 @@ class v1_ztn_inventory(SLAPIObject):
             rv = json.loads(response.read())
             if rv['status'] == 'OK' and rv['data'] is not None:
                 data = SLAPIObject.fix_unicode(rv['data'])
-                for key in data:
-                    print key
-                    for keys in data[key]:
-                        print '%s: %s' % (keys, data[key][keys])
+                for typ, typData in data.iteritems():
+                    print typ
+                    for ck, ckData in typData.iteritems():
+                        print "    %s" % ck
+                        for key, keyData in ckData.iteritems():
+                            print '        %s: %s' % (key, keyData,)
             else:
                 print rv['reason']
         except:
@@ -90,11 +119,21 @@ class v1_ztn_manifest(SLAPIObject):
             return SLREST.response(path=self.route,
                                    status=SLREST.Status.ERROR,
                                    reason=out)
-        else:
+
+        try:
             d = json.loads(out)
+            try:
+                d['version'] = open("/etc/sl_version", "r").read().strip()
+            except:
+                pass
+        except Exception, e:
             return SLREST.response(path=self.route,
-                                   status=SLREST.Status.OK,
-                                   data=d)
+                                   status=SLREST.Status.ERROR,
+                                   reason=str(e))
+
+        return SLREST.response(path=self.route,
+                               status=SLREST.Status.OK,
+                               data=d)
 
     @staticmethod
     def cliZtnManifest(hostname, port):
@@ -103,10 +142,8 @@ class v1_ztn_manifest(SLAPIObject):
             rv = json.loads(response.read())
             if rv['status'] == 'OK' and rv['data'] is not None:
                 data = SLAPIObject.fix_unicode(rv['data'])
-                for key in data:
-                    print key
-                    for keys in data[key]:
-                        print '%s: %s' % (keys, data[key][keys])
+                for key, val in data.iteritems():
+                    print '%s: %s' % (key, val,)
             else:
                 print rv['reason']
         except:
