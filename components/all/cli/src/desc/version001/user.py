@@ -154,6 +154,7 @@ def revert_default_user_passwords():
     ws = os.path.join(const.DEFAULT_DIR, 'user')
     if not os.path.exists(ws):
         print 'Default user passwords do not exist.'
+        return
 
     src = os.path.join(ws, os.path.basename(const.USER_PWD_PATH))
     shutil.copy(src, const.USER_PWD_PATH)
