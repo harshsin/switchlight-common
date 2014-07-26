@@ -4,6 +4,8 @@ import command
 import run_config
 import error
 
+import os
+import shutil
 import string
 import random
 import re
@@ -11,7 +13,7 @@ import crypt
 import spwd
 
 import subprocess
-from sl_util import shell
+from sl_util import shell, const, conf_state
 
 
 #
@@ -136,6 +138,28 @@ CONFIG_USER_COMMAND_DESCRIPTION = {
         },
     )
 }
+
+
+def save_default_user_passwords():
+    ws = os.path.join(const.DEFAULT_DIR, 'user')
+    if os.path.exists(ws):
+        print 'Default user passwords already exist.'
+        return
+
+    os.makedirs(ws)
+    dst = os.path.join(ws, os.path.basename(const.USER_PWD_PATH))
+    shutil.copy(const.USER_PWD_PATH, dst)
+
+def revert_default_user_passwords():
+    ws = os.path.join(const.DEFAULT_DIR, 'user')
+    if not os.path.exists(ws):
+        print 'Default user passwords do not exist.'
+
+    src = os.path.join(ws, os.path.basename(const.USER_PWD_PATH))
+    shutil.copy(src, const.USER_PWD_PATH)
+
+conf_state.register_save('user', save_default_user_passwords)
+conf_state.register_revert('user', revert_default_user_passwords)
 
 
 def running_config_username(context, runcfg, words):
