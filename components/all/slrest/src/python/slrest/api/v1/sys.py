@@ -10,6 +10,7 @@ import json
 
 from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
+from slrest.base import localconfig
 from slrest.base.transact import *
 from slrest.base.response import SLREST
 from slrest.base import params
@@ -210,9 +211,13 @@ class v1_sys_reboot(SLAPIObject):
         if error:
             return SLREST.error(self.route, reason=error)
 
-        util.reboot(self.logger, delay)
-        return SLREST.ok(self.route,
-                         reason="Rebooting in %s seconds...\n" % delay)
+        if localconfig.get(localconfig.NO_AUTO_REBOOT):
+            reason = "Reboot disabled via local switch configuration."
+        else:
+            util.reboot(self.logger, delay)
+            reason="Rebooting in %s seconds...\n" % delay
+
+        return SLREST.ok(self.route, reason=reason)
 
     @staticmethod
     def cliReboot(hostname, port, delay):

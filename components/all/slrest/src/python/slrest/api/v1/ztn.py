@@ -15,6 +15,7 @@ import zipfile
 from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
 from slrest.base import config
+from slrest.base import localconfig
 from slrest.base.transact import *
 from slrest.base.response import SLREST
 
@@ -193,9 +194,9 @@ class v1_ztn_discover(SLAPIObject):
     def cliZtnDiscover(hostname, port):
         try:
             response = SLAPIObject.post(hostname, port, v1_ztn_discover.route, {"sync": True})
-            SLAPIObject.dataResult(response.read()) 
+            SLAPIObject.dataResult(response.read())
         except:
-            pass    
+            pass
 
     @staticmethod
     def cmdZtnDiscover(sub_parser, register=False):
@@ -292,7 +293,7 @@ class v1_ztn_transact_url(SLAPIObject):
         try:
             response = SLAPIObject.post(hostname, port, v1_ztn_transact_url.route,
                                         {"url": url, "sync": True})
-            SLAPIObject.dataResult(response.read())     
+            SLAPIObject.dataResult(response.read())
         except:
             pass
 
@@ -315,13 +316,21 @@ class v1_ztn_reload(SLAPIObject):
             # This handler performs the actual work
             #
             def handler(self):
-                (rc, error) = config.reload_config(server)
+                rc = 0
+                reason = "ZTN reload completed successfully."
+
+                if localconfig.get(localconfig.NO_AUTO_RELOAD):
+                    rc = 0
+                    reason = "ZTN reload disabled via local switch configuration."
+                else:
+                    (rc, error) = config.reload_config(server)
+
                 if rc:
                     self.status = SLREST.Status.ERROR
                     self.reason = error
                 else:
                     self.status = SLREST.Status.OK
-                    self.reason = "ZTN reload completed successfully."
+                    self.reason = reason
                 self.finish()
 
         # Use requester IP as server if server is not provided
