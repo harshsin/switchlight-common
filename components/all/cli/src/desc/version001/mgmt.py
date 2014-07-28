@@ -15,13 +15,13 @@ import error
 
 DHCLIENT_CFG = """### SwitchLight
 
-option rfc3442-classless-static-routes code 121 = array of unsigned integer 8;
+#https://bugs.launchpad.net/ubuntu/+source/dhcp3/+bug/307204
+#option rfc3442-classless-static-routes code 121 = array of unsigned integer 8;
 
 request subnet-mask, broadcast-address, time-offset, routers,
 	domain-name, domain-name-servers, domain-search, host-name,
 	netbios-name-servers, netbios-scope, interface-mtu,
-	rfc3442-classless-static-routes, ntp-servers,
-	dhcp6.domain-search, dhcp6.fqdn,
+	ntp-servers, dhcp6.domain-search, dhcp6.fqdn,
 	dhcp6.name-servers, dhcp6.sntp-servers;
 """
 
