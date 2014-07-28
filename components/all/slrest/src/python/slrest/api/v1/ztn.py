@@ -317,8 +317,12 @@ class v1_ztn_reload(SLAPIObject):
             #
             def handler(self):
                 rc = 0
+                reason = "ZTN reload completed successfully."
 
-                if not localconfig.get(localconfig.NO_AUTO_RELOAD):
+                if localconfig.get(localconfig.NO_AUTO_RELOAD):
+                    rc = 0
+                    reason = "ZTN reload disabled via local switch configuration."
+                else:
                     (rc, error) = config.reload_config(server)
 
                 if rc:
@@ -326,7 +330,7 @@ class v1_ztn_reload(SLAPIObject):
                     self.reason = error
                 else:
                     self.status = SLREST.Status.OK
-                    self.reason = "ZTN reload completed successfully."
+                    self.reason = reason
                 self.finish()
 
         # Use requester IP as server if server is not provided

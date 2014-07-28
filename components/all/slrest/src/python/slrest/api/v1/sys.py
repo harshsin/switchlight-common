@@ -211,12 +211,13 @@ class v1_sys_reboot(SLAPIObject):
         if error:
             return SLREST.error(self.route, reason=error)
 
-        if not localconfig.get(localconfig.NO_AUTO_REBOOT):
-            # Honoring reboot requests can locally disabled.
+        if localconfig.get(localconfig.NO_AUTO_REBOOT):
+            reason = "Reboot disabled via local switch configuration."
+        else:
             util.reboot(self.logger, delay)
+            reason="Rebooting in %s seconds...\n" % delay
 
-        return SLREST.ok(self.route,
-                         reason="Rebooting in %s seconds...\n" % delay)
+        return SLREST.ok(self.route, reason=reason)
 
     @staticmethod
     def cliReboot(hostname, port, delay):
