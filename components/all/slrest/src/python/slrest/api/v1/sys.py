@@ -10,6 +10,7 @@ import json
 
 from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
+from slrest.base import localconfig
 from slrest.base.transact import *
 from slrest.base.response import SLREST
 from slrest.base import params
@@ -210,7 +211,10 @@ class v1_sys_reboot(SLAPIObject):
         if error:
             return SLREST.error(self.route, reason=error)
 
-        util.reboot(self.logger, delay)
+        if not localconfig.get(localconfig.NO_AUTO_REBOOT):
+            # Honoring reboot requests can locally disabled.
+            util.reboot(self.logger, delay)
+
         return SLREST.ok(self.route,
                          reason="Rebooting in %s seconds...\n" % delay)
 
