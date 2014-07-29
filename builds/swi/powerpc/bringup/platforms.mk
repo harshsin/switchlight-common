@@ -10,6 +10,7 @@ SWI_PLATFORMS := powerpc-quanta-lb9-r0 \
 		 powerpc-as5710-54x-r0b \
 		 powerpc-as4600-54t \
 		 powerpc-as5610-52x \
+		 powerpc-dell-s4810-on-p2020-r0 \
 		 powerpc-dni-7448-r0
 
 
