@@ -1,0 +1,7 @@
+platform-config-powerpc-dell-s4810-on-p2020-r0 (0.1.0bsn1~ubuntu1) UNRELEASED; urgency=low
+
+  * Initial release.
+
+ -- Support <support@bigswitch.com>  Fri, 14 Mar 2014 13:36:11 -0700
+
+
