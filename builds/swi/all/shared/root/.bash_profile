@@ -35,6 +35,8 @@ if [ -n ${prefix} ]; then
     PS1="${prefix} ${PS1}"
 fi
 
+export PATH=/lib/platform-config/current/bin:/lib/platform-config/current/sbin:$PATH
+
 
 
 
