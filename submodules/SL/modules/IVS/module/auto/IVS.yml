@@ -99,7 +99,7 @@ cdefs: &cdefs
     default: 5
 - IVS_CONFIG_INCLUDE_SIGTERM_HANDLER:
     doc: "Graceful exit on SIGTERM."
-    default: 0
+    default: 1
 
 cxn_types: &cxn_types
 - CONNECT
