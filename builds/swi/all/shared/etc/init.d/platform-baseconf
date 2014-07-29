@@ -38,6 +38,8 @@ ONLPDUMP = "%s/bin/onlpdump" % (platform.platform_basedir())
 if os.path.exists(ONLPDUMP):
     os.system("%s -o -j > /etc/.onie.json" % ONLPDUMP)
 
+os.symlink(platform.platform_basedir(), "/lib/platform-config/current")
+
 sys.stderr.write("Setting up base platform configuration for %s: done\n" %
                  platform.platform())
 
