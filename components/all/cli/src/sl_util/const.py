@@ -26,6 +26,8 @@ RLOG_CFG_PATH   = "/etc/rsyslog.d/10-switchlight-remote.conf"
 SNMP_CFG_PATH   = "/etc/snmp/snmpd.conf"
 OFAD_CFG_PATH   = "/etc/ofad.conf"
 
+USER_PWD_PATH   = "/etc/shadow"
+
 BRCM_JSON       = "/mnt/flash/brcm.json"
 
 DEFAULT_DIR     = "/var/run/default"
