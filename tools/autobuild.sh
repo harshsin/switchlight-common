@@ -84,12 +84,25 @@ EOF
 
 rm -rf $SWITCHLIGHT_ROOT/builds/BUILDS
 
+($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache serial0) || true
 ($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel0 -j $JOBS) || true
+
+($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache serial1) || true
 ($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel1 -j $JOBS) || true
+
+($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache serial2) || true
 ($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel2 -j $JOBS) || true
+
+($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache serial3) || true
 ($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel3 -j $JOBS) || true
+
+($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache serial4) || true
 ($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel4 -j $JOBS) || true
+
+($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache serial5) || true
 ($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel5 -j $JOBS) || true
+
+($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache serial6) || true
 ($CHWS make -C /build/switchlight/builds CCACHE_DIR=/mnt/cache/ccache parallel6 -j $JOBS) || true
 
 

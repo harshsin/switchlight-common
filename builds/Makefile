@@ -140,10 +140,19 @@ $(subst :,.,$(1)): $(subst :,.,$(2))
 	$(SWITCHLIGHT)/tools/spkg.py $(1) --build
 endef
 
+
+SERIAL_TARGETS = vendor-config-switchlight:all onlp-platform-defaults:powerpc onlp-platform:powerpc onlp:powerpc
+serial0: submodules_init
+	$(foreach t,$(SERIAL_TARGETS),$(SWITCHLIGHT)/tools/spkg.py $(t) --build;)
+
+
+
 PARALLEL_0 := \
 kernel-85xx:powerpc \
 kernel-e500mc:powerpc \
 initrd-powerpc:powerpc
+
+
 
 # kernel-x86-64:amd64 initrd-i386:i386 kernel-e500mc:powerpc
 $(foreach c,$(PARALLEL_0),$(eval $(call cbuild,$(c),submodules_init)))
