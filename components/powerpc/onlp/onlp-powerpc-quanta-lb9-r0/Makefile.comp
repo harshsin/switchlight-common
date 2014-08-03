@@ -11,7 +11,7 @@ TOOLCHAIN := powerpc-linux-gnu
 MODULE := libonlp-powerpc-quanta-lb9-r0
 include $(BUILDER)/standardinit.mk
 
-DEPENDMODULES := AIM powerpc_quanta_lb9_r0 onlplib sff IOF
+DEPENDMODULES := AIM powerpc_quanta_lb9_r0 onlplib sff IOF quanta_sys_eeprom
 DEPENDMODULE_HEADERS := timer_wheel
 
 include $(BUILDER)/dependmodules.mk
