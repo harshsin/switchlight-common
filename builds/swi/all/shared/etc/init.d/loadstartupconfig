@@ -22,24 +22,35 @@ case "$1" in
         echo "_internal; save-default" | /usr/bin/pcli --init --mode=config >/var/log/savedefault 2>&1
         log_action_end_msg $?
 
+        ztn=false
+
         if [ -e /mnt/flash/boot/ztn-startup-config ]; then
             log_action_begin_msg "Loading startup-config from ZTN"
             config=/mnt/flash/boot/ztn-startup-config
+            ztn=true
         elif [ -e /etc/sl_startup-config ]; then
             log_action_begin_msg "Loading startup-config from ZTN (Old-style)"
-	    config=/etc/sl_startup-config
+            config=/etc/sl_startup-config
+            ztn=true
         elif [ -e /etc/swi_startup-config ]; then
             log_action_begin_msg "Loading startup-config from SWI"
-	    config=/etc/swi_startup-config
+            config=/etc/swi_startup-config
         elif [ -e /mnt/flash/startup-config ]; then
             log_action_begin_msg "Loading flash:startup-config"
-	    config=/mnt/flash/startup-config
-	else
-	    log_action_begin_msg "Loading empty startup-config"
-	    config=/dev/null
-	fi
+            config=/mnt/flash/startup-config
+        else
+            log_action_begin_msg "Loading empty startup-config"
+            config=/dev/null
+        fi
         /usr/bin/pcli --init --mode=config <${config} >/var/log/loadstartupconfig 2>&1
         log_action_end_msg $?
+
+        if [ "$ztn" = true ]; then
+            log_action_begin_msg "Saving last ZTN startup-config"
+            /bin/cp $config /var/run/last-ztn-startup-config
+            log_action_end_msg $?
+        fi
+
         ;;
     restart|reload|force-reload)
         echo "Error: argument '$1' not supported" >&2
