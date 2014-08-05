@@ -10,6 +10,7 @@ import logging
 import re
 import json
 import os
+import shutil
 
 # Set default logger
 logger = logging.getLogger("config")
@@ -22,6 +23,12 @@ def setLogger(logger_):
 FILTER_REGEX = re.compile(r"^SwitchLight.*|^.*?\(config\).*|^Exiting.*|^\!|^[\s]*$")
 
 ZTN_JSON = "/mnt/flash/boot/ztn.json"
+LAST_ZTN_CFG = "/var/run/last-ztn-startup-config"
+
+# Black-listed commands where "no" is not supported
+PCLI_BLIST = [
+    "ntp sync",
+]
 
 def read_ztn_json(path=ZTN_JSON):
     """
@@ -48,22 +55,32 @@ def compare_configs(old_cfg, new_cfg):
     lines_to_add = [l for l in new_cfg if l not in old_cfg]
     return (lines_to_remove, lines_to_add)
 
-def verify_configs(expected_cfg, actual_cfg):
+def create_patch_config(old_cfg, new_cfg):
     """
-    Verify that expected_cfg and actual_cfg are the same.
-    expected_cfg and actual_cfg are lists of config lines (strings).
+    Create patch config from old_cfg and new_cfg.
+    old_cfg and new_cfg are lists of config lines (strings).
+    Return patch config as a list of config lines (strings).
     """
-    lines1, lines2 = compare_configs(expected_cfg, actual_cfg)
-    if len(lines1) != 0 or len(lines2) != 0:
-        logger.error("Missing lines:\n%s", lines1)
-        logger.error("Extra lines:\n%s", lines2)
-        raise ValueError("Verify configs failed.")
+    old_lines, new_lines = compare_configs(old_cfg, new_cfg)
+    logger.debug("old_lines:\n%s" % old_lines)
+    logger.debug("new_lines:\n%s" % new_lines)
+
+    # create patch config:
+    # (1) for old lines:
+    #   -if regular (non-"no") command, prepend with "no" to remove
+    #   -if "no" command, reverse by removing "no" from head
+    #   -skip if in PCLI_BLIST
+    #
+    # (2) for new lines:
+    #   - apply as is
+    return [l[3:] if l.startswith("no ") else "no %s" % l \
+            for l in old_lines if l not in PCLI_BLIST] + new_lines
 
 def get_config_from_ztn_server(ztn_server):
     """
     Fetch config from ZTN server.
     Filter out unneeded lines.
-    Return config as a list of config lines (strings) and md5sum.
+    Return config as a list of config lines (strings), config path and md5sum.
     """
     logger.debug("Fetching config from ztn server: %s", ztn_server)
 
@@ -85,17 +102,22 @@ def get_config_from_ztn_server(ztn_server):
     with open(path, "r") as f:
         cfg = [l for l in f.read().splitlines() if not FILTER_REGEX.match(l)]
 
-    return (cfg, md5sum)
+    return (cfg, path, md5sum)
 
-def get_running_config():
+def read_last_ztn_config(path=LAST_ZTN_CFG):
     """
-    Get running config from pcli.
-    Filter out unneeded lines.
+    Read last-used ZTN config.
     Return config as a list of config lines (strings).
     """
-    out = util.pcli_command("show running-config")
-    cfg = [l for l in out.splitlines() if not FILTER_REGEX.match(l)]
+    with open(path, "r") as f:
+        cfg = [l for l in f.read().splitlines() if not FILTER_REGEX.match(l)]
     return cfg
+
+def save_last_ztn_config(src_path, dst_path=LAST_ZTN_CFG):
+    """
+    Save last-used ZTN config by copying file from src_path to dst_path.
+    """
+    shutil.copy(src_path, dst_path)
 
 def apply_config(cfg):
     """
@@ -105,6 +127,8 @@ def apply_config(cfg):
     cmd = ";".join(cfg)
     out = util.pcli_command(cmd)
     logger.debug("pcli output:\n%s", out)
+    if "Error:" in out:
+        raise IOError("Encountered error when applying config: %s" % out)
 
 def revert_default_config():
     """
@@ -123,56 +147,76 @@ def save_running_config():
 def reload_config(ztn_server):
     """
     Get config from ZTN server and reload config.
-    Return a tuple of (rc, error), where rc is 0 on success and 1 on failure.
+    Return a tuple of (rc, error), where rc is 0 on success.
     """
     rc = 0
     error = None
+    success = False
 
     try:
-        # save states for roll-back
-        old_cfg = get_running_config()
-        old_ztn_json = read_ztn_json()
-
-        # get startup config from ZTN
-        new_cfg, md5sum = get_config_from_ztn_server(ztn_server)
-
-        # revert to default, apply new config
-        revert_default_config()
-        apply_config(new_cfg)
-
-        # verify config
-        post_cfg = get_running_config()
-        verify_configs(new_cfg, post_cfg)
-
-        # update ZTN JSON file, save config
-        new_ztn_json = old_ztn_json.copy()
-        new_ztn_json["startup_config_md5"] = md5sum
-        save_running_config()
-        write_ztn_json(new_ztn_json)
-
-        logger.debug("update config finished.")
+        last_cfg = read_last_ztn_config()
+        ztn_json = read_ztn_json()
 
     except Exception, e:
-        logger.exception("update config failed.")
+        logger.exception("failed to read existing ZTN states")
         rc = 1
         error = str(e)
+        return (rc, error)
 
-        # attempt roll-back
+    try:
+        new_cfg, new_cfg_path, md5sum = get_config_from_ztn_server(ztn_server)
+
+    except Exception, e:
+        logger.exception("failed to get new ZTN config")
+        rc = 2
+        error = str(e)
+        return (rc, error)
+
+    try:
+        # hit-less reload
+        patch_cfg = create_patch_config(last_cfg, new_cfg)
+        apply_config(patch_cfg)
+        success = True
+        logger.debug("hit-less reload completed")
+
+    except Exception, e:
+        logger.exception("failed to perform hit-less reload")
+
         try:
+            # hit-ful reload, requires revert
             revert_default_config()
-            apply_config(old_cfg)
+            apply_config(new_cfg)
+            success = True
+            logger.debug("hit-ful reload completed")
 
-            post_cfg = get_running_config()
-            verify_configs(old_cfg, post_cfg)
+        except Exception, e:
+            logger.exception("failed to perform hit-ful reload")
+            rc = 3
+            error = str(e)
 
-            save_running_config()
-            write_ztn_json(old_ztn_json)
+            try:
+                # perform roll-back
+                revert_default_config()
+                apply_config(last_cfg)
+                logger.debug("roll-back completed")
 
-            logger.debug("roll-back config finished.")
+            except Exception, e:
+                logger.exception("fatal: failed to roll-back")
+                rc = 4
+                error = str(e)
+                return (rc, error)
 
-        except Exception, e2:
-            logger.exception("roll-back config failed.")
-            rc = 2
-            error += "\n%s" % str(e2)
+    try:
+        save_running_config()
+
+        if success:
+            save_last_ztn_config(new_cfg_path)
+            ztn_json["startup_config_md5"] = md5sum
+            write_ztn_json(ztn_json)
+            logger.debug("ztn states updated")
+
+    except Exception, e:
+        # FIXME: not much we can do if things fail at this point
+        logger.exception("failed to update ztn states: %s", e)
 
     return (rc, error)
