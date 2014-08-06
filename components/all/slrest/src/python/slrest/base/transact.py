@@ -15,7 +15,7 @@ import json
 from response import SLREST
 
 # This is the global transaction collection timer.
-GARBAGE_COLLECT_TIMEOUT=1
+GARBAGE_COLLECT_TIMEOUT=60
 
 # This is the location for TransactionTask working directories
 TRANSACTION_TASK_WORKDIR_BASE="/tmp/slrest"
