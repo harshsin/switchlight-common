@@ -127,7 +127,7 @@ def apply_config(cfg):
     cmd = ";".join(cfg)
     out = util.pcli_command(cmd)
     logger.debug("pcli output:\n%s", out)
-    if "Error:" in out:
+    if "Error" in out:
         raise IOError("Encountered error when applying config: %s" % out)
 
 def revert_default_config():
