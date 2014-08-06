@@ -1,0 +1,2 @@
+Show UDF configurations.
+A user-defined field (UDF) is specified by a base, an offset (in bytes) and a length (in bytes). The base plus the offset is the starting point of the match, and the length is the number of bytes to be matched from that point onwards.
