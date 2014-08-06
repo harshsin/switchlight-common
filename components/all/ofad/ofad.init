@@ -55,7 +55,7 @@ case $1 in
   		;;
 	stop)
 		log_daemon_msg "Stopping OpenFlow Agent" "ofad"
-  		start-stop-daemon --stop $QUIET --oknodo --pidfile $PIDFILE --retry 10
+  		start-stop-daemon --stop $QUIET --oknodo --pidfile $PIDFILE --retry 120
 		log_end_msg $?
 		rm -f $PIDFILE
   		;;
