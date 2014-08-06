@@ -143,23 +143,27 @@ command.add_action('implement-enable-snmp', enable_snmp,
 
 
 # Add or remove the given line from the config file
-def config_line(no_cmd, li):
+def config_line(no_cmd, li, prefix=None):
     try:
         with cfgfile.FileLock(Snmp.CFG_PATH) as f:
             lines = cfgfile.get_line_list_from_file(f)
 
             if no_cmd:
                 # Remove matching line, if present
-
                 if li in lines:
                     lines.remove(li)
                     cfgfile.put_line_list_to_file(f, lines)
             else:
                 # Add matching line, if not present
-
-                if li not in lines:
-                    lines.append(li)
-                    cfgfile.put_line_list_to_file(f, lines)
+                if prefix is None:
+                    if li not in lines:
+                        lines.append(li)
+                        cfgfile.put_line_list_to_file(f, lines)
+                else:
+                    newcfg = [line for line in lines 
+                              if not line.startswith(prefix)]
+                    newcfg.append(li)
+                    cfgfile.put_line_list_to_file(f, newcfg)
     except:
         raise error.ActionError('Cannot access SNMP configuration')
 
@@ -216,9 +220,9 @@ def trap_set(no_cmd, trap, threshold):
 
     items = trapdict.items()
     for item in items:
-        config_line(no_cmd,
-                "monitor -I %s %s %s %d\n" % (item[0], item[1], Mon_Ops[trap], threshold))
-
+        prefix = "monitor -I %s %s %s" % (item[0], item[1], Mon_Ops[trap])
+        config_line(no_cmd, prefix + " " + str(threshold) + "\n", 
+                    prefix=prefix)
 
 def config_snmp(no_command, data, is_init):
     if 'host' in data:
