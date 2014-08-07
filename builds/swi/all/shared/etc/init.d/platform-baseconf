@@ -43,6 +43,9 @@ if os.path.exists(PLATFORM_CURRENT):
     os.unlink(PLATFORM_CURRENT)
 os.symlink(platform.platform_basedir(), PLATFORM_CURRENT)
 
+if os.path.exists(ONLPDUMP):
+    os.system("%s -i > %s/oids" % (ONLPDUMP,PLATFORM_CURRENT))
+
 sys.stderr.write("Setting up base platform configuration for %s: done\n" %
                  platform.platform())
 
