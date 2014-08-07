@@ -62,7 +62,8 @@ class v1_status_memory(SLAPIObject):
             val = val.strip()
             if val.endswith(' kB'):
                 return (key, 1024*int(val[:-3]),)
-            raise ValueError("invalid output from meminfo: %s" % line)
+            else:
+                return (key, val)
 
         try:
             with open('/proc/meminfo', 'r') as fd:
