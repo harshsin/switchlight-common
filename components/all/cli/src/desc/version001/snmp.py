@@ -233,7 +233,7 @@ def show_snmp_server(data):
     print '  communities:'
     for  li in lines:
         w = li[:-1].split(' ')
-        if 'community' in w[0]:
+        if w[0] in ('rocommunity', 'rwcommunity'):
             print '    %s %s' % (w[1], w[0][:2])
     print '  trap/inform destinations:'
     for li in lines:
@@ -1041,7 +1041,7 @@ def running_config_snmp(context, runcfg, words):
 
     for li in lines:
         w = li[0:-1].split(' ')
-        if w[0] == 'rocommunity' or w[0] == 'rwcommunity':
+        if w[0] in ('rocommunity', 'rwcommunity'):
             comp_runcfg.append('snmp-server community %s %s\n' %
                                (w[0][0:2], w[1])
                                )
