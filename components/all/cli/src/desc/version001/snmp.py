@@ -329,16 +329,6 @@ def community(no_cmd, community, access):
 
 
 Mon_Ops = {
-    oidstr.STATUS              : '==',
-    oidstr.THERMAL_TEMP        : '>',
-    oidstr.FAN_RPM             : '<',
-    oidstr.FAN_PERCENTAGE      : '<',
-    oidstr.PSU_VIN             : '>',
-    oidstr.PSU_VOUT            : '>',
-    oidstr.PSU_IIN             : '>',
-    oidstr.PSU_IOUT            : '>',
-    oidstr.PSU_PIN             : '>',
-    oidstr.PSU_POUT            : '>',
     oidstr.CPU_LOAD            : '>',
     oidstr.MEM_TOTAL_FREE      : '<',
     oidstr.FLOW_TABLE_L2_UTILIZATION      : '>',
@@ -431,7 +421,7 @@ def trap_name_to_oid_index(trap, name):
 def trap_sensor_cmd(no_cmd, data):
     cmd_id = None
     monitor_name = None
-    
+    operator = None
     trap  = data['trap']
     sensor_name = data['name']
     threshold_or_status_value = None
@@ -452,10 +442,13 @@ def trap_sensor_cmd(no_cmd, data):
         monitor_name = cmd_id
         # Get integer value from status enums: missing, good, failed
         threshold_or_status_value = sl_trapdict.get(value_name)
+        operator = '=='
     else:
+        (ops_name, ops) = data['operator']
         threshold_or_status_value = data[oidstr.VALUE]
-        cmd_id = "%s_%s_threshold_%s_" % (trap, sensor_name, info_key)
+        cmd_id = "%s_%s_%s_%s_" % (trap, sensor_name, info_key, ops_name)
         monitor_name = "%s%s" % (cmd_id, str(threshold_or_status_value))
+        operator = ops
 
     # Get sensor info_oid : <sensor>.<info>
     info_oid = sl_trapdict.get(info_key)
@@ -471,7 +464,7 @@ def trap_sensor_cmd(no_cmd, data):
     oid = info_oid + sensor_index
     config_line(no_cmd, "%s -I %s %s %s %d\n" % 
                 (monitor_cmd, monitor_name, oid, 
-                 Mon_Ops[info_key], threshold_or_status_value),
+                 operator, threshold_or_status_value),
                 key=cmd_id)
 
 
@@ -711,13 +704,14 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                     'choices': (
                         (
                             {
-                                'token'           : 'threshold',
-                                'short-help'      : 'Select threshold type',
+                                'token'           : oidstr.THERMAL_TEMP,
+                                'short-help'      : 'Trap on temperature',
+                                'data'            : { 'info_key'  : oidstr.THERMAL_TEMP },
                             },
                             {
-                                'token'           : oidstr.THERMAL_TEMP,
+                                'token'           : 'max',
+                                'data'            : {'operator' : ('max', '>')},
                                 'short-help'      : 'Trap if temperature rises above this threshold, in milliCelsius',
-                                'data'            : { 'info_key'  : oidstr.THERMAL_TEMP },
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -785,13 +779,14 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         ),
                         (
                             {
-                                'token'           : 'threshold',
-                                'short-help'      : 'Select threshold type',
+                                'token'           : oidstr.FAN_RPM,
+                                'short-help'      : 'Trap on fan speed rotation per minute',
+                                'data'            : { 'info_key' : oidstr.FAN_RPM },
                             },
                             {
-                                'token'           : oidstr.FAN_RPM,
+                                'token'           : 'min',
+                                'data'            : {'operator' : ('min', '<')},
                                 'short-help'      : 'Trap if rotation per minute falls below this threshold',
-                                'data'            : { 'info_key' : oidstr.FAN_RPM },
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -802,13 +797,14 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         ),
                         (
                             {
-                                'token'           : 'threshold',
-                                'short-help'      : 'Select threshold type',
+                                'token'           : oidstr.FAN_PERCENTAGE,
+                                'short-help'      : 'Trap on fan speed percentage',
+                                'data'            : { 'info_key' : oidstr.FAN_PERCENTAGE },
                             },
                             {
-                                'token'           : oidstr.FAN_PERCENTAGE,
+                                'token'           : 'min',
+                                'data'            : {'operator' : ('min', '<')},
                                 'short-help'      : 'Trap if rotation percentage falls below this threshold',
-                                'data'            : { 'info_key' : oidstr.FAN_PERCENTAGE },
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -865,13 +861,14 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         ),
                         (
                             {
-                                'token'           : 'threshold',
-                                'short-help'      : 'Select threshold type',
+                                'token'           : oidstr.PSU_VIN,
+                                'short-help'      : 'Trap on input voltage',
+                                'data'            : { 'info_key' : oidstr.PSU_VIN },
                             },
                             {
-                                'token'           : oidstr.PSU_VIN,
+                                'token'           : 'max',
+                                'data'            : {'operator' : ('max', '>')},
                                 'short-help'      : 'Trap if input voltage rises above this threshold, in millivolts',
-                                'data'            : { 'info_key' : oidstr.PSU_VIN },
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -882,13 +879,14 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         ),
                         (
                             {
-                                'token'           : 'threshold',
-                                'short-help'      : 'Select threshold type',
+                                'token'           : oidstr.PSU_VOUT,
+                                'short-help'      : 'Trap on output voltage',
+                                'data'            : { 'info_key' : oidstr.PSU_VOUT },
                             },
                             {
-                                'token'           : oidstr.PSU_VOUT,
+                                'token'           : 'max',
+                                'data'            : {'operator' : ('max', '>')},
                                 'short-help'      : 'Trap if output voltage rises above this threshold, in millivolts',
-                                'data'            : { 'info_key' : oidstr.PSU_VOUT },
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -899,13 +897,14 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         ),
                         (
                             {
-                                'token'           : 'threshold',
-                                'short-help'      : 'Select threshold type',
+                                'token'           : oidstr.PSU_IIN,
+                                'short-help'      : 'Trap on input current',
+                                'data'            : { 'info_key' : oidstr.PSU_IIN },
                             },
                             {
-                                'token'           : oidstr.PSU_IIN,
-                                'short-help'      : 'Trap if input current rises above this threshold, in milliamperes',
-                                'data'            : { 'info_key' : oidstr.PSU_IIN },
+                                'token'           : 'max',
+                                'data'            : {'operator' : ('max', '>')},
+                                'short-help'      : 'Trap if input current rises above this threshold, in millivolts',
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -916,13 +915,14 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         ),
                         (
                             {
-                                'token'           : 'threshold',
-                                'short-help'      : 'Select threshold type',
+                                'token'           : oidstr.PSU_IOUT,
+                                'short-help'      : 'Trap on output current',
+                                'data'            : { 'info_key' : oidstr.PSU_IOUT },
                             },
                             {
-                                'token'           : oidstr.PSU_IOUT,
+                                'token'           : 'max',
+                                'data'            : {'operator' : ('max', '>')},
                                 'short-help'      : 'Trap if output current rises above this threshold, in milliamperes',
-                                'data'            : { 'info_key' : oidstr.PSU_IOUT },
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -933,13 +933,14 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         ),
                         (
                             {
-                                'token'           : 'threshold',
-                                'short-help'      : 'Select threshold type',
+                                'token'           : oidstr.PSU_PIN,
+                                'short-help'      : 'Trap on input power',
+                                'data'            : { 'info_key' : oidstr.PSU_PIN },
                             },
                             {
-                                'token'           : oidstr.PSU_PIN,
+                                'token'           : 'max',
+                                'data'            : {'operator' : ('max', '>')},
                                 'short-help'      : 'Trap if input power rises above this threshold, in milliwatts',
-                                'data'            : { 'info_key' : oidstr.PSU_PIN },
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -950,13 +951,14 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         ),
                         (
                             {
-                                'token'           : 'threshold',
-                                'short-help'      : 'Select threshold type',
+                                'token'           : oidstr.PSU_POUT,
+                                'short-help'      : 'Trap on output power',
+                                'data'            : { 'info_key' : oidstr.PSU_POUT },
                             },
                             {
-                                'token'           : oidstr.PSU_POUT,
+                                'token'           : 'max',
+                                'data'            : {'operator' : ('max', '>')},
                                 'short-help'      : 'Trap if output power rises above this threshold, in milliwatts',
-                                'data'            : { 'info_key' : oidstr.PSU_POUT },
                             },
                             {
                                 'field'           : oidstr.VALUE,

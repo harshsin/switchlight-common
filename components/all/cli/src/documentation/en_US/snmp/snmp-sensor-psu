@@ -1,3 +1,4 @@
-Enable SNMP trap when the chassis power info input voltage, output voltage,
-input current, output current, input power, output power rise above the 
-configured thresholds or when the power status changes to the configured value
+Enable SNMP trap for when the chassis power information (input voltage Vin,
+output voltage Vout, input current Iin, output current Iout, input power Pin,
+or output power Pout) rises above the configured threshold, or when the
+power status changes to the configured value.

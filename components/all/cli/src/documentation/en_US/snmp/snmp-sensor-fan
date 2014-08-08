@@ -1,3 +1,3 @@
-Enable SNMP trap when the RPMs / percentage of the fans fall below the
-configured thresholds or when the fan status changes to the configured
-value
+Enable SNMP trap for when the fan speed (expressed in RPM or as a percentage
+of maximum speed) falls below the configured threshold, or when the fan status
+changes to the configured value.
