@@ -33,8 +33,7 @@ def opt_re(name):
 all_bases = [ OFAgentConfig.physical_base_name, 
               OFAgentConfig.lag_base_name,
               const.MGMT_PORT_BASE ]
-all_base_re = reduce(lambda x,y: x + '|' + y, 
-                     map(lambda x: opt_re(x), all_bases))
+all_base_re = '|'.join([opt_re(b) for b in all_bases])
 
 command.add_typedef({
         'name'      : 'interface-list',
@@ -255,12 +254,13 @@ def show_intf(data):
 
 def complete_intf_list(prefix, completions):
     """
-    Interface lists are comma separated interfaces or ranges
-    of interfaces.  
-
-    The prefix here plays an important role in determining what
-    ought to appear next.
+    Given the prefix typed by the user,
+    updates the specified completions dictionary with possible completion
+    key/value pairs, following the cli completion framework.
     """
+
+    def intf_num(s, search_full_base):
+        return s[len(search_full_base):]
 
     # interfaces: the space of all possible interfaces
     # search_full_base: full interface base name
@@ -271,30 +271,30 @@ def complete_intf_list(prefix, completions):
     # knock_outs: list of intf numbers that should not appear in completions
     def completions_startingwith(interfaces, search_full_base, search_intf_num,
                                  prefix, completions, knock_outs):
-        result = [prefix + x[len(search_full_base):] 
+        result = [prefix + intf_num(x, search_full_base)
                   for x in interfaces 
                   if x.startswith(search_full_base+search_intf_num) and
-                  x[len(search_full_base):] not in knock_outs]
-        completions.update(dict([[x, "Known interface"] for x in result]))
+                  intf_num(x, search_full_base) not in knock_outs]
+        completions.update({x: "Known interface" for x in result})
 
     # return all completions starting with search_prefix and
-    # greater than search_intf_num, 
+    # greater than start_intf_num, 
     # up to the first relevant interface number in knock_outs;
     # assumes list of knock_outs is sorted
     def completions_greaterthan(interfaces, search_full_base,
-                                search_prefix, search_intf_num,
+                                search_prefix, start_intf_num,
                                 prefix, completions, knock_outs):
         end_intf_list = \
-            [k for k in knock_outs if int(k) > int(search_intf_num)]
+            [k for k in knock_outs if int(k) > int(start_intf_num)]
         end_intf_num = end_intf_list[0] if end_intf_list else None
 
-        result = [prefix + x[len(search_full_base):]
+        result = [prefix + intf_num(x, search_full_base)
                   for x in interfaces 
                   if x.startswith(search_prefix) and 
-                  int(x[len(search_full_base):]) > int(search_intf_num) and
+                  int(intf_num(x, search_full_base)) > int(start_intf_num) and
                   (end_intf_num is None or 
-                   int(x[len(search_full_base):]) < int(end_intf_num)) ]
-        completions.update(dict([[x, "Known interface"] for x in result]))
+                   int(intf_num(x, search_full_base)) < int(end_intf_num)) ]
+        completions.update({x: "Known interface" for x in result})
 
     # returns (validate, search_intf, prefix, greaterthan)
     #   validate: port spec to be validated
@@ -303,31 +303,22 @@ def complete_intf_list(prefix, completions):
     #   greaterthan: if not None, interfaces must be greater than this
     def split_on_last_range(s):
         splits = s.rsplit(',',1)
-        if len(splits) > 1:
-            all_but_last = splits[0]
-            last_range = splits[-1]
-        else:
-            all_but_last = ''
-            last_range = s
+        last_range = splits.pop()
         if '-' not in last_range:
             # last range is a single intf
-            prefix = all_but_last+',' if all_but_last else ''
-            return (all_but_last, last_range, prefix, None)
+            prefix = ','.join(splits + [''])
+            return (''.join(splits), last_range, prefix, None)
         elif last_range[-1] == '-':
             # last range is 'intf-'
             start = last_range[:-1]
-            prefix = all_but_last + ',' + start + '-' \
-                if all_but_last else start + '-'
-            return (all_but_last, '', prefix, start)
+            prefix = ','.join(splits + [start + '-'])
+            return (''.join(splits), '', prefix, start)
         else:
             # last range is 'intf-intf'
             (start, end) = last_range.split('-', 1)
-            if all_but_last:
-                all_but_last = all_but_last + ',' + start
-            else:
-                all_but_last = start
-            prefix = all_but_last + '-'
-            return (all_but_last, end, prefix, start)
+            all_but_end = ','.join(splits + [start])
+            prefix = all_but_end + '-'
+            return (all_but_end, end, prefix, start)
 
     portMgr = PortManager(OFAgentConfig.port_list)
     ports = portMgr.getExistingPorts()
