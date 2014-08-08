@@ -232,12 +232,12 @@ def show_snmp_server(data):
             print '  %-12s  %s' % (key, cfg[key][0])
     print '  communities:'
     for  li in lines:
-        w = li[0:-1].split(' ')
-        if w[0] == 'rocommunity' or w[0] == 'rwcommunity':
-            print '    %s %s' % (w[1], w[0][0:2])
+        w = li[:-1].split(' ')
+        if 'community' in w[0]:
+            print '    %s %s' % (w[1], w[0][:2])
     print '  trap/inform destinations:'
     for li in lines:
-        w = li[0:-1].split(' ')
+        w = li[:-1].split(' ')
         if w[0] == 'trap2sink':
             ww = w[1].split(':')
             print '    host %s traps %s udp-port %s' % (ww[0], w[2], ww[1])
@@ -245,6 +245,27 @@ def show_snmp_server(data):
         if w[0] == 'informsink':
             ww = w[1].split(':')
             print '    host %s informs %s udp-port %s' % (ww[0], w[2], ww[1])
+            continue
+    print '  traps:'
+    for li in lines:
+        w = li[:-1].split(' ')
+        if w[0] == 'authtrapenable' and \
+                len(w) == AUTH_FAIL_NOTIFICATION_TOKEN_NUM and w[1] == '1':
+            print '    authentification failure'
+            continue
+        if w[0] == 'monitor' and len(w) == LINK_UP_MONITOR_TOKEN_NUM:
+            # The command linkUpDown results 2 monitor commands
+            # and we print only 1 of them
+            if w[4] == 'linkUpTrap':
+                print '    %s, interval %s' % (LINK_UP_DOWN_CLI, w[2])
+            continue
+        if w[0] == 'monitor':
+            if w[1] == '-r':
+                trap_cmd = w[4].replace("_", " ")
+                print '    %s, interval %s' % (trap_cmd, w[2])
+            else:
+                trap_cmd = w[2].replace("_", " ")
+                print '    %s' % (trap_cmd)
             continue
 
 
