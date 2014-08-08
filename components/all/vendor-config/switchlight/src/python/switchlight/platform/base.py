@@ -42,25 +42,6 @@ class platinfo(object):
     LAG_COMPONENT_MAX='Maximum number of component ports in a LAG'
     PORT_COUNT='Total Physical Ports'
 
-
-############################################################
-#
-# Platform OIDs
-#
-############################################################
-class oids(object):
-    TEMP_SENSORS='temp_sensors'
-    CHASSIS_FAN_SENSORS='chassis_fan_sensors'
-    POWER_FAN_SENSORS='power_fan_sensors'
-    POWER_SENSORS='power_sensors'
-    CPU_LOAD='CPU_load'
-    MEM_TOTAL_FREE='mem_total_free'
-    INTERFACES='interfaces'
-    FLOW_TABLE_L2_UTILIZATION='flow_table_l2_util'
-    FLOW_TABLE_TCAM_FM_UTILIZATION='flow_table_tcam_fm_util'
-    LINK_TABLE_UTILIZATION='link_table_util'
-
-
 ############################################################
 #
 # Symbolic port base
@@ -148,42 +129,8 @@ class SwitchLightPlatformBase(object):
     def _plat_oid_table(self):
         raise Exception("Must be provided by the deriving class.")
 
-
     def get_environment(self):
         raise Exception("Must be provided by the deriving class.")
-
-
-    def oid_table(self):
-        # Fixme -- all of this
-        common = {
-            oids.CPU_LOAD : {
-                'cpuload'        : '.1.3.6.1.4.1.2021.10.1.5.1',
-                },
-
-            oids.MEM_TOTAL_FREE : {
-                'memtotalfree'   : '.1.3.6.1.4.1.2021.4.11.0',
-                },
-
-            oids.INTERFACES: {
-                'interfaces'     : '.1.3.6.1.2.1.2',
-                },
-
-            oids.FLOW_TABLE_L2_UTILIZATION : {
-                'ft_l2_utilization'    : '.1.3.6.1.4.1.37538.2.1.1.3',
-                },
-
-            oids.FLOW_TABLE_TCAM_FM_UTILIZATION : {
-                'ft_tcam_fm_utilization'    : '.1.3.6.1.4.1.37538.2.1.2.3',
-                },
-
-            oids.LINK_TABLE_UTILIZATION : {
-                'ft_link_utilization'    : '.1.3.6.1.4.1.37538.2.2.1.3',
-                },
-
-            }
-        common.update(self._plat_oid_table())
-        return common
-
 
     def sys_info_get(self, field=None):
         """Provide the value of a sysinfo key or the entire dict"""
