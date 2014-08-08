@@ -711,7 +711,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             {
                                 'token'           : 'max',
                                 'data'            : {'operator' : ('max', '>')},
-                                'short-help'      : 'Trap if temperature rises above this threshold, in milliCelsius',
+                                'short-help'      : 'Trap if temperature rises above this value, in milliCelsius',
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -786,7 +786,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             {
                                 'token'           : 'min',
                                 'data'            : {'operator' : ('min', '<')},
-                                'short-help'      : 'Trap if rotation per minute falls below this threshold',
+                                'short-help'      : 'Trap if fan speed falls below this value, in rotation per minute',
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -804,7 +804,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             {
                                 'token'           : 'min',
                                 'data'            : {'operator' : ('min', '<')},
-                                'short-help'      : 'Trap if rotation percentage falls below this threshold',
+                                'short-help'      : 'Trap if fan speed falls below this value, in percent',
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -815,7 +815,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         ),
                         
                     )
-                    }, # ending of thermal choices
+                    }, # ending of fan choices
                     {
                         'field'           : 'interval',
                         'tag'             : 'interval',
@@ -868,7 +868,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             {
                                 'token'           : 'max',
                                 'data'            : {'operator' : ('max', '>')},
-                                'short-help'      : 'Trap if input voltage rises above this threshold, in millivolts',
+                                'short-help'      : 'Trap if input voltage rises above this value, in millivolts',
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -886,7 +886,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             {
                                 'token'           : 'max',
                                 'data'            : {'operator' : ('max', '>')},
-                                'short-help'      : 'Trap if output voltage rises above this threshold, in millivolts',
+                                'short-help'      : 'Trap if output voltage rises above this value, in millivolts',
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -904,7 +904,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             {
                                 'token'           : 'max',
                                 'data'            : {'operator' : ('max', '>')},
-                                'short-help'      : 'Trap if input current rises above this threshold, in millivolts',
+                                'short-help'      : 'Trap if input current rises above this value, in milliamperes',
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -922,7 +922,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             {
                                 'token'           : 'max',
                                 'data'            : {'operator' : ('max', '>')},
-                                'short-help'      : 'Trap if output current rises above this threshold, in milliamperes',
+                                'short-help'      : 'Trap if output current rises above this value, in milliamperes',
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -940,7 +940,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             {
                                 'token'           : 'max',
                                 'data'            : {'operator' : ('max', '>')},
-                                'short-help'      : 'Trap if input power rises above this threshold, in milliwatts',
+                                'short-help'      : 'Trap if input power rises above this value, in milliwatts',
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -958,7 +958,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             {
                                 'token'           : 'max',
                                 'data'            : {'operator' : ('max', '>')},
-                                'short-help'      : 'Trap if output power rises above this threshold, in milliwatts',
+                                'short-help'      : 'Trap if output power rises above this value, in milliwatts',
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -968,7 +968,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             }
                         ),
                     )
-                    }, # ending of thermal choices
+                    }, # ending of psu choices
                     {
                         'field'           : 'interval',
                         'tag'             : 'interval',
