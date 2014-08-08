@@ -346,15 +346,13 @@ Mon_Ops = {
     oidstr.LINK_TABLE_UTILIZATION         : '>'
 }
 
-# Handle trap threashold [interval]
+# Handle trap threshold [interval]
 def trap_generic_cmd(no_cmd, data):
     trap = data['trap']
     threshold = data['threshold']
     
-    monitor_cmd = "monitor"
-    interval = data.get('interval')
-    if interval is not None:
-        monitor_cmd = "monitor -r " + str(interval)
+    monitor_cmd = "monitor" + \
+                    (" -r %d" % data['interval'] if 'interval' in data else "")
         
     trapdict = BSN_SL_SENSOR_OID_TABLE.get(trap)
     if trapdict is None:
@@ -420,7 +418,7 @@ def trap_sensor_name_tuple_get(trap):
     except:
         return ()
     
-def trap_name_to_oid_index (trap, name):
+def trap_name_to_oid_index(trap, name):
     try:
         index = BSN_SL_SENSOR_NAME_TO_OID_INDEX_TABLE \
                     [trap][oidstr.NAME_TO_INDEX_MAP][name]
@@ -429,7 +427,7 @@ def trap_name_to_oid_index (trap, name):
         raise error.ActionError("Trap %s name %s unsupported on %s", 
                                 trap, name, Platform.platform())
 
-# Handle trap name threashold | status [interval]
+# Handle trap name threshold|status [interval]
 def trap_sensor_cmd(no_cmd, data):
     cmd_id = None
     monitor_name = None
@@ -438,10 +436,8 @@ def trap_sensor_cmd(no_cmd, data):
     sensor_name = data['name']
     threshold_or_status_value = None
 
-    monitor_cmd = "monitor"
-    interval = data.get('interval')
-    if interval is not None:
-        monitor_cmd = "monitor -r " + str(interval)
+    monitor_cmd = "monitor" + \
+                    (" -r %d" % data['interval'] if 'interval' in data else "")
 
     sl_trapdict = BSN_SL_SENSOR_OID_TABLE.get(trap)
     if sl_trapdict is None:
@@ -454,7 +450,7 @@ def trap_sensor_cmd(no_cmd, data):
         value_name = data[oidstr.STATUS]
         cmd_id = "%s_%s_%s_%s" % (trap, sensor_name, info_key, value_name)
         monitor_name = cmd_id
-        # Get interger value from status enums: missing, good, failed
+        # Get integer value from status enums: missing, good, failed
         threshold_or_status_value = sl_trapdict.get(value_name)
     else:
         threshold_or_status_value = data[oidstr.VALUE]
@@ -722,7 +718,6 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                                 'token'           : oidstr.THERMAL_TEMP,
                                 'short-help'      : 'Trap if temperature rises above this threshold, in milliCelsius',
                                 'data'            : { 'info_key'  : oidstr.THERMAL_TEMP },
-                                'doc'             : 'snmp|snmp-rpm',
                             },
                             {
                                 'field'           : oidstr.VALUE,
@@ -765,7 +760,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         'token'           : oidstr.FAN_CMD,
                         'short-help'      : 'Fan sensors',
                         'data'            : { 'trap' : oidstr.FAN_CMD },
-                        'doc'             : 'snmp|snmp-sensor-temp',
+                        'doc'             : 'snmp|snmp-sensor-fan',
                     },
                     {
                         'field'           : 'name',

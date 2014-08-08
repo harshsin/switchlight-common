@@ -1,0 +1,2 @@
+Enable SNMP trap when temperature of the thermal sensor rises above the 
+configured threshold or when its status changes to the configured value

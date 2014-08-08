@@ -1,1 +1,0 @@
-Enable SNMP trap when the RPMs of the chassis fans are below the configured threshold.

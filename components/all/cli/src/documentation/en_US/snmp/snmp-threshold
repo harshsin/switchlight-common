@@ -1,18 +1,11 @@
 Trigger SNMP trap when the monitored value is smaller or larger or
 different than the configured threshold value, depending on the trap type:
 
-CPU_load: larger
+cpu-load: larger
 
-chassis_fan_sensors: smaller
+flow-table-l2-util: larger
 
-flow_table_l2_util: larger
+flow-table-tcam-fm-util: larger
 
-flow_table_tcam_fm_util: larger
+mem-total-free: smaller
 
-mem_total_free: smaller
-
-power_fan_sensors: smaller
-
-power_sensors: larger
-
-temp_sensors: larger
