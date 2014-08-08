@@ -323,7 +323,7 @@ def complete_intf_list(prefix, completions):
     portMgr = PortManager(OFAgentConfig.port_list)
     ports = portMgr.getExistingPorts()
     ports.extend(const.MGMT_PORTS)
-    all_interfaces = dict([[x, x] for x in ports])
+    all_interfaces = { x: x for x in ports }
 
     if prefix == '':
         completions_startingwith(all_interfaces, '', '', '', completions, [])
@@ -346,6 +346,7 @@ def complete_intf_list(prefix, completions):
 
     # validate port list
     try:
+        # FIXME change resolve_port_list so [] is returned if port spec is ''
         port_list = utif.resolve_port_list(validate_list) if validate_list \
             else []
     except Exception as e:
