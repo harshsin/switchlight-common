@@ -11,6 +11,7 @@ import yaml
 import re
 import os
 import zipfile
+from cStringIO import StringIO
 
 from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
@@ -423,3 +424,74 @@ class v1_ztn_preflight_url(SLAPIObject):
         else:
             v1_ztn_transact_url.cliZtnPreflightUrl(sub_parser.hostname, sub_parser.port, sub_parser.url)
 
+class v1_ztn_audit(SLAPIObject):
+    """Perform a config audit.
+
+    Implemented using POST since it requires a round-trip to the
+    controller ot get the latest config.
+    """
+
+    route = "/api/v1/ztn/audit"
+    def GET(self, server=None, local=False, sync=True):
+
+        if not sync:
+            return SLREST.response(path=self.route,
+                                   status=SLREST.Status.ERROR,
+                                   reason="async not supported")
+
+        # Use requester IP as server if server is not provided
+        if local:
+            server = None
+        elif server is None:
+            server = cherrypy.request.remote.ip
+
+        rc, rsp = config.audit_config(server)
+
+        if not rc:
+            if rsp:
+                return SLREST.response(path=self.route,
+                                       status=SLREST.Status.OK,
+                                       reason="Audit success.",
+                                       data=rsp)
+            else:
+                return SLREST.response(path=self.route,
+                                       status=SLREST.Status.OK,
+                                       reason="Audit success.",
+                                       data="Audit success.")
+
+        if rsp:
+            return SLREST.response(path=self.route,
+                                   status=SLREST.Status.ERROR,
+                                   reason="Audit failed: " + str(rsp),
+                                   data=rsp)
+        else:
+            return SLREST.response(path=self.route,
+                                   status=SLREST.Status.ERROR,
+                                   reason="Audit failed.",
+                                   data=rsp)
+
+    @staticmethod
+    def cliZtnAudit(hostname, port, local, server):
+        try:
+            path = "%s?sync=True" % (v1_ztn_audit.route,)
+            if local:
+                path += "&local=True"
+            if server is not None:
+                path += "&server=" + server
+            response = SLAPIObject.get(hostname, port, path)
+            SLAPIObject.dataResult(response.read())
+        except Exception, e:
+            import pdb
+            pdb.set_trace()
+            pass
+
+    @staticmethod
+    def cmdZtnAudit(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("ztn-audit")
+            p.add_argument("--local", default=False, action='store_true')
+            p.add_argument("server", default=None, nargs='?')
+            p.set_defaults(func=v1_ztn_audit.cmdZtnAudit)
+        else:
+            v1_ztn_audit.cliZtnAudit(sub_parser.hostname, sub_parser.port,
+                                     sub_parser.local, sub_parser.server)

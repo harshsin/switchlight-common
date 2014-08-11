@@ -11,6 +11,7 @@ import re
 import json
 import os
 import shutil
+from cStringIO import StringIO
 
 # Set default logger
 logger = logging.getLogger("config")
@@ -24,6 +25,7 @@ FILTER_REGEX = re.compile(r"^SwitchLight.*|^.*?\(config\).*|^Exiting.*|^\!|^[\s]
 
 ZTN_JSON = "/mnt/flash/boot/ztn.json"
 LAST_ZTN_CFG = "/var/run/last-ztn-startup-config"
+LAST_RUN_CFG = "/var/run/last-ztn-running-config"
 
 # Don't generate inversions ("no"-command) for the following
 PCLI_BLIST = [
@@ -116,11 +118,24 @@ def read_last_ztn_config(path=LAST_ZTN_CFG):
         cfg = [l for l in f.read().splitlines() if not FILTER_REGEX.match(l)]
     return cfg
 
+def read_running_config():
+    buf = util.pcli_command("show running-config")
+    cfg = [l for l in buf.splitlines() if not FILTER_REGEX.match(l)]
+    return cfg
+
 def save_last_ztn_config(src_path, dst_path=LAST_ZTN_CFG):
     """
     Save last-used ZTN config by copying file from src_path to dst_path.
     """
     shutil.copy(src_path, dst_path)
+
+def save_running_config(dst_path=LAST_RUN_CFG):
+    """
+    Save last-executed ZTN config to a file.
+    """
+    buf = util.pcli_command("show running-config")
+    with open(dst_path, "w") as fd:
+        fd.write(buf)
 
 def apply_config(cfg):
     """
@@ -140,7 +155,7 @@ def revert_default_config():
     out = util.pcli_command("_internal; revert-default")
     logger.debug("pcli output:\n%s", out)
 
-def save_running_config():
+def save_startup_config():
     """
     Save running config as startup config via pcli.
     """
@@ -159,6 +174,8 @@ def reload_config(ztn_server):
     try:
         last_cfg = read_last_ztn_config()
         ztn_json = read_ztn_json()
+        last_run = read_last_ztn_config(path=LAST_RUN_CFG)
+        cur_run = read_running_config()
 
     except Exception, e:
         logger.exception("failed to read existing ZTN states")
@@ -176,9 +193,14 @@ def reload_config(ztn_server):
         return (rc, error)
 
     try:
-        # hit-less reload
+        logger.debug("rewinding running-config")
+        patch_cfg = create_path_config(cur_run, last_run)
+        apply_config(patch_cfg)
+
+        logger.debug("applying new ztn changes")
         patch_cfg = create_patch_config(last_cfg, new_cfg)
         apply_config(patch_cfg)
+
         success = True
         logger.debug("hit-less reload completed")
 
@@ -210,6 +232,7 @@ def reload_config(ztn_server):
                 return (rc, error)
 
     try:
+        save_startup_config()
         save_running_config()
 
         if success:
@@ -223,3 +246,58 @@ def reload_config(ztn_server):
         logger.exception("failed to update ztn states: %s", e)
 
     return (rc, error)
+
+def audit_config(ztn_server):
+    """
+    Figure out of the config was locally modified,
+    or out of date with the ZTN server.
+    The remote ZTN server is optional.
+    """
+
+    try:
+        last_cfg = read_last_ztn_config()
+        ztn_json = read_ztn_json()
+        last_run = read_last_ztn_config(path=LAST_RUN_CFG)
+        cur_run = read_running_config()
+
+    except Exception, e:
+        logger.exception("failed to read existing ZTN states")
+        return (1, str(e),)
+
+    l1, l2 = compare_configs(cur_run, last_run)
+
+    if ztn_server is not None:
+        try:
+            new_cfg, new_cfg_path, md5sum = get_config_from_ztn_server(ztn_server)
+
+        except Exception, e:
+            logger.exception("failed to get new ZTN config")
+            return (2, str(e),)
+
+        l3, l4 = compare_configs(last_cfg, new_cfg)
+
+    else:
+        l3 = l4 = []
+
+    buf = StringIO()
+    if l1:
+        buf.write("Extra lines added locally:\n")
+        for l in l1:
+            buf.write("  " + l)
+    if l2:
+        buf.write("Lines deleted locally:\n")
+        for l in l2:
+            buf.write("  " + l)
+    if l3:
+        buf.write("Lines deleted by ZTN:\n")
+        for l in l3:
+            buf.write("  " + l)
+    if l4:
+        buf.write("Lines added by ZTN:\n")
+        for l in l4:
+            buf.write("  " + l)
+
+    if buf.tell():
+        return (3, buf.getvalue(),)
+
+    return (0, None,)
