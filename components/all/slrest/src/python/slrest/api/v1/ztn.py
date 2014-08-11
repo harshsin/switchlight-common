@@ -427,8 +427,9 @@ class v1_ztn_preflight_url(SLAPIObject):
 class v1_ztn_audit(SLAPIObject):
     """Perform a config audit.
 
-    Implemented using POST since it requires a round-trip to the
-    controller ot get the latest config.
+    Implemented using GET since it is stateless...
+    But it requires a round-trip to the controller in most cases;
+    possibly this is an argument for POST.
     """
 
     route = "/api/v1/ztn/audit"
