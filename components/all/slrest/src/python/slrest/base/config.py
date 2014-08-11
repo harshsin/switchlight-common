@@ -25,10 +25,13 @@ FILTER_REGEX = re.compile(r"^SwitchLight.*|^.*?\(config\).*|^Exiting.*|^\!|^[\s]
 ZTN_JSON = "/mnt/flash/boot/ztn.json"
 LAST_ZTN_CFG = "/var/run/last-ztn-startup-config"
 
-# Black-listed commands where "no" is not supported
+# Don't generate inversions ("no"-command) for the following
 PCLI_BLIST = [
     "ntp sync",
+    "timezone",
 ]
+
+BLIST_REGEX = re.compile(r"%s" % "|".join(["^%s" % c for c in PCLI_BLIST]))
 
 def read_ztn_json(path=ZTN_JSON):
     """
@@ -74,7 +77,7 @@ def create_patch_config(old_cfg, new_cfg):
     # (2) for new lines:
     #   - apply as is
     return [l[3:] if l.startswith("no ") else "no %s" % l \
-            for l in old_lines if l not in PCLI_BLIST] + new_lines
+            for l in old_lines if not BLIST_REGEX.match(l)] + new_lines
 
 def get_config_from_ztn_server(ztn_server):
     """
