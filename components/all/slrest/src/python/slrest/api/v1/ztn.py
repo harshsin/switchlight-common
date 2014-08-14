@@ -12,6 +12,7 @@ import re
 import os
 import zipfile
 from cStringIO import StringIO
+import hashlib
 
 from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
@@ -20,6 +21,12 @@ from slrest.base import localconfig
 from slrest.base.transact import *
 from slrest.base.response import SLREST
 
+# Set default logger
+logger = logging.getLogger("ztn")
+
+def setLogger(logger_):
+    global logger
+    logger = logger_
 
 #
 # Only one ZTN transaction may be outstanding at a time.
@@ -126,12 +133,19 @@ class v1_ztn_manifest(SLAPIObject):
             d = json.loads(out)
             try:
                 d['version'] = open("/etc/sl_version", "r").read().strip()
-            except:
-                pass
+            except Exception, e:
+                logger.exception("cannot read sl_version")
         except Exception, e:
             return SLREST.response(path=self.route,
                                    status=SLREST.Status.ERROR,
                                    reason=str(e))
+
+        # don't accept the local config checksum if we have skewed
+        err, res = config.audit_config(None)
+        if err:
+            logger.warn("local config is skewed, updating checksum: %s", res)
+            cur_run = "\n".join(config.read_running_config())
+            d['startup_config_md5'] = hashlib.md5(cur_run).hexdigest()
 
         return SLREST.response(path=self.route,
                                status=SLREST.Status.OK,
