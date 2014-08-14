@@ -97,9 +97,9 @@ BSN_SL_SENSOR_OID_TABLE = {
         oidstr.PREFIX          : BSN_SL_SENSOR_OID_TEMP_IDX,
         oidstr.THERMAL_STATUS  : BSN_SL_SENSOR_OID_TEMP_IDX + BSN_SL_SENSOR_OID_TEMP_IDX_STATUS,
         oidstr.THERMAL_TEMP    : BSN_SL_SENSOR_OID_TEMP_IDX + BSN_SL_SENSOR_OID_TEMP_IDX_VALUE,
-        oidstr.STATUS_GOOD     : 1,
-        oidstr.STATUS_FAILED   : 2,
-        oidstr.STATUS_MISSING  : 0,
+        oidstr.STATUS_GOOD     : '1',
+        oidstr.STATUS_FAILED   : '2',
+        oidstr.STATUS_MISSING  : '0',
         },
 
     oidstr.FAN_CMD : {
@@ -107,9 +107,9 @@ BSN_SL_SENSOR_OID_TABLE = {
         oidstr.FAN_STATUS     : BSN_SL_SENSOR_OID_FAN_IDX + BSN_SL_SENSOR_OID_FAN_IDX_STATUS,
         oidstr.FAN_RPM        : BSN_SL_SENSOR_OID_FAN_IDX + BSN_SL_SENSOR_OID_FAN_IDX_RPM,
         oidstr.FAN_PERCENTAGE : BSN_SL_SENSOR_OID_FAN_IDX + BSN_SL_SENSOR_OID_FAN_IDX_PERCENTAGE,
-        oidstr.STATUS_GOOD    : 1,
-        oidstr.STATUS_FAILED  : 2,
-        oidstr.STATUS_MISSING : 0,      
+        oidstr.STATUS_GOOD    : '1',
+        oidstr.STATUS_FAILED  : '2',
+        oidstr.STATUS_MISSING : '0',      
         },
     
     oidstr.PSU_CMD : {
@@ -121,9 +121,9 @@ BSN_SL_SENSOR_OID_TABLE = {
         oidstr.PSU_IOUT     : BSN_SL_SENSOR_OID_PSU_IDX + BSN_SL_SENSOR_OID_PSU_IDX_IOUT,
         oidstr.PSU_PIN      : BSN_SL_SENSOR_OID_PSU_IDX + BSN_SL_SENSOR_OID_PSU_IDX_PIN,
         oidstr.PSU_POUT     : BSN_SL_SENSOR_OID_PSU_IDX + BSN_SL_SENSOR_OID_PSU_IDX_POUT,
-        oidstr.STATUS_GOOD    : 1,
-        oidstr.STATUS_FAILED  : 2,
-        oidstr.STATUS_MISSING : 0,
+        oidstr.STATUS_GOOD    : '1',
+        oidstr.STATUS_FAILED  : '2',
+        oidstr.STATUS_MISSING : '0',
         },
     
     oidstr.CPU_LOAD : {
@@ -151,6 +151,20 @@ BSN_SL_SENSOR_OID_TABLE = {
         },
     }
 
+BSN_SL_SENSOR_OPS = {
+        oidstr.STATUS         : ('equal', '=='),
+        oidstr.THERMAL_TEMP   : ('max', '>'),
+        oidstr.FAN_RPM        : ('min', '<'),
+        oidstr.FAN_PERCENTAGE : ('min', '<'),    
+        oidstr.PSU_VIN        : ('max', '>'),
+        oidstr.PSU_VOUT       : ('max', '>'),
+        oidstr.PSU_IIN        : ('max', '>'),
+        oidstr.PSU_IOUT       : ('max', '>'),
+        oidstr.PSU_PIN        : ('max', '>'),
+        oidstr.PSU_POUT       : ('max', '>'),
+    }
+def trap_sensor_op_get(sensor_info):
+    return BSN_SL_SENSOR_OPS[sensor_info]
 # We can put the range in here
 # In the future we can read info from ONLdump
 # This is a subject to change
@@ -294,9 +308,9 @@ def config_line(no_cmd, li, key=None):
 
             if no_cmd:
                 # Remove matching line, if present
-                if li in lines:
-                    lines.remove(li)
-                    cfgfile.put_line_list_to_file(f, lines)
+                newcfg = [line for line in lines 
+                             if not key in line]
+                cfgfile.put_line_list_to_file(f, newcfg)
             else:
                 # Add matching line, if not present
                 if key is None:
@@ -341,8 +355,7 @@ def trap_generic_cmd(no_cmd, data):
     trap = data['trap']
     threshold = data['threshold']
     
-    monitor_cmd = "monitor" + \
-                    (" -r %d" % data['interval'] if 'interval' in data else "")
+    interval_cmd = (" -r %d" % data['interval'] if 'interval' in data else "")
         
     trapdict = BSN_SL_SENSOR_OID_TABLE.get(trap)
     if trapdict is None:
@@ -350,9 +363,17 @@ def trap_generic_cmd(no_cmd, data):
 
     items = trapdict.items()
     for item in items:
-        cmd_id = "%s_%s_" % (trap, 'threshold')
-        config_line(no_cmd, "%s -I %s%s %s %s %d\n" %
-                    (monitor_cmd, cmd_id, str(threshold), 
+        monitor_name = " -I %s_%s_%s" % (trap, 'threshold', str(threshold))
+       
+        # For a command: command id doesn't have interval because 
+        #     command interval overwrites existing interval
+        # For a no command: command id might include interval because
+        #     command interval doesn't remove non-matched existing interval
+        # if there is no interval, the interval_cmd = ""
+        cmd_id = interval_cmd + monitor_name if no_cmd else monitor_name
+    
+        config_line(no_cmd, "monitor%s%s %s %s %d\n" %
+                    (interval_cmd, monitor_name, 
                      item[1], Mon_Ops[trap], threshold), 
                      key=cmd_id)
 
@@ -417,57 +438,69 @@ def trap_name_to_oid_index(trap, name):
         raise error.ActionError("Trap %s name %s unsupported on %s", 
                                 trap, name, Platform.platform())
 
-# Handle trap name threshold|status [interval]
-def trap_sensor_cmd(no_cmd, data):
-    cmd_id = None
-    monitor_name = None
+# Handler sensor info
+# if status, then convert good|failed|missing to values
+# if temp|rpm|vin .. then get vvalue
+def trap_sensor_info_handler(no_cmd, interval_cmd,
+                             data, sl_trapdict, monitor_name, oid):
+
     operator = None
-    trap  = data['trap']
-    sensor_name = data['name']
-    threshold_or_status_value = None
-
-    monitor_cmd = "monitor" + \
-                    (" -r %d" % data['interval'] if 'interval' in data else "")
-
-    sl_trapdict = BSN_SL_SENSOR_OID_TABLE.get(trap)
-    if sl_trapdict is None:
-        raise error.ActionError("Trap command %s unsupported", trap)
-    
-    info_key = data['info_key']
-    
+    value = None
+  
     # Get value for status or threshold
     if oidstr.STATUS in data:
+        (ops_name, ops) = trap_sensor_op_get(oidstr.STATUS)
         value_name = data[oidstr.STATUS]
-        cmd_id = "%s_%s_%s_%s" % (trap, sensor_name, info_key, value_name)
-        monitor_name = cmd_id
-        # Get integer value from status enums: missing, good, failed
-        threshold_or_status_value = sl_trapdict.get(value_name)
-        operator = '=='
+        monitor_name = "%s_%s" % (monitor_name, value_name)
+        # Get value from status enums: missing, good, failed
+        value = sl_trapdict.get(value_name)
+        operator = ops
     else:
-        (ops_name, ops) = data['operator']
-        threshold_or_status_value = data[oidstr.VALUE]
-        cmd_id = "%s_%s_%s_%s_" % (trap, sensor_name, info_key, ops_name)
-        monitor_name = "%s%s" % (cmd_id, str(threshold_or_status_value))
+        # no command: might not have operator
+        (ops_name, ops) = data['operator'] if 'operator' in data else ("", "")
+        value = str(data[oidstr.VALUE]) if oidstr.VALUE in data else ""
+        suffix_id = "" if value is "" else "%s_%s" % (ops_name, value) 
+        monitor_name = "%s_%s" % (monitor_name, suffix_id)
         operator = ops
 
-    # Get sensor info_oid : <sensor>.<info>
-    info_oid = sl_trapdict.get(info_key)
-    if info_oid is None:
-        raise error.ActionError("Trap %s info %s unsupported on %s",
-                                 trap, info_key, Platform.platform())
+    # For a command: command id doesn't have interval because 
+    #     command interval overwrites existing interval
+    # For a no command: command id might include interval because
+    #     command interval doesn't remove non-matched existing interval
+    # if there is no interval, the interval_cmd = ""
+    cmd_id = interval_cmd + monitor_name if no_cmd else monitor_name
 
-    # Sensor index is platform dependent
-    sensor_index = trap_name_to_oid_index(trap, sensor_name)
-    
-    # Final oid for the monitor command
-    # <info_oid>.<index>
-    oid = info_oid + sensor_index
-    config_line(no_cmd, "%s -I %s %s %s %d\n" % 
-                (monitor_cmd, monitor_name, oid, 
-                 operator, threshold_or_status_value),
+    config_line(no_cmd, "monitor%s%s %s %s %s\n" % 
+                (interval_cmd, monitor_name, oid, operator, value),
                 key=cmd_id)
 
-
+def trap_sensor_name_handler(no_command, interval_command,
+                             data, trap, sl_trapdict):
+    
+    sensor_name = data['name']
+    info_key = data['info_key']
+    info_oid = sl_trapdict.get(info_key)
+    if info_oid is None:
+        raise error.ActionError("Trap %s info %s unsupported on %s" 
+                        % (trap, info_key, Platform.platform()))
+    
+    monitor_name = " -I %s_%s_%s" % (trap, sensor_name, info_key)
+    oid = info_oid + trap_name_to_oid_index(trap, sensor_name)
+    
+    status = data[oidstr.STATUS] if oidstr.STATUS in data else None
+    if status is 'all':
+        for status in (oidstr.STATUS_GOOD, oidstr.STATUS_FAILED, oidstr.STATUS_MISSING):
+            data[oidstr.STATUS] = status
+            trap_sensor_info_handler(no_command, interval_command,
+                                     data, sl_trapdict, monitor_name, oid)
+        #reset data[oidstr.STATUS] for other codes use it
+        data[oidstr.STATUS] = 'all'
+    else:
+        # handle status good|failed|missing
+        # or temp|rpm|vin <value>
+        trap_sensor_info_handler(no_command, interval_command,
+                                 data, sl_trapdict, monitor_name, oid)
+        
 def config_snmp(no_command, data, is_init):
     if 'host' in data:
         trap_dest(no_command,
@@ -490,7 +523,27 @@ def config_snmp(no_command, data, is_init):
         elif data['trap'] == oidstr.THERMAL_CMD or \
             data['trap'] == oidstr.FAN_CMD or \
             data['trap'] == oidstr.PSU_CMD:
-            trap_sensor_cmd(no_command, data)
+    
+            interval_command = (" -r %d" % data['interval'] if 'interval' in data else "")
+
+            trap  = data['trap']
+            sl_trapdict = BSN_SL_SENSOR_OID_TABLE.get(trap)
+            if sl_trapdict is None:
+                raise error.ActionError("Trap command %s unsupported", trap)
+        
+            sensor_name = data['name']
+            if sensor_name is 'all':
+                for name in sorted([name for name in trap_sensor_name_tuple_get(data['trap'])
+                                    if not 'all' in name]):
+                    data['name'] = name
+                    trap_sensor_name_handler(no_command, interval_command,
+                                             data, trap, sl_trapdict)
+                #reset data['name'] for other codes use it
+                data['name'] = 'all'
+            else:
+                trap_sensor_name_handler(no_command, interval_command,
+                                         data, trap, sl_trapdict)
+            
         else:
             trap_generic_cmd(no_command, data)
 
@@ -709,29 +762,51 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                                 'data'            : { 'info_key'  : oidstr.THERMAL_TEMP },
                             },
                             {
-                                'token'           : 'max',
-                                'data'            : {'operator' : ('max', '>')},
-                                'short-help'      : 'Trap if temperature rises above this value, in milliCelsius',
-                            },
-                            {
-                                'field'           : oidstr.VALUE,
-                                'base-type'       : 'integer',
-                                'range'           : trap_sensor_range_get
-                                                    (oidstr.THERMAL_CMD, oidstr.THERMAL_TEMP)
-                            }
+                                'optional-for-no'     : 'True',
+                                'args' : (
+                                    {
+                                        'token'           : 'max',
+                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.STATUS)},
+                                        'short-help'      : 'Trap if temperature rises above this value, in milliCelsius',
+                                    },
+                                    {
+                                        'field'           : oidstr.VALUE,
+                                        'base-type'       : 'integer',
+                                        'range'           : trap_sensor_range_get
+                                                            (oidstr.THERMAL_CMD, oidstr.THERMAL_TEMP)
+                                    },
+                                ),
+                             },
                         ),
                         (
                             {
+                                'token'           : oidstr.THERMAL_STATUS,
+                                'short-help'      : 'Trap on status changes',
+                            },
+                            {
                                 'field'           : oidstr.THERMAL_STATUS,
-                                'tag'             : oidstr.THERMAL_STATUS,
+                                #'tag'             : oidstr.THERMAL_STATUS,
                                 'data'            : {'info_key' : oidstr.THERMAL_STATUS },
                                 'short-help'      : 'Trap if status changes to this value',
                                 'type'            : 'enum',
                                 'values'          : (oidstr.STATUS_GOOD, 
                                                      oidstr.STATUS_FAILED,
                                                      oidstr.STATUS_MISSING)
-                            }
-                        )
+                            },
+                        ),
+                        (
+                            {
+                                'token'           : oidstr.THERMAL_STATUS,
+                                'short-help'      : 'Trap on status changes',
+                            },
+                            {
+                                'token'           : 'all',
+                                'field'           : oidstr.THERMAL_STATUS,
+                                'data'            : { 'info_key'  : oidstr.THERMAL_STATUS,
+                                                      'values'    : 'all' },
+                                'short-help'      : 'Trap if any status changes',
+                            },
+                        ),
                     )
                     }, # ending of thermal choices
                     {
@@ -767,8 +842,11 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                     'choices': (
                         (
                             {
+                                'token'           : oidstr.FAN_STATUS,
+                                'short-help'      : 'Trap on status changes',
+                            },
+                            {
                                 'field'           : oidstr.FAN_STATUS,
-                                'tag'             : oidstr.FAN_STATUS,
                                 'data'            : { 'info_key'  : oidstr.FAN_STATUS },
                                 'short-help'      : 'Trap if status changes to this value',
                                 'type'            : 'enum',
@@ -779,13 +857,25 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         ),
                         (
                             {
+                                'token'           : oidstr.FAN_STATUS,
+                                'short-help'      : 'Trap on status changes',
+                            },
+                            {
+                                'token'           : 'all',
+                                'data'            : { 'info_key'  : oidstr.FAN_STATUS,
+                                                      oidstr.FAN_STATUS    : 'all' },
+                                'short-help'      : 'Trap if any status changes',
+                            }
+                        ),
+                        (
+                            {
                                 'token'           : oidstr.FAN_RPM,
                                 'short-help'      : 'Trap on fan speed rotation per minute',
                                 'data'            : { 'info_key' : oidstr.FAN_RPM },
                             },
                             {
                                 'token'           : 'min',
-                                'data'            : {'operator' : ('min', '<')},
+                                'data'            : {'operator' : trap_sensor_op_get(oidstr.FAN_RPM)},
                                 'short-help'      : 'Trap if fan speed falls below this value, in rotation per minute',
                             },
                             {
@@ -803,7 +893,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             },
                             {
                                 'token'           : 'min',
-                                'data'            : {'operator' : ('min', '<')},
+                                'data'            : {'operator' : trap_sensor_op_get(oidstr.FAN_PERCENTAGE)},
                                 'short-help'      : 'Trap if fan speed falls below this value, in percent',
                             },
                             {
@@ -849,8 +939,11 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                     'choices': (
                         (
                             {
+                                'token'           : oidstr.PSU_STATUS,
+                                'short-help'      : 'Trap on status changes',
+                            },
+                            {
                                 'field'           : oidstr.PSU_STATUS,
-                                'tag'             : oidstr.PSU_STATUS,
                                 'data'            : { 'info_key'  : oidstr.PSU_STATUS },
                                 'short-help'      : 'Trap if status changes to this value',
                                 'type'            : 'enum',
@@ -861,13 +954,26 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         ),
                         (
                             {
+                                'token'           : oidstr.PSU_STATUS,
+                                'short-help'      : 'Trap on status changes',
+                            },
+                            {
+                                'token'           : 'all',
+                                'field'           : oidstr.PSU_STATUS,
+                                'data'            : { 'info_key'  : oidstr.PSU_STATUS,
+                                                      'values'    : 'all' },
+                                'short-help'      : 'Trap if any status changes',
+                            },
+                        ),
+                        (
+                            {
                                 'token'           : oidstr.PSU_VIN,
                                 'short-help'      : 'Trap on input voltage',
                                 'data'            : { 'info_key' : oidstr.PSU_VIN },
                             },
                             {
                                 'token'           : 'max',
-                                'data'            : {'operator' : ('max', '>')},
+                                'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_VIN)},
                                 'short-help'      : 'Trap if input voltage rises above this value, in millivolts',
                             },
                             {
@@ -885,7 +991,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             },
                             {
                                 'token'           : 'max',
-                                'data'            : {'operator' : ('max', '>')},
+                                'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_VOUT)},
                                 'short-help'      : 'Trap if output voltage rises above this value, in millivolts',
                             },
                             {
@@ -903,7 +1009,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             },
                             {
                                 'token'           : 'max',
-                                'data'            : {'operator' : ('max', '>')},
+                                'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_IIN)},
                                 'short-help'      : 'Trap if input current rises above this value, in milliamperes',
                             },
                             {
@@ -921,7 +1027,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             },
                             {
                                 'token'           : 'max',
-                                'data'            : {'operator' : ('max', '>')},
+                                'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_IOUT)},
                                 'short-help'      : 'Trap if output current rises above this value, in milliamperes',
                             },
                             {
@@ -939,7 +1045,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             },
                             {
                                 'token'           : 'max',
-                                'data'            : {'operator' : ('max', '>')},
+                                'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_PIN)},
                                 'short-help'      : 'Trap if input power rises above this value, in milliwatts',
                             },
                             {
@@ -957,7 +1063,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                             },
                             {
                                 'token'           : 'max',
-                                'data'            : {'operator' : ('max', '>')},
+                                'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_POUT)},
                                 'short-help'      : 'Trap if output power rises above this value, in milliwatts',
                             },
                             {
