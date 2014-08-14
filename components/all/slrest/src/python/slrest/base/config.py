@@ -35,6 +35,8 @@ PCLI_BLIST = [
 
 BLIST_REGEX = re.compile(r"%s" % "|".join(["^%s" % c for c in PCLI_BLIST]))
 
+class RewindException(Exception): pass
+
 def read_ztn_json(path=ZTN_JSON):
     """
     Read ZTN JSON file.
@@ -194,8 +196,14 @@ def reload_config(ztn_server):
 
     try:
         logger.debug("rewinding running-config")
-        patch_cfg = create_path_config(cur_run, last_run)
+        patch_cfg = create_patch_config(cur_run, last_run)
         apply_config(patch_cfg)
+
+        # make sure we rewound successfully
+        rewind_run = read_running_config()
+        l1, l2 = compare_configs(rewind_run, last_run)
+        if l1 or l2:
+            raise RewindException("cannot rewind to last running-config")
 
         logger.debug("applying new ztn changes")
         patch_cfg = create_patch_config(last_cfg, new_cfg)
@@ -283,19 +291,19 @@ def audit_config(ztn_server):
     if l1:
         buf.write("Extra lines added locally:\n")
         for l in l1:
-            buf.write("  " + l)
+            buf.write("  " + l + "\n")
     if l2:
         buf.write("Lines deleted locally:\n")
         for l in l2:
-            buf.write("  " + l)
+            buf.write("  " + l + "\n")
     if l3:
         buf.write("Lines deleted by ZTN:\n")
         for l in l3:
-            buf.write("  " + l)
+            buf.write("  " + l + "\n")
     if l4:
         buf.write("Lines added by ZTN:\n")
         for l in l4:
-            buf.write("  " + l)
+            buf.write("  " + l + "\n")
 
     if buf.tell():
         return (3, buf.getvalue(),)
