@@ -308,9 +308,14 @@ def config_line(no_cmd, li, key=None):
 
             if no_cmd:
                 # Remove matching line, if present
-                newcfg = [line for line in lines 
-                             if not key in line]
-                cfgfile.put_line_list_to_file(f, newcfg)
+                if key is None:
+                    if li in lines:
+                        lines.remove(li)
+                        cfgfile.put_line_list_to_file(f, lines)
+                else:
+                    newcfg = [line for line in lines 
+                              if not key in line]
+                    cfgfile.put_line_list_to_file(f, newcfg)
             else:
                 # Add matching line, if not present
                 if key is None:
@@ -514,10 +519,12 @@ def config_snmp(no_command, data, is_init):
         if data['trap'] == LINK_UP_DOWN_CLI:
             config_line(no_command, LINK_UP_NOTIFICATION)
             config_line(no_command, LINK_DOWN_NOTIFICATION)
+            key = None if no_command else LINK_UP_MONITOR_CMD_ID
             config_line(no_command, LINK_UP_MONITOR % data['interval'],
-                        key=LINK_UP_MONITOR_CMD_ID)
+                        key=key)
+            key = None if no_command else LINK_DOWN_MONITOR_CMD_ID
             config_line(no_command, LINK_DOWN_MONITOR % data['interval'],
-                        key=LINK_DOWN_MONITOR_CMD_ID)
+                        key=key)
         elif data['trap'] == AUTH_FAIL_CLI:
             config_line(no_command, AUTH_FAIL_NOTIFICATION)
         elif data['trap'] == oidstr.THERMAL_CMD or \
@@ -874,16 +881,21 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                                 'data'            : { 'info_key' : oidstr.FAN_RPM },
                             },
                             {
-                                'token'           : 'min',
-                                'data'            : {'operator' : trap_sensor_op_get(oidstr.FAN_RPM)},
-                                'short-help'      : 'Trap if fan speed falls below this value, in rotation per minute',
+                                'optional-for-no'     : 'True',
+                                'args' : (
+                                    {
+                                        'token'           : 'min',
+                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.FAN_RPM)},
+                                        'short-help'      : 'Trap if fan speed falls below this value, in rotation per minute',
+                                    },
+                                    {
+                                        'field'           : oidstr.VALUE,
+                                        'base-type'       : 'integer',
+                                        'range'           : trap_sensor_range_get
+                                                            (oidstr.FAN_CMD, oidstr.FAN_RPM)
+                                    },
+                                ),
                             },
-                            {
-                                'field'           : oidstr.VALUE,
-                                'base-type'       : 'integer',
-                                'range'           : trap_sensor_range_get
-                                                    (oidstr.FAN_CMD, oidstr.FAN_RPM)
-                            }
                         ),
                         (
                             {
@@ -892,16 +904,21 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                                 'data'            : { 'info_key' : oidstr.FAN_PERCENTAGE },
                             },
                             {
-                                'token'           : 'min',
-                                'data'            : {'operator' : trap_sensor_op_get(oidstr.FAN_PERCENTAGE)},
-                                'short-help'      : 'Trap if fan speed falls below this value, in percent',
+                                'optional-for-no'     : 'True',
+                                'args' : (
+                                    {
+                                        'token'           : 'min',
+                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.FAN_PERCENTAGE)},
+                                        'short-help'      : 'Trap if fan speed falls below this value, in percent',
+                                    },
+                                    {
+                                        'field'           : oidstr.VALUE,
+                                        'base-type'       : 'integer',
+                                        'range'           : trap_sensor_range_get
+                                                            (oidstr.FAN_CMD, oidstr.FAN_PERCENTAGE)
+                                    },
+                                ),
                             },
-                            {
-                                'field'           : oidstr.VALUE,
-                                'base-type'       : 'integer',
-                                'range'           : trap_sensor_range_get
-                                                    (oidstr.FAN_CMD, oidstr.FAN_PERCENTAGE)
-                            }
                         ),
                         
                     )
@@ -972,16 +989,21 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                                 'data'            : { 'info_key' : oidstr.PSU_VIN },
                             },
                             {
-                                'token'           : 'max',
-                                'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_VIN)},
-                                'short-help'      : 'Trap if input voltage rises above this value, in millivolts',
+                                'optional-for-no'     : 'True',
+                                'args' : (
+                                    {
+                                        'token'           : 'max',
+                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_VIN)},
+                                        'short-help'      : 'Trap if input voltage rises above this value, in millivolts',
+                                    },
+                                    {
+                                        'field'           : oidstr.VALUE,
+                                        'base-type'       : 'integer',
+                                        'range'           : trap_sensor_range_get
+                                                            (oidstr.PSU_CMD,oidstr.PSU_VIN)
+                                    },
+                                ),
                             },
-                            {
-                                'field'           : oidstr.VALUE,
-                                'base-type'       : 'integer',
-                                'range'           : trap_sensor_range_get
-                                                    (oidstr.PSU_CMD,oidstr.PSU_VIN)
-                            }
                         ),
                         (
                             {
@@ -990,16 +1012,21 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                                 'data'            : { 'info_key' : oidstr.PSU_VOUT },
                             },
                             {
-                                'token'           : 'max',
-                                'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_VOUT)},
-                                'short-help'      : 'Trap if output voltage rises above this value, in millivolts',
+                                'optional-for-no'     : 'True',
+                                'args' : (
+                                    {
+                                        'token'           : 'max',
+                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_VOUT)},
+                                        'short-help'      : 'Trap if output voltage rises above this value, in millivolts',
+                                    },
+                                    {
+                                        'field'           : oidstr.VALUE,
+                                        'base-type'       : 'integer',
+                                        'range'           : trap_sensor_range_get
+                                                            (oidstr.PSU_CMD, oidstr.PSU_VOUT)
+                                    },
+                                ),
                             },
-                            {
-                                'field'           : oidstr.VALUE,
-                                'base-type'       : 'integer',
-                                'range'           : trap_sensor_range_get
-                                                    (oidstr.PSU_CMD, oidstr.PSU_VOUT)
-                            }
                         ),
                         (
                             {
@@ -1008,16 +1035,21 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                                 'data'            : { 'info_key' : oidstr.PSU_IIN },
                             },
                             {
-                                'token'           : 'max',
-                                'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_IIN)},
-                                'short-help'      : 'Trap if input current rises above this value, in milliamperes',
+                                'optional-for-no'     : 'True',
+                                'args' : (
+                                    {
+                                        'token'           : 'max',
+                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_IIN)},
+                                        'short-help'      : 'Trap if input current rises above this value, in milliamperes',
+                                    },
+                                    {
+                                        'field'           : oidstr.VALUE,
+                                        'base-type'       : 'integer',
+                                        'range'           : trap_sensor_range_get
+                                                            (oidstr.PSU_CMD, oidstr.PSU_IIN)
+                                    },
+                                ),
                             },
-                            {
-                                'field'           : oidstr.VALUE,
-                                'base-type'       : 'integer',
-                                'range'           : trap_sensor_range_get
-                                                    (oidstr.PSU_CMD, oidstr.PSU_IIN)
-                            }
                         ),
                         (
                             {
@@ -1026,16 +1058,21 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                                 'data'            : { 'info_key' : oidstr.PSU_IOUT },
                             },
                             {
-                                'token'           : 'max',
-                                'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_IOUT)},
-                                'short-help'      : 'Trap if output current rises above this value, in milliamperes',
+                                'optional-for-no'     : 'True',
+                                'args' : (
+                                    {
+                                        'token'           : 'max',
+                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_IOUT)},
+                                        'short-help'      : 'Trap if output current rises above this value, in milliamperes',
+                                    },
+                                    {
+                                        'field'           : oidstr.VALUE,
+                                        'base-type'       : 'integer',
+                                        'range'           : trap_sensor_range_get
+                                                            (oidstr.PSU_CMD, oidstr.PSU_IOUT)
+                                    },
+                                ),
                             },
-                            {
-                                'field'           : oidstr.VALUE,
-                                'base-type'       : 'integer',
-                                'range'           : trap_sensor_range_get
-                                                    (oidstr.PSU_CMD, oidstr.PSU_IOUT)
-                            }
                         ),
                         (
                             {
@@ -1044,16 +1081,21 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                                 'data'            : { 'info_key' : oidstr.PSU_PIN },
                             },
                             {
-                                'token'           : 'max',
-                                'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_PIN)},
-                                'short-help'      : 'Trap if input power rises above this value, in milliwatts',
+                                'optional-for-no'     : 'True',
+                                'args' : (
+                                    {
+                                        'token'           : 'max',
+                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_PIN)},
+                                        'short-help'      : 'Trap if input power rises above this value, in milliwatts',
+                                    },
+                                    {
+                                        'field'           : oidstr.VALUE,
+                                        'base-type'       : 'integer',
+                                        'range'           : trap_sensor_range_get
+                                                            (oidstr.PSU_CMD, oidstr.PSU_PIN)
+                                    },
+                                ),
                             },
-                            {
-                                'field'           : oidstr.VALUE,
-                                'base-type'       : 'integer',
-                                'range'           : trap_sensor_range_get
-                                                    (oidstr.PSU_CMD, oidstr.PSU_PIN)
-                            }
                         ),
                         (
                             {
@@ -1062,16 +1104,21 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                                 'data'            : { 'info_key' : oidstr.PSU_POUT },
                             },
                             {
-                                'token'           : 'max',
-                                'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_POUT)},
-                                'short-help'      : 'Trap if output power rises above this value, in milliwatts',
+                                'optional-for-no'     : 'True',
+                                'args' : (
+                                    {
+                                        'token'           : 'max',
+                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_POUT)},
+                                        'short-help'      : 'Trap if output power rises above this value, in milliwatts',
+                                    },
+                                    {
+                                        'field'           : oidstr.VALUE,
+                                        'base-type'       : 'integer',
+                                        'range'           : trap_sensor_range_get
+                                                            (oidstr.PSU_CMD, oidstr.PSU_POUT)
+                                    },
+                                ),
                             },
-                            {
-                                'field'           : oidstr.VALUE,
-                                'base-type'       : 'integer',
-                                'range'           : trap_sensor_range_get
-                                                    (oidstr.PSU_CMD, oidstr.PSU_POUT)
-                            }
                         ),
                     )
                     }, # ending of psu choices
