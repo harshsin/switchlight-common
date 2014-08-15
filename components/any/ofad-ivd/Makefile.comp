@@ -47,11 +47,7 @@ DEPENDMODULE_HEADERS := onlp onlplib
 #
 include $(BUILDER)/dependmodules.mk
 
-BINARY := ofad.shared
-$(BINARY)_LIBRARIES := $(LIBRARY_TARGETS)
-include $(BUILDER)/bin.mk
-
-BINARY := ofad.static
+BINARY := ofad
 $(BINARY)_LIBRARIES := $(LIBRARY_TARGETS)
 include $(BUILDER)/bin.mk
 
