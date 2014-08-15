@@ -12,13 +12,19 @@ include $(SWITCHLIGHT)/make/config.mk
 
 DEBUG := 1
 
-LIBONLP := $(shell $(SWITCHLIGHT_PKG_INSTALL) onlp:powerpc --find-file libonlp.so)
-
 ifndef TOOLCHAIN
 $(error $$TOOLCHAIN must be specified.)
 else
 export TOOLCHAIN
 endif
+
+ifndef ARCH
+$(error $$ARCH must be specified.)
+else
+export ARCH
+endif
+
+LIBONLP := $(shell $(SWITCHLIGHT_PKG_INSTALL) onlp:$(ARCH) --find-file libonlp.so)
 
 MODULE := ofad-ivd
 include $(BUILDER)/standardinit.mk
