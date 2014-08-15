@@ -48,6 +48,7 @@ case "$1" in
         if [ "$ztn" = true ]; then
             log_action_begin_msg "Saving last ZTN startup-config"
             /bin/cp $config /var/run/last-ztn-startup-config
+            /usr/bin/pcli --init --mode=config --command "show running-config" > /var/run/last-ztn-running-config
             log_action_end_msg $?
         fi
 

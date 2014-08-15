@@ -11,6 +11,8 @@ import yaml
 import re
 import os
 import zipfile
+from cStringIO import StringIO
+import hashlib
 
 from slrest.base.slapi_object import SLAPIObject
 from slrest.base import util
@@ -19,6 +21,12 @@ from slrest.base import localconfig
 from slrest.base.transact import *
 from slrest.base.response import SLREST
 
+# Set default logger
+logger = logging.getLogger("ztn")
+
+def setLogger(logger_):
+    global logger
+    logger = logger_
 
 #
 # Only one ZTN transaction may be outstanding at a time.
@@ -125,12 +133,19 @@ class v1_ztn_manifest(SLAPIObject):
             d = json.loads(out)
             try:
                 d['version'] = open("/etc/sl_version", "r").read().strip()
-            except:
-                pass
+            except Exception, e:
+                logger.exception("cannot read sl_version")
         except Exception, e:
             return SLREST.response(path=self.route,
                                    status=SLREST.Status.ERROR,
                                    reason=str(e))
+
+        # don't accept the local config checksum if we have skewed
+        err, res = config.audit_config(None)
+        if err:
+            logger.warn("local config is skewed, updating checksum: %s", res)
+            cur_run = "\n".join(config.read_running_config())
+            d['startup_config_md5'] = hashlib.md5(cur_run).hexdigest()
 
         return SLREST.response(path=self.route,
                                status=SLREST.Status.OK,
@@ -423,3 +438,75 @@ class v1_ztn_preflight_url(SLAPIObject):
         else:
             v1_ztn_transact_url.cliZtnPreflightUrl(sub_parser.hostname, sub_parser.port, sub_parser.url)
 
+class v1_ztn_audit(SLAPIObject):
+    """Perform a config audit.
+
+    Implemented using GET since it is stateless...
+    But it requires a round-trip to the controller in most cases;
+    possibly this is an argument for POST.
+    """
+
+    route = "/api/v1/ztn/audit"
+    def GET(self, server=None, local=False, sync=True):
+
+        if not sync:
+            return SLREST.response(path=self.route,
+                                   status=SLREST.Status.ERROR,
+                                   reason="async not supported")
+
+        # Use requester IP as server if server is not provided
+        if local:
+            server = None
+        elif server is None:
+            server = cherrypy.request.remote.ip
+
+        rc, rsp = config.audit_config(server)
+
+        if not rc:
+            if rsp:
+                return SLREST.response(path=self.route,
+                                       status=SLREST.Status.OK,
+                                       reason="Audit success.",
+                                       data=rsp)
+            else:
+                return SLREST.response(path=self.route,
+                                       status=SLREST.Status.OK,
+                                       reason="Audit success.",
+                                       data="Audit success.")
+
+        if rsp:
+            return SLREST.response(path=self.route,
+                                   status=SLREST.Status.ERROR,
+                                   reason="Audit failed: " + str(rsp),
+                                   data=rsp)
+        else:
+            return SLREST.response(path=self.route,
+                                   status=SLREST.Status.ERROR,
+                                   reason="Audit failed.",
+                                   data=rsp)
+
+    @staticmethod
+    def cliZtnAudit(hostname, port, local, server):
+        try:
+            path = "%s?sync=True" % (v1_ztn_audit.route,)
+            if local:
+                path += "&local=True"
+            if server is not None:
+                path += "&server=" + server
+            response = SLAPIObject.get(hostname, port, path)
+            SLAPIObject.dataResult(response.read())
+        except Exception, e:
+            import pdb
+            pdb.set_trace()
+            pass
+
+    @staticmethod
+    def cmdZtnAudit(sub_parser, register=False):
+        if register:
+            p = sub_parser.add_parser("ztn-audit")
+            p.add_argument("--local", default=False, action='store_true')
+            p.add_argument("server", default=None, nargs='?')
+            p.set_defaults(func=v1_ztn_audit.cmdZtnAudit)
+        else:
+            v1_ztn_audit.cliZtnAudit(sub_parser.hostname, sub_parser.port,
+                                     sub_parser.local, sub_parser.server)
