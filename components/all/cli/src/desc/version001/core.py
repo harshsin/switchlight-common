@@ -60,7 +60,12 @@ def show_version(data):
         # UBoot version, if available.
         uver=fw_getenv('ver')
         if uver:
-            out.append("UBoot Version: %s" % (uver))
+            out.append("UBoot Version: %s" % (uver.strip()))
+
+        # ONIE version, if available:
+        over=fw_getenv('onie_version')
+        if over:
+            out.append("ONIE Version: %s" % (over.strip()))
 
         # Platform Information
         out.append(str(Platform))
@@ -430,7 +435,7 @@ def save_tech_support(data):
 
     if os.path.isdir(DUMP_FLOWS_PATH):
         for script in ['dumpt6.py', 'dumpflows.py', 'dumpdebugcounters.py',
-            'dumpgentables.py', 'dumpgroups.py']: 
+            'dumpgentables.py', 'dumpgroups.py']:
             scripts.append('%s/%s -p 6634' % (DUMP_FLOWS_PATH, script))
 
     p = subprocess.Popen(args=['/bin/bash'],
