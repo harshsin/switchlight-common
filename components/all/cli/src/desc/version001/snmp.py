@@ -51,7 +51,6 @@ class oidstr(object):
     STATUS_PLUGGED_IN='plugged_in'
     STATUS_UNPLUGGED='unplugged'
     NAME_TO_INDEX_MAP='name2index'
-    VALUE='value'
     THERMAL_CMD='Thermal'
     THERMAL_STATUS=STATUS
     THERMAL_TEMP='temperature'
@@ -151,20 +150,14 @@ BSN_SL_SENSOR_OID_TABLE = {
         },
     }
 
-BSN_SL_SENSOR_OPS = {
-        oidstr.STATUS         : ('equal', '=='),
-        oidstr.THERMAL_TEMP   : ('max', '>'),
-        oidstr.FAN_RPM        : ('min', '<'),
-        oidstr.FAN_PERCENTAGE : ('min', '<'),
-        oidstr.PSU_VIN        : ('max', '>'),
-        oidstr.PSU_VOUT       : ('max', '>'),
-        oidstr.PSU_IIN        : ('max', '>'),
-        oidstr.PSU_IOUT       : ('max', '>'),
-        oidstr.PSU_PIN        : ('max', '>'),
-        oidstr.PSU_POUT       : ('max', '>'),
+BSN_SL_SENSOR_TRAP_OPS = {
+        'equal' : '==',
+        'max'   : '>',
+        'min'   : '<'
     }
-def trap_sensor_op_get(sensor_info):
-    return BSN_SL_SENSOR_OPS[sensor_info]
+def trap_sensor_op_get(op_name):
+    return (op_name, BSN_SL_SENSOR_TRAP_OPS[op_name])
+
 # We can put the range in here
 # In the future we can read info from ONLdump
 # This is a subject to change
@@ -470,25 +463,40 @@ def trap_name_to_oid_index(trap, name):
 def trap_sensor_info_handler(no_cmd, interval_cmd,
                              data, sl_trapdict, monitor_name, oid):
 
-    operator = None
-    value = None
+    operator_value = None
 
     # Get value for status or threshold
     if oidstr.STATUS in data:
-        (ops_name, ops) = trap_sensor_op_get(oidstr.STATUS)
+        (ops_name, ops) = trap_sensor_op_get('equal')
         value_name = data[oidstr.STATUS]
-        monitor_name = "%s_%s" % (monitor_name, value_name)
+        monitor_name_status = "%s_%s" % (monitor_name, value_name)
         # Get value from status enums: missing, good, failed
-        value = sl_trapdict.get(value_name)
-        operator = ops
+        operator_value = "%s %s" % (ops, sl_trapdict.get(value_name))
+        trap_sensor_info_config_line(no_cmd, interval_cmd,
+                                     monitor_name_status, oid, operator_value)
     else:
-        # no command: might not have operator
-        (ops_name, ops) = data['operator'] if 'operator' in data else ("", "")
-        value = str(data[oidstr.VALUE]) if oidstr.VALUE in data else ""
-        suffix_id = "" if value is "" else "%s_%s" % (ops_name, value)
-        monitor_name = "%s_%s" % (monitor_name, suffix_id)
-        operator = ops
-
+        if 'min' not in data and 'max' not in data:
+            if no_cmd:
+                # This will delete all min / max 
+                operator_value = ""
+                trap_sensor_info_config_line(no_cmd, interval_cmd,
+                                             monitor_name, oid, operator_value)
+            else:
+                # Raise error for now
+                # TODO migh want to use default value for min/max
+                raise error.ActionError('Need at least min or max value')
+        else: 
+            # At least min or max in data
+            for optimum in ('min', 'max'):
+                if optimum in data:
+                    (ops_name, ops) = trap_sensor_op_get(optimum)
+                    value = str(data[optimum])
+                    operator_value = "%s %s" % (ops, value)
+                    monitor_name_optimum = "%s_%s_%s" % (monitor_name, ops_name, value)
+                    trap_sensor_info_config_line(no_cmd, interval_cmd,
+                                                 monitor_name_optimum, oid, operator_value)            
+            
+def trap_sensor_info_config_line(no_cmd, interval_cmd, monitor_name, oid, operator_value):
     # For a command: command id doesn't have interval because
     #     command interval overwrites existing interval
     # For a no command: command id might include interval because
@@ -496,8 +504,8 @@ def trap_sensor_info_handler(no_cmd, interval_cmd,
     # if there is no interval, the interval_cmd = ""
     cmd_id = interval_cmd + monitor_name if no_cmd else monitor_name
 
-    config_line(no_cmd, "monitor%s%s %s %s %s\n" %
-                (interval_cmd, monitor_name, oid, operator, value),
+    config_line(no_cmd, "monitor%s%s %s %s\n" %
+                (interval_cmd, monitor_name, oid, operator_value),
                 key=cmd_id)
 
 def trap_sensor_name_handler(no_command, interval_command,
@@ -614,6 +622,66 @@ command.add_action('implement-config-snmp', config_snmp,
                                  'is_init'    : '$is-init',
                                } } )
 
+def sensor_all_status_cli_get(status):
+    return (
+                {
+                    'token'           : status,
+                    'short-help'      : 'Trap on status changes',
+                },
+                {
+                    'token'           : 'all',
+                    'field'           : status,
+                    'data'            : { 'info_key'  : status,
+                                          'values'    : 'all' },
+                    'short-help'      : 'Trap if any status changes',
+                },
+            )
+def sensor_enum_status_cli_get(status):
+    return (
+                {
+                    'token'           : status,
+                    'short-help'      : 'Trap on status changes',
+                },
+                {
+                    'field'           : status,
+                    'data'            : { 'info_key'  : status },
+                    'short-help'      : 'Trap if status changes to this value',
+                    'type'            : 'enum',
+                    'values'          : (oidstr.STATUS_GOOD,
+                                         oidstr.STATUS_FAILED,
+                                         oidstr.STATUS_MISSING)
+                }
+            )
+            
+    
+def sensor_threshold_cli_optimum_get(cmd, info, optimum):
+    return {
+                'optional'            : 'True',
+                'optional-for-no'     : 'True',
+                'args' : (
+                    {
+                        'token'           : optimum[0],
+                        'data'            : {'operator' : trap_sensor_op_get(optimum[0])},
+                        'short-help'      : optimum[1],
+                    },
+                    {
+                        'field'           : optimum[0],
+                        'base-type'       : 'integer',
+                        'range'           : trap_sensor_range_get(cmd, info)
+                    },
+                ),
+            }
+def sensor_threshold_cli_get(cmd, info, info_help, min, max):
+    return (
+                {
+                    'token'           : info,
+                    'short-help'      : info_help,
+                    'data'            : { 'info_key' : info },
+                },
+                sensor_threshold_cli_optimum_get(cmd, info, min),
+                sensor_threshold_cli_optimum_get(cmd, info, max),
+            )
+
 SNMP_SERVER_COMMAND_DESCRIPTION = {
     'name'         : 'snmp-server',
     'mode'         : 'config',
@@ -719,7 +787,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                     {
                         'field'           : 'trap',
                         'tag'             : 'trap',
-                        'short-help'      : 'Trap type',
+                        'short-help'      : 'Trap type; see "help snmp-server trap" for details',
                         'type'            : 'enum',
                         'values'          : (oidstr.CPU_LOAD,
                                              oidstr.MEM_TOTAL_FREE,
@@ -730,7 +798,7 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                     {
                         'field'           : 'threshold',
                         'tag'             : 'threshold',
-                        'short-help'      : 'Threshold value',
+                        'short-help'      : 'Threshold value; see "help snmp-server trap" for details',
                         'base-type'       : 'integer',
                         'doc'             : 'snmp|snmp-threshold',
                     },
@@ -783,58 +851,13 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                     },
                     {
                     'choices': (
-                        (
-                            {
-                                'token'           : oidstr.THERMAL_TEMP,
-                                'short-help'      : 'Trap on temperature',
-                                'data'            : { 'info_key'  : oidstr.THERMAL_TEMP },
-                            },
-                            {
-                                'optional-for-no'     : 'True',
-                                'args' : (
-                                    {
-                                        'token'           : 'max',
-                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.THERMAL_TEMP)},
-                                        'short-help'      : 'Trap if temperature rises above this value, in milliCelsius',
-                                    },
-                                    {
-                                        'field'           : oidstr.VALUE,
-                                        'base-type'       : 'integer',
-                                        'range'           : trap_sensor_range_get
-                                                            (oidstr.THERMAL_CMD, oidstr.THERMAL_TEMP)
-                                    },
-                                ),
-                             },
-                        ),
-                        (
-                            {
-                                'token'           : oidstr.THERMAL_STATUS,
-                                'short-help'      : 'Trap on status changes',
-                            },
-                            {
-                                'field'           : oidstr.THERMAL_STATUS,
-                                #'tag'             : oidstr.THERMAL_STATUS,
-                                'data'            : {'info_key' : oidstr.THERMAL_STATUS },
-                                'short-help'      : 'Trap if status changes to this value',
-                                'type'            : 'enum',
-                                'values'          : (oidstr.STATUS_GOOD,
-                                                     oidstr.STATUS_FAILED,
-                                                     oidstr.STATUS_MISSING)
-                            },
-                        ),
-                        (
-                            {
-                                'token'           : oidstr.THERMAL_STATUS,
-                                'short-help'      : 'Trap on status changes',
-                            },
-                            {
-                                'token'           : 'all',
-                                'field'           : oidstr.THERMAL_STATUS,
-                                'data'            : { 'info_key'  : oidstr.THERMAL_STATUS,
-                                                      'values'    : 'all' },
-                                'short-help'      : 'Trap if any status changes',
-                            },
-                        ),
+                        sensor_enum_status_cli_get(oidstr.THERMAL_STATUS),
+                        sensor_all_status_cli_get(oidstr.THERMAL_STATUS),
+                        sensor_threshold_cli_get(oidstr.THERMAL_CMD,
+                                                 oidstr.THERMAL_TEMP,
+                                                 'Trap on temperature',
+                                                 ('min', 'Trap if temperature falls below this value, in milliCelsius'),
+                                                 ('max', 'Trap if temperature rises above this value, in milliCelsius')),
                     )
                     }, # ending of thermal choices
                     {
@@ -868,80 +891,18 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                     },
                     {
                     'choices': (
-                        (
-                            {
-                                'token'           : oidstr.FAN_STATUS,
-                                'short-help'      : 'Trap on status changes',
-                            },
-                            {
-                                'field'           : oidstr.FAN_STATUS,
-                                'data'            : { 'info_key'  : oidstr.FAN_STATUS },
-                                'short-help'      : 'Trap if status changes to this value',
-                                'type'            : 'enum',
-                                'values'          : (oidstr.STATUS_GOOD,
-                                                     oidstr.STATUS_FAILED,
-                                                     oidstr.STATUS_MISSING)
-                            }
-                        ),
-                        (
-                            {
-                                'token'           : oidstr.FAN_STATUS,
-                                'short-help'      : 'Trap on status changes',
-                            },
-                            {
-                                'token'           : 'all',
-                                'data'            : { 'info_key'  : oidstr.FAN_STATUS,
-                                                      oidstr.FAN_STATUS    : 'all' },
-                                'short-help'      : 'Trap if any status changes',
-                            }
-                        ),
-                        (
-                            {
-                                'token'           : oidstr.FAN_RPM,
-                                'short-help'      : 'Trap on fan speed rotation per minute',
-                                'data'            : { 'info_key' : oidstr.FAN_RPM },
-                            },
-                            {
-                                'optional-for-no'     : 'True',
-                                'args' : (
-                                    {
-                                        'token'           : 'min',
-                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.FAN_RPM)},
-                                        'short-help'      : 'Trap if fan speed falls below this value, in rotation per minute',
-                                    },
-                                    {
-                                        'field'           : oidstr.VALUE,
-                                        'base-type'       : 'integer',
-                                        'range'           : trap_sensor_range_get
-                                                            (oidstr.FAN_CMD, oidstr.FAN_RPM)
-                                    },
-                                ),
-                            },
-                        ),
-                        (
-                            {
-                                'token'           : oidstr.FAN_PERCENTAGE,
-                                'short-help'      : 'Trap on fan speed percentage',
-                                'data'            : { 'info_key' : oidstr.FAN_PERCENTAGE },
-                            },
-                            {
-                                'optional-for-no'     : 'True',
-                                'args' : (
-                                    {
-                                        'token'           : 'min',
-                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.FAN_PERCENTAGE)},
-                                        'short-help'      : 'Trap if fan speed falls below this value, in percent',
-                                    },
-                                    {
-                                        'field'           : oidstr.VALUE,
-                                        'base-type'       : 'integer',
-                                        'range'           : trap_sensor_range_get
-                                                            (oidstr.FAN_CMD, oidstr.FAN_PERCENTAGE)
-                                    },
-                                ),
-                            },
-                        ),
-
+                        sensor_enum_status_cli_get(oidstr.FAN_STATUS),
+                        sensor_all_status_cli_get(oidstr.FAN_STATUS),
+                        sensor_threshold_cli_get(oidstr.FAN_CMD,
+                                                 oidstr.FAN_RPM,
+                                                 'Trap on fan speed rotation per minute',
+                                                 ('min', 'Trap if fan speed falls below this value, in rotation per minute'),
+                                                 ('max', 'Trap if fan speed rises above this value, in rotation per minute')),
+                        sensor_threshold_cli_get(oidstr.FAN_CMD,
+                                                 oidstr.FAN_PERCENTAGE,
+                                                 'Trap on fan speed percentage',
+                                                 ('min', 'Trap if fan speed falls below this value, in percent'),
+                                                 ('max', 'Trap if fan speed rises above this value, in percent')),
                     )
                     }, # ending of fan choices
                     {
@@ -973,175 +934,41 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         'values'          : trap_sensor_name_tuple_get(oidstr.PSU_CMD),
                         'doc'             : 'snmp|+',
                     },
-                    {
+                    {    
                     'choices': (
-                        (
-                            {
-                                'token'           : oidstr.PSU_STATUS,
-                                'short-help'      : 'Trap on status changes',
-                            },
-                            {
-                                'field'           : oidstr.PSU_STATUS,
-                                'data'            : { 'info_key'  : oidstr.PSU_STATUS },
-                                'short-help'      : 'Trap if status changes to this value',
-                                'type'            : 'enum',
-                                'values'          : (oidstr.STATUS_GOOD,
-                                                     oidstr.STATUS_FAILED,
-                                                     oidstr.STATUS_MISSING)
-                            }
-                        ),
-                        (
-                            {
-                                'token'           : oidstr.PSU_STATUS,
-                                'short-help'      : 'Trap on status changes',
-                            },
-                            {
-                                'token'           : 'all',
-                                'field'           : oidstr.PSU_STATUS,
-                                'data'            : { 'info_key'  : oidstr.PSU_STATUS,
-                                                      'values'    : 'all' },
-                                'short-help'      : 'Trap if any status changes',
-                            },
-                        ),
-                        (
-                            {
-                                'token'           : oidstr.PSU_VIN,
-                                'short-help'      : 'Trap on input voltage',
-                                'data'            : { 'info_key' : oidstr.PSU_VIN },
-                            },
-                            {
-                                'optional-for-no'     : 'True',
-                                'args' : (
-                                    {
-                                        'token'           : 'max',
-                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_VIN)},
-                                        'short-help'      : 'Trap if input voltage rises above this value, in millivolts',
-                                    },
-                                    {
-                                        'field'           : oidstr.VALUE,
-                                        'base-type'       : 'integer',
-                                        'range'           : trap_sensor_range_get
-                                                            (oidstr.PSU_CMD,oidstr.PSU_VIN)
-                                    },
-                                ),
-                            },
-                        ),
-                        (
-                            {
-                                'token'           : oidstr.PSU_VOUT,
-                                'short-help'      : 'Trap on output voltage',
-                                'data'            : { 'info_key' : oidstr.PSU_VOUT },
-                            },
-                            {
-                                'optional-for-no'     : 'True',
-                                'args' : (
-                                    {
-                                        'token'           : 'max',
-                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_VOUT)},
-                                        'short-help'      : 'Trap if output voltage rises above this value, in millivolts',
-                                    },
-                                    {
-                                        'field'           : oidstr.VALUE,
-                                        'base-type'       : 'integer',
-                                        'range'           : trap_sensor_range_get
-                                                            (oidstr.PSU_CMD, oidstr.PSU_VOUT)
-                                    },
-                                ),
-                            },
-                        ),
-                        (
-                            {
-                                'token'           : oidstr.PSU_IIN,
-                                'short-help'      : 'Trap on input current',
-                                'data'            : { 'info_key' : oidstr.PSU_IIN },
-                            },
-                            {
-                                'optional-for-no'     : 'True',
-                                'args' : (
-                                    {
-                                        'token'           : 'max',
-                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_IIN)},
-                                        'short-help'      : 'Trap if input current rises above this value, in milliamperes',
-                                    },
-                                    {
-                                        'field'           : oidstr.VALUE,
-                                        'base-type'       : 'integer',
-                                        'range'           : trap_sensor_range_get
-                                                            (oidstr.PSU_CMD, oidstr.PSU_IIN)
-                                    },
-                                ),
-                            },
-                        ),
-                        (
-                            {
-                                'token'           : oidstr.PSU_IOUT,
-                                'short-help'      : 'Trap on output current',
-                                'data'            : { 'info_key' : oidstr.PSU_IOUT },
-                            },
-                            {
-                                'optional-for-no'     : 'True',
-                                'args' : (
-                                    {
-                                        'token'           : 'max',
-                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_IOUT)},
-                                        'short-help'      : 'Trap if output current rises above this value, in milliamperes',
-                                    },
-                                    {
-                                        'field'           : oidstr.VALUE,
-                                        'base-type'       : 'integer',
-                                        'range'           : trap_sensor_range_get
-                                                            (oidstr.PSU_CMD, oidstr.PSU_IOUT)
-                                    },
-                                ),
-                            },
-                        ),
-                        (
-                            {
-                                'token'           : oidstr.PSU_PIN,
-                                'short-help'      : 'Trap on input power',
-                                'data'            : { 'info_key' : oidstr.PSU_PIN },
-                            },
-                            {
-                                'optional-for-no'     : 'True',
-                                'args' : (
-                                    {
-                                        'token'           : 'max',
-                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_PIN)},
-                                        'short-help'      : 'Trap if input power rises above this value, in milliwatts',
-                                    },
-                                    {
-                                        'field'           : oidstr.VALUE,
-                                        'base-type'       : 'integer',
-                                        'range'           : trap_sensor_range_get
-                                                            (oidstr.PSU_CMD, oidstr.PSU_PIN)
-                                    },
-                                ),
-                            },
-                        ),
-                        (
-                            {
-                                'token'           : oidstr.PSU_POUT,
-                                'short-help'      : 'Trap on output power',
-                                'data'            : { 'info_key' : oidstr.PSU_POUT },
-                            },
-                            {
-                                'optional-for-no'     : 'True',
-                                'args' : (
-                                    {
-                                        'token'           : 'max',
-                                        'data'            : {'operator' : trap_sensor_op_get(oidstr.PSU_POUT)},
-                                        'short-help'      : 'Trap if output power rises above this value, in milliwatts',
-                                    },
-                                    {
-                                        'field'           : oidstr.VALUE,
-                                        'base-type'       : 'integer',
-                                        'range'           : trap_sensor_range_get
-                                                            (oidstr.PSU_CMD, oidstr.PSU_POUT)
-                                    },
-                                ),
-                            },
-                        ),
-                    )
+                        sensor_enum_status_cli_get(oidstr.PSU_STATUS),
+                        sensor_all_status_cli_get(oidstr.PSU_STATUS),
+                        sensor_threshold_cli_get(oidstr.PSU_CMD,
+                                                  oidstr.PSU_VIN,
+                                                  'Trap on input voltage',
+                                                  ('min', 'Trap if input voltage falls below this value, in millivolts'),
+                                                  ('max', 'Trap if input voltage rises above this value, in millivolts')),
+                        sensor_threshold_cli_get(oidstr.PSU_CMD,
+                                                  oidstr.PSU_VOUT,
+                                                  'Trap on output voltage',
+                                                  ('min', 'Trap if output voltage falls below this value, in millivolts'),
+                                                  ('max', 'Trap if output voltage rises above this value, in millivolts')),
+                        sensor_threshold_cli_get(oidstr.PSU_CMD,
+                                                  oidstr.PSU_IIN,
+                                                  'Trap on input current',
+                                                  ('min', 'Trap if input current falls below this value, in milliamperes'),
+                                                  ('max', 'Trap if input current rises above this value, in milliamperes')),
+                        sensor_threshold_cli_get(oidstr.PSU_CMD,
+                                                  oidstr.PSU_IOUT,
+                                                  'Trap on output current',
+                                                  ('min', 'Trap if output current falls below this value, in milliamperes'),
+                                                  ('max', 'Trap if output current rises above this value, in milliamperes')),
+                        sensor_threshold_cli_get(oidstr.PSU_CMD,
+                                                  oidstr.PSU_PIN,
+                                                  'Trap on input power',
+                                                  ('min', 'Trap if input power falls below this value, in milliwatts'),
+                                                  ('max', 'Trap if input power rises above this value, in milliwatts')),
+                        sensor_threshold_cli_get(oidstr.PSU_CMD,
+                                                  oidstr.PSU_POUT,
+                                                  'Trap on output power',
+                                                  ('min', 'Trap if output power falls below this value, in milliwatts'),
+                                                  ('max', 'Trap if output power rises above this value, in milliwatts')),
+                    ),
                     }, # ending of psu choices
                     {
                         'field'           : 'interval',
@@ -1225,14 +1052,18 @@ def running_config_snmp(context, runcfg, words):
             # Skip another
             continue
         if w[0] == 'monitor':
+            monitor_name_idx = 2
+            interval_suffix  = ""
             if w[1] == '-r':
-                trap_cmd = w[4].replace("_", " ")
-                comp_runcfg.append('snmp-server trap %s interval %s\n' %
-                                   (trap_cmd, w[2]))
-            else:
-                trap_cmd = w[2].replace("_", " ")
-                comp_runcfg.append('snmp-server trap %s\n' % trap_cmd)
+                monitor_name_idx = 4
+                interval_suffix  = " interval %s" % (w[2])
+
+            trap_cmd = w[monitor_name_idx].replace("_", " ")
+            comp_runcfg.append('snmp-server trap %s%s\n' %
+                               (trap_cmd, interval_suffix))
+
             continue
+        
     # attach component-specific config
     if len(comp_runcfg) > 0:
         runcfg.append('!\n')
