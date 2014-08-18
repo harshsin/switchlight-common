@@ -770,7 +770,7 @@ def set_timezone(no_command, data, is_init):
         command.action_invoke('implement-rsyslog-restart',
                               ({'is_init': is_init},))
     except subprocess.CalledProcessError:
-        #incase of error revert to the old timezone
+        # incase of error revert to the old timezone
         with open(const.TZ_CFG_PATH, 'w') as fd:
             fd.write(old_timezone)
         raise error.ActionError('Unable to set timezone')
