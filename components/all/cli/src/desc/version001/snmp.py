@@ -1,5 +1,6 @@
 # Copyright (c) 2013-2014 BigSwitch Networks
 
+from collections import namedtuple
 import command
 import run_config
 import subprocess
@@ -483,18 +484,18 @@ def trap_sensor_info_handler(no_cmd, interval_cmd,
                                              monitor_name, oid, operator_value)
             else:
                 # Raise error for now
-                # TODO migh want to use default value for min/max
+                # FIXME use default value
                 raise error.ActionError('Need at least min or max value')
         else: 
             # At least min or max in data
-            for optimum in ('min', 'max'):
-                if optimum in data:
-                    (ops_name, ops) = trap_sensor_op_get(optimum)
-                    value = str(data[optimum])
+            for extremum in ('min', 'max'):
+                if extremum in data:
+                    (ops_name, ops) = trap_sensor_op_get(extremum)
+                    value = str(data[extremum])
                     operator_value = "%s %s" % (ops, value)
-                    monitor_name_optimum = "%s_%s_%s" % (monitor_name, ops_name, value)
+                    monitor_name_extremum = "%s_%s_%s" % (monitor_name, ops_name, value)
                     trap_sensor_info_config_line(no_cmd, interval_cmd,
-                                                 monitor_name_optimum, oid, operator_value)            
+                                                 monitor_name_extremum, oid, operator_value)            
             
 def trap_sensor_info_config_line(no_cmd, interval_cmd, monitor_name, oid, operator_value):
     # For a command: command id doesn't have interval because
@@ -653,19 +654,19 @@ def sensor_enum_status_cli_get(status):
                 }
             )
             
-    
-def sensor_threshold_cli_optimum_get(cmd, info, optimum):
+Name_Help = namedtuple('Name_Help', 'name, help')  
+def sensor_threshold_cli_extremum_get(cmd, info, extremum):
     return {
                 'optional'            : 'True',
                 'optional-for-no'     : 'True',
                 'args' : (
                     {
-                        'token'           : optimum[0],
-                        'data'            : {'operator' : trap_sensor_op_get(optimum[0])},
-                        'short-help'      : optimum[1],
+                        'token'           : extremum.name,
+                        'data'            : {'operator' : trap_sensor_op_get(extremum.name)},
+                        'short-help'      : extremum.help,
                     },
                     {
-                        'field'           : optimum[0],
+                        'field'           : extremum.name,
                         'base-type'       : 'integer',
                         'range'           : trap_sensor_range_get(cmd, info)
                     },
@@ -678,8 +679,8 @@ def sensor_threshold_cli_get(cmd, info, info_help, min, max):
                     'short-help'      : info_help,
                     'data'            : { 'info_key' : info },
                 },
-                sensor_threshold_cli_optimum_get(cmd, info, min),
-                sensor_threshold_cli_optimum_get(cmd, info, max),
+                sensor_threshold_cli_extremum_get(cmd, info, min),
+                sensor_threshold_cli_extremum_get(cmd, info, max),
             )
 
 SNMP_SERVER_COMMAND_DESCRIPTION = {
@@ -856,8 +857,10 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         sensor_threshold_cli_get(oidstr.THERMAL_CMD,
                                                  oidstr.THERMAL_TEMP,
                                                  'Trap on temperature',
-                                                 ('min', 'Trap if temperature falls below this value, in milliCelsius'),
-                                                 ('max', 'Trap if temperature rises above this value, in milliCelsius')),
+                                                 (Name_Help(name='min',
+                                                            help='Trap if temperature falls below this value, in milliCelsius')),
+                                                 (Name_Help(name='max',
+                                                            help='Trap if temperature rises above this value, in milliCelsius'))),
                     )
                     }, # ending of thermal choices
                     {
@@ -895,14 +898,18 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         sensor_all_status_cli_get(oidstr.FAN_STATUS),
                         sensor_threshold_cli_get(oidstr.FAN_CMD,
                                                  oidstr.FAN_RPM,
-                                                 'Trap on fan speed rotation per minute',
-                                                 ('min', 'Trap if fan speed falls below this value, in rotation per minute'),
-                                                 ('max', 'Trap if fan speed rises above this value, in rotation per minute')),
+                                                 'Trap on fan speed rotations per minute',
+                                                 (Name_Help(name='min',
+                                                            help='Trap if fan speed falls below this value, in rotations per minute')),
+                                                 (Name_Help(name='max',
+                                                            help='Trap if fan speed rises above this value, in rotations per minute'))),
                         sensor_threshold_cli_get(oidstr.FAN_CMD,
                                                  oidstr.FAN_PERCENTAGE,
                                                  'Trap on fan speed percentage',
-                                                 ('min', 'Trap if fan speed falls below this value, in percent'),
-                                                 ('max', 'Trap if fan speed rises above this value, in percent')),
+                                                 (Name_Help(name='min',
+                                                            help='Trap if fan speed falls below this value, in percent')),
+                                                 (Name_Help(name='max',
+                                                            help='Trap if fan speed rises above this value, in percent'))),
                     )
                     }, # ending of fan choices
                     {
@@ -934,40 +941,52 @@ SNMP_SERVER_COMMAND_DESCRIPTION = {
                         'values'          : trap_sensor_name_tuple_get(oidstr.PSU_CMD),
                         'doc'             : 'snmp|+',
                     },
-                    {    
+                    {
                     'choices': (
                         sensor_enum_status_cli_get(oidstr.PSU_STATUS),
                         sensor_all_status_cli_get(oidstr.PSU_STATUS),
                         sensor_threshold_cli_get(oidstr.PSU_CMD,
-                                                  oidstr.PSU_VIN,
-                                                  'Trap on input voltage',
-                                                  ('min', 'Trap if input voltage falls below this value, in millivolts'),
-                                                  ('max', 'Trap if input voltage rises above this value, in millivolts')),
+                                                 oidstr.PSU_VIN,
+                                                 'Trap on input voltage',
+                                                 (Name_Help(name='min',
+                                                            help='Trap if input voltage falls below this value, in millivolts')),
+                                                 (Name_Help(name='max',
+                                                            help='Trap if input voltage rises above this value, in millivolts'))),
                         sensor_threshold_cli_get(oidstr.PSU_CMD,
-                                                  oidstr.PSU_VOUT,
-                                                  'Trap on output voltage',
-                                                  ('min', 'Trap if output voltage falls below this value, in millivolts'),
-                                                  ('max', 'Trap if output voltage rises above this value, in millivolts')),
+                                                 oidstr.PSU_VOUT,
+                                                 'Trap on output voltage',
+                                                 (Name_Help(name='min',
+                                                            help='Trap if output voltage falls below this value, in millivolts')),
+                                                 (Name_Help(name='max',
+                                                            help='Trap if output voltage rises above this value, in millivolts'))),
                         sensor_threshold_cli_get(oidstr.PSU_CMD,
-                                                  oidstr.PSU_IIN,
-                                                  'Trap on input current',
-                                                  ('min', 'Trap if input current falls below this value, in milliamperes'),
-                                                  ('max', 'Trap if input current rises above this value, in milliamperes')),
+                                                 oidstr.PSU_IIN,
+                                                 'Trap on input current',
+                                                 (Name_Help(name='min',
+                                                            help='Trap if input current falls below this value, in milliamperes')),
+                                                 (Name_Help(name='max',
+                                                            help='Trap if input current rises above this value, in milliamperes'))),
                         sensor_threshold_cli_get(oidstr.PSU_CMD,
-                                                  oidstr.PSU_IOUT,
-                                                  'Trap on output current',
-                                                  ('min', 'Trap if output current falls below this value, in milliamperes'),
-                                                  ('max', 'Trap if output current rises above this value, in milliamperes')),
+                                                 oidstr.PSU_IOUT,
+                                                 'Trap on output current',
+                                                 (Name_Help(name='min',
+                                                            help='Trap if output current falls below this value, in milliamperes')),
+                                                 (Name_Help(name='max',
+                                                            help='Trap if output current rises above this value, in milliamperes'))),
                         sensor_threshold_cli_get(oidstr.PSU_CMD,
-                                                  oidstr.PSU_PIN,
-                                                  'Trap on input power',
-                                                  ('min', 'Trap if input power falls below this value, in milliwatts'),
-                                                  ('max', 'Trap if input power rises above this value, in milliwatts')),
+                                                 oidstr.PSU_PIN,
+                                                 'Trap on input power',
+                                                 (Name_Help(name='min',
+                                                            help='Trap if input power falls below this value, in milliwatts')),
+                                                 (Name_Help(name='max',
+                                                            help='Trap if input power rises above this value, in milliwatts'))),
                         sensor_threshold_cli_get(oidstr.PSU_CMD,
-                                                  oidstr.PSU_POUT,
-                                                  'Trap on output power',
-                                                  ('min', 'Trap if output power falls below this value, in milliwatts'),
-                                                  ('max', 'Trap if output power rises above this value, in milliwatts')),
+                                                 oidstr.PSU_POUT,
+                                                 'Trap on output power',
+                                                 (Name_Help(name='min',
+                                                            help='Trap if output power falls below this value, in milliwatts')),
+                                                 (Name_Help(name='max',
+                                                            help='Trap if output power rises above this value, in milliwatts'))),
                     ),
                     }, # ending of psu choices
                     {
