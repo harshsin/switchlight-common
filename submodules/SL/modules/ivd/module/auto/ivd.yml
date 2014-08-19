@@ -5,3 +5,32 @@
 ###############################################################################
 
 cdefs: &cdefs
+- IVD_CONFIG_LOG_OPTIONS_DEFAULT:
+    doc: "Default enabled log options."
+    default: AIM_LOG_OPTIONS_DEFAULT
+- IVD_CONFIG_LOG_BITS_DEFAULT:
+    doc: "Default enabled log bits."
+    default: AIM_LOG_BITS_DEFAULT
+- IVD_CONFIG_LOG_CUSTOM_BITS_DEFAULT:
+    doc: "Default enabled custom log bits."
+    default: 0
+- IVD_CONFIG_PORTING_STDLIB:
+    doc: "Default all porting macros to use the C standard libraries."
+    default: 1
+- IVD_CONFIG_PORTING_INCLUDE_STDLIB_HEADERS:
+    doc: "Include standard library headers for stdlib porting macros."
+    default: IVD_CONFIG_PORTING_STDLIB
+- IVD_CONFIG_ZTN_JSON:
+    doc: "Default location for ztn.json"
+    default: '"/mnt/flash/boot/ztn.json"'
+
+definitions:
+  cdefs:
+    IVD_CONFIG_HEADER:
+      defs: *cdefs
+      basename: ivd_config
+
+  portingmacro:
+    IVD:
+      macros:
+        - memset
