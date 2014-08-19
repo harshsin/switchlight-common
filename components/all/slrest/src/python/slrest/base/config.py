@@ -179,6 +179,7 @@ def reload_config(ztn_server):
     Get config from ZTN server and reload config.
     Return a tuple of (rc, error), where rc is 0 on success.
     """
+    # FIXME: need to standardize return codes
     rc = 0
     error = None
     success = False
