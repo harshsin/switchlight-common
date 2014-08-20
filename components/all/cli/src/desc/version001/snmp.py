@@ -458,6 +458,11 @@ def trap_name_to_oid_index(trap, name):
         raise error.ActionError("Trap %s name %s unsupported on %s",
                                 trap, name, Platform.platform())
 
+# Command id
+# without interval option
+#    [Thermal|Fan|PSU]_[name]_[status|temp|rpm|Vin|..]_[good|[min|max]_value]_
+# with interval option
+#    -r <number> [Thermal|Fan|PSU]_[name]_[status|temp|rpm|Vin|..]_[good|[min|max]_value]_
 def trap_sensor_info_config_line(no_cmd, interval_cmd, monitor_name_val, oid, operator_value):
     # For a command: command id doesn't have interval because
     #     command interval overwrites existing interval
