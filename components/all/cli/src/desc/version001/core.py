@@ -403,7 +403,6 @@ tech_support_scripts = [
     'ofad-ctl controller show LISTEN',
     'ofad-ctl cxn show-log',
     'ofad-ctl core flowtable',
-    'ofad-ctl core dump-flows',
     'ofad-ctl interface show',
     'ofad-ctl port',
     'ofad-ctl show-snmp',
