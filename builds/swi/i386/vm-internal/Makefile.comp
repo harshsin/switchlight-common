@@ -1,11 +1,11 @@
 # -*- Makefile -*-
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 ############################################################
@@ -31,7 +31,5 @@ INITRD := $(initrd-i386)
 ARCH := i386
 SWITCHLIGHT_BUILD_CONFIG := i386.vm.internal
 
+include packages.mk
 include $(SWITCHLIGHT)/make/swi.mk
-
-
-
