@@ -1,4 +1,0 @@
-#cd /lib/powerpc-linux-gnu && /bin/ln -s libonlp.so libonlp.so.1
-
-
-

@@ -1,8 +1,24 @@
-ifndef SWITCHLIGHT
-$(error $$SWITCHLIGHT is undefined.)
-endif
-
-SWITCHLIGHT_REQUIRED_SUBMODULES := onlp
-SWITCHLIGHT_REQUIRED_PACKAGES := onlp-platform:powerpc onlp-platform-defaults:powerpc
-
-include $(SWITCHLIGHT)/make/component.mk
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
+#
+# ------------------------------
+# Do not edit this header.
+# It is used by the SPKG script.
+# ------------------------------
+# Package:onlp
+# Package:onlp-dbg
+# Architecture:powerpc
+# ------------------------------
+#
+############################################################
+ARCH := powerpc
+TOOLCHAIN := powerpc-linux-gnu
+ANYDIR := onlp/onlp
+include $(SWITCHLIGHT)/make/any.mk
