@@ -269,10 +269,10 @@ def show_snmp_server(data):
             continue
         if w[0] == 'monitor':
             if w[1] == '-r':
-                trap_cmd = w[4].replace("_", " ")
+                trap_cmd = w[4].replace("_", " ").strip()
                 print '    %s, interval %s' % (trap_cmd, w[2])
             else:
-                trap_cmd = w[2].replace("_", " ")
+                trap_cmd = w[2].replace("_", " ").strip()
                 print '    %s' % (trap_cmd)
             continue
 
@@ -383,7 +383,7 @@ def trap_generic_cmd(no_cmd, data):
 
     items = trapdict.items()
     for item in items:
-        monitor_name = " -I %s_%s_%s" % (trap, 'threshold', str(threshold))
+        monitor_name = " -I %s_%s_%s_" % (trap, 'threshold', str(threshold))
 
         # For a command: command id doesn't have interval because
         #     command interval overwrites existing interval
@@ -458,6 +458,18 @@ def trap_name_to_oid_index(trap, name):
         raise error.ActionError("Trap %s name %s unsupported on %s",
                                 trap, name, Platform.platform())
 
+def trap_sensor_info_config_line(no_cmd, interval_cmd, monitor_name_val, oid, operator_value):
+    # For a command: command id doesn't have interval because
+    #     command interval overwrites existing interval
+    # For a no command: command id might include interval because
+    #     command interval doesn't remove non-matched existing interval
+    # if there is no interval, the interval_cmd = ""
+    cmd_id = interval_cmd + monitor_name_val if no_cmd else monitor_name_val
+
+    config_line(no_cmd, "monitor%s%s %s %s\n" %
+                (interval_cmd, monitor_name_val, oid, operator_value),
+                key=cmd_id)
+
 # Handler sensor info
 # if status, then convert good|failed|missing to values
 # if temp|rpm|vin .. then get vvalue
@@ -470,7 +482,7 @@ def trap_sensor_info_handler(no_cmd, interval_cmd,
     if oidstr.STATUS in data:
         (ops_name, ops) = trap_sensor_op_get('equal')
         value_name = data[oidstr.STATUS]
-        monitor_name_status = "%s_%s" % (monitor_name, value_name)
+        monitor_name_status = "%s_%s_" % (monitor_name, value_name)
         # Get value from status enums: missing, good, failed
         operator_value = "%s %s" % (ops, sl_trapdict.get(value_name))
         trap_sensor_info_config_line(no_cmd, interval_cmd,
@@ -493,21 +505,9 @@ def trap_sensor_info_handler(no_cmd, interval_cmd,
                     (ops_name, ops) = trap_sensor_op_get(extremum)
                     value = str(data[extremum])
                     operator_value = "%s %s" % (ops, value)
-                    monitor_name_extremum = "%s_%s_%s" % (monitor_name, ops_name, value)
+                    monitor_name_extremum = "%s_%s_%s_" % (monitor_name, ops_name, value)
                     trap_sensor_info_config_line(no_cmd, interval_cmd,
                                                  monitor_name_extremum, oid, operator_value)            
-            
-def trap_sensor_info_config_line(no_cmd, interval_cmd, monitor_name, oid, operator_value):
-    # For a command: command id doesn't have interval because
-    #     command interval overwrites existing interval
-    # For a no command: command id might include interval because
-    #     command interval doesn't remove non-matched existing interval
-    # if there is no interval, the interval_cmd = ""
-    cmd_id = interval_cmd + monitor_name if no_cmd else monitor_name
-
-    config_line(no_cmd, "monitor%s%s %s %s\n" %
-                (interval_cmd, monitor_name, oid, operator_value),
-                key=cmd_id)
 
 def trap_sensor_name_handler(no_command, interval_command,
                              data, trap, sl_trapdict):
@@ -1077,7 +1077,7 @@ def running_config_snmp(context, runcfg, words):
                 monitor_name_idx = 4
                 interval_suffix  = " interval %s" % (w[2])
 
-            trap_cmd = w[monitor_name_idx].replace("_", " ")
+            trap_cmd = w[monitor_name_idx].replace("_", " ").strip()
             comp_runcfg.append('snmp-server trap %s%s\n' %
                                (trap_cmd, interval_suffix))
 
