@@ -1,0 +1,24 @@
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
+#
+# ------------------------------
+# Do not edit this header.
+# It is used by the SPKG script.
+# ------------------------------
+# Package:onlp
+# Package:onlp-dbg
+# Architecture:amd64
+# ------------------------------
+#
+############################################################
+ARCH := amd64
+TOOLCHAIN := x86_64-linux-gnu
+ANYDIR := onlp/onlp
+include $(SWITCHLIGHT)/make/any.mk
