@@ -52,7 +52,7 @@ endif
 
 export SWI_PLATFORMS
 export SWI_PACKAGES_ALL
-export SWI_PACKAGES_POWERPC
+export SWI_PACKAGES_$(ARCH)
 
 ZTN_MANIFEST := zerotouch.json
 

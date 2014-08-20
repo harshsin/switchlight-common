@@ -63,8 +63,8 @@ $(error $$SWI_PACKAGES_ALL is not set)
 endif
 
 
-ifndef SWI_PACKAGES_POWERPC
-$(error $$SWI_PACKAGES_POWERPC is not set)
+ifndef SWI_PACKAGES_$(ROOTFS_ARCH)
+$(error $$SWI_PACKAGES_$(ROOTFS_ARCH) is not set)
 endif
 
 ifndef SWI_PLATFORMS
@@ -75,7 +75,7 @@ $(ROOTFS_BUILD_DIR)/.$(ROOTFS_NAME).done: $(PACKAGE_DEPENDENCY)
 	$(SL_V_at)sudo update-binfmts --enable
 	$(SL_V_at)sudo rm -rf $(ROOTFS_DIR)
 	$(SWITCHLIGHT)/tools/py/repofilegen.py --dir $(SWITCHLIGHT_REPO) --arch all     --platforms $(SWI_PLATFORMS) --packages $(SWI_PACKAGES_ALL)     --out $(ROOTFS_ALL_REPO_PATH)
-	$(SWITCHLIGHT)/tools/py/repofilegen.py --dir $(SWITCHLIGHT_REPO) --arch powerpc --platforms $(SWI_PLATFORMS) --packages $(SWI_PACKAGES_POWERPC) --out $(ROOTFS_ARCH_REPO_PATH)
+	$(SWITCHLIGHT)/tools/py/repofilegen.py --dir $(SWITCHLIGHT_REPO) --arch $(ROOTFS_ARCH) --platforms $(SWI_PLATFORMS) --packages $(SWI_PACKAGES_$(ROOTFS_ARCH)) --out $(ROOTFS_ARCH_REPO_PATH)
 	$(SWITCHLIGHT)/tools/mkws \
 	  -e SWITCHLIGHT=$(SWITCHLIGHT) \
 	  --apt-cache $(APT_CACHE) \
