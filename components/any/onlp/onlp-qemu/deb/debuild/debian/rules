@@ -1,0 +1,22 @@
+#!/usr/bin/make -f
+
+DEB_DH_INSTALL_SOURCEDIR = debian/tmp
+INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
+PACKAGE_NAME = onlp-qemu
+
+
+
+%:
+	dh $@
+
+build-arch:
+	dh build-arch
+
+clean:
+	dh clean
+
+override_dh_auto_install:
+	mkdir -p  $(INSTALL_DIR)/lib/platform-config/qemu/lib
+	mkdir -p  $(INSTALL_DIR)/lib/platform-config/qemu/bin
+	cp $(BUILD_DIR_BASE)/$(DEB_HOST_GNU_TYPE)/bin/libonlp-qemu.so $(INSTALL_DIR)/lib/platform-config/qemu/lib
+	cp ../../onlpdump $(INSTALL_DIR)/lib/platform-config/qemu/bin/onlpdump
