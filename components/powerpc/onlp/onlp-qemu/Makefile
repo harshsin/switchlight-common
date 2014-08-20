@@ -1,0 +1,24 @@
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
+#
+# ------------------------------
+# Do not edit this header.
+# It is used by the SPKG script.
+# ------------------------------
+# Package:onlp-qemu
+# Package:onlp-qemu-simulation-dbg
+# Architecture:powerpc
+# ------------------------------
+#
+############################################################
+ARCH := powerpc
+TOOLCHAIN := powerpc-linux-gnu
+ANYDIR := onlp/onlp-qemu
+include $(SWITCHLIGHT)/make/any.mk
