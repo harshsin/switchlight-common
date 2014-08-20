@@ -1,0 +1,34 @@
+# -*- Makefile -*-
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
+#
+# Switchlight amd64 VM Internal Image
+#
+############################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not defined.)
+else
+include $(SWITCHLIGHT)/make/config.mk
+export SWITCHLIGHT
+endif
+
+SWI := switchlight-amd64-vm-internal
+
+# We need the following package binaries
+kernel-x86_64  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-x86-64:amd64 --find-file kernel-x86_64)
+initrd-amd64    := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-amd64:amd64 --find-file initrd-amd64)
+
+KERNELS := $(kernel-x86_64)
+INITRD := $(initrd-amd64)
+ARCH := amd64
+SWITCHLIGHT_BUILD_CONFIG := amd64.vm.internal
+
+include packages.mk
+include $(SWITCHLIGHT)/make/swi.mk
