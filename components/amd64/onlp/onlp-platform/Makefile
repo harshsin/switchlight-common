@@ -13,7 +13,6 @@
 # It is used by the SPKG script.
 # ------------------------------
 # Package:onlp-platform
-# Package:onlp-platform-dbg
 # Architecture:amd64
 # ------------------------------
 #

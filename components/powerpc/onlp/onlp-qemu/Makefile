@@ -13,7 +13,6 @@
 # It is used by the SPKG script.
 # ------------------------------
 # Package:onlp-qemu
-# Package:onlp-qemu-simulation-dbg
 # Architecture:powerpc
 # ------------------------------
 #

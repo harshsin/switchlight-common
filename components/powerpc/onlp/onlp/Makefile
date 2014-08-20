@@ -13,7 +13,6 @@
 # It is used by the SPKG script.
 # ------------------------------
 # Package:onlp
-# Package:onlp-dbg
 # Architecture:powerpc
 # ------------------------------
 #

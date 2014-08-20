@@ -12,13 +12,12 @@
 # Do not edit this header.
 # It is used by the SPKG script.
 # ------------------------------
-# Package:onlp-platform-default
-# Package:onlp-platform-default-dbg
+# Package:onlp-platform-defaults
 # Architecture:amd64
 # ------------------------------
 #
 ############################################################
 ARCH := amd64
 TOOLCHAIN := x86_64-linux-gnu
-ANYDIR := onlp/onlp-platform-default
+ANYDIR := onlp/onlp-platform-defaults
 include $(SWITCHLIGHT)/make/any.mk
