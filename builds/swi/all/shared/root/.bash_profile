@@ -24,15 +24,17 @@
 # to avoid fw_printenv's output to stderr when the variable
 # is not defined.
 #
-prefix=`fw_printenv | grep sl_bash_prompt_prefix= | tr "=" " " | awk '{print $2}'`
+if [ -e "/etc/fw_env.config" ]; then
+    prefix=`fw_printenv | grep sl_bash_prompt_prefix= | tr "=" " " | awk '{print $2}'`
 
-if [ -z ${prefix} ]; then
-    # Check for $onl_bash_prompt_prefix if $sl_bash_prompt_prefix is not set
-    prefix=`fw_printenv | grep onl_bash_prompt_prefix= | tr "=" " " | awk '{print $2}'`
-fi
+    if [ -z ${prefix} ]; then
+        # Check for $onl_bash_prompt_prefix if $sl_bash_prompt_prefix is not set
+        prefix=`fw_printenv | grep onl_bash_prompt_prefix= | tr "=" " " | awk '{print $2}'`
+    fi
 
-if [ -n ${prefix} ]; then
-    PS1="${prefix} ${PS1}"
+    if [ -n ${prefix} ]; then
+        PS1="${prefix} ${PS1}"
+    fi
 fi
 
 export PATH=/lib/platform-config/current/bin:/lib/platform-config/current/sbin:$PATH

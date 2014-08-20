@@ -1,11 +1,11 @@
 #!/usr/bin/python
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 #
@@ -59,7 +59,8 @@ def find_component_dir(basedir, package_name):
             if file_ == "Makefile" or file_ == "makefile":
                 with open("%s/%s" % (root,file_), "r") as f:
                     data = f.read()
-                    if "Package:%s" % package_name in data:
+                    packages = re.findall("Package:(.*)", data)
+                    if package_name in packages:
                         # By convention - this is the component directory.
                         return os.path.abspath(root)
             if file_ == "control":
@@ -143,6 +144,7 @@ ap.add_argument("--force-build", help="Force rebuild from source.",
 ap.add_argument("--verbose", action='store_true', help="verbose logging")
 ap.add_argument("--quiet", action='store_true', help="minimal logging")
 ap.add_argument("--extract", help="Extract package to the given directory.")
+ap.add_argument("--arch", nargs='+', default=['all'])
 
 ops = ap.parse_args()
 
@@ -186,7 +188,9 @@ if ops.list_all:
     all_ = find_all_packages(os.path.abspath("%s/components" % (SWITCHLIGHT)))
     for p in all_:
         if not ":any" in p and package_enabled(p):
-            print p
+            for a in ops.arch:
+                if a in p or a == 'all':
+                    print p
     sys.exit(0)
 
 if ops.add_pkg:

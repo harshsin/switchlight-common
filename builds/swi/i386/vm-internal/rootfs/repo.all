@@ -1,4 +1,5 @@
 [deb-all]
-packages=pcli python-cherrypy3 python-tz slrest scapy python-pypcap
-source=copy:__DIR__/all/ ./
+packages=python-cherrypy3 python-tz slrest scapy ztn python-pypcap pcli slrest switchlight-internal-dbg-sources onlp-qemu platform-config-qemu
+
+source=copy:/home/jeff/ws/branches/master/debian/repo/all ./
 omitdebsrc=true

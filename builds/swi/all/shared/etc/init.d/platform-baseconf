@@ -21,7 +21,18 @@ sys.stderr.write("Setting up base platform configuration for %s...\n" %
                  platform.platform())
 sys.stderr.flush()
 
-DEFAULT_ONLP_LIB = "/lib/powerpc-linux-gnu/libonlp-platform.so.1"
+DEB_GNU_HOST_TYPE = None
+HOST_TYPES = [ 'powerpc-linux-gnu', 'i486-linux-gnu', 'i386-linux-gnu' ]
+for ht in HOST_TYPES:
+    if os.path.exists('/lib/%s' % ht):
+        DEB_GNU_HOST_TYPE=ht
+        break
+
+if DEB_GNU_HOST_TYPE is None:
+    sys.stderr.write("Could not determine the current host type.\n")
+    sys.exit(1)
+
+DEFAULT_ONLP_LIB = "/lib/%s/libonlp-platform.so.1" % DEB_GNU_HOST_TYPE
 PLATFORM_ONLP_LIB = "%s/lib/libonlp-%s.so" % (platform.platform_basedir(), platform.platform())
 
 if os.path.exists(PLATFORM_ONLP_LIB):

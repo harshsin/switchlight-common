@@ -38,7 +38,7 @@ def remote_address_check():
     network = auth.network_check(remote)
     if network:
         # Allowed
-        cplog.access_log.error("Remote address %s is from an authorized network (%s)." % (remote, network))
+        cplog.access_log.info("Remote address %s is from an authorized network (%s)." % (remote, network))
     else:
         # Denied
         cplog.error_log.error("Remote address %s is not from an authorized network." % (remote))

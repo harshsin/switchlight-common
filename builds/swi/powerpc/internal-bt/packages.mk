@@ -7,7 +7,7 @@ include platforms.mk
 
 SWI_PACKAGES_ALL += pcli slrest switchlight-internal-dbg-sources
 
-SWI_PACKAGES_POWERPC += brcmd-6.3.3-internal \
+SWI_PACKAGES_powerpc += brcmd-6.3.3-internal \
 			brcmd-6.3.3-internal-dbg \
 			ofad-6.3.3-internal \
 			ofad-6.3.3-internal-dbg \
