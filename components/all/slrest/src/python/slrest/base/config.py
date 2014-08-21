@@ -26,6 +26,7 @@ FILTER_REGEX = re.compile(r"^SwitchLight.*|^.*?\(config\).*|^Exiting.*|^\!|^[\s]
 ZTN_JSON = "/mnt/flash/boot/ztn.json"
 LAST_ZTN_CFG = "/var/run/last-ztn-startup-config"
 LAST_RUN_CFG = "/var/run/last-ztn-running-config"
+LOAD_STARTUP_CFG_DONE = "/var/run/load-startup-config-done"
 
 # Don't generate inversions ("no"-command) for the following
 PCLI_BLIST = [
@@ -36,6 +37,15 @@ PCLI_BLIST = [
 BLIST_REGEX = re.compile(r"%s" % "|".join(["^%s" % c for c in PCLI_BLIST]))
 
 class RewindException(Exception): pass
+
+class LoadStartupException(Exception): pass
+
+def check_load_startup(path=LOAD_STARTUP_CFG_DONE):
+    """
+    Check if load startup config is done.
+    """
+    if not os.path.exists(path):
+        raise LoadStartupException("%s not found" % path)
 
 def read_ztn_json(path=ZTN_JSON):
     """
@@ -169,9 +179,18 @@ def reload_config(ztn_server):
     Get config from ZTN server and reload config.
     Return a tuple of (rc, error), where rc is 0 on success.
     """
+    # FIXME: need to standardize return codes
     rc = 0
     error = None
     success = False
+
+    try:
+        check_load_startup()
+    except Exception, e:
+        logger.exception("load startup config is not done")
+        rc = 1
+        error = str(e)
+        return (rc, error)
 
     try:
         last_cfg = read_last_ztn_config()
@@ -181,7 +200,7 @@ def reload_config(ztn_server):
 
     except Exception, e:
         logger.exception("failed to read existing ZTN states")
-        rc = 1
+        rc = 2
         error = str(e)
         return (rc, error)
 
@@ -190,7 +209,7 @@ def reload_config(ztn_server):
 
     except Exception, e:
         logger.exception("failed to get new ZTN config")
-        rc = 2
+        rc = 3
         error = str(e)
         return (rc, error)
 
@@ -224,7 +243,7 @@ def reload_config(ztn_server):
 
         except Exception, e:
             logger.exception("failed to perform hit-ful reload")
-            rc = 3
+            rc = 4
             error = str(e)
 
             try:
@@ -235,7 +254,7 @@ def reload_config(ztn_server):
 
             except Exception, e:
                 logger.exception("fatal: failed to roll-back")
-                rc = 4
+                rc = 5
                 error = str(e)
                 return (rc, error)
 
