@@ -1,11 +1,11 @@
-Source: onlp-qemu
+Source: onlp-x86-64-qemu-virtual-r0
 Section: misc
 Priority: optional
 Maintainer: Support <support@bigswitch.com>
 Build-Depends: debhelper (>= 9)
 Standards-Version: 3.8.4
 
-Package: onlp-qemu
+Package: onlp-x86-64-qemu-virtual-r0
 Architecture: any
 Depends:
 Description: ONLP Platform Simulation Library.

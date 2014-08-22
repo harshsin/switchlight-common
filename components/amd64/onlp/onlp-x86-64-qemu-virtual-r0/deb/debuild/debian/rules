@@ -2,8 +2,8 @@
 
 DEB_DH_INSTALL_SOURCEDIR = debian/tmp
 INSTALL_DIR = $(CURDIR)/$(DEB_DH_INSTALL_SOURCEDIR)
-PACKAGE_NAME = onlp-qemu
-
+PLATFORM_NAME = x86-64-qemu-virtual-r0
+BUILD_DIR_BASE = ../../build
 
 
 %:
@@ -16,7 +16,7 @@ clean:
 	dh clean
 
 override_dh_auto_install:
-	mkdir -p  $(INSTALL_DIR)/lib/platform-config/qemu/lib
-	mkdir -p  $(INSTALL_DIR)/lib/platform-config/qemu/bin
-	cp $(BUILD_DIR_BASE)/$(DEB_HOST_GNU_TYPE)/bin/libonlp-qemu.so $(INSTALL_DIR)/lib/platform-config/qemu/lib
-	cp ../../onlpdump $(INSTALL_DIR)/lib/platform-config/qemu/bin/onlpdump
+	mkdir -p  $(INSTALL_DIR)/lib/platform-config/$(PLATFORM_NAME)/lib
+	mkdir -p  $(INSTALL_DIR)/lib/platform-config/$(PLATFORM_NAME)/bin
+	cp $(BUILD_DIR_BASE)/$(DEB_HOST_GNU_TYPE)/bin/libonlp-$(PLATFORM_NAME).so $(INSTALL_DIR)/lib/platform-config/$(PLATFORM_NAME)/lib
+	cp ../../onlpdump $(INSTALL_DIR)/lib/platform-config/$(PLATFORM_NAME)/bin/onlpdump

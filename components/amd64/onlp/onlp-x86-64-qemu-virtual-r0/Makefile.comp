@@ -5,19 +5,10 @@ $(error $$SWITCHLIGHT is not set)
 endif
 include $(SWITCHLIGHT)/make/config.mk
 
-ifndef TOOLCHAIN
-$(error $$TOOLCHAIN is not specified.)
-else
-export TOOLCHAIN
-endif
+export TOOLCHAIN := x86_64-linux-gnu
+export ARCH := amd64
 
-ifndef ARCH
-$(error $$ARCH is not specified.)
-else
-export ARCH
-endif
-
-MODULE := libonlp-qemu
+MODULE := libonlp-x86-64-qemu-virtual-r0
 include $(BUILDER)/standardinit.mk
 
 DEPENDMODULES := AIM onlpie onlplib sff IOF
@@ -25,7 +16,7 @@ DEPENDMODULE_HEADERS := onlp
 
 include $(BUILDER)/dependmodules.mk
 
-SHAREDLIB := libonlp-qemu.so
+SHAREDLIB := libonlp-x86-64-qemu-virtual-r0.so
 $(SHAREDLIB)_TARGETS := $(ALL_TARGETS)
 include $(BUILDER)/so.mk
 .DEFAULT_GOAL := $(SHAREDLIB)
