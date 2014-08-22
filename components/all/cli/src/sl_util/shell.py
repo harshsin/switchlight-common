@@ -36,6 +36,7 @@ def call (cmd, show_cmd = False, show_output = False, raise_exc = True, timeout 
       print line,
     sout = "".join(soutl)
     serr = ""
+    p.wait()
   else:
     (sout, serr) = p.communicate()
   if raise_exc:

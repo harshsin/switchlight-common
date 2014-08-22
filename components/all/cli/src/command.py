@@ -1322,6 +1322,10 @@ class CommandHandler(object):
             else:
                 result = self.handle_exception(e)
 
+            # propagate error condition for single command handling
+            if bigsh.single_cmd is not None:
+                raise e
+
         return result
 
 
