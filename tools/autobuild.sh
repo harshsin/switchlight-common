@@ -126,7 +126,7 @@ function build_and_install {
 }
 
 # Build primary targets for testing
-build_and_install swi-internal-bt swi-release-bt swi-internal-bcf swi-release-bcf swi-bringup installer-bringup installer-release-bt installer-internal-bt installer-release-bcf installer-internal-bcf installer-ztn debian-ztn-internal debian-ztn-release
+build_and_install swi-internal-bt swi-release-bt swi-internal-bcf swi-release-bcf swi-bringup installer-bringup installer-release-bt installer-internal-bt installer-release-bcf installer-internal-bcf installer-ztn debian-ztn-internal debian-ztn-release swi-vm-internal
 
 # Copy the loader binaries (hack)
 ssh $INSTALL_SERVER mkdir -p $INSTALL_DIR/loaders
