@@ -49,6 +49,9 @@ loader-amd64-hda.img:
 	rm -rf $@
 	dd if=/dev/zero of=$@ bs=1024 count=8192
 	mkdosfs $@
+	echo -e "NETDEV=ma1\nNETAUTO=dhcp\nBOOTMODE=ztn\n" > $@.bc
+	mcopy -i $@ $@.bc ::boot-config
+	rm $@.bc
 
 # Empty 500M flash2 filesystem
 loader-amd64-hdb.img:
