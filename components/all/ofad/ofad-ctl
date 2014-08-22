@@ -3,6 +3,7 @@
 import sys
 import os
 import socket
+import traceback
 
 #
 # Issue a command to the ofad network cli. 
@@ -19,19 +20,23 @@ server = "localhost"
 if os.getenv("SERVER"):
     server = os.getenv("SERVER")
 
-s = socket.socket()
-s.connect((server, 4454))
-cmd = " ".join(sys.argv[1:]) + "\n"
-s.send(cmd)
+try:
+    s = socket.socket()
+    s.connect((server, 4454))
+    cmd = " ".join(sys.argv[1:]) + "\n"
+    s.send(cmd)
 
-while True:
-    data = s.recv(1024)
-    if data:
-        sys.stdout.write(data)
-    else:
-        break
-
-s.close()
-
-
+    while True:
+        data = s.recv(1024)
+        if data:
+            sys.stdout.write(data)
+        else:
+            break
+    
+    s.close()
+    sys.exit(0)
+except Exception as e:
+    s.close()
+    traceback.print_exc(None, None)
+    sys.exit(1)
 

@@ -140,7 +140,7 @@ def show_environment(data):
     try:
         print Platform.get_environment()
     except:
-        print "Environment data is not implemented on this platform."
+        raise error.ActionError('Environment data is not available on this platform')
 
 command.add_action('implement-show-environment', show_environment,
                     {'kwargs': {'data'      : '$data',}})
