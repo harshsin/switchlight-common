@@ -10,8 +10,7 @@ SWI_PACKAGES_ALL += pcli slrest switchlight-internal-dbg-sources
 SWI_PACKAGES_amd64 +=   ofad-ivd \
 			gdb \
 			binutils \
-			file \
-			onlp-qemu
+			file
 
 
 
