@@ -28,10 +28,8 @@ NO_LOCAL_DEBS := 1
 ############################################################
 
 # These are the available SWI architectures
-SWI_ARCHS := $(filter-out swi/all,$(wildcard swi/*))
-
-# Build all powerpc swis
-SWI_BUILD_PATHS := $(filter-out swi/powerpc/basepackages.mk,$(wildcard swi/powerpc/*))
+SWI_ARCHS := swi/powerpc swi/amd64
+SWI_BUILD_PATHS := $(foreach arch,$(SWI_ARCHS),$(filter-out $(arch)/basepackages.mk,$(wildcard $(arch)/*)))
 
 #
 # Define a build template for each platform by name and build directory
@@ -141,7 +139,8 @@ $(subst :,.,$(1)): $(subst :,.,$(2))
 endef
 
 
-SERIAL_TARGETS = vendor-config-switchlight:all onlp-platform-defaults:powerpc onlp-platform:powerpc onlp:powerpc
+SERIAL_TARGETS = vendor-config-switchlight:all onlp-platform-defaults:powerpc onlp-platform:powerpc onlp:powerpc \
+		 onlp-platform-defaults:amd64 onlp-platform:amd64 onlp:amd64
 serial0: submodules_init
 	$(foreach t,$(SERIAL_TARGETS),$(SWITCHLIGHT)/tools/spkg.py $(t) --build;)
 
@@ -150,15 +149,12 @@ serial0: submodules_init
 PARALLEL_0 := \
 kernel-85xx:powerpc \
 kernel-e500mc:powerpc \
-initrd-powerpc:powerpc
-
-
-
-# kernel-x86-64:amd64 initrd-i386:i386 kernel-e500mc:powerpc
+initrd-powerpc:powerpc \
+kernel-x86-64:amd64 \
+initrd-amd64:amd64
 $(foreach c,$(PARALLEL_0),$(eval $(call cbuild,$(c),submodules_init)))
 
-PARALLEL_1 := $(shell $(SWITCHLIGHT)/tools/spkg.py --list-all | grep platform-powerpc-)
-# loader-i386:i386
+PARALLEL_1 := $(shell $(SWITCHLIGHT)/tools/spkg.py --list-all | grep platform-powerpc-) loader-amd64:amd64
 $(foreach c,$(PARALLEL_1),$(eval $(call cbuild,$(c),$(PARALLEL_0))))
 
 PARALLEL_2 := \
@@ -173,12 +169,14 @@ $(foreach c,$(PARALLEL_2),$(eval $(call cbuild,$(c),$(PARALLEL_1))))
 
 PARALLEL_3 := \
 faultd:powerpc \
+faultd:amd64 \
 sofcon:powerpc \
 brcmd-6.3.3-internal:powerpc \
 ofad-6.3.3-release:powerpc \
 ofad-6.3.3-internal:powerpc \
 ofad-6.3.3-internal-t5:powerpc \
 ofad-6.3.3-release-t5:powerpc \
+ofad-ivd:amd64 \
 orc:powerpc \
 orc-brcm-6.3.3-internal:powerpc \
 orc-brcm-6.3.3-release:powerpc \
@@ -187,8 +185,6 @@ slrest:all \
 t6-dump-flows:all \
 ztn:all \
 switchlight-internal-dbg-sources:all
-
-# faultd:amd64 brcmd-6.3.3-sim:amd64 ofad-6.3.3-sim:amd64 \
 
 $(foreach c,$(PARALLEL_3),$(eval $(call cbuild,$(c),$(PARALLEL_2))))
 
