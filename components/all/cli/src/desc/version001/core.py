@@ -508,7 +508,7 @@ COPY_COMMAND_DESCRIPTION = {
 WRITE_MEMORY_COMMAND_DESCRIPTION = {
     'name'          : 'write',
     'mode'          : 'enable',
-    'short-help'    : 'Write file or configuration',
+    'short-help'    : 'Write configuration',
     'no-supported'  : False,
     'args'  : (
         {

@@ -1,2 +1,1 @@
-Copies the running configuration to the startup configuration, to be used on
-device startup.
+Alias for 'copy running-config startup-config'.
