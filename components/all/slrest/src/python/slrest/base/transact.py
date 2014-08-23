@@ -141,6 +141,7 @@ class _TransactionManager(object):
 
         """
         self.name = name
+        self.base_dir = "%s/%s" % (TRANSACTION_TASK_WORKDIR_BASE, name)
         self.max = max_
         # These are the currently running transactions
         self.running = {}
@@ -249,10 +250,9 @@ class _TransactionManager(object):
         Any transaction directories that aren't associated with any current
         transaction ids are orphaned and should probably be cleaned up.
         """
-        for e in os.listdir(TRANSACTION_TASK_WORKDIR_BASE):
+        for e in os.listdir(self.base_dir):
             if self.__get_task(e) is None:
-                shutil.rmtree("%s/%s" % (TRANSACTION_TASK_WORKDIR_BASE,
-                                         e))
+                shutil.rmtree("%s/%s" % (self.base_dir, e))
 
     def __str__(self):
         """String Representation"""
@@ -312,7 +312,7 @@ class TransactionTask(object):
         # All objects inherit a task-specific work area that
         # will persist for the lifetime of the task.
         #
-        self.workdir = "%s/%s" % (TRANSACTION_TASK_WORKDIR_BASE, self.tid)
+        self.workdir = "%s/%s" % (tm.base_dir, self.tid)
         os.makedirs(self.workdir)
 
         self.worker = None

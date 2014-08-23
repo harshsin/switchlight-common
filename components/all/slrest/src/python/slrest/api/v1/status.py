@@ -18,6 +18,12 @@ import re
 import shutil
 import traceback
 
+STATUS_TRANSACTION_MANAGER = "TECH-SUPPORT"
+STATUS_TRANSACTION_MANAGER_MAX = 1
+
+def status_transaction_manager_get():
+    return TransactionManagers.get(STATUS_TRANSACTION_MANAGER,
+                                   STATUS_TRANSACTION_MANAGER_MAX)
 
 class v1_status_cpu_load(SLAPIObject):
     """Get switch CPU load."""
@@ -125,7 +131,7 @@ class v1_status_tech_support(SLAPIObject):
                                    "%s\n") % (traceback.format_exc())
                 self.finish()
 
-        tm = TransactionManagers.get(self.route, 1)
+        tm = status_transaction_manager_get()
 
         (tid, tt) = tm.new_task(gen_tech_support_file, self.route)
         if tid is None:
