@@ -19,7 +19,7 @@ include $(SWITCHLIGHT)/make/config.mk
 export SWITCHLIGHT
 endif
 
-SWI := switchlight-amd64-vm-internal
+SWI := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-amd64-vm-internal
 
 # We need the following package binaries
 kernel-x86_64  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-x86-64:amd64 --find-file kernel-x86_64)
