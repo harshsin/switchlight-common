@@ -254,7 +254,7 @@ indigo_port_interface_remove(indigo_port_name_t if_name)
 indigo_error_t
 indigo_port_interface_list(indigo_port_info_t **list)
 {
-    return INDIGO_ERROR_NONE;
+    return INDIGO_ERROR_NOT_SUPPORTED;
 }
 
 void
