@@ -505,6 +505,21 @@ COPY_COMMAND_DESCRIPTION = {
     ),
 }
 
+WRITE_MEMORY_COMMAND_DESCRIPTION = {
+    'name'          : 'write',
+    'mode'          : 'enable',
+    'short-help'    : 'Write file or configuration',
+    'no-supported'  : False,
+    'args'  : (
+        {
+            'token'         : 'memory',
+            'optional'      : False,
+            'short-help'    : 'Save running config',
+            'doc'           : 'core|write-memory',
+            'action'        : 'implement-save',
+        },
+    ),
+}
 
 def delete_file(data):
     if 'startup-config' in data:

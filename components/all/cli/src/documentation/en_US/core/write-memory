@@ -1,0 +1,2 @@
+Copies the running configuration to the startup configuration, to be used on
+device startup.
