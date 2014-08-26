@@ -138,8 +138,8 @@ $(subst :,.,$(1)): $(subst :,.,$(2))
 	$(SWITCHLIGHT)/tools/spkg.py $(1) --build
 endef
 
-
-SERIAL_TARGETS = vendor-config-switchlight:all onlp-platform-defaults:powerpc onlp-platform:powerpc onlp:powerpc \
+VENDOR_CONFIGS = $(shell $(SWITCHLIGHT)/tools/spkg.py --list-all | grep vendor-config)
+SERIAL_TARGETS = vendor-config-switchlight:all $(VENDOR_CONFIGS) onlp-platform-defaults:powerpc onlp-platform:powerpc onlp:powerpc \
 		 onlp-platform-defaults:amd64 onlp-platform:amd64 onlp:amd64
 serial0: submodules_init
 	$(foreach t,$(SERIAL_TARGETS),$(SWITCHLIGHT)/tools/spkg.py $(t) --build;)
