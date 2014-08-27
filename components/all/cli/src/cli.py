@@ -1997,10 +1997,11 @@ def main():
                                  stdin=sys.stdin, env=os.environ)
             p.wait()
             sys.exit()
+    rc = 0
     if cli.single_cmd is None:
         cli.loop()
     else:
-        sys.exit(cli.do_single_cmd(cli.single_cmd))
+        rc = cli.do_single_cmd(cli.single_cmd)
 
     # Handle deferred service restarts/reloads.
     # This is only executed in init mode.
@@ -2010,6 +2011,9 @@ def main():
 
     if loading_startup:
         file(startup_loaded_file, "w").write("")
+
+    sys.exit(rc)
+
 
 if __name__ == '__main__':
     main()
