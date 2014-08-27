@@ -91,8 +91,10 @@ def create_patch_config(old_cfg, new_cfg):
     Return patch config as a list of config lines (strings).
     """
     old_lines, new_lines = compare_configs(old_cfg, new_cfg)
-    logger.debug("old_lines:\n%s" % old_lines)
-    logger.debug("new_lines:\n%s" % new_lines)
+    for line in old_lines:
+        logger.debug("create_patch_config: <<< %s", line)
+    for line in new_lines:
+        logger.debug("create_patch_config: >>> %s", line)
 
     # create patch config:
     # (1) for old lines:
@@ -166,9 +168,12 @@ def apply_config(cfg):
     Apply config in cfg via pcli.
     cfg is a list of config lines (strings).
     """
+    for line in cfg:
+        logger.debug("apply_config: + %s", line)
     cmd = ";".join(cfg)
     out = util.pcli_command(cmd)
-    logger.debug("pcli output:\n%s", out)
+    for line in out.splitlines():
+        logger.debug("apply_config: >>> %s", line)
     if "Error" in out:
         raise IOError("Encountered error when applying config: %s" % out)
 
@@ -177,14 +182,16 @@ def revert_default_config():
     Revert to default config via pcli.
     """
     out = util.pcli_command("_internal; revert-default")
-    logger.debug("pcli output:\n%s", out)
+    for line in out.splitlines():
+        logger.debug("revert_default_config: >>> %s", line)
 
 def save_startup_config():
     """
     Save running config as startup config via pcli.
     """
     out = util.pcli_command("copy running-config startup-config")
-    logger.debug("pcli output:\n%s", out)
+    for line in out.splitlines():
+        logger.debug("save_startup_config: >>> %s", line)
 
 def reload_config(ztn_server):
     """
