@@ -36,6 +36,18 @@ PCLI_BLIST = [
 
 BLIST_REGEX = re.compile(r"%s" % "|".join(["^%s" % c for c in PCLI_BLIST]))
 
+RELOAD_OK = 0
+RELOAD_ZTN_LOCAL_ERROR = 1
+RELOAD_ZTN_REMOTE_ERROR = 2
+RELOAD_ZTN_RELOAD_ERROR = 3
+RELOAD_ZTN_REWIND_ERROR = 4
+RELOAD_ZTN_ROLLBACK_ERROR = 5
+
+AUDIT_ZTN_OK = 0
+AUDIT_ZTN_LOCAL_ERROR = RELOAD_ZTN_LOCAL_ERROR
+AUDIT_ZTN_REMOTE_ERROR = RELOAD_ZTN_REMOTE_ERROR
+AUDIT_ZTN_MISMATCH = 6
+
 class RewindException(Exception): pass
 
 class LoadStartupException(Exception): pass
@@ -79,8 +91,10 @@ def create_patch_config(old_cfg, new_cfg):
     Return patch config as a list of config lines (strings).
     """
     old_lines, new_lines = compare_configs(old_cfg, new_cfg)
-    logger.debug("old_lines:\n%s" % old_lines)
-    logger.debug("new_lines:\n%s" % new_lines)
+    for line in old_lines:
+        logger.debug("create_patch_config: <<< %s", line)
+    for line in new_lines:
+        logger.debug("create_patch_config: >>> %s", line)
 
     # create patch config:
     # (1) for old lines:
@@ -154,9 +168,12 @@ def apply_config(cfg):
     Apply config in cfg via pcli.
     cfg is a list of config lines (strings).
     """
+    for line in cfg:
+        logger.debug("apply_config: + %s", line)
     cmd = ";".join(cfg)
     out = util.pcli_command(cmd)
-    logger.debug("pcli output:\n%s", out)
+    for line in out.splitlines():
+        logger.debug("apply_config: >>> %s", line)
     if "Error" in out:
         raise IOError("Encountered error when applying config: %s" % out)
 
@@ -165,22 +182,23 @@ def revert_default_config():
     Revert to default config via pcli.
     """
     out = util.pcli_command("_internal; revert-default")
-    logger.debug("pcli output:\n%s", out)
+    for line in out.splitlines():
+        logger.debug("revert_default_config: >>> %s", line)
 
 def save_startup_config():
     """
     Save running config as startup config via pcli.
     """
     out = util.pcli_command("copy running-config startup-config")
-    logger.debug("pcli output:\n%s", out)
+    for line in out.splitlines():
+        logger.debug("save_startup_config: >>> %s", line)
 
 def reload_config(ztn_server):
     """
     Get config from ZTN server and reload config.
     Return a tuple of (rc, error), where rc is 0 on success.
     """
-    # FIXME: need to standardize return codes
-    rc = 0
+    rc = RELOAD_OK
     error = None
     success = False
 
@@ -188,7 +206,7 @@ def reload_config(ztn_server):
         check_load_startup()
     except Exception, e:
         logger.exception("load startup config is not done")
-        rc = 1
+        rc = RELOAD_ZTN_LOCAL_ERROR
         error = str(e)
         return (rc, error)
 
@@ -200,7 +218,7 @@ def reload_config(ztn_server):
 
     except Exception, e:
         logger.exception("failed to read existing ZTN states")
-        rc = 2
+        rc = RELOAD_ZTN_LOCAL_ERROR
         error = str(e)
         return (rc, error)
 
@@ -209,7 +227,7 @@ def reload_config(ztn_server):
 
     except Exception, e:
         logger.exception("failed to get new ZTN config")
-        rc = 3
+        rc = RELOAD_ZTN_REMOTE_ERROR
         error = str(e)
         return (rc, error)
 
@@ -243,7 +261,7 @@ def reload_config(ztn_server):
 
         except Exception, e:
             logger.exception("failed to perform hit-ful reload")
-            rc = 4
+            rc = RELOAD_ZTN_RELOAD_ERROR
             error = str(e)
 
             try:
@@ -254,7 +272,7 @@ def reload_config(ztn_server):
 
             except Exception, e:
                 logger.exception("fatal: failed to roll-back")
-                rc = 5
+                rc = RELOAD_ZTN_REWIND_ERROR
                 error = str(e)
                 return (rc, error)
 
@@ -282,6 +300,14 @@ def audit_config(ztn_server):
     """
 
     try:
+        check_load_startup()
+    except Exception, e:
+        logger.exception("load startup config is not done")
+        rc = AUDIT_ZTN_LOCAL_ERROR
+        error = str(e)
+        return (rc, error)
+
+    try:
         last_cfg = read_last_ztn_config()
         ztn_json = read_ztn_json()
         last_run = read_last_ztn_config(path=LAST_RUN_CFG)
@@ -289,7 +315,7 @@ def audit_config(ztn_server):
 
     except Exception, e:
         logger.exception("failed to read existing ZTN states")
-        return (1, str(e),)
+        return (AUDIT_ZTN_LOCAL_ERROR, str(e),)
 
     l1, l2 = compare_configs(cur_run, last_run)
 
@@ -299,7 +325,7 @@ def audit_config(ztn_server):
 
         except Exception, e:
             logger.exception("failed to get new ZTN config")
-            return (2, str(e),)
+            return (AUDIT_ZTN_REMOTE_ERROR, str(e),)
 
         l3, l4 = compare_configs(last_cfg, new_cfg)
 
@@ -325,6 +351,6 @@ def audit_config(ztn_server):
             buf.write("  " + l + "\n")
 
     if buf.tell():
-        return (3, buf.getvalue(),)
+        return (AUDIT_ZTN_MISMATCH, buf.getvalue(),)
 
-    return (0, None,)
+    return (AUDIT_ZTN_OK, None,)

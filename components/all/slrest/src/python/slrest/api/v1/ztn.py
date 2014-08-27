@@ -462,28 +462,30 @@ class v1_ztn_audit(SLAPIObject):
 
         rc, rsp = config.audit_config(server)
 
-        if not rc:
+        if rc == config.AUDIT_ZTN_OK:
             if rsp:
                 return SLREST.response(path=self.route,
                                        status=SLREST.Status.OK,
                                        reason="Audit success.",
-                                       data=rsp)
+                                       data=dict(status=True,
+                                                 report=rsp))
             else:
                 return SLREST.response(path=self.route,
                                        status=SLREST.Status.OK,
                                        reason="Audit success.",
-                                       data="Audit success.")
+                                       data=dict(status=True))
 
-        if rsp:
+        if rc == config.AUDIT_ZTN_MISMATCH:
             return SLREST.response(path=self.route,
-                                   status=SLREST.Status.ERROR,
-                                   reason="Audit failed: " + str(rsp),
-                                   data=rsp)
-        else:
-            return SLREST.response(path=self.route,
-                                   status=SLREST.Status.ERROR,
-                                   reason="Audit failed.",
-                                   data=rsp)
+                                   status=SLREST.Status.OK,
+                                   reason="Audit failed (see payload for details)",
+                                   data=dict(status=False,
+                                             report=rsp))
+
+        # else, something went awry
+        return SLREST.response(path=self.route,
+                               status=SLREST.Status.ERROR,
+                               reason=rsp)
 
     @staticmethod
     def cliZtnAudit(hostname, port, local, server):
@@ -496,8 +498,6 @@ class v1_ztn_audit(SLAPIObject):
             response = SLAPIObject.get(hostname, port, path)
             SLAPIObject.dataResult(response.read())
         except Exception, e:
-            import pdb
-            pdb.set_trace()
             pass
 
     @staticmethod
