@@ -1,42 +1,42 @@
 # -*- Makefile -*-
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 ############################################################
 #
-# Build the SwitchLight Loader ISO. 
+# Build the SwitchLight Loader ISO.
 #
-# This build target is designed for Loader development and testing. 
-# 
-# - The loader image is built from source directly (not the debian package). 
-# - The hda image is blank (no integrated SWI). 
+# This build target is designed for Loader development and testing.
+#
+# - The loader image is built from source directly (not the debian package).
+# - The hda image is blank (no integrated SWI).
 #
 # How to run:
-# > kvm -m 1024 -cdrom loader-i386.iso -boot d -nographic -hda hda.img
+# > kvm -m 1024 -cdrom loader-amd64.iso -boot d -nographic -hda hda.img
 ############################################################
 #
-# We inherit the Makefile.comp from the i386/loader build, but specify that
+# We inherit the Makefile.comp from the amd64/loader build, but specify that
 # we should use a custom initrd build rather than the default, which is
-# to pull it from the repo. 
+# to pull it from the repo.
 #
-# The assumption is that you are building this target because you are 
+# The assumption is that you are building this target because you are
 # doing generic loader development, and rebuilds from source are
-# what you want. 
+# what you want.
 #
-initrd-i386 := initrd-i386
+initrd-amd64 := initrd-amd64
 
-include $(SWITCHLIGHT)/components/i386/loader-i386/Makefile.comp
+include $(SWITCHLIGHT)/components/amd64/loader/Makefile.comp
 
-.PHONY: initrd-i386
+.PHONY: initrd-amd64
 
-initrd-i386:
-	rm -f $(SWITCHLIGHT)/components/i386/initrd-i386/initrd-i386 
-	$(MAKE) -C $(SWITCHLIGHT)/components/i386/initrd-i386
-	cp $(SWITCHLIGHT)/components/i386/initrd-i386/initrd-i386 .
+initrd-amd64:
+	rm -f $(SWITCHLIGHT)/components/amd64/initrd-amd64/initrd-amd64
+	$(MAKE) -C $(SWITCHLIGHT)/components/amd64/initrd-amd64
+	cp $(SWITCHLIGHT)/components/amd64/initrd-amd64/initrd-amd64 .
 

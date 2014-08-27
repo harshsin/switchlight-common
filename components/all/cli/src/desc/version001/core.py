@@ -140,7 +140,7 @@ def show_environment(data):
     try:
         print Platform.get_environment()
     except:
-        print "Environment data is not implemented on this platform."
+        raise error.ActionError('Environment data is not available on this platform')
 
 command.add_action('implement-show-environment', show_environment,
                     {'kwargs': {'data'      : '$data',}})
@@ -403,7 +403,6 @@ tech_support_scripts = [
     'ofad-ctl controller show LISTEN',
     'ofad-ctl cxn show-log',
     'ofad-ctl core flowtable',
-    'ofad-ctl core dump-flows',
     'ofad-ctl interface show',
     'ofad-ctl port',
     'ofad-ctl show-snmp',
@@ -506,6 +505,21 @@ COPY_COMMAND_DESCRIPTION = {
     ),
 }
 
+WRITE_MEMORY_COMMAND_DESCRIPTION = {
+    'name'          : 'write',
+    'mode'          : 'enable',
+    'short-help'    : 'Write configuration',
+    'no-supported'  : False,
+    'args'  : (
+        {
+            'token'         : 'memory',
+            'optional'      : False,
+            'short-help'    : 'Save running config',
+            'doc'           : 'core|write-memory',
+            'action'        : 'implement-save',
+        },
+    ),
+}
 
 def delete_file(data):
     if 'startup-config' in data:
@@ -761,12 +775,18 @@ def set_timezone(no_command, data, is_init):
         if timezone not in pytz.all_timezones:
             raise error.ActionError('Invalid timezone')
     try:
-        with open(const.TZ_CFG_PATH, 'w') as fd:
+        with open(const.TZ_CFG_PATH, 'r+') as fd:
+            old_timezone = fd.readline().strip()
+            fd.seek(0)
+            fd.truncate()
             fd.write(timezone)
         shell.call('dpkg-reconfigure -f noninteractive tzdata')
         command.action_invoke('implement-rsyslog-restart',
                               ({'is_init': is_init},))
     except subprocess.CalledProcessError:
+        # incase of error revert to the old timezone
+        with open(const.TZ_CFG_PATH, 'w') as fd:
+            fd.write(old_timezone)
         raise error.ActionError('Unable to set timezone')
 
 command.add_action('implement-set-timezone', set_timezone,

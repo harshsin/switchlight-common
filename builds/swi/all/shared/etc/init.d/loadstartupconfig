@@ -52,6 +52,8 @@ case "$1" in
             log_action_end_msg $?
         fi
 
+        touch /var/run/load-startup-config-done
+
         ;;
     restart|reload|force-reload)
         echo "Error: argument '$1' not supported" >&2

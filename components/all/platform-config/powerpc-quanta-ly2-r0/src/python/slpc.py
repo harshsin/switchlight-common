@@ -34,9 +34,6 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformQuanta):
             platinfo.PORT_COUNT : 52
             }
 
-    def _plat_oid_table(self):
-        return None
-
     def get_environment(self):
         return subprocess.check_output(['/usr/bin/ofad-ctl', 'environment'])
 

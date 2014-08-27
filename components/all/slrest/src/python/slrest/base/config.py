@@ -26,6 +26,7 @@ FILTER_REGEX = re.compile(r"^SwitchLight.*|^.*?\(config\).*|^Exiting.*|^\!|^[\s]
 ZTN_JSON = "/mnt/flash/boot/ztn.json"
 LAST_ZTN_CFG = "/var/run/last-ztn-startup-config"
 LAST_RUN_CFG = "/var/run/last-ztn-running-config"
+LOAD_STARTUP_CFG_DONE = "/var/run/load-startup-config-done"
 
 # Don't generate inversions ("no"-command) for the following
 PCLI_BLIST = [
@@ -48,6 +49,15 @@ AUDIT_ZTN_REMOTE_ERROR = RELOAD_ZTN_REMOTE_ERROR
 AUDIT_ZTN_MISMATCH = 6
 
 class RewindException(Exception): pass
+
+class LoadStartupException(Exception): pass
+
+def check_load_startup(path=LOAD_STARTUP_CFG_DONE):
+    """
+    Check if load startup config is done.
+    """
+    if not os.path.exists(path):
+        raise LoadStartupException("%s not found" % path)
 
 def read_ztn_json(path=ZTN_JSON):
     """
@@ -186,6 +196,14 @@ def reload_config(ztn_server):
     success = False
 
     try:
+        check_load_startup()
+    except Exception, e:
+        logger.exception("load startup config is not done")
+        rc = RELOAD_ZTN_LOCAL_ERROR
+        error = str(e)
+        return (rc, error)
+
+    try:
         last_cfg = read_last_ztn_config()
         ztn_json = read_ztn_json()
         last_run = read_last_ztn_config(path=LAST_RUN_CFG)
@@ -273,6 +291,14 @@ def audit_config(ztn_server):
     or out of date with the ZTN server.
     The remote ZTN server is optional.
     """
+
+    try:
+        check_load_startup()
+    except Exception, e:
+        logger.exception("load startup config is not done")
+        rc = AUDIT_ZTN_LOCAL_ERROR
+        error = str(e)
+        return (rc, error)
 
     try:
         last_cfg = read_last_ztn_config()

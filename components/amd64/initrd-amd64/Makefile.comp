@@ -1,0 +1,52 @@
+# -*- Makefile -*-
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
+BUILD_INITRD_AMD64 := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+include $(SWITCHLIGHT)/make/config.mk
+
+SWITCHLIGHT_BUILD_CONFIG := amd64
+
+# Release string, copied from swi.mk
+ifndef RELEASE
+RELEASE := SwitchLight$(SWITCHLIGHT_RELEASE_BANNER)($(SWITCHLIGHT_BUILD_CONFIG),$(SWITCHLIGHT_BUILD_TIMESTAMP),$(SWITCHLIGHT_BUILD_SHA1))
+endif
+
+initrd-amd64: $(BUILD_INITRD_AMD64)/initrd-amd64
+
+$(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done:
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) setup
+	touch $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done
+
+VERSION_FILE=$(BUILD_INITRD_AMD64)/config.slv
+
+$(BUILD_INITRD_AMD64)/initrd-amd64: $(SWITCHLIGHT_SUBMODULE_LOADER)/.setup.done $(VERSION_FILE)
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) platform-configs ztn
+	$(MAKE) -C $(SWITCHLIGHT_SUBMODULE_LOADER) VERSION_FILE=$(VERSION_FILE) buildroot-x86_64
+	cat $(SWITCHLIGHT_SUBMODULE_LOADER)/buildroot-x86_64/images/rootfs.cpio.gz >initrd-amd64
+
+.PHONY: deb
+
+deb:
+	$(MAKE) -C deb
+
+
+include $(SWITCHLIGHT)/make/version.mk
+
+
+
+
+
+
+
+
+
+
+

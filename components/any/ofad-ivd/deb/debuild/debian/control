@@ -1,0 +1,22 @@
+Source: ofad-ivd
+Section: misc
+Priority: optional
+Maintainer: Support <support@bigswitch.com>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.8.4
+
+Package: ofad-ivd
+Architecture: any
+Depends: libc6
+Description: Fault Reporting Daemon
+ This package provides the Fault Reporting Daemon. 
+
+Package: ofad-ivd-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends:
+        ofad-ivd (= ${binary:Version}),
+	${misc:Depends}
+Description: Debugging symbols for ofad-ivd
+ This packages provides the debug symbols for ofad-ivd.

@@ -5,7 +5,7 @@
 ############################################################
 SWI_PACKAGES_ALL := python-cherrypy3 python-tz slrest scapy ztn python-pypcap
 
-SWI_PACKAGES_POWERPC := \
+SWI_PACKAGES_powerpc := \
 	snmpd \
 	lm-sensors \
 	fancontrol \

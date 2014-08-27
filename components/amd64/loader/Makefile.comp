@@ -1,0 +1,62 @@
+# -*- Makefile -*-
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
+#
+# loader-amd64
+#
+# Builds a Switchlight loader ISO file for use with KVM.
+#
+# How to run:
+# > kvm -m 512 -cdrom loader-amd64.iso -boot d -nographic -hda loader-amd64-flashfs.img
+#
+############################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not defined.)
+else
+include $(SWITCHLIGHT)/make/config.mk
+endif
+
+ifndef kernel-x86_64
+kernel-x86_64  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-x86-64:amd64 --find-file kernel-x86_64)
+endif
+
+ifndef initrd-amd64
+initrd-amd64    := $(shell $(SWITCHLIGHT_PKG_INSTALL) initrd-amd64:amd64 --find-file initrd-amd64)
+endif
+
+all: loader-amd64.iso loader-amd64-hda.img loader-amd64-hdb.img
+
+loader-amd64.iso: $(kernel-x86_64) $(initrd-amd64)
+	mkdir $@.tmp
+	cp /usr/*/syslinux/isolinux.bin $@.tmp/isolinux.bin
+	cp $(kernel-x86_64) $@.tmp/kernel
+	cp $(initrd-amd64) $@.tmp/initrd
+	echo -e 'default SwitchLight\nlabel SwitchLight\nkernel kernel\nappend initrd=initrd console=ttyS0' >$@.tmp/isolinux.cfg
+	genisoimage -o $@ -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table $@.tmp
+	isohybrid $@
+	rm -rf $@.tmp
+
+
+# Empty 8M flash filesystem
+loader-amd64-hda.img:
+	rm -rf $@
+	dd if=/dev/zero of=$@ bs=1024 count=8192
+	mkdosfs $@
+	echo -e "NETDEV=ma1\nNETAUTO=dhcp\nBOOTMODE=ztn\n" > $@.bc
+	mcopy -i $@ $@.bc ::boot-config
+	rm $@.bc
+
+# Empty 500M flash2 filesystem
+loader-amd64-hdb.img:
+	rm -rf $@
+	dd if=/dev/zero of=$@ bs=1024 count=512000
+	mkdosfs $@
+
+include $(SWITCHLIGHT)/make/deb-subdir.mk

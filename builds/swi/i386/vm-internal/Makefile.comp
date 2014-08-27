@@ -1,11 +1,11 @@
 # -*- Makefile -*-
 ############################################################
 # <bsn.cl fy=2013 v=none>
-# 
-#        Copyright 2013, 2014 BigSwitch Networks, Inc.        
-# 
-# 
-# 
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
 # </bsn.cl>
 ############################################################
 ############################################################
@@ -20,7 +20,7 @@ include $(SWITCHLIGHT)/make/config.mk
 export SWITCHLIGHT
 endif
 
-SWI := switchlight-i386-vm-internal
+SWI := switchlight-$(SWITCHLIGHT_RELEASE_VERSION)-i386-vm-internal
 
 # We need the following package binaries
 kernel-x86_64  := $(shell $(SWITCHLIGHT_PKG_INSTALL) kernel-x86-64:amd64 --find-file kernel-x86_64)
@@ -31,7 +31,5 @@ INITRD := $(initrd-i386)
 ARCH := i386
 SWITCHLIGHT_BUILD_CONFIG := i386.vm.internal
 
+include packages.mk
 include $(SWITCHLIGHT)/make/swi.mk
-
-
-

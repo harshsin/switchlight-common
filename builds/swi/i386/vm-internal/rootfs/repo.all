@@ -1,4 +1,0 @@
-[deb-all]
-packages=pcli python-cherrypy3 python-tz slrest scapy python-pypcap
-source=copy:__DIR__/all/ ./
-omitdebsrc=true

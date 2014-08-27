@@ -1913,11 +1913,14 @@ class MainSh():
     def do_single_cmd(self, cmd):
         try:
             self.handle_multipart_line(cmd)
-        except:
+            return 0
+        except Exception as e:
+            print e
             print "\nError running command '%s'." % cmd
             if self.debug or self.debug_backtrace:
                 print
                 traceback.print_exc()
+            return -1
 
 #
 # --------------------------------------------------------------------------------
@@ -1994,10 +1997,11 @@ def main():
                                  stdin=sys.stdin, env=os.environ)
             p.wait()
             sys.exit()
+    rc = 0
     if cli.single_cmd is None:
         cli.loop()
     else:
-        cli.do_single_cmd(cli.single_cmd)
+        rc = cli.do_single_cmd(cli.single_cmd)
 
     # Handle deferred service restarts/reloads.
     # This is only executed in init mode.
@@ -2007,6 +2011,9 @@ def main():
 
     if loading_startup:
         file(startup_loaded_file, "w").write("")
+
+    sys.exit(rc)
+
 
 if __name__ == '__main__':
     main()
