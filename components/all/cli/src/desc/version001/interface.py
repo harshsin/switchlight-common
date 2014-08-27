@@ -8,7 +8,7 @@ import utif
 
 import subprocess
 from sl_util import shell, OFConnection, const, conf_state
-from sl_util.ofad import OFADConfig, PortManager
+from sl_util.ofad import OFADConfig, PortManager, OFADCtl
 
 import loxi.of13 as of13
 
@@ -419,6 +419,51 @@ SHOW_INTERFACE_COMMAND_DESCRIPTION = {
                         'data'            : { 'detail' : True },
                     },
                 ),
+            ),
+        },
+    )
+}
+
+
+def show_intf_hw_counters(data):
+    base, port_list = parse_port_list(data['intf-port-list'])
+    if base != OFAgentConfig.physical_base_name:
+        raise error.ActionError('Hardware counters are supported only for '
+                                'ethernet interfaces')
+
+    for port in port_list:
+        cmd = ' '.join(['modules brcm port',
+                        'counters-all' if 'all' in data else 'counters',
+                        str(port[len(base):])])
+        OFADCtl.run(cmd)
+
+command.add_action('implement-show-intf-hw-counters', show_intf_hw_counters,
+                   {'kwargs': { 'data' : '$data', } } )
+
+
+SHOW_INTERFACE_HW_COUNTERS_COMMAND_DESCRIPTION = {
+    'name'         : 'show',
+    'mode'         : 'login',
+    'hidden'       : True,
+    'no-supported' : False,
+    'action'       : 'implement-show-intf-hw-counters',
+    'args'         : (
+        {
+            'token'           : 'interface',
+        },
+        {
+            'field'           : 'intf-port-list',
+            'type'            : 'interface-list',
+        },
+        {
+            'choices' : (
+                {
+                    'token'     : 'hardware-counters',
+                },
+                {
+                    'token'     : 'hardware-counters-all',
+                    'data'      : { 'all' : True },
+                },
             ),
         },
     )
