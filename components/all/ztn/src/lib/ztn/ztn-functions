@@ -312,8 +312,12 @@ ztn_cache_class_inventory()
         if [ "${path}" ]; then
             echo "  ${k} :"
             echo "    date : \"$(date --rfc-3339=seconds -r $path)\""
-            echo "    url : \"$(cat ${path}.url)\""
             echo "    path : \"${path}\""
+            if [ -e "${path}.url" ]; then
+                echo "    url : \"$(cat ${path}.url)\""
+            else
+                echo "*** missing ${path}.url" 1>&2
+            fi
         fi
     done
 }
