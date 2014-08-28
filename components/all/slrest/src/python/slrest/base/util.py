@@ -32,7 +32,7 @@ def check_output(cmd, *args, **kwargs):
     rc = pipe.wait()
     if not rc: return out
 
-    raise subprocess.CalledProcesssError(rc, cmd, output=out)
+    raise subprocess.CalledProcessError(rc, cmd, output=out)
 
 def pcli_command(cmd, stderr=subprocess.STDOUT):
     """Execute a PCLI command and return the results."""
