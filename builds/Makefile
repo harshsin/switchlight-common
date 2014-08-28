@@ -139,8 +139,12 @@ $(subst :,.,$(1)): $(subst :,.,$(2))
 endef
 
 VENDOR_CONFIGS = $(shell $(SWITCHLIGHT)/tools/spkg.py --list-all | grep vendor-config)
-SERIAL_TARGETS = vendor-config-switchlight:all $(VENDOR_CONFIGS) onlp-platform-defaults:powerpc onlp-platform:powerpc onlp:powerpc \
-		 onlp-platform-defaults:amd64 onlp-platform:amd64 onlp:amd64
+PLATFORM_CONFIGS = $(shell $(SWITCHLIGHT)/tools/spkg.py --list-all | grep platform-config-)
+
+SERIAL_TARGETS = vendor-config-switchlight:all $(VENDOR_CONFIGS) $(PLATFORM_CONFIGS) ztn:all \
+		 onlp-platform-defaults:powerpc onlp-platform:powerpc onlp:powerpc \
+		 onlp-platform-defaults:amd64   onlp-platform:amd64   onlp:amd64
+
 serial0: submodules_init
 	$(foreach t,$(SERIAL_TARGETS),$(SWITCHLIGHT)/tools/spkg.py $(t) --build;)
 
@@ -183,7 +187,6 @@ orc-brcm-6.3.3-release:powerpc \
 pcli:all \
 slrest:all \
 t6-dump-flows:all \
-ztn:all \
 switchlight-internal-dbg-sources:all
 
 $(foreach c,$(PARALLEL_3),$(eval $(call cbuild,$(c),$(PARALLEL_2))))
