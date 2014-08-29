@@ -50,7 +50,7 @@ class v1_ztn_inventory(SLAPIObject):
                                    status=SLREST.Status.ERROR,
                                    reason="async not supported")
         # The ZTN inventory is returned in YAML format.
-        (rc, out) = util.bash_command("ztn --inventory")
+        (rc, out) = util.bash_command("ztn --inventory", stderr=logger)
         if rc:
             return SLREST.response(path=self.route,
                                    status=SLREST.Status.ERROR,
@@ -123,7 +123,7 @@ class v1_ztn_manifest(SLAPIObject):
                                    reason="async not supported")
 
         # The ZTN manifest is returned in YAML format.
-        (rc, out) = util.bash_command("ztn --manifest")
+        (rc, out) = util.bash_command("ztn --manifest", stderr=logger)
         if rc:
             return SLREST.response(path=self.route,
                                    status=SLREST.Status.ERROR,
