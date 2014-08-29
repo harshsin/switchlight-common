@@ -769,6 +769,7 @@ class CommandHandler(object):
         self.actions = None
         self.parse_errors = set()
         self.prefix = ''
+        self.include_hidden = False
         
     def handle_command_error(self, e):
         pass
@@ -853,7 +854,11 @@ class CommandHandler(object):
                 # feature is enabled.
                 if isCommandFeatureActive(command, command.get('feature')) == False:
                     continue
-            
+
+                # Skip commands marked as hidden
+                if not self.include_hidden and command.get('hidden', False):
+                    continue
+
                 # Check that the command is enabled for the current mode
                 modes = command.get('mode')
                 if not modes:
@@ -1334,6 +1339,7 @@ class CommandExecutor(CommandHandler):
     def __init__(self):
         super(CommandExecutor, self).__init__()
         self.matches = []
+        self.include_hidden = True
 
     #def get_default_attribute_name(self):
     #    return 'default-for-no' if self.is_no_command else 'default'
