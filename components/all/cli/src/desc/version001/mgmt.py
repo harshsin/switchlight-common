@@ -18,6 +18,9 @@ DHCLIENT_CFG = """### SwitchLight
 #https://bugs.launchpad.net/ubuntu/+source/dhcp3/+bug/307204
 #option rfc3442-classless-static-routes code 121 = array of unsigned integer 8;
 
+#https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=693566
+timeout 31536000;
+
 request subnet-mask, broadcast-address, time-offset, routers,
 	domain-name, domain-name-servers, domain-search, host-name,
 	netbios-name-servers, netbios-scope, interface-mtu,
