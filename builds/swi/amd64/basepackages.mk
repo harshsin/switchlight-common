@@ -32,5 +32,6 @@ SWI_PACKAGES_amd64 := \
 	ntpdate \
 	onlp \
 	faultd \
+	watchdog \
 	netplug
 

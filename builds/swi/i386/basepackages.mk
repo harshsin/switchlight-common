@@ -32,5 +32,6 @@ SWI_PACKAGES_i386 := \
 	ntpdate \
 	onlp \
 	faultd \
+	watchdog \
 	netplug
 

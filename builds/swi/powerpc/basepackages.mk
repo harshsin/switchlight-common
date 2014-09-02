@@ -31,5 +31,6 @@ SWI_PACKAGES_powerpc := \
 	u-boot-tools \
 	ntpdate \
 	onlp \
+	watchdog \
 	netplug
 
