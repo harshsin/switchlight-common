@@ -28,6 +28,10 @@ request subnet-mask, broadcast-address, time-offset, routers,
 	dhcp6.name-servers, dhcp6.sntp-servers;
 """
 
+# In order to be consistent with udhcpc in the loader, we configure dhclient to
+# include client-id when sending dhcp requests, which is a 7-byte value. The
+# first byte indicates the hardware type (1 is Ethernet); the next 6 bytes are
+# the interface's MAC address.
 DHCLIENT_CFG_UPDATE = """
 interface "%(name)s" {
     send dhcp-client-identifier 1:%(mac)s;
@@ -237,7 +241,7 @@ class _NetworkConfig(object):
 
     def _setupDHClient (self):
         # This is preposterously heavyhanded
-        with open("/etc/dhcp/dhclient.conf", "w+") as dhcfg:
+        with open(const.DHCLIENT_CFG_PATH, "w+") as dhcfg:
             dhcfg.write(DHCLIENT_CFG)
         with open("/etc/dhcp/dhclient-exit-hooks.d/switchlight", "w+") as sl:
             sl.write(SL_DHCP_EXIT_HOOK)
@@ -248,8 +252,12 @@ class _NetworkConfig(object):
             self._interfaces[name] = Interface(name)
 
     def _updateDHClient (self):
-        with open("/etc/dhcp/dhclient.conf", "a") as dhcfg:
-            for name, intf in self._interfaces.items():
+        with open(const.DHCLIENT_CFG_PATH, "a") as dhcfg:
+            for name in const.MGMT_PORTS:
+                intf = self._interfaces.get(name)
+                if intf is None:
+                    print "Warning: %s not found in NetworkConfig" % name
+                    continue
                 dhcfg.write(DHCLIENT_CFG_UPDATE % ({"name" : name,
                                                     "mac" : intf.dladdr}))
 
