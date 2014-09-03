@@ -432,7 +432,7 @@ def show_intf_hw_counters(data):
                                 'ethernet interfaces')
 
     for port in port_list:
-        cmd = ' '.join(['modules brcm port',
+        cmd = ' '.join(['modules brcm port-hw',
                         'counters-all' if 'all' in data else 'counters',
                         str(port[len(base):])])
         OFADCtl.run(cmd)
