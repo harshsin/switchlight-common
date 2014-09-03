@@ -26,15 +26,4 @@ fi
 platform_installer() {
     # Standard installation to usb storage
     installer_standard_blockdev_install "${__blockdev}" 16M 64M ""
-
-    #
-    # Hack die die
-    # Get the mac address currently used by ONIE
-    local macaddr=$(ifconfig eth0 | awk '/HWaddr/ { print tolower($5) }')
-
-    # We need to set eth2addr and eth3addr in order for our interfaces to come up.
-    # eth2addr is unused. eth3addr is ma1.
-    # Fixme.
-    fw_setenv -f eth2addr 00:00:00:00:00:00
-    fw_setenv -f eth3addr $macaddr
 }
