@@ -31,3 +31,5 @@ USER_PWD_PATH   = "/etc/shadow"
 BRCM_JSON       = "/mnt/flash/brcm.json"
 
 DEFAULT_DIR     = "/var/run/default"
+
+DHCLIENT_CFG_PATH   = "/etc/dhcp/dhclient.conf"
