@@ -28,6 +28,12 @@ request subnet-mask, broadcast-address, time-offset, routers,
 	dhcp6.name-servers, dhcp6.sntp-servers;
 """
 
+DHCLIENT_CFG_UPDATE = """
+interface "%(name)s" {
+    send dhcp-client-identifier 1:%(mac)s;
+}
+"""
+
 SL_DHCP_EXIT_HOOK = """### SwitchLight
 RUN="yes"
 
@@ -227,6 +233,7 @@ class _NetworkConfig(object):
         self._setupDHClient()
         self._interfaces = {}
         self._populateInterfaces()
+        self._updateDHClient()
 
     def _setupDHClient (self):
         # This is preposterously heavyhanded
@@ -239,6 +246,12 @@ class _NetworkConfig(object):
         names = os.listdir("/sys/class/net/")
         for name in names:
             self._interfaces[name] = Interface(name)
+
+    def _updateDHClient (self):
+        with open("/etc/dhcp/dhclient.conf", "a") as dhcfg:
+            for name, intf in self._interfaces.items():
+                dhcfg.write(DHCLIENT_CFG_UPDATE % ({"name" : name,
+                                                    "mac" : intf.dladdr}))
 
     def get_interface (self, name):
         try:
