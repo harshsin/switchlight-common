@@ -167,6 +167,9 @@ libbroadcom-6.3-release:powerpc \
 libbroadcom-6.3-internal-src:all \
 libbroadcom-6.3-kernel-85xx-modules:powerpc \
 libbroadcom-6.3-kernel-e500mc-modules:powerpc \
+libbroadcom-6.3-internal:amd64 \
+libbroadcom-6.3-release:amd64 \
+libbroadcom-6.3-kernel-x86-64-modules:amd64 \
 $(shell $(SWITCHLIGHT)/tools/spkg.py --list-all --arch powerpc amd64 | grep onlp-)
 
 $(foreach c,$(PARALLEL_2),$(eval $(call cbuild,$(c),$(PARALLEL_1))))
