@@ -398,6 +398,7 @@ tech_support_scripts = [
     'cat ' + const.OFAD_CFG_PATH,
     'cat ' + const.SNMP_CFG_PATH,
     'cat /var/log/syslog',
+    'cat /var/run/slrest/slrest.log',
     # Older, compressed logs, too?
     'ofad-ctl controller show CONNECT',
     'ofad-ctl controller show LISTEN',
