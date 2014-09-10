@@ -1,0 +1,47 @@
+# -*- Makefile -*-
+############################################################
+ifndef SWITCHLIGHT
+$(error $$SWITCHLIGHT is not set)
+endif
+include $(SWITCHLIGHT)/make/config.mk
+
+export TOOLCHAIN := x86_64-linux-gnu
+export ARCH := amd64
+
+MODULE := libonlp-x86-64-dell-s6000-s1220-r0
+include $(BUILDER)/standardinit.mk
+
+DEPENDMODULES := AIM onlpie onlplib sff IOF
+DEPENDMODULE_HEADERS := onlp
+
+include $(BUILDER)/dependmodules.mk
+
+SHAREDLIB := libonlp-x86-64-dell-s6000-s1220-r0.so
+$(SHAREDLIB)_TARGETS := $(ALL_TARGETS)
+include $(BUILDER)/so.mk
+.DEFAULT_GOAL := $(SHAREDLIB)
+
+GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MODULES_INIT=1
+GLOBAL_CFLAGS += -fPIC
+GLOBAL_LINK_LIBS += -lpthread
+
+include $(BUILDER)/targets.mk
+
+
+############################################################
+#
+# Build both the shared library and the onlpdump binary
+#
+############################################################
+.DEFAULT_GOAL=__start__
+
+__start__: $(SHAREDLIB) onlpdump
+ONLPDUMP_DIR := $(SWITCHLIGHT_SUBMODULE_ONLP)/targets/platform-simulation/onlpdump
+
+onlpdump:
+	$(MAKE) -C $(ONLPDUMP_DIR) SUBMODULE_ONLP=$(SWITCHLIGHT_SUBMODULE_ONLP) SUBMODULE_INFRA=$(SWITCHLIGHT_SUBMODULE_INFRA) SUBMODULE_BIGCODE=$(SWITCHLIGHT_SUBMODULE_BIGCODE) TOOLCHAIN=$(TOOLCHAIN) BUILD_DIR=$(ONLPDUMP_DIR)/build/$(TOOLCHAIN)
+	cp $(ONLPDUMP_DIR)/build/$(TOOLCHAIN)/bin/onlpdump .
+
+.PHONY: deb onlpdump
+deb:
+	$(MAKE) -C deb
