@@ -29,7 +29,9 @@ install-build-deps:
 	sudo update-alternatives --install /usr/bin/powerpc-linux-gnu-gcc powerpc-linux-gnu-gcc /usr/bin/powerpc-linux-gnu-gcc-4.7 10
 	sudo xapt -a powerpc libedit-dev ncurses-dev libsensors4-dev libwrap0-dev libssl-dev libsnmp-dev
 	sudo apt-get install libedit-dev ncurses-dev libsensors4-dev libwrap0-dev libssl-dev libsnmp-dev
-
+	@test -f /usr/bin/x86_64-linux-gnu-ar || (echo Symlinking x86_64-linux-gnu-ar && sudo ln -s /usr/bin/ar /usr/bin/x86_64-linux-gnu-ar)
+	@test -f /usr/bin/x86_64-linux-gnu-ld || (echo Symlinking x86_64-linux-gnu-ld && sudo ln -s /usr/bin/ld /usr/bin/x86_64-linux-gnu-ld)
+	@test -f /usr/bin/x86_64-linux-gnu-objcopy || (echo Symlinking x86_64-linux-gnu-objcopy && sudo ln -s /usr/bin/ld /usr/bin/x86_64-linux-gnu-objcopy)
 
 update:
 	cd $(SWITCHLIGHT)/debian/repo && ./update.sh

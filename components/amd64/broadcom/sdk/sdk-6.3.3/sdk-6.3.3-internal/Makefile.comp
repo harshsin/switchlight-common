@@ -1,0 +1,30 @@
+# -*- Makefile -*-
+############################################################
+# <bsn.cl fy=2013 v=none>
+#
+#        Copyright 2013, 2014 BigSwitch Networks, Inc.
+#
+#
+#
+# </bsn.cl>
+############################################################
+#
+# SDK 6.3.3 Internal Build Configuration
+#
+############################################################
+
+LIBRARY_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+include $(SWITCHLIGHT)/make/config.mk
+
+SDK_LIB_VERSION := 6.3
+SDK_CONFIG := internal
+SDK := $(SWITCHLIGHT_SUBMODULE_SDK_6_3_3)
+
+include ../../make/sdk-user-libraries.mk
+
+
+
+
+
+
