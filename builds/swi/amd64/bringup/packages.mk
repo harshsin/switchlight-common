@@ -10,7 +10,7 @@ SWI_PACKAGES_ALL += switchlight-internal-dbg-sources
 SWI_PACKAGES_amd64 +=   gdb \
 			binutils \
 			file
-ifndef NOTYET
+ifdef NOTYET
 SWI_PACKAGES_amd64 +=   brcmd-6.3.3-internal \
 			brcmd-6.3.3-internal-dbg \
 			libbroadcom-6.3-internal-dbg \
