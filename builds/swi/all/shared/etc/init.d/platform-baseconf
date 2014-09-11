@@ -41,8 +41,6 @@ PLATFORM_ONLP_LIB = "%s/lib/libonlp-%s.so" % (platform.platform_basedir(), platf
 if os.path.exists(PLATFORM_ONLP_LIB):
     if os.path.exists(DEFAULT_ONLP_LIB):
         os.unlink(DEFAULT_ONLP_LIB)
-    sys.stderr.write("    %s -> %s\n" % (DEFAULT_ONLP_LIB, PLATFORM_ONLP_LIB))
-    sys.stderr.flush()
     os.symlink(PLATFORM_ONLP_LIB, DEFAULT_ONLP_LIB)
 
 shutil.copyfile("/etc/sl_platform", "/etc/onl_platform")
@@ -59,6 +57,10 @@ os.symlink(platform.platform_basedir(), PLATFORM_CURRENT)
 
 if os.path.exists(ONLPDUMP):
     os.system("%s -i > %s/oids" % (ONLPDUMP,PLATFORM_CURRENT))
+
+if not platform.baseconfig():
+    sys.stderr.write("Platform Class Baseconfig Failed.")
+    sys.stderr.flush()
 
 sys.stderr.write("Setting up base platform configuration for %s: done\n" %
                  platform.platform())

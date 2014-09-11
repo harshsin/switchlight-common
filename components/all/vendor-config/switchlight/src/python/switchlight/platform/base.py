@@ -66,6 +66,9 @@ class SwitchLightPlatformBase(object):
     def platform_basedir(self):
         return "/lib/platform-config/%s" % self.platform()
 
+    def baseconfig(self):
+        return True
+
     def manufacturer(self):
         raise Exception("Manufacturer is not set.")
 
