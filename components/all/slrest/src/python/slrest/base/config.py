@@ -289,6 +289,13 @@ def reload_config(ztn_server):
     except Exception, e:
         # FIXME: not much we can do if things fail at this point
         logger.exception("failed to update ztn states: %s", e)
+        #
+        # Force a system restart in hopes we can recover
+        # filesystems and new ZTN transactions.
+        #
+        logger.exception("The switch is now in an inconsistent state and must restart to recover.")
+        util.reboot(logger, 3)
+
 
     return (rc, error)
 
