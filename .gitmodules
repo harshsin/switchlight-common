@@ -21,7 +21,7 @@
 	url = git@github.com:bigswitch/bigcode-internal
 [submodule "submodules/switchlight-common"]
 	path = submodules/switchlight-common
-	url = git@github.com:floodlight/switchlight-common
+	url = git@github.com:bigswitch/switchlight-common
 [submodule "submodules/sdk-6.3.3"]
 	path = submodules/sdk-6.3.3
 	url = git@github.com:bigswitch/sdk-6.3.3
