@@ -36,16 +36,17 @@ SWI_BUILD_PATHS := $(foreach arch,$(SWI_ARCHS),$(filter-out $(arch)/basepackages
 #
 
 define swi_build_template
-swi-$(1):
+$(1):
 	$(MAKE) -C $(2)
 	mkdir -p $(BUILDDIR)
 	cp $(2)/*20*.swi* $(BUILDDIR)
 endef
 
-$(foreach plat,$(SWI_BUILD_PATHS),$(eval $(call swi_build_template,$(notdir $(plat)),$(plat))))
+$(info $(SWI_BUILD_PATHS))
+$(foreach plat,$(SWI_BUILD_PATHS),$(eval $(call swi_build_template,$(subst /,-,$(plat)),$(plat))))
 
 # Add to ALL_SWI
-ALL_SWI := $(foreach plat,$(SWI_BUILD_PATHS),swi-$(notdir $(plat)))
+ALL_SWI := $(foreach plat,$(SWI_BUILD_PATHS),$(subst /,-,$(plat)))
 ALL_TARGETS := $(ALL_TARGETS) $(ALL_SWI)
 
 # Build all SWI
