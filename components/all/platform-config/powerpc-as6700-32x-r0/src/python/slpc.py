@@ -39,6 +39,10 @@ class SwitchLightPlatformImplementation(SwitchLightPlatformAccton):
     def get_environment(self):
         return subprocess.check_output(['/usr/bin/ofad-ctl', 'environment'])
 
+    def baseconfig(self):
+        with open("/etc/default/watchdog", 'a') as f:
+            f.write("run_watchdog=0\n");
+        return True
 
 if __name__ == "__main__":
     from switchlight.platform.main import main
