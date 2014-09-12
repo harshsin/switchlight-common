@@ -14,7 +14,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <AIM/aim_pvs_syslog.h>
 
 static int
 ucli_indigo_error(ucli_context_t* uc, int rv)
@@ -156,23 +155,6 @@ ivs_ucli_config__minus_l__(ucli_context_t* uc)
 
     return UCLI_STATUS_OK;
 }
-
-#if AIM_CONFIG_INCLUDE_PVS_SYSLOG == 1
-static ucli_status_t
-ivs_ucli_config__syslog__(ucli_context_t* uc)
-{
-    aim_pvs_t* pvs; 
-    UCLI_COMMAND_INFO(uc, 
-                      "syslog", 0, 
-                      "$group#argv"
-                      "$summary#Use syslog for log output."); 
-    AIM_REFERENCE(ivs); 
-    pvs = aim_pvs_syslog_get(); 
-    aim_log_pvs_set_all(pvs);
-
-    return UCLI_STATUS_OK;
-}
-#endif
 
 
 static ucli_status_t
@@ -538,9 +520,6 @@ static ucli_command_handler_f ivs_ucli_config_handlers__[] =
     ivs_ucli_config__verbose__, 
     ivs_ucli_config__minus_t__, 
     ivs_ucli_config__minus_l__, 
-#if AIM_CONFIG_INCLUDE_PVS_SYSLOG == 1
-    ivs_ucli_config__syslog__, 
-#endif
     ivs_ucli_config__pid__, 
     ivs_ucli_config__min, 
     ivs_ucli_config__wd, 
