@@ -351,6 +351,9 @@ class PortManager(object):
 
         self.__removeLAGPort(name)
 
+    def getAllPhysicals (self):
+        return self.all_phys
+
     def getPhysicals (self):
         return self.phys.values()
 

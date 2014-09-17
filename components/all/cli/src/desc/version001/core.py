@@ -433,6 +433,10 @@ def save_tech_support(data):
     for lag in portManager.getLAGs():
         scripts.append('ofad-ctl port %s' % lag.portName)
 
+    for phy in portManager.getAllPhysicals():
+        scripts.append('ofad-ctl brcm port-hw counters-all %s' % \
+                       phy[len(OFAgentConfig.physical_base_name):])
+
     if os.path.isdir(DUMP_FLOWS_PATH):
         for script in ['dumpt6.py', 'dumpflows.py', 'dumpdebugcounters.py',
             'dumpgentables.py', 'dumpgroups.py']:
