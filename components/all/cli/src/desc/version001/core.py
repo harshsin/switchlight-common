@@ -434,6 +434,7 @@ def save_tech_support(data):
         scripts.append('ofad-ctl port %s' % lag.portName)
 
     for phy in portManager.getAllPhysicals():
+        # base name needs to be stripped
         scripts.append('ofad-ctl brcm port-hw counters-all %s' % \
                        phy[len(OFAgentConfig.physical_base_name):])
 
