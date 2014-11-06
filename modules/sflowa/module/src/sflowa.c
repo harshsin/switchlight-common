@@ -43,6 +43,13 @@
  */
 #define SFLOW_RECEIVER_INDEX 1
 
+/*
+ * Send buffer size of 2MB
+ */
+#define SFLOW_SND_BUF 2000000
+
+static const of_mac_addr_t zero_mac = { {0x00, 0x00, 0x00, 0x00, 0x00, 0x00} };
+
 static indigo_core_gentable_t *sflow_collector_table;
 static indigo_core_gentable_t *sflow_sampler_table;
 
@@ -257,6 +264,72 @@ sflow_collectors_list(void)
 }
 
 /*
+ * sflow_get_send_mode
+ *
+ * Return sflow datagram sending mode - mgmt nw or dataplane
+ */
+static sflow_send_mode_t
+sflow_get_send_mode(sflow_collector_entry_t *entry)
+{
+    /*
+     * If vlan_id, agent_mac, agent_udp_sport and collector_mac
+     * are all zero's then we can safely assume to send sflow
+     * datagrams over management network.
+     */
+    if (!entry->value.vlan_id && !entry->value.agent_udp_sport
+        && !memcmp(&entry->value.agent_mac, &zero_mac, OF_MAC_ADDR_BYTES)
+        && !memcmp(&entry->value.collector_mac, &zero_mac, OF_MAC_ADDR_BYTES)) {
+        return SFLOW_SEND_MODE_MGMT;
+    }
+
+    return SFLOW_SEND_MODE_DATAPLANE;
+}
+
+/*
+ * sflow_init_socket
+ *
+ * Open a UDP Socket to send sflow datagrams to the collector
+ * and init socket params
+ */
+static indigo_error_t
+sflow_init_socket(sflow_collector_entry_t *entry)
+{
+    if (sflow_get_send_mode(entry) != SFLOW_SEND_MODE_MGMT) {
+        return INDIGO_ERROR_NONE;
+    }
+
+    /*
+     * open the socket if not open already
+     */
+    if (entry->sd <= 0) {
+        entry->sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        if (entry->sd < 0) {
+            AIM_LOG_ERROR("Failed to create collector socket: %s", strerror(errno));
+            return INDIGO_ERROR_UNKNOWN;
+        } else {
+
+            /*
+             * increase tx buffer size
+             */
+            uint32_t sndbuf = SFLOW_SND_BUF;
+            if (setsockopt(entry->sd, SOL_SOCKET, SO_SNDBUF, &sndbuf,
+                sizeof(sndbuf)) < 0) {
+                AIM_LOG_ERROR("setsockopt(SO_SNDBUF=%u) failed: %s",
+                              SFLOW_SND_BUF, strerror(errno));
+                return INDIGO_ERROR_UNKNOWN;
+            }
+        }
+    }
+
+    struct sockaddr_in *sa = &(entry->send_socket);
+    sa->sin_port = htons(entry->value.collector_udp_dport);
+    sa->sin_family = AF_INET;
+    sa->sin_addr.s_addr = entry->key.collector_ip;
+
+    return INDIGO_ERROR_NONE;
+}
+
+/*
  * sflow_collector_parse_key
  *
  * Parse key for sflow_collector table entry from tlv list
@@ -443,6 +516,12 @@ sflow_collector_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
     entry->key = key;
     entry->value = value;
 
+    rv = sflow_init_socket(entry);
+    if (rv < 0) {
+        aim_free(entry);
+        return rv;
+    }
+
     /*
      * Add this entry to a list to be used later for sending a sflow datagram out
      */
@@ -498,6 +577,7 @@ sflow_collector_modify(void *table_priv, void *entry_priv,
                   value.sub_agent_id);
 
     entry->value = value;
+    sflow_init_socket(entry);
 
     return INDIGO_ERROR_NONE;
 }
@@ -526,6 +606,12 @@ sflow_collector_delete(void *table_priv, void *entry_priv,
      * Delete this entry from the list
      */
     list_remove(&entry->links);
+
+    /*
+     * Close the socket
+     */
+    if (entry->sd > 0) close(entry->sd);
+
     aim_free(entry);
 
     return INDIGO_ERROR_NONE;

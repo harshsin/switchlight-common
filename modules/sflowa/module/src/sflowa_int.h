@@ -56,6 +56,8 @@ typedef struct sflow_collector_entry_s { /* sflow_collector_entry */
     sflow_collector_entry_key_t key;
     sflow_collector_entry_value_t value;
     sflow_collector_entry_stats_t stats;
+    int sd;
+    struct sockaddr_in send_socket;
     list_links_t  links;
 } sflow_collector_entry_t;
 
@@ -72,6 +74,11 @@ typedef struct sflow_sampler_entry_s { /* sflow_sampler_entry */
     sflow_sampler_entry_key_t key;
     sflow_sampler_entry_value_t value;
 } sflow_sampler_entry_t;
+
+typedef enum sflow_send_mode_e { /* sflow_send_mode */
+    SFLOW_SEND_MODE_MGMT,
+    SFLOW_SEND_MODE_DATAPLANE,
+} sflow_send_mode_t;
 
 list_head_t *sflow_collectors_list(void);
 
