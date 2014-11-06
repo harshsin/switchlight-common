@@ -31,6 +31,7 @@ static void *table_priv_collector;
 static void *table_priv_sampler;
 static uint32_t current_port_no;
 static uint32_t current_sampling_rate;
+static ind_soc_config_t soc_cfg;
 
 static const sflow_collector_entry_t collector_entry_1 = {
     .key.collector_ip = 0xc0a80101, //192.168.1.1
@@ -71,6 +72,12 @@ indigo_core_gentable_register(
     }
 
     *gentable = (void *)1;
+}
+
+void
+indigo_core_gentable_unregister(indigo_core_gentable_t *gentable)
+{
+    AIM_ASSERT(gentable == (void *)1);
 }
 
 static sflow_collector_entry_t*
@@ -371,12 +378,15 @@ test_sampling_rate_handlers(void)
 
 int aim_main(int argc, char* argv[])
 {
+    ind_soc_init(&soc_cfg);
     sflowa_init();
 
     test_sflow_collector_table();
     test_sflow_sampler_table();
     test_sampling_rate_handlers();
 
+    sflowa_finish();
+    ind_soc_finish();
     return 0;
 }
 

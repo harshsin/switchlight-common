@@ -18,6 +18,15 @@
  ****************************************************************/
 
 /*
+ * This file contains code that uses open source Host sFlow,
+ * which is licensed as below.
+ */
+
+ /* Host sFlow software is distributed under the following license:
+  * http://host-sflow.sourceforge.net/license.html
+  */
+
+/*
  * Implementation of Sflow Agent.
  *
  * This file contains code for initalizing sflow agent and
@@ -26,9 +35,13 @@
 
 #include <AIM/aim.h>
 #include <debug_counter/debug_counter.h>
-#include <OS/os_time.h>
 #include "sflowa_int.h"
 #include "sflowa_log.h"
+
+/*
+ * only one dummy receiver, so the receiverIndex is a constant
+ */
+#define SFLOW_RECEIVER_INDEX 1
 
 static indigo_core_gentable_t *sflow_collector_table;
 static indigo_core_gentable_t *sflow_sampler_table;
@@ -37,12 +50,21 @@ static const indigo_core_gentable_ops_t sflow_collector_ops;
 static const indigo_core_gentable_ops_t sflow_sampler_ops;
 
 static bool sflowa_initialized = false;
-static uint64_t start_time;
 
 static sflow_sampler_entry_t sampler_entries[SFLOWA_CONFIG_OF_PORTS_MAX+1];
 static LIST_DEFINE(sflow_collectors);
 
 static sflowa_sampling_rate_handler_f sflowa_sampling_rate_handler;
+
+static void sflow_timer(void *cookie);
+static void *sflow_alloc(void *magic, SFLAgent *agent, size_t bytes);
+static int sflow_free(void *magic, SFLAgent *agent, void *obj);
+static void sflow_error(void *magic, SFLAgent *agent, char *msg);
+static void sflow_send_packet(void *magic, SFLAgent *agent,
+                              SFLReceiver *receiver, uint8_t *pkt,
+                              uint32_t pktLen);
+
+static SFLAgent dummy_agent;
 
 /*
  * sflowa_init
@@ -53,14 +75,14 @@ static sflowa_sampling_rate_handler_f sflowa_sampling_rate_handler;
 indigo_error_t
 sflowa_init(void)
 {
+    indigo_error_t rv;
+
     if (sflowa_initialized) return INDIGO_ERROR_NONE;
 
     /*
      * Record current time as the system boot time. This time will be used
      * to calculate switch uptime needed in sflow datagrams.
      */
-    start_time = os_time_monotonic();
-
     AIM_LOG_TRACE("init");
 
     indigo_core_gentable_register("sflow_collector", &sflow_collector_ops, NULL,
@@ -69,10 +91,59 @@ sflowa_init(void)
                                   SFLOWA_CONFIG_OF_PORTS_MAX, 128,
                                   &sflow_sampler_table);
 
+    /*
+     * Register a 1 sec timer which would send a tick to the host sFlow agent
+     */
+    if ((rv = ind_soc_timer_event_register(sflow_timer, NULL, 1000)) < 0) {
+        AIM_DIE("Failed to register Sflow agent timer: %s",
+                indigo_strerror(rv));
+    }
+
+    /*
+     * Init the dummy agent
+     */
+    SFLAddress dummy_ip = {
+        .type = SFLADDRESSTYPE_IP_V4,
+        .address.ip_v4.addr = 0,
+    };
+    sfl_agent_init(&dummy_agent, &dummy_ip, 1, time(NULL), time(NULL), NULL,
+                   sflow_alloc, sflow_free, sflow_error, sflow_send_packet);
+
+    /*
+     * Add a dummy receiver
+     */
+    SFLReceiver *dummy_receiver = sfl_agent_addReceiver(&dummy_agent);
+
+    /*
+     * set the receiver timeout to infinity
+     */
+    sfl_receiver_set_sFlowRcvrTimeout(dummy_receiver, 0xFFFFFFFF);
+
     sflowa_initialized = true;
     sflowa_sampling_rate_handler = NULL;
 
     return INDIGO_ERROR_NONE;
+}
+
+/*
+ * sflowa_finish
+ *
+ * API to deinit the Sflow Agent
+ */
+void
+sflowa_finish(void)
+{
+    indigo_core_gentable_unregister(sflow_collector_table);
+    indigo_core_gentable_unregister(sflow_sampler_table);
+    ind_soc_timer_event_unregister(sflow_timer, NULL);
+
+    /*
+     * Deinit the dummy agent, this will remove the dummy receiver as well
+     */
+    sfl_agent_release(&dummy_agent);
+
+    sflowa_initialized = false;
+    sflowa_sampling_rate_handler = NULL;
 }
 
 /*
@@ -99,6 +170,64 @@ sflowa_sampling_rate_handler_unregister(sflowa_sampling_rate_handler_f fn)
     }
 
     sflowa_sampling_rate_handler = NULL;
+}
+
+/*
+ * sflow_timer
+ *
+ * Trigger a tick to the host sFlow agent
+ */
+static void
+sflow_timer(void *cookie)
+{
+    sfl_agent_tick(&dummy_agent, time(NULL));
+}
+
+/*
+ * sflow_alloc
+ *
+ * Callback to allocate memory for host sFlow agent
+ */
+static void *
+sflow_alloc(void *magic, SFLAgent *agent, size_t bytes)
+{
+    return aim_zmalloc(bytes);
+}
+
+/*
+ * sflow_free
+ *
+ * Callback to free memory allocated by sflow_alloc()
+ */
+static int
+sflow_free(void *magic, SFLAgent *agent, void *obj)
+{
+    aim_free(obj);
+    return 1;
+}
+
+/*
+ * sflow_error
+ *
+ * Callback to log errors in host sFlow agent
+ */
+static void
+sflow_error(void *magic, SFLAgent *agent, char *msg)
+{
+    AIM_LOG_TRACE("%s", msg);
+}
+
+/*
+ * sflow_send_packet
+ *
+ * Callback to send a sflow datagram out to the collectors
+ */
+static void
+sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
+                  uint8_t *pkt, uint32_t pktLen)
+{
+
+
 }
 
 /*
@@ -562,6 +691,19 @@ sflow_sampler_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
     *entry_priv = entry;
 
     /*
+     * Add sampler for this port
+     */
+    SFLDataSource_instance dsi;
+    SFL_DS_SET(dsi, 0, entry->key.port_no, 0);
+    SFLSampler *sampler = sfl_agent_addSampler(&dummy_agent, &dsi);
+    sfl_sampler_set_sFlowFsPacketSamplingRate(sampler,
+                                              entry->value.sampling_rate);
+    sfl_sampler_set_sFlowFsMaximumHeaderSize(sampler, entry->value.header_size);
+    sfl_sampler_set_sFlowFsReceiver(sampler, SFLOW_RECEIVER_INDEX);
+
+    //Todo: add a poller for this interface too
+
+    /*
      * Send notifications to enable sampling on this port
      */
     sflow_sampling_rate_notify(entry->key.port_no, entry->value.sampling_rate);
@@ -595,6 +737,16 @@ sflow_sampler_modify(void *table_priv, void *entry_priv,
     entry->value = value;
 
     /*
+     * Update Sampler fields
+     */
+    SFLSampler *sampler = sfl_agent_getSamplerByIfIndex(&dummy_agent,
+                                                        entry->key.port_no);
+    AIM_ASSERT(sampler, "NULL Sampler");
+    sfl_sampler_set_sFlowFsPacketSamplingRate(sampler,
+                                              entry->value.sampling_rate);
+    sfl_sampler_set_sFlowFsMaximumHeaderSize(sampler, entry->value.header_size);
+
+    /*
      * Notify about the change in sampling rate on this port
      */
     sflow_sampling_rate_notify(entry->key.port_no, entry->value.sampling_rate);
@@ -620,8 +772,15 @@ sflow_sampler_delete(void *table_priv, void *entry_priv,
     /*
      * Set the sampling rate to 0 to disable sampling on this port
      * Send notifications to disable sampling on this port
+     *
+     * Also remove the Sampler and Poller instances.
      */
     sflow_sampling_rate_notify(entry->key.port_no, 0);
+
+    SFLDataSource_instance dsi;
+    SFL_DS_SET(dsi, 0, entry->key.port_no, 0);
+    sfl_agent_removeSampler(&dummy_agent, &dsi);
+
     SFLOWA_MEMSET(entry, 0, sizeof(*entry));
 
     return INDIGO_ERROR_NONE;

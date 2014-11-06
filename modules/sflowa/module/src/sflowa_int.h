@@ -29,6 +29,7 @@
 #include <sflowa/sflowa.h>
 #include <loci/loci.h>
 #include <indigo/of_state_manager.h>
+#include <SocketManager/socketmanager.h>
 #include <AIM/aim_list.h>
 #include <host_sflow/host_sflow.h>
 

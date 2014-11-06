@@ -35,6 +35,11 @@
 indigo_error_t sflowa_init (void);
 
 /**
+ * @brief API to deinit the Sflow Agent
+ */
+void sflowa_finish(void);
+
+/**
  * @brief Sampling rate update handler
  * @param port_no The OF port number for which sampling rate is being configured
  * @param sampling_rate The ratio of packets observed at the port
