@@ -57,19 +57,12 @@ static const indigo_core_gentable_ops_t sflow_collector_ops;
 static const indigo_core_gentable_ops_t sflow_sampler_ops;
 
 static bool sflowa_initialized = false;
+static uint16_t sflow_enabled_ports = 0;
 
 static sflow_sampler_entry_t sampler_entries[SFLOWA_CONFIG_OF_PORTS_MAX+1];
 static LIST_DEFINE(sflow_collectors);
 
 static sflowa_sampling_rate_handler_f sflowa_sampling_rate_handler;
-
-static void sflow_timer(void *cookie);
-static void *sflow_alloc(void *magic, SFLAgent *agent, size_t bytes);
-static int sflow_free(void *magic, SFLAgent *agent, void *obj);
-static void sflow_error(void *magic, SFLAgent *agent, char *msg);
-static void sflow_send_packet(void *magic, SFLAgent *agent,
-                              SFLReceiver *receiver, uint8_t *pkt,
-                              uint32_t pktLen);
 
 static SFLAgent dummy_agent;
 
@@ -82,8 +75,6 @@ static SFLAgent dummy_agent;
 indigo_error_t
 sflowa_init(void)
 {
-    indigo_error_t rv;
-
     if (sflowa_initialized) return INDIGO_ERROR_NONE;
 
     /*
@@ -97,34 +88,6 @@ sflowa_init(void)
     indigo_core_gentable_register("sflow_sampler", &sflow_sampler_ops, NULL,
                                   SFLOWA_CONFIG_OF_PORTS_MAX, 128,
                                   &sflow_sampler_table);
-
-    /*
-     * Register a 1 sec timer which would send a tick to the host sFlow agent
-     */
-    if ((rv = ind_soc_timer_event_register(sflow_timer, NULL, 1000)) < 0) {
-        AIM_DIE("Failed to register Sflow agent timer: %s",
-                indigo_strerror(rv));
-    }
-
-    /*
-     * Init the dummy agent
-     */
-    SFLAddress dummy_ip = {
-        .type = SFLADDRESSTYPE_IP_V4,
-        .address.ip_v4.addr = 0,
-    };
-    sfl_agent_init(&dummy_agent, &dummy_ip, 1, time(NULL), time(NULL), NULL,
-                   sflow_alloc, sflow_free, sflow_error, sflow_send_packet);
-
-    /*
-     * Add a dummy receiver
-     */
-    SFLReceiver *dummy_receiver = sfl_agent_addReceiver(&dummy_agent);
-
-    /*
-     * set the receiver timeout to infinity
-     */
-    sfl_receiver_set_sFlowRcvrTimeout(dummy_receiver, 0xFFFFFFFF);
 
     sflowa_initialized = true;
     sflowa_sampling_rate_handler = NULL;
@@ -142,12 +105,6 @@ sflowa_finish(void)
 {
     indigo_core_gentable_unregister(sflow_collector_table);
     indigo_core_gentable_unregister(sflow_sampler_table);
-    ind_soc_timer_event_unregister(sflow_timer, NULL);
-
-    /*
-     * Deinit the dummy agent, this will remove the dummy receiver as well
-     */
-    sfl_agent_release(&dummy_agent);
 
     sflowa_initialized = false;
     sflowa_sampling_rate_handler = NULL;
@@ -235,6 +192,75 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
 {
 
 
+}
+
+/*
+ * sflow_add_hsflow_agent
+ *
+ * Init the dummy host sflow agent when the first
+ * sampler table entry is added
+ */
+static void
+sflow_add_hsflow_agent(void)
+{
+    if (sflow_enabled_ports == 0) {
+
+        AIM_LOG_TRACE("Init the host sflow agent");
+
+        /*
+         * Register a 1 sec timer which would send a tick
+         * to the host sFlow agent
+         */
+        indigo_error_t rv;
+        if ((rv = ind_soc_timer_event_register(sflow_timer, NULL, 1000)) < 0) {
+            AIM_DIE("Failed to register Sflow agent timer: %s",
+                    indigo_strerror(rv));
+        }
+
+        /*
+         * Init the dummy agent
+         */
+        SFLAddress dummy_ip = {
+            .type = SFLADDRESSTYPE_IP_V4,
+            .address.ip_v4.addr = 0,
+        };
+        sfl_agent_init(&dummy_agent, &dummy_ip, 1, time(NULL), time(NULL), NULL,
+                       sflow_alloc, sflow_free, sflow_error, sflow_send_packet);
+
+        /*
+         * Add a dummy receiver
+         */
+        SFLReceiver *dummy_receiver = sfl_agent_addReceiver(&dummy_agent);
+
+        /*
+         * set the receiver timeout to infinity
+         */
+        sfl_receiver_set_sFlowRcvrTimeout(dummy_receiver, 0xFFFFFFFF);
+    }
+
+    ++sflow_enabled_ports;
+}
+
+/*
+ * sflow_remove_hsflow_agent
+ *
+ * Deinit the dummy host sflow agent when the last
+ * sampler table entry is deleted
+ */
+static void
+sflow_remove_hsflow_agent(void)
+{
+    --sflow_enabled_ports;
+
+    if (sflow_enabled_ports == 0) {
+        AIM_LOG_TRACE("Deinit the host sflow agent");
+        ind_soc_timer_event_unregister(sflow_timer, NULL);
+
+        /*
+         * Deinit the dummy agent, this will remove the dummy receiver as well
+         */
+        sfl_agent_release(&dummy_agent);
+    }
 }
 
 /*
@@ -776,6 +802,8 @@ sflow_sampler_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
 
     *entry_priv = entry;
 
+    sflow_add_hsflow_agent();
+
     /*
      * Add sampler for this port
      */
@@ -866,6 +894,7 @@ sflow_sampler_delete(void *table_priv, void *entry_priv,
     SFLDataSource_instance dsi;
     SFL_DS_SET(dsi, 0, entry->key.port_no, 0);
     sfl_agent_removeSampler(&dummy_agent, &dsi);
+    sflow_remove_hsflow_agent();
 
     SFLOWA_MEMSET(entry, 0, sizeof(*entry));
 
