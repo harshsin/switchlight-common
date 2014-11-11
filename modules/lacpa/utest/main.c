@@ -49,6 +49,7 @@ lacp_create_send_packet_in (of_port_no_t in_port, of_octets_t *of_octets)
         return INDIGO_ERROR_RESOURCE;
     }
 
+    memset(&match, 0, sizeof(of_match_t));
     of_packet_in_total_len_set(of_packet_in, of_octets->bytes);
 
     match.version = OF_VERSION_1_3;
