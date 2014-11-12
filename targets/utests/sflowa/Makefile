@@ -20,7 +20,7 @@
 include ../../../init.mk
 MODULE := sflowa_utest
 TEST_MODULE := sflowa
-DEPENDMODULES := AIM indigo loci debug_counter OS BigList
+DEPENDMODULES := AIM indigo loci debug_counter OS BigList host_sflow
 DEPENDMODULE_HEADERS := slshared
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MODULES_INIT=1
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MAIN=1

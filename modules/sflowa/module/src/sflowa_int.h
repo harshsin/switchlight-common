@@ -30,6 +30,7 @@
 #include <loci/loci.h>
 #include <indigo/of_state_manager.h>
 #include <AIM/aim_list.h>
+#include <host_sflow/host_sflow.h>
 
 typedef struct sflow_collector_entry_key_s { /* sflow_collector_entry_key */
     uint32_t collector_ip;
@@ -70,11 +71,6 @@ typedef struct sflow_sampler_entry_s { /* sflow_sampler_entry */
     sflow_sampler_entry_key_t key;
     sflow_sampler_entry_value_t value;
 } sflow_sampler_entry_t;
-
-typedef struct sflow_collector_cache_entry_s { /* sflow_collector_cache_entry */
-    sflow_collector_entry_t entry;
-    list_links_t  links;
-} sflow_collector_cache_entry_t;
 
 list_head_t *sflow_collectors_list(void);
 
