@@ -80,6 +80,12 @@ typedef enum sflow_send_mode_e { /* sflow_send_mode */
     SFLOW_SEND_MODE_DATAPLANE,
 } sflow_send_mode_t;
 
+/* Internal functions used by utest module */
 list_head_t *sflow_collectors_list(void);
+
+void sflow_timer(void *cookie);
+
+indigo_core_listener_result_t
+sflowa_packet_in_handler(of_packet_in_t *packet_in);
 
 #endif /* __SFLOWA_INT_H__ */

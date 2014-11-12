@@ -35,6 +35,9 @@
 
 #include <AIM/aim.h>
 #include <debug_counter/debug_counter.h>
+#include <OS/os_time.h>
+#include <PPE/ppe.h>
+#include <fcntl.h>
 #include "sflowa_int.h"
 #include "sflowa_log.h"
 
@@ -42,11 +45,6 @@
  * only one dummy receiver, so the receiverIndex is a constant
  */
 #define SFLOW_RECEIVER_INDEX 1
-
-/*
- * Send buffer size of 2MB
- */
-#define SFLOW_SND_BUF 2000000
 
 static const of_mac_addr_t zero_mac = { {0x00, 0x00, 0x00, 0x00, 0x00, 0x00} };
 
@@ -65,6 +63,7 @@ static LIST_DEFINE(sflow_collectors);
 static sflowa_sampling_rate_handler_f sflowa_sampling_rate_handler;
 
 static SFLAgent dummy_agent;
+aim_ratelimiter_t sflow_pktin_log_limiter;
 
 /*
  * sflowa_init
@@ -89,6 +88,17 @@ sflowa_init(void)
                                   SFLOWA_CONFIG_OF_PORTS_MAX, 128,
                                   &sflow_sampler_table);
 
+    /*
+     * Register listerner for packet_in
+     */
+    if (indigo_core_packet_in_listener_register(
+        (indigo_core_packet_in_listener_f) sflowa_packet_in_handler) < 0) {
+        AIM_LOG_ERROR("Failed to register for packet_in in SFLOW module");
+        return INDIGO_ERROR_INIT;
+    }
+
+    aim_ratelimiter_init(&sflow_pktin_log_limiter, 1000*1000, 5, NULL);
+
     sflowa_initialized = true;
     sflowa_sampling_rate_handler = NULL;
 
@@ -105,6 +115,7 @@ sflowa_finish(void)
 {
     indigo_core_gentable_unregister(sflow_collector_table);
     indigo_core_gentable_unregister(sflow_sampler_table);
+    indigo_core_packet_in_listener_unregister(sflowa_packet_in_handler);
 
     sflowa_initialized = false;
     sflowa_sampling_rate_handler = NULL;
@@ -137,11 +148,163 @@ sflowa_sampling_rate_handler_unregister(sflowa_sampling_rate_handler_f fn)
 }
 
 /*
+ * sflowa_receive_packet
+ *
+ * API to construct a flow sample and submit it to host sFlow agent
+ * which will construct a sflow datagram for us
+ *
+ * This api can be used to send a sflow sampled packet directly
+ * to the sflow agent
+ */
+static indigo_error_t
+sflowa_receive_packet(of_octets_t *octets, of_port_no_t in_port)
+{
+    ppe_packet_t ppep;
+
+    AIM_ASSERT(octets, "NULL input to pkt receive api");
+    AIM_ASSERT(octets->data, "NULL data in pkt receive api");
+
+    AIM_LOG_TRACE("Sampled packet_in received for in_port: %u", in_port);
+
+    ppe_packet_init(&ppep, octets->data, octets->bytes);
+    if (ppe_parse(&ppep) < 0) {
+        AIM_LOG_RL_ERROR(&sflow_pktin_log_limiter, os_time_monotonic(),
+                         "Packet_in parsing failed.");
+        return INDIGO_ERROR_PARSE;
+    }
+
+    /*
+     * Identify if this is an ethernet Packet
+     */
+    if (!ppe_header_get(&ppep, PPE_HEADER_8021Q) &&
+        !ppe_header_get(&ppep, PPE_HEADER_ETHERNET)) {
+        AIM_LOG_RL_ERROR(&sflow_pktin_log_limiter, os_time_monotonic(),
+                         "Not an ethernet packet.");
+        return INDIGO_ERROR_UNKNOWN;
+    }
+
+    /*
+     * Get the sampler for this in_port
+     */
+    SFLSampler *sampler = sfl_agent_getSamplerByIfIndex(&dummy_agent, in_port);
+    AIM_ASSERT(sampler, "Packet_in handler: NULL Sampler");
+
+    /*
+     * Construct a flow record entry for this sample
+     */
+    SFLFlow_sample_element hdr_element = { 0 };
+    hdr_element.tag = SFLFLOW_HEADER;
+
+    hdr_element.flowType.header.frame_length = octets->bytes + 4;
+    hdr_element.flowType.header.stripped = 4; //CRC_bytes
+
+    /*
+     * Set the header_protocol to ethernet
+     */
+    hdr_element.flowType.header.header_protocol = SFLHEADER_ETHERNET_ISO8023;
+    hdr_element.flowType.header.header_length = (octets->bytes <
+                                          sampler->sFlowFsMaximumHeaderSize)?
+                                          octets->bytes :
+                                          sampler->sFlowFsMaximumHeaderSize;
+    hdr_element.flowType.header.header_bytes = octets->data;
+
+    /*
+     * Construct a flow sample
+     */
+    SFL_FLOW_SAMPLE_TYPE fs = { 0 };
+    SFLADD_ELEMENT(&fs, &hdr_element);
+    fs.input = in_port;
+
+    /*
+     * Estimate the sample pool from the samples.
+     */
+    sampler->samplePool += sampler->sFlowFsPacketSamplingRate;
+
+    /*
+     * Submit the flow sample to the sampler for constructing
+     * a sflow datagram. Host sFlow agent will take care of filling
+     * the rest of the fields.
+     */
+    sfl_sampler_writeFlowSample(sampler, &fs);
+
+    return INDIGO_ERROR_NONE;
+}
+
+/*
+ * sflowa_packet_in_handler
+ *
+ * API for handling incoming sflow samples
+ */
+indigo_core_listener_result_t
+sflowa_packet_in_handler(of_packet_in_t *packet_in)
+{
+    of_octets_t  octets;
+    of_port_no_t in_port;
+    of_match_t   match;
+
+    if (!sflowa_initialized) return INDIGO_CORE_LISTENER_RESULT_PASS;
+
+    of_packet_in_data_get(packet_in, &octets);
+
+    /*
+     * Identify the ingress port
+     */
+    if (packet_in->version <= OF_VERSION_1_1) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    } else {
+        if (of_packet_in_match_get(packet_in, &match) < 0) {
+            AIM_LOG_INTERNAL("match get failed");
+            return INDIGO_CORE_LISTENER_RESULT_PASS;
+        }
+        in_port = match.fields.in_port;
+    }
+
+    if (in_port > SFLOWA_CONFIG_OF_PORTS_MAX) {
+        AIM_LOG_INTERNAL("Port no: %u Out of Range %u",
+                         in_port, SFLOWA_CONFIG_OF_PORTS_MAX);
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    /*
+     * Check the packet-in reasons in metadata to
+     * identify if this is a sflow packet
+     */
+    if (match.fields.metadata ^ OFP_BSN_PKTIN_FLAG_SFLOW) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    sflowa_receive_packet(&octets, in_port);
+    return INDIGO_CORE_LISTENER_RESULT_DROP;
+}
+
+/*
+ * sflow_get_send_mode
+ *
+ * Return sflow datagram sending mode - mgmt nw or dataplane
+ */
+static sflow_send_mode_t
+sflow_get_send_mode(sflow_collector_entry_t *entry)
+{
+    /*
+     * If vlan_id, agent_mac, agent_udp_sport and collector_mac
+     * are all zero's then we can safely assume to send sflow
+     * datagrams over management network.
+     */
+    if (!entry->value.vlan_id && !entry->value.agent_udp_sport
+        && !memcmp(&entry->value.agent_mac, &zero_mac, OF_MAC_ADDR_BYTES)
+        && !memcmp(&entry->value.collector_mac, &zero_mac, OF_MAC_ADDR_BYTES)) {
+        return SFLOW_SEND_MODE_MGMT;
+    }
+
+    return SFLOW_SEND_MODE_DATAPLANE;
+}
+
+/*
  * sflow_timer
  *
  * Trigger a tick to the host sFlow agent
  */
-static void
+void
 sflow_timer(void *cookie)
 {
     sfl_agent_tick(&dummy_agent, time(NULL));
@@ -190,8 +353,63 @@ static void
 sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
                   uint8_t *pkt, uint32_t pktLen)
 {
+    AIM_LOG_TRACE("Received callback to send packet with %u bytes", pktLen);
 
+    /*
+     * Loop through the list of collectors and depending on their send mode,
+     * send the sflow datagram
+     */
+    list_head_t *list = sflow_collectors_list();
+    list_links_t *cur;
+    LIST_FOREACH(list, cur) {
+        sflow_collector_entry_t *entry = container_of(cur, links,
+                                                      sflow_collector_entry_t);
 
+        /*
+         * Change the agent ip in the sflow datagram from dummy to actual
+         */
+        uint32_t sub_agent_id = htonl(entry->value.sub_agent_id);
+        uint32_t agent_ip = htonl(entry->value.agent_ip);
+        memcpy(pkt+8, &agent_ip, sizeof(entry->value.agent_ip));
+        memcpy(pkt+12, &sub_agent_id, sizeof(sub_agent_id));
+
+        switch(sflow_get_send_mode(entry)) {
+        case SFLOW_SEND_MODE_MGMT: {
+
+            /*
+             * Send to collector socket, since sflow can be lossy,
+             * log any errors while sending - EAGAIN or EWOULDBLOCK, EINTR
+             * and move on
+             */
+           int result = sendto(entry->sd, pkt, pktLen, 0,
+                               (struct sockaddr *)&entry->send_socket,
+                               sizeof(struct sockaddr_in));
+            if (result < 0) {
+                if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                    AIM_LOG_ERROR("socket: %d, buffer full");
+                } else {
+                    AIM_LOG_ERROR("socket: %d, sendto error: %s", entry->sd,
+                                  strerror(errno));
+                }
+            } else if (result == 0) {
+                AIM_LOG_ERROR("socket: %d, sendto returned 0: %s", entry->sd,
+                              strerror(errno));
+            } else {
+                AIM_LOG_TRACE("socket: %d, successfully sent %u bytes to "
+                              "collector: %{ipv4a}", entry->sd, pktLen,
+                              entry->key.collector_ip);
+            }
+
+            break;
+        }
+
+        case SFLOW_SEND_MODE_DATAPLANE:
+            break;
+
+        default:
+            break;
+        }
+    }
 }
 
 /*
@@ -290,28 +508,6 @@ sflow_collectors_list(void)
 }
 
 /*
- * sflow_get_send_mode
- *
- * Return sflow datagram sending mode - mgmt nw or dataplane
- */
-static sflow_send_mode_t
-sflow_get_send_mode(sflow_collector_entry_t *entry)
-{
-    /*
-     * If vlan_id, agent_mac, agent_udp_sport and collector_mac
-     * are all zero's then we can safely assume to send sflow
-     * datagrams over management network.
-     */
-    if (!entry->value.vlan_id && !entry->value.agent_udp_sport
-        && !memcmp(&entry->value.agent_mac, &zero_mac, OF_MAC_ADDR_BYTES)
-        && !memcmp(&entry->value.collector_mac, &zero_mac, OF_MAC_ADDR_BYTES)) {
-        return SFLOW_SEND_MODE_MGMT;
-    }
-
-    return SFLOW_SEND_MODE_DATAPLANE;
-}
-
-/*
  * sflow_init_socket
  *
  * Open a UDP Socket to send sflow datagrams to the collector
@@ -334,14 +530,18 @@ sflow_init_socket(sflow_collector_entry_t *entry)
             return INDIGO_ERROR_UNKNOWN;
         } else {
 
+            AIM_LOG_TRACE("Created socket: %d, for collector: %{ipv4a}", entry->sd,
+                          entry->key.collector_ip);
+
             /*
-             * increase tx buffer size
+             * Make the socket non-blocking
              */
-            uint32_t sndbuf = SFLOW_SND_BUF;
-            if (setsockopt(entry->sd, SOL_SOCKET, SO_SNDBUF, &sndbuf,
-                sizeof(sndbuf)) < 0) {
-                AIM_LOG_ERROR("setsockopt(SO_SNDBUF=%u) failed: %s",
-                              SFLOW_SND_BUF, strerror(errno));
+            int soc_flags = fcntl(entry->sd, F_GETFL, 0);
+            if (soc_flags == -1 || fcntl(entry->sd, F_SETFL,
+                                         soc_flags | O_NONBLOCK) == -1) {
+                AIM_LOG_ERROR("Failed to set non-blocking flag for socket: %s",
+                              strerror(errno));
+                close(entry->sd);
                 return INDIGO_ERROR_UNKNOWN;
             }
         }
@@ -350,7 +550,7 @@ sflow_init_socket(sflow_collector_entry_t *entry)
     struct sockaddr_in *sa = &(entry->send_socket);
     sa->sin_port = htons(entry->value.collector_udp_dport);
     sa->sin_family = AF_INET;
-    sa->sin_addr.s_addr = entry->key.collector_ip;
+    sa->sin_addr.s_addr = htonl(entry->key.collector_ip);
 
     return INDIGO_ERROR_NONE;
 }
@@ -855,7 +1055,7 @@ sflow_sampler_modify(void *table_priv, void *entry_priv,
      */
     SFLSampler *sampler = sfl_agent_getSamplerByIfIndex(&dummy_agent,
                                                         entry->key.port_no);
-    AIM_ASSERT(sampler, "NULL Sampler");
+    AIM_ASSERT(sampler, "Sampler table modify: NULL Sampler");
     sfl_sampler_set_sFlowFsPacketSamplingRate(sampler,
                                               entry->value.sampling_rate);
     sfl_sampler_set_sFlowFsMaximumHeaderSize(sampler, entry->value.header_size);
