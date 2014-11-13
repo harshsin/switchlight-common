@@ -85,7 +85,7 @@ sflowa_init(void)
                                   &sflow_sampler_table);
 
     /*
-     * Register listerner for packet_in
+     * Register listener for packet_in
      */
     if (indigo_core_packet_in_listener_register(
         (indigo_core_packet_in_listener_f) sflowa_packet_in_handler) < 0) {
@@ -337,7 +337,7 @@ sflow_free(void *magic, SFLAgent *agent, void *obj)
 static void
 sflow_error(void *magic, SFLAgent *agent, char *msg)
 {
-    AIM_LOG_TRACE("%s", msg);
+    AIM_LOG_ERROR("%s", msg);
 }
 
 /*
@@ -362,7 +362,9 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
                                                       sflow_collector_entry_t);
 
         /*
-         * Change the agent ip in the sflow datagram from dummy to actual
+         * Change the agent ip and sub_agent_id in the sflow datagram
+         * from dummy to actual.
+         * Agent ip starts at byte 8 and sub agent id at byte 12.
          */
         uint32_t sub_agent_id = htonl(entry->value.sub_agent_id);
         uint32_t agent_ip = htonl(entry->value.agent_ip);
@@ -372,17 +374,22 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
         switch(sflow_get_send_mode(entry)) {
         case SFLOW_SEND_MODE_MGMT: {
 
+            struct sockaddr_in sa;
+            sa.sin_port = htons(entry->value.collector_udp_dport);
+            sa.sin_family = AF_INET;
+            sa.sin_addr.s_addr = htonl(entry->key.collector_ip);
+
             /*
              * Send to collector socket, since sflow can be lossy,
              * log any errors while sending - EAGAIN or EWOULDBLOCK, EINTR
              * and move on
              */
            int result = sendto(entry->sd, pkt, pktLen, 0,
-                               (struct sockaddr *)&entry->send_socket,
+                               (struct sockaddr *)&sa,
                                sizeof(struct sockaddr_in));
             if (result < 0) {
                 if (errno == EWOULDBLOCK || errno == EAGAIN) {
-                    AIM_LOG_ERROR("socket: %d, buffer full");
+                    AIM_LOG_WARN("socket: %d, buffer full");
                 } else {
                     AIM_LOG_ERROR("socket: %d, sendto error: %s", entry->sd,
                                   strerror(errno));
@@ -542,11 +549,6 @@ sflow_init_socket(sflow_collector_entry_t *entry)
             }
         }
     }
-
-    struct sockaddr_in *sa = &(entry->send_socket);
-    sa->sin_port = htons(entry->value.collector_udp_dport);
-    sa->sin_family = AF_INET;
-    sa->sin_addr.s_addr = htonl(entry->key.collector_ip);
 
     return INDIGO_ERROR_NONE;
 }
@@ -799,7 +801,6 @@ sflow_collector_modify(void *table_priv, void *entry_priv,
                   value.sub_agent_id);
 
     entry->value = value;
-    sflow_init_socket(entry);
 
     return INDIGO_ERROR_NONE;
 }

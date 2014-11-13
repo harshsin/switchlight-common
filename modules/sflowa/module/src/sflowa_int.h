@@ -57,7 +57,6 @@ typedef struct sflow_collector_entry_s { /* sflow_collector_entry */
     sflow_collector_entry_value_t value;
     sflow_collector_entry_stats_t stats;
     int sd;
-    struct sockaddr_in send_socket;
     list_links_t  links;
 } sflow_collector_entry_t;
 
