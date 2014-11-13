@@ -76,10 +76,6 @@ sflowa_init(void)
 {
     if (sflowa_initialized) return INDIGO_ERROR_NONE;
 
-    /*
-     * Record current time as the system boot time. This time will be used
-     * to calculate switch uptime needed in sflow datagrams.
-     */
     AIM_LOG_TRACE("init");
 
     indigo_core_gentable_register("sflow_collector", &sflow_collector_ops, NULL,
