@@ -69,7 +69,6 @@ uint8_t expected[172] = {0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x01, 0xc0, 0
                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x60, 0x00, 0x00, 0x00, 0x01,
                          0x00, 0x00, 0x00, 0x52, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x4e};
 
-static of_port_no_t send_port;
 static int fd;
 
 void
@@ -503,7 +502,7 @@ receive_socket(void)
     AIM_ASSERT(recvlen, "received 0 bytes from fd");
     AIM_ASSERT(recvlen != -1, "recvfrom() failed with %s", strerror(errno));
     memcpy(&expected[92], sample, PACKET_BUF_SIZE);
-    AIM_ASSERT(!memcmp(buf, expected, 172), "mismatch in recv output");
+    AIM_ASSERT(!memcmp(buf, expected, recvlen), "mismatch in recv output");
 
 #ifdef PRINT_PKT
     printf("received %d bytes\n", recvlen);
@@ -561,8 +560,7 @@ test_sampled_packet_in(void)
     /* Create and send a sflow sampled packet_in */
     octets.data = sample;
     octets.bytes = PACKET_BUF_SIZE;
-    send_port = 10;
-    sflow_create_send_packet_in(&octets, send_port);
+    sflow_create_send_packet_in(&octets, 10);
     sflow_timer(NULL);
 
     /* receive sflow datagrams from agent */
