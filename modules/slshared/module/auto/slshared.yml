@@ -26,6 +26,9 @@ cdefs: &cdefs
 - SLSHARED_CONFIG_UDP_HEADER_SIZE:
     doc: "Size of udp header"
     default: 8
+- SLSHARED_CONFIG_PACKET_IN_REASON_SFLOW:
+    doc: "Packet-in reason code for sflow packets"
+    default: 0x2
 
 definitions:
   cdefs:
