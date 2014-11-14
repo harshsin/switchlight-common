@@ -29,6 +29,7 @@
 #include <sflowa/sflowa.h>
 #include <loci/loci.h>
 #include <indigo/of_state_manager.h>
+#include <SocketManager/socketmanager.h>
 #include <AIM/aim_list.h>
 #include <host_sflow/host_sflow.h>
 
@@ -55,6 +56,7 @@ typedef struct sflow_collector_entry_s { /* sflow_collector_entry */
     sflow_collector_entry_key_t key;
     sflow_collector_entry_value_t value;
     sflow_collector_entry_stats_t stats;
+    int sd;
     list_links_t  links;
 } sflow_collector_entry_t;
 
@@ -72,6 +74,17 @@ typedef struct sflow_sampler_entry_s { /* sflow_sampler_entry */
     sflow_sampler_entry_value_t value;
 } sflow_sampler_entry_t;
 
+typedef enum sflow_send_mode_e { /* sflow_send_mode */
+    SFLOW_SEND_MODE_MGMT,
+    SFLOW_SEND_MODE_DATAPLANE,
+} sflow_send_mode_t;
+
+/* Internal functions used by utest module */
 list_head_t *sflow_collectors_list(void);
+
+void sflow_timer(void *cookie);
+
+indigo_core_listener_result_t
+sflowa_packet_in_handler(of_packet_in_t *packet_in);
 
 #endif /* __SFLOWA_INT_H__ */
