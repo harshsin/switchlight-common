@@ -89,6 +89,16 @@
 #define SLSHARED_CONFIG_UDP_HEADER_SIZE 8
 #endif
 
+/**
+ * SLSHARED_CONFIG_PACKET_IN_REASON_SFLOW
+ *
+ * Packet-in reason code for sflow packets */
+
+
+#ifndef SLSHARED_CONFIG_PACKET_IN_REASON_SFLOW
+#define SLSHARED_CONFIG_PACKET_IN_REASON_SFLOW 2
+#endif
+
 
 
 /**

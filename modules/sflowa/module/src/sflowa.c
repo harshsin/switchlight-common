@@ -183,7 +183,10 @@ sflowa_receive_packet(of_octets_t *octets, of_port_no_t in_port)
      * Get the sampler for this in_port
      */
     SFLSampler *sampler = sfl_agent_getSamplerByIfIndex(&dummy_agent, in_port);
-    AIM_ASSERT(sampler, "Packet_in handler: NULL Sampler");
+    if (sampler == NULL) {
+        AIM_LOG_ERROR("NULL Sampler for port: %u", in_port);
+        return INDIGO_ERROR_UNKNOWN;
+    }
 
     /*
      * Construct a flow record entry for this sample
@@ -246,26 +249,39 @@ sflowa_packet_in_handler(of_packet_in_t *packet_in)
      * Identify the ingress port
      */
     if (packet_in->version <= OF_VERSION_1_1) {
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
+
+        /*
+         * For packets with version <= OF 1.1, check the reason field
+         * to identify if this is a sflow packet
+         */
+        uint8_t reason;
+        of_packet_in_reason_get(packet_in, &reason);
+        if (reason != SLSHARED_CONFIG_PACKET_IN_REASON_SFLOW) {
+            return INDIGO_CORE_LISTENER_RESULT_PASS;
+        }
+
+        of_packet_in_in_port_get(packet_in, &in_port);
     } else {
         if (of_packet_in_match_get(packet_in, &match) < 0) {
             AIM_LOG_INTERNAL("match get failed");
             return INDIGO_CORE_LISTENER_RESULT_PASS;
         }
+
+        /*
+         * Check the packet-in reasons in metadata to
+         * identify if this is a sflow packet
+         */
+        if (match.fields.metadata ^ OFP_BSN_PKTIN_FLAG_SFLOW) {
+            AIM_LOG_INFO("Sflow flag not set");
+            return INDIGO_CORE_LISTENER_RESULT_PASS;
+        }
+
         in_port = match.fields.in_port;
     }
 
     if (in_port > SFLOWA_CONFIG_OF_PORTS_MAX) {
         AIM_LOG_INTERNAL("Port no: %u Out of Range %u",
                          in_port, SFLOWA_CONFIG_OF_PORTS_MAX);
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
-    }
-
-    /*
-     * Check the packet-in reasons in metadata to
-     * identify if this is a sflow packet
-     */
-    if (match.fields.metadata ^ OFP_BSN_PKTIN_FLAG_SFLOW) {
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
