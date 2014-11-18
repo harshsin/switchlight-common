@@ -505,12 +505,14 @@ sflow_remove_hsflow_agent(void)
  *
  * Notify handler about the change in sampling rate
  */
-static void
+static indigo_error_t
 sflow_sampling_rate_notify(of_port_no_t port_no, uint32_t sampling_rate)
 {
-    if (sflowa_sampling_rate_handler != NULL) {
-        (*sflowa_sampling_rate_handler)(port_no, sampling_rate);
+    if (sflowa_sampling_rate_handler == NULL) {
+        return INDIGO_ERROR_INIT;
     }
+
+    return (*sflowa_sampling_rate_handler)(port_no, sampling_rate);
 }
 
 /*
@@ -1005,6 +1007,14 @@ sflow_sampler_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
         return rv;
     }
 
+    /*
+     * Send notifications to enable sampling on this port
+     */
+    rv = sflow_sampling_rate_notify(key.port_no, value.sampling_rate);
+    if (rv < 0) {
+        return rv;
+    }
+
     sflow_sampler_entry_t *entry = &sampler_entries[key.port_no];
     entry->key = key;
     entry->value = value;
@@ -1030,10 +1040,6 @@ sflow_sampler_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
 
     //Todo: add a poller for this interface too
 
-    /*
-     * Send notifications to enable sampling on this port
-     */
-    sflow_sampling_rate_notify(entry->key.port_no, entry->value.sampling_rate);
     return INDIGO_ERROR_NONE;
 }
 
@@ -1055,6 +1061,14 @@ sflow_sampler_modify(void *table_priv, void *entry_priv,
         return rv;
     }
 
+    /*
+     * Notify about the change in sampling rate on this port
+     */
+    rv = sflow_sampling_rate_notify(entry->key.port_no, value.sampling_rate);
+    if (rv < 0) {
+        return rv;
+    }
+
     AIM_LOG_TRACE("Modify sampler table entry, port: %u -> from sampling_rate: "
                   "%u, header_size: %u to sampling_rate: %u, header_size: %u",
                   entry->key.port_no, entry->value.sampling_rate,
@@ -1072,11 +1086,6 @@ sflow_sampler_modify(void *table_priv, void *entry_priv,
     sfl_sampler_set_sFlowFsPacketSamplingRate(sampler,
                                               entry->value.sampling_rate);
     sfl_sampler_set_sFlowFsMaximumHeaderSize(sampler, entry->value.header_size);
-
-    /*
-     * Notify about the change in sampling rate on this port
-     */
-    sflow_sampling_rate_notify(entry->key.port_no, entry->value.sampling_rate);
 
     return INDIGO_ERROR_NONE;
 }

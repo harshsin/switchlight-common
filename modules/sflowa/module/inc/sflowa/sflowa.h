@@ -48,8 +48,8 @@ void sflowa_finish(void);
  * Sampling rate of 1 signifies sample all packets and a sampling rate of 0
  * disables sampling.
  */
-typedef void (*sflowa_sampling_rate_handler_f)(of_port_no_t port_no,
-                                               uint32_t sampling_rate);
+typedef indigo_error_t (*sflowa_sampling_rate_handler_f)(of_port_no_t port_no,
+                                                         uint32_t sampling_rate);
 
 /**
  * @brief Register application specific handler for sampling rate update
