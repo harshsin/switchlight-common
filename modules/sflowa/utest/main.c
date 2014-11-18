@@ -525,7 +525,7 @@ test_sampled_packet_in(void)
 
     /* Add sampler_table entries */
     key = make_key_sampler(10);
-    value = make_value_sampler(512, 1500);
+    value = make_value_sampler(512, 256);
 
     AIM_ASSERT((rv = ops_sampler->add(table_priv_sampler, key, value,
                &sampler_entry_priv_1)) == INDIGO_ERROR_NONE,

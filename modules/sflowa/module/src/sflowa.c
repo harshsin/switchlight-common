@@ -46,6 +46,12 @@
  */
 #define SFLOW_RECEIVER_INDEX 1
 
+/*
+ * This is the maximum header_size we can get from the sampled packet
+ * because host sFlow agent breaks for anything over this size.
+ */
+#define SFLOW_MAX_HEADER_SIZE 1300
+
 static const of_mac_addr_t zero_mac = { {0x00, 0x00, 0x00, 0x00, 0x00, 0x00} };
 
 static indigo_core_gentable_t *sflow_collector_table;
@@ -972,6 +978,12 @@ sflow_sampler_parse_value(of_list_bsn_tlv_t *tlvs,
     } else {
         AIM_LOG_ERROR("expected header_size value TLV, instead got %s",
                       of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
+    if (value->header_size > SFLOW_MAX_HEADER_SIZE) {
+        AIM_LOG_ERROR("Header size out of range (%u), maximum allowed %u",
+                      value->header_size, SFLOW_MAX_HEADER_SIZE);
         return INDIGO_ERROR_PARAM;
     }
 
