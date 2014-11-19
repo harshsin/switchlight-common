@@ -331,6 +331,14 @@ make_value_sampler(uint32_t sampling_rate, uint32_t header_size)
     return list;
 }
 
+static indigo_error_t
+handler(uint32_t port_no, uint32_t sampling_rate)
+{
+    AIM_ASSERT(port_no == current_port_no, "Mismatch in port");
+    AIM_ASSERT(sampling_rate == current_sampling_rate, "Mismatch in sampling rate");
+
+    return INDIGO_ERROR_NONE;
+}
 
 static void
 test_sflow_sampler_table(void)
@@ -338,6 +346,11 @@ test_sflow_sampler_table(void)
     of_list_bsn_tlv_t *key, *value;
     indigo_error_t rv;
     void *entry_priv_1, *entry_priv_2;
+
+    /*
+     *  Register a sampling_rate handler fn
+     */
+    sflowa_sampling_rate_handler_register(handler);
 
     /*
      * Test add
@@ -384,22 +397,6 @@ test_sflow_sampler_table(void)
     AIM_ASSERT((rv = ops_sampler->del(table_priv_sampler, entry_priv_1, NULL))
                == INDIGO_ERROR_NONE,
                "Error in sampler table delete: %s\n", indigo_strerror(rv));
-}
-
-static void
-handler(uint32_t port_no, uint32_t sampling_rate)
-{
-    AIM_ASSERT(port_no == current_port_no, "Mismatch in port");
-    AIM_ASSERT(sampling_rate == current_sampling_rate, "Mismatch in sampling rate");
-}
-
-static void
-test_sampling_rate_handlers(void)
-{
-    /* Register a sampling_rate handler fn */
-    sflowa_sampling_rate_handler_register(handler);
-
-    test_sflow_sampler_table();
 
     sflowa_sampling_rate_handler_unregister(handler);
 }
@@ -521,12 +518,14 @@ test_sampled_packet_in(void)
     void *collector_entry_priv_1;
     of_octets_t octets;
 
+    sflowa_sampling_rate_handler_register(handler);
+
     /* init socket */
     init_socket();
 
     /* Add sampler_table entries */
     key = make_key_sampler(10);
-    value = make_value_sampler(512, 1500);
+    value = make_value_sampler(512, 256);
 
     AIM_ASSERT((rv = ops_sampler->add(table_priv_sampler, key, value,
                &sampler_entry_priv_1)) == INDIGO_ERROR_NONE,
@@ -570,10 +569,12 @@ test_sampled_packet_in(void)
     close_socket();
 
     /* Delete sampler_table entries */
+    current_sampling_rate = 0;
     AIM_ASSERT((rv = ops_sampler->del(table_priv_sampler, sampler_entry_priv_2,
                NULL)) == INDIGO_ERROR_NONE,
                "Error in sampler table delete: %s\n", indigo_strerror(rv));
 
+    current_port_no = 10;
     AIM_ASSERT((rv = ops_sampler->del(table_priv_sampler, sampler_entry_priv_1,
                NULL)) == INDIGO_ERROR_NONE,
                "Error in sampler table delete: %s\n", indigo_strerror(rv));
@@ -582,6 +583,8 @@ test_sampled_packet_in(void)
     AIM_ASSERT((rv = ops_collector->del(table_priv_collector,
                collector_entry_priv_1, NULL)) == INDIGO_ERROR_NONE,
                "Error in collector table delete: %s\n", indigo_strerror(rv));
+
+    sflowa_sampling_rate_handler_unregister(handler);
 }
 
 int aim_main(int argc, char* argv[])
@@ -591,7 +594,6 @@ int aim_main(int argc, char* argv[])
 
     test_sflow_collector_table();
     test_sflow_sampler_table();
-    test_sampling_rate_handlers();
     test_sampled_packet_in();
 
     sflowa_finish();
