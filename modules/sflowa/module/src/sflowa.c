@@ -423,6 +423,8 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
                 AIM_LOG_TRACE("socket: %d, successfully sent %u bytes to "
                               "collector: %{ipv4a}", entry->sd, pktLen,
                               entry->key.collector_ip);
+                ++entry->stats.tx_packets;
+                entry->stats.tx_bytes += pktLen;
             }
 
             break;
