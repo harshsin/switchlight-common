@@ -989,6 +989,25 @@ sflow_sampler_parse_value(of_list_bsn_tlv_t *tlvs,
         return INDIGO_ERROR_PARAM;
     }
 
+    if (of_list_bsn_tlv_next(tlvs, &tlv) < 0) {
+        AIM_LOG_ERROR("unexpected end of value list");
+        return INDIGO_ERROR_PARAM;
+    }
+
+    /* Polling interval */
+    if (tlv.object_id == OF_BSN_TLV_INTERVAL) {
+        of_bsn_tlv_interval_value_get(&tlv, &value->polling_interval);
+
+        /*
+         * Convert polling_interval from milliseconds to seconds
+         */
+        value->polling_interval = 1.0*(value->polling_interval)/1000;
+    } else {
+        AIM_LOG_ERROR("expected interval value TLV, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
     if (of_list_bsn_tlv_next(tlvs, &tlv) == 0) {
         AIM_LOG_ERROR("expected end of value list, instead got %s",
                       of_class_name(&tlv));
@@ -1034,8 +1053,9 @@ sflow_sampler_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
     entry->value = value;
 
     AIM_LOG_TRACE("Add sampler table entry, port: %u -> sampling_rate: %u, "
-                  "header_size: %u", entry->key.port_no,
-                  entry->value.sampling_rate, entry->value.header_size);
+                  "header_size: %u, polling_interval: %u", entry->key.port_no,
+                  entry->value.sampling_rate, entry->value.header_size,
+                  entry->value.polling_interval);
 
     *entry_priv = entry;
 
@@ -1084,10 +1104,11 @@ sflow_sampler_modify(void *table_priv, void *entry_priv,
     }
 
     AIM_LOG_TRACE("Modify sampler table entry, port: %u -> from sampling_rate: "
-                  "%u, header_size: %u to sampling_rate: %u, header_size: %u",
+                  "%u, header_size: %u, polling_interval: %u to sampling_rate: "
+                  "%u, header_size: %u, polling_interval: %u",
                   entry->key.port_no, entry->value.sampling_rate,
-                  entry->value.header_size, value.sampling_rate,
-                  value.header_size);
+                  entry->value.header_size, entry->value.polling_interval,
+                  value.sampling_rate, value.header_size, value.polling_interval);
 
     entry->value = value;
 
@@ -1116,8 +1137,9 @@ sflow_sampler_delete(void *table_priv, void *entry_priv,
     sflow_sampler_entry_t *entry = entry_priv;
 
     AIM_LOG_TRACE("Delete sampler table entry, port: %u -> sampling_rate: %u, "
-                  "header_size: %u", entry->key.port_no,
-                  entry->value.sampling_rate, entry->value.header_size);
+                  "header_size: %u, polling_interval: %u", entry->key.port_no,
+                  entry->value.sampling_rate, entry->value.header_size,
+                  entry->value.polling_interval);
 
     /*
      * Set the sampling rate to 0 to disable sampling on this port

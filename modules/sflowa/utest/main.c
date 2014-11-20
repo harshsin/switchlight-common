@@ -312,7 +312,8 @@ make_key_sampler(of_port_no_t port_no)
 }
 
 static of_list_bsn_tlv_t *
-make_value_sampler(uint32_t sampling_rate, uint32_t header_size)
+make_value_sampler(uint32_t sampling_rate, uint32_t header_size,
+                   uint32_t polling_interval)
 {
     of_list_bsn_tlv_t *list = of_list_bsn_tlv_new(OF_VERSION_1_3);
     {
@@ -325,6 +326,12 @@ make_value_sampler(uint32_t sampling_rate, uint32_t header_size)
     {
         of_bsn_tlv_header_size_t *tlv = of_bsn_tlv_header_size_new(OF_VERSION_1_3);
         of_bsn_tlv_header_size_value_set(tlv, header_size);
+        of_list_append(list, tlv);
+        of_object_delete(tlv);
+    }
+    {
+        of_bsn_tlv_interval_t *tlv = of_bsn_tlv_interval_new(OF_VERSION_1_3);
+        of_bsn_tlv_interval_value_set(tlv, polling_interval);
         of_list_append(list, tlv);
         of_object_delete(tlv);
     }
@@ -356,7 +363,7 @@ test_sflow_sampler_table(void)
      * Test add
      */
     key = make_key_sampler(57);
-    value = make_value_sampler(512, 128);
+    value = make_value_sampler(512, 128, 20000);
 
     AIM_ASSERT((rv = ops_sampler->add(table_priv_sampler, key, value,
                &entry_priv_1)) == INDIGO_ERROR_NONE,
@@ -366,7 +373,7 @@ test_sflow_sampler_table(void)
     of_object_delete(value);
 
     key = make_key_sampler(92);
-    value = make_value_sampler(1024, 64);
+    value = make_value_sampler(1024, 64, 25876);
 
     AIM_ASSERT((rv = ops_sampler->add(table_priv_sampler, key, value,
                &entry_priv_2)) == INDIGO_ERROR_NONE,
@@ -377,7 +384,7 @@ test_sflow_sampler_table(void)
     /*
      * Test modify
      */
-    value = make_value_sampler(2048, 64);
+    value = make_value_sampler(2048, 64, 30982);
     AIM_ASSERT((rv = ops_sampler->modify(table_priv_sampler, entry_priv_2, key,
                value)) == INDIGO_ERROR_NONE,
                "Error in sampler table modify: %s\n", indigo_strerror(rv));
@@ -525,7 +532,7 @@ test_sampled_packet_in(void)
 
     /* Add sampler_table entries */
     key = make_key_sampler(10);
-    value = make_value_sampler(512, 256);
+    value = make_value_sampler(512, 256, 20000);
 
     AIM_ASSERT((rv = ops_sampler->add(table_priv_sampler, key, value,
                &sampler_entry_priv_1)) == INDIGO_ERROR_NONE,
@@ -535,7 +542,7 @@ test_sampled_packet_in(void)
     of_object_delete(value);
 
     key = make_key_sampler(20);
-    value = make_value_sampler(1024, 128);
+    value = make_value_sampler(1024, 128, 30000);
 
     AIM_ASSERT((rv = ops_sampler->add(table_priv_sampler, key, value,
                &sampler_entry_priv_2)) == INDIGO_ERROR_NONE,

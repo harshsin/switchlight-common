@@ -67,6 +67,7 @@ typedef struct sflow_sampler_entry_key_s { /* sflow_sampler_entry_key */
 typedef struct sflow_sampler_entry_value_s { /* sflow_sampler_entry_value */
     uint32_t sampling_rate;
     uint32_t header_size;
+    uint32_t polling_interval;
 } sflow_sampler_entry_value_t;
 
 typedef struct sflow_sampler_entry_s { /* sflow_sampler_entry */
