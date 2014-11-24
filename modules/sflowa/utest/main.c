@@ -373,7 +373,7 @@ test_sflow_sampler_table(void)
     of_object_delete(value);
 
     key = make_key_sampler(92);
-    value = make_value_sampler(1024, 64, 25876);
+    value = make_value_sampler(1024, 64, 0);
 
     AIM_ASSERT((rv = ops_sampler->add(table_priv_sampler, key, value,
                &entry_priv_2)) == INDIGO_ERROR_NONE,
@@ -385,6 +385,13 @@ test_sflow_sampler_table(void)
      * Test modify
      */
     value = make_value_sampler(2048, 64, 30982);
+    AIM_ASSERT((rv = ops_sampler->modify(table_priv_sampler, entry_priv_2, key,
+               value)) == INDIGO_ERROR_NONE,
+               "Error in sampler table modify: %s\n", indigo_strerror(rv));
+
+    of_object_delete(value);
+
+    value = make_value_sampler(2048, 64, 0);
     AIM_ASSERT((rv = ops_sampler->modify(table_priv_sampler, entry_priv_2, key,
                value)) == INDIGO_ERROR_NONE,
                "Error in sampler table modify: %s\n", indigo_strerror(rv));

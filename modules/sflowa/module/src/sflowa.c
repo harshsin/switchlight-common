@@ -440,6 +440,17 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
 }
 
 /*
+ * sflow_get_counters
+ *
+ * Callback to get interface counters
+ */
+static void
+sflow_get_counters(void *magic, SFLPoller *poller, SFL_COUNTERS_SAMPLE_TYPE *cs)
+{
+
+}
+
+/*
  * sflow_add_hsflow_agent
  *
  * Init the dummy host sflow agent when the first
@@ -1000,6 +1011,7 @@ sflow_sampler_parse_value(of_list_bsn_tlv_t *tlvs,
 
         /*
          * Convert polling_interval from milliseconds to seconds
+         * polling_interval < 1000, will get computed as zero
          */
         value->polling_interval = 1.0*(value->polling_interval)/1000;
     } else {
@@ -1072,7 +1084,17 @@ sflow_sampler_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
     sfl_sampler_set_sFlowFsMaximumHeaderSize(sampler, entry->value.header_size);
     sfl_sampler_set_sFlowFsReceiver(sampler, SFLOW_RECEIVER_INDEX);
 
-    //Todo: add a poller for this interface too
+    /*
+     * Add poller for this port if polling_interval is non zero
+     */
+    if (entry->value.polling_interval) {
+        AIM_LOG_TRACE("%s: Add poller for port: %u", __FUNCTION__,
+                      entry->key.port_no);
+        SFLPoller *poller = sfl_agent_addPoller(&dummy_agent, &dsi, NULL,
+                                                sflow_get_counters);
+        sfl_poller_set_sFlowCpInterval(poller, entry->value.polling_interval);
+        sfl_poller_set_sFlowCpReceiver(poller, SFLOW_RECEIVER_INDEX);
+    }
 
     return INDIGO_ERROR_NONE;
 }
@@ -1110,6 +1132,7 @@ sflow_sampler_modify(void *table_priv, void *entry_priv,
                   entry->value.header_size, entry->value.polling_interval,
                   value.sampling_rate, value.header_size, value.polling_interval);
 
+    uint32_t prev_polling_interval = entry->value.polling_interval;
     entry->value = value;
 
     /*
@@ -1121,6 +1144,41 @@ sflow_sampler_modify(void *table_priv, void *entry_priv,
     sfl_sampler_set_sFlowFsPacketSamplingRate(sampler,
                                               entry->value.sampling_rate);
     sfl_sampler_set_sFlowFsMaximumHeaderSize(sampler, entry->value.header_size);
+
+    /*
+     * Update Poller fields
+     *
+     * Modify is a bit complicated:
+     * 1) Identify if there is a change in polling_interval.
+     *    Set polling_interval only if changed, beacuse it will reset the
+     *    random poll countdown too and we dont want to change the countdown
+     *    if there is no change in the polling_interval.
+     * 2) If there is a change:
+     *    (a) 0 -> polling_interval => Add poller with polling_interval
+     *    (b) x -> y => Set new polling_interval
+     *    (c) polling_interval -> 0 => Remove poller
+     */
+    if (prev_polling_interval != entry->value.polling_interval) {
+        SFLDataSource_instance dsi;
+        SFL_DS_SET(dsi, 0, entry->key.port_no, 0);
+        if (entry->value.polling_interval != 0) {
+            SFLPoller *poller = sfl_agent_getPoller(&dummy_agent, &dsi);
+            if (poller == NULL) {
+                AIM_LOG_TRACE("%s: Add poller for port: %u", __FUNCTION__,
+                              entry->key.port_no);
+                poller = sfl_agent_addPoller(&dummy_agent, &dsi, NULL,
+                                             sflow_get_counters);
+                sfl_poller_set_sFlowCpReceiver(poller, SFLOW_RECEIVER_INDEX);
+            }
+
+            sfl_poller_set_sFlowCpInterval(poller,
+                                           entry->value.polling_interval);
+        } else {
+            AIM_LOG_TRACE("%s: Remove poller for port: %u", __FUNCTION__,
+                          entry->key.port_no);
+            sfl_agent_removePoller(&dummy_agent, &dsi);
+        }
+    }
 
     return INDIGO_ERROR_NONE;
 }
@@ -1152,6 +1210,7 @@ sflow_sampler_delete(void *table_priv, void *entry_priv,
     SFLDataSource_instance dsi;
     SFL_DS_SET(dsi, 0, entry->key.port_no, 0);
     sfl_agent_removeSampler(&dummy_agent, &dsi);
+    sfl_agent_removePoller(&dummy_agent, &dsi);
     sflow_remove_hsflow_agent();
 
     SFLOWA_MEMSET(entry, 0, sizeof(*entry));
