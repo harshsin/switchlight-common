@@ -70,6 +70,7 @@ uint8_t expected[172] = {0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x01, 0xc0, 0
                          0x00, 0x00, 0x00, 0x52, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x4e};
 
 static int fd;
+static int port_desc_count = 0;
 
 void
 indigo_core_gentable_register(
@@ -98,13 +99,110 @@ indigo_core_gentable_unregister(indigo_core_gentable_t *gentable)
 }
 
 indigo_error_t
-indigo_core_packet_in_listener_register (indigo_core_packet_in_listener_f fn)
+indigo_core_packet_in_listener_register(indigo_core_packet_in_listener_f fn)
 {
     return INDIGO_ERROR_NONE;
 }
 
 void
 indigo_core_packet_in_listener_unregister(indigo_core_packet_in_listener_f fn)
+{
+}
+
+void
+indigo_port_extended_stats_get(of_port_no_t port_no,
+                               indigo_fi_port_stats_t *stats)
+{
+    static indigo_fi_port_stats_t port_stats = { 0 };
+
+    /* Default to "counter not supported" */
+    memset(stats, 0xff, sizeof(*stats));
+
+    stats->rx_bytes = (port_stats.rx_bytes += 100);
+    stats->rx_dropped = (port_stats.rx_dropped += 1);
+    stats->rx_errors = (port_stats.rx_errors += 2);
+    stats->tx_bytes = (port_stats.tx_bytes += 200);
+    stats->tx_dropped = (port_stats.tx_dropped += 2);
+    stats->tx_errors = (port_stats.tx_errors += 4);
+    stats->rx_packets = (port_stats.rx_packets += 3);
+    stats->tx_packets = (port_stats.tx_packets += 6);
+    stats->rx_packets_unicast = (port_stats.rx_packets_unicast += 1);
+    stats->rx_packets_broadcast = (port_stats.rx_packets_broadcast += 1);
+    stats->rx_packets_multicast = (port_stats.rx_packets_multicast += 1);
+    stats->tx_packets_unicast = (port_stats.tx_packets_unicast += 2);
+    stats->tx_packets_broadcast = (port_stats.tx_packets_broadcast += 2);
+    stats->tx_packets_multicast = (port_stats.tx_packets_multicast += 2);
+}
+
+static void
+port_desc_set(of_port_desc_t *of_port_desc, uint32_t port_no)
+{
+    uint32_t config = 0;
+    uint32_t state = 0;
+    uint32_t curr = 0;
+
+    of_port_desc_port_no_set(of_port_desc, port_no);
+
+    /* Set Admin down for port 10 and oper down for port 20 */
+    if (port_no == 10) {
+        OF_PORT_CONFIG_FLAG_PORT_DOWN_SET(config, of_port_desc->version);
+        curr = OF_PORT_FEATURE_FLAG_1GB_HD |
+               OF_PORT_FEATURE_FLAG_COPPER_BY_VERSION(of_port_desc->version);
+    } else if (port_no == 20) {
+        OF_PORT_STATE_FLAG_LINK_DOWN_SET(state, of_port_desc->version);
+        curr = OF_PORT_FEATURE_FLAG_40GB_FD;
+    }
+
+    of_port_desc_config_set(of_port_desc, config);
+    of_port_desc_state_set(of_port_desc, state);
+    of_port_desc_curr_set(of_port_desc, curr);
+}
+
+indigo_error_t
+indigo_port_desc_stats_get(of_port_desc_stats_reply_t *port_desc_stats_reply)
+{
+    indigo_error_t result = INDIGO_ERROR_NONE;
+    of_port_desc_t *of_port_desc = 0;
+    of_list_port_desc_t *of_list_port_desc = 0;
+
+    ++port_desc_count;
+
+    if ((of_port_desc = of_port_desc_new(port_desc_stats_reply->version)) == 0) {
+        result = INDIGO_ERROR_UNKNOWN;
+        goto done;
+    }
+
+    if ((of_list_port_desc = of_list_port_desc_new(port_desc_stats_reply->version)) == 0) {
+        result = INDIGO_ERROR_UNKNOWN;
+        goto done;
+    }
+
+    port_desc_set(of_port_desc, 10);
+    of_list_port_desc_append(of_list_port_desc, of_port_desc);
+
+    port_desc_set(of_port_desc, 20);
+    of_list_port_desc_append(of_list_port_desc, of_port_desc);
+
+    if (of_port_desc_stats_reply_entries_set(port_desc_stats_reply, of_list_port_desc) < 0) {
+        result = INDIGO_ERROR_UNKNOWN;
+        goto done;
+    }
+
+done:
+    if (of_list_port_desc) of_list_port_desc_delete(of_list_port_desc);
+    if (of_port_desc) of_port_desc_delete(of_port_desc);
+
+    return result;
+}
+
+indigo_error_t
+indigo_core_port_status_listener_register(indigo_core_port_status_listener_f fn)
+{
+    return INDIGO_ERROR_NONE;
+}
+
+void
+indigo_core_port_status_listener_unregister(indigo_core_port_status_listener_f fn)
 {
 }
 
@@ -503,17 +601,28 @@ hex_dump(uint8_t *ptr, int length)
 }
 
 static void
-receive_socket(void)
+receive_socket(bool flow_or_counter_sample)
 {
     uint8_t buf[1500];
 
     /* receive data and print what we received */
-    printf("waiting on fd\n");
+    printf("waiting on fd for %s\n", flow_or_counter_sample?
+           "flow sample": "counter sample");
     int recvlen = recvfrom(fd, buf, 1500, 0, 0, 0);
     AIM_ASSERT(recvlen, "received 0 bytes from fd");
     AIM_ASSERT(recvlen != -1, "recvfrom() failed with %s", strerror(errno));
-    memcpy(&expected[92], sample, PACKET_BUF_SIZE);
-    AIM_ASSERT(!memcmp(buf, expected, recvlen), "mismatch in recv output");
+    if (flow_or_counter_sample) {
+        memcpy(&expected[92], sample, PACKET_BUF_SIZE);
+        AIM_ASSERT(!memcmp(buf, expected, recvlen), "mismatch in recv output");
+    } else {
+        if (port_desc_count == 1) {
+            AIM_ASSERT(recvlen == 144, "mismatch in recvlen, expected 144, "
+                       "got (%d)", recvlen);
+        } else if (port_desc_count == 2) {
+            AIM_ASSERT(recvlen == 260, "mismatch in recvlen, expected 260, "
+                       "got (%d)", recvlen);
+        }
+    }
 
 #ifdef PRINT_PKT
     printf("received %d bytes\n", recvlen);
@@ -539,7 +648,7 @@ test_sampled_packet_in(void)
 
     /* Add sampler_table entries */
     key = make_key_sampler(10);
-    value = make_value_sampler(512, 256, 20000);
+    value = make_value_sampler(512, 256, 2000);
 
     AIM_ASSERT((rv = ops_sampler->add(table_priv_sampler, key, value,
                &sampler_entry_priv_1)) == INDIGO_ERROR_NONE,
@@ -549,7 +658,7 @@ test_sampled_packet_in(void)
     of_object_delete(value);
 
     key = make_key_sampler(20);
-    value = make_value_sampler(1024, 128, 30000);
+    value = make_value_sampler(1024, 128, 1000);
 
     AIM_ASSERT((rv = ops_sampler->add(table_priv_sampler, key, value,
                &sampler_entry_priv_2)) == INDIGO_ERROR_NONE,
@@ -574,10 +683,54 @@ test_sampled_packet_in(void)
     octets.data = sample;
     octets.bytes = PACKET_BUF_SIZE;
     sflow_create_send_packet_in(&octets, 10);
+
+    /*
+     * trigger a tick for the agent to:
+     *     (a) send flow sample
+     *     (b) get port counters for port 20
+     *     (c) refresh port_feature
+     */
     sflow_timer(NULL);
 
-    /* receive sflow datagrams from agent */
-    receive_socket();
+    /* receive flow sample from agent */
+    receive_socket(true);
+
+    /* check that port_features are refreshed */
+    AIM_ASSERT(port_desc_count == 1, "port_desc_count (%d) should be 1",
+               port_desc_count);
+
+    /*
+     * trigger another tick for the agent to:
+     *     (a) send counter sample for port 20
+     *     (b) get port counters for port 10, 20
+     *     (c) do not refresh port_feature
+     */
+    sflow_timer(NULL);
+
+    /* check that port_features are not refreshed */
+    AIM_ASSERT(port_desc_count == 1, "port_desc_count (%d) should be 1",
+               port_desc_count);
+
+    /* receive counter sample from agent with port 20 counters */
+    receive_socket(false);
+
+    /* trigger port_status change */
+    sflowa_port_status_handler(NULL);
+
+    /*
+     * trigger another tick for the agent to:
+     *     (a) send counter sample for port 10, 20
+     *     (b) get counter sample for port 20
+     *     (c) refresh port_feature
+     */
+    sflow_timer(NULL);
+
+    /* check that port_features are refreshed */
+    AIM_ASSERT(port_desc_count == 2, "port_desc_count (%d) should be 2",
+               port_desc_count);
+
+    /* receive counter sample from agent with port 10 and 20 counters */
+    receive_socket(false);
 
     /* Close socket */
     close_socket();
