@@ -526,7 +526,7 @@ sflow_update_port_features(void)
     OF_LIST_PORT_DESC_ITER(&list, &port_desc, rv) {
         of_port_desc_port_no_get(&port_desc, &port_no);
         if (port_no > SFLOWA_CONFIG_OF_PORTS_MAX) {
-            break;
+            continue;
         }
 
         /*

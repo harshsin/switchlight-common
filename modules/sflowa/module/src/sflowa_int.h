@@ -82,9 +82,14 @@ typedef enum sflow_send_mode_e { /* sflow_send_mode */
 } sflow_send_mode_t;
 
 typedef struct sflow_port_features_s { /* sflow_port_features */
-    uint64_t speed;
-    uint32_t direction;
-    uint32_t status;
+    uint64_t speed;             /* Interface's current bandwidth in
+                                   bits per second */
+    uint32_t direction;         /* Derived from MAU MIB (RFC 2668)
+                                   0 = unknown, 1 = full-duplex,
+                                   2 = half-duplex, 3 = in, 4 = out */
+    uint32_t status;            /* bit field with the following bits assigned:
+                                   bit 0 = ifAdminStatus (0 = down, 1 = up)
+                                   bit 1 = ifOperStatus (0 = down, 1 = up) */
 } sflow_port_features_t;
 
 /* Internal functions used by utest module */

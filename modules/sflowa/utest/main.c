@@ -601,20 +601,20 @@ hex_dump(uint8_t *ptr, int length)
 }
 
 static void
-receive_socket(bool flow_or_counter_sample)
+receive_socket(int type)
 {
     uint8_t buf[1500];
 
     /* receive data and print what we received */
-    printf("waiting on fd for %s\n", flow_or_counter_sample?
+    printf("waiting on fd for %s\n", (type == SFLFLOW_SAMPLE)?
            "flow sample": "counter sample");
     int recvlen = recvfrom(fd, buf, 1500, 0, 0, 0);
     AIM_ASSERT(recvlen, "received 0 bytes from fd");
     AIM_ASSERT(recvlen != -1, "recvfrom() failed with %s", strerror(errno));
-    if (flow_or_counter_sample) {
+    if (type == SFLFLOW_SAMPLE) {
         memcpy(&expected[92], sample, PACKET_BUF_SIZE);
         AIM_ASSERT(!memcmp(buf, expected, recvlen), "mismatch in recv output");
-    } else {
+    } else if (type == SFLCOUNTERS_SAMPLE) {
         if (port_desc_count == 1) {
             AIM_ASSERT(recvlen == 144, "mismatch in recvlen, expected 144, "
                        "got (%d)", recvlen);
@@ -693,7 +693,7 @@ test_sampled_packet_in(void)
     sflow_timer(NULL);
 
     /* receive flow sample from agent */
-    receive_socket(true);
+    receive_socket(SFLFLOW_SAMPLE);
 
     /* check that port_features are refreshed */
     AIM_ASSERT(port_desc_count == 1, "port_desc_count (%d) should be 1",
@@ -712,7 +712,7 @@ test_sampled_packet_in(void)
                port_desc_count);
 
     /* receive counter sample from agent with port 20 counters */
-    receive_socket(false);
+    receive_socket(SFLCOUNTERS_SAMPLE);
 
     /* trigger port_status change */
     sflowa_port_status_handler(NULL);
@@ -730,7 +730,7 @@ test_sampled_packet_in(void)
                port_desc_count);
 
     /* receive counter sample from agent with port 10 and 20 counters */
-    receive_socket(false);
+    receive_socket(SFLCOUNTERS_SAMPLE);
 
     /* Close socket */
     close_socket();
