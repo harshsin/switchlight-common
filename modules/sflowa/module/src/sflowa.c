@@ -38,6 +38,7 @@
 #include <OS/os_time.h>
 #include <PPE/ppe.h>
 #include <fcntl.h>
+#include <linux/ethtool.h>
 #include "sflowa_int.h"
 #include "sflowa_log.h"
 
@@ -51,6 +52,20 @@
  * because host sFlow agent breaks for anything over this size.
  */
 #define SFLOW_MAX_HEADER_SIZE 1300
+
+/*
+ * if-status, admin and oper state
+ */
+#define IF_ADMIN_UP 0x01
+#define IF_OPER_UP  0x02
+
+/*
+ * Duplex, half or full.
+ * 0 = unknown, 1 = full-duplex,
+ * 2 = half-duplex, 3 = in, 4 = out
+ */
+#define SFLOW_DUPLEX_FULL 1
+#define SFLOW_DUPLEX_HALF 2
 
 static const of_mac_addr_t zero_mac = { {0x00, 0x00, 0x00, 0x00, 0x00, 0x00} };
 
@@ -70,6 +85,9 @@ static sflowa_sampling_rate_handler_f sflowa_sampling_rate_handler;
 
 static SFLAgent dummy_agent;
 aim_ratelimiter_t sflow_pktin_log_limiter;
+
+static sflow_port_features_t port_features[SFLOWA_CONFIG_OF_PORTS_MAX+1];
+static bool port_features_stale = true;
 
 /*
  * sflowa_init
@@ -99,6 +117,15 @@ sflowa_init(void)
         return INDIGO_ERROR_INIT;
     }
 
+    /*
+     * Register listener for port_status msg
+     */
+    if (indigo_core_port_status_listener_register(
+        (indigo_core_port_status_listener_f) sflowa_port_status_handler) < 0) {
+        AIM_LOG_ERROR("Failed to register for port_status in SFLOW module");
+        return INDIGO_ERROR_INIT;
+    }
+
     aim_ratelimiter_init(&sflow_pktin_log_limiter, 1000*1000, 5, NULL);
 
     sflowa_initialized = true;
@@ -118,6 +145,7 @@ sflowa_finish(void)
     indigo_core_gentable_unregister(sflow_collector_table);
     indigo_core_gentable_unregister(sflow_sampler_table);
     indigo_core_packet_in_listener_unregister(sflowa_packet_in_handler);
+    indigo_core_port_status_listener_unregister(sflowa_port_status_handler);
 
     sflowa_initialized = false;
     sflowa_sampling_rate_handler = NULL;
@@ -296,6 +324,24 @@ sflowa_packet_in_handler(of_packet_in_t *packet_in)
 }
 
 /*
+ * sflowa_port_status_handler
+ *
+ * API for handling port_status update notification.
+ *
+ * On receipt of this notification, we will mark the port_features
+ * cache to be stale and we will repopulate the port_features next
+ * time we receive a get request for port counters.
+ */
+indigo_core_listener_result_t
+sflowa_port_status_handler(of_port_status_t *port_status)
+{
+    AIM_LOG_TRACE("Received port_status notification, "
+                  "mark port_features cache to be_stale");
+    port_features_stale = true;
+    return INDIGO_CORE_LISTENER_RESULT_PASS;
+}
+
+/*
  * sflow_get_send_mode
  *
  * Return sflow datagram sending mode - mgmt nw or dataplane
@@ -423,6 +469,8 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
                 AIM_LOG_TRACE("socket: %d, successfully sent %u bytes to "
                               "collector: %{ipv4a}", entry->sd, pktLen,
                               entry->key.collector_ip);
+                ++entry->stats.tx_packets;
+                entry->stats.tx_bytes += pktLen;
             }
 
             break;
@@ -435,6 +483,169 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
             break;
         }
     }
+}
+
+/*
+ * sflow_update_port_features
+ *
+ * Get the latest values of port speed, direction and if-status
+ * from of_port_desc_stats_reply
+ */
+void
+sflow_update_port_features(void)
+{
+    of_port_desc_stats_reply_t *reply;
+    of_list_port_desc_t list;
+    of_port_desc_t port_desc;
+    int rv;
+    of_port_no_t port_no;
+    of_version_t version = OF_VERSION_1_3;
+
+    /*
+     * Refresh the port_features if a they are stale
+     */
+    if (!port_features_stale) return;
+
+    AIM_LOG_TRACE("Refresh port_features");
+
+    if ((reply = of_port_desc_stats_reply_new(version)) == NULL) {
+        AIM_DIE("Failed to allocate port_desc_stats reply message");
+    }
+
+    if (indigo_port_desc_stats_get(reply) < 0) {
+        of_object_delete(reply);
+        return;
+    }
+
+    /*
+     * reset everything
+     */
+    memset(port_features, 0, sizeof(port_features));
+
+    of_port_desc_stats_reply_entries_bind(reply, &list);
+    OF_LIST_PORT_DESC_ITER(&list, &port_desc, rv) {
+        of_port_desc_port_no_get(&port_desc, &port_no);
+        if (port_no > SFLOWA_CONFIG_OF_PORTS_MAX) {
+            continue;
+        }
+
+        /*
+         * Get speed and direction
+         */
+        uint32_t curr = 0;
+        of_port_desc_curr_get(&port_desc, &curr);
+        if (OF_PORT_FEATURE_FLAG_10MB_HD_TEST(curr, version)) {
+            port_features[port_no].speed = SPEED_10 * 1000000;
+            port_features[port_no].direction = SFLOW_DUPLEX_HALF;
+        } else if (OF_PORT_FEATURE_FLAG_10MB_FD_TEST(curr, version)) {
+            port_features[port_no].speed = SPEED_10 * 1000000;
+            port_features[port_no].direction = SFLOW_DUPLEX_FULL;
+        } else if (OF_PORT_FEATURE_FLAG_100MB_HD_TEST(curr, version)) {
+            port_features[port_no].speed = SPEED_100 * 1000000;
+            port_features[port_no].direction = SFLOW_DUPLEX_HALF;
+        } else if (OF_PORT_FEATURE_FLAG_100MB_FD_TEST(curr, version)) {
+            port_features[port_no].speed = SPEED_100 * 1000000;
+            port_features[port_no].direction = SFLOW_DUPLEX_FULL;
+        } else if (OF_PORT_FEATURE_FLAG_1GB_HD_TEST(curr, version)) {
+            port_features[port_no].speed = SPEED_1000 * 1000000;
+            port_features[port_no].direction = SFLOW_DUPLEX_HALF;
+        } else if (OF_PORT_FEATURE_FLAG_1GB_FD_TEST(curr, version)) {
+            port_features[port_no].speed = SPEED_1000 * 1000000;
+            port_features[port_no].direction = SFLOW_DUPLEX_FULL;
+        } else if (OF_PORT_FEATURE_FLAG_10GB_FD_TEST(curr, version)) {
+            port_features[port_no].speed = (uint64_t)SPEED_10000 * 1000000;
+            port_features[port_no].direction = SFLOW_DUPLEX_FULL;
+        } else if (OF_PORT_FEATURE_FLAG_40GB_FD_TEST(curr, version)) {
+            port_features[port_no].speed = (uint64_t)40000 * 1000000;
+            port_features[port_no].direction = SFLOW_DUPLEX_FULL;
+        } else if (OF_PORT_FEATURE_FLAG_100GB_FD_TEST(curr, version)) {
+            port_features[port_no].speed = (uint64_t)100000 * 1000000;
+            port_features[port_no].direction = SFLOW_DUPLEX_FULL;
+        } else {
+            AIM_LOG_VERBOSE("Unsupported feature type: (%u)", curr);
+        }
+
+        /*
+         * Get if-status
+         */
+        uint32_t config = 0, state = 0;
+        of_port_desc_config_get(&port_desc, &config);
+        of_port_desc_state_get(&port_desc, &state);
+
+        /*
+         * ifAdminStatus: bit 0 = ifAdminStatus (0 = down, 1 = up)
+         */
+        if (!OF_PORT_CONFIG_FLAG_PORT_DOWN_TEST(config, version)) {
+            port_features[port_no].status |= IF_ADMIN_UP;
+        }
+
+        /*
+         * ifOperstatus: bit 1 = ifOperStatus (0 = down, 1 = up)
+         */
+        if (!OF_PORT_STATE_FLAG_LINK_DOWN_TEST(state, version)) {
+            port_features[port_no].status |= IF_OPER_UP;
+        }
+
+        AIM_LOG_TRACE("Port: %u, speed: %" PRId64 ", direction: %u, status: %u",
+                      port_no, port_features[port_no].speed,
+                      port_features[port_no].direction,
+                      port_features[port_no].status);
+    }
+
+    port_features_stale = false;
+    of_object_delete(reply);
+}
+
+/*
+ * sflow_get_counters
+ *
+ * Callback to get interface counters
+ * For now we only support generic interface counters
+ */
+static void
+sflow_get_counters(void *magic, SFLPoller *poller, SFL_COUNTERS_SAMPLE_TYPE *cs)
+{
+    SFLCounters_sample_element elem = { 0 };
+    indigo_fi_port_stats_t stats;
+    of_port_no_t port_no = SFL_DS_INDEX(poller->dsi);
+
+    AIM_LOG_TRACE("Received callback to get counters for port: %u", port_no);
+
+    /*
+     * Default to "counter not supported"
+     */
+    memset(&stats, 0xff, sizeof(stats));
+
+    indigo_port_extended_stats_get(port_no, &stats);
+    sflow_update_port_features();
+
+    /*
+     * Generic interface counters
+     */
+    elem.tag = SFLCOUNTERS_GENERIC;
+    elem.counterBlock.generic.ifIndex = port_no;
+    elem.counterBlock.generic.ifType = 6; // Ethernet
+    elem.counterBlock.generic.ifSpeed = port_features[port_no].speed;
+    elem.counterBlock.generic.ifDirection = port_features[port_no].direction;
+    elem.counterBlock.generic.ifStatus = port_features[port_no].status;
+    elem.counterBlock.generic.ifPromiscuousMode = 1; //PromiscuousMode = ON
+
+    elem.counterBlock.generic.ifInOctets = stats.rx_bytes;
+    elem.counterBlock.generic.ifInUcastPkts = (uint32_t)stats.rx_packets_unicast;
+    elem.counterBlock.generic.ifInMulticastPkts = (uint32_t)stats.rx_packets_multicast;
+    elem.counterBlock.generic.ifInBroadcastPkts = (uint32_t)stats.rx_packets_broadcast;
+    elem.counterBlock.generic.ifInDiscards = (uint32_t)stats.rx_dropped;
+    elem.counterBlock.generic.ifInErrors = (uint32_t)stats.rx_errors;
+    elem.counterBlock.generic.ifInUnknownProtos = UINT32_MAX; //UNSUPPORTED
+    elem.counterBlock.generic.ifOutOctets = stats.tx_bytes;
+    elem.counterBlock.generic.ifOutUcastPkts = (uint32_t)stats.tx_packets_unicast;
+    elem.counterBlock.generic.ifOutMulticastPkts = (uint32_t)stats.tx_packets_multicast;
+    elem.counterBlock.generic.ifOutBroadcastPkts = (uint32_t)stats.tx_packets_broadcast;
+    elem.counterBlock.generic.ifOutDiscards = (uint32_t)stats.tx_dropped;
+    elem.counterBlock.generic.ifOutErrors = (uint32_t)stats.tx_errors;
+
+    SFLADD_ELEMENT(cs, &elem);
+    sfl_poller_writeCountersSample(poller, cs);
 }
 
 /*
@@ -987,6 +1198,26 @@ sflow_sampler_parse_value(of_list_bsn_tlv_t *tlvs,
         return INDIGO_ERROR_PARAM;
     }
 
+    if (of_list_bsn_tlv_next(tlvs, &tlv) < 0) {
+        AIM_LOG_ERROR("unexpected end of value list");
+        return INDIGO_ERROR_PARAM;
+    }
+
+    /* Polling interval */
+    if (tlv.object_id == OF_BSN_TLV_INTERVAL) {
+        of_bsn_tlv_interval_value_get(&tlv, &value->polling_interval);
+
+        /*
+         * Convert polling_interval from milliseconds to seconds
+         * polling_interval < 1000, will get computed as zero
+         */
+        value->polling_interval = 1.0*(value->polling_interval)/1000;
+    } else {
+        AIM_LOG_ERROR("expected interval value TLV, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
     if (of_list_bsn_tlv_next(tlvs, &tlv) == 0) {
         AIM_LOG_ERROR("expected end of value list, instead got %s",
                       of_class_name(&tlv));
@@ -1032,8 +1263,9 @@ sflow_sampler_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
     entry->value = value;
 
     AIM_LOG_TRACE("Add sampler table entry, port: %u -> sampling_rate: %u, "
-                  "header_size: %u", entry->key.port_no,
-                  entry->value.sampling_rate, entry->value.header_size);
+                  "header_size: %u, polling_interval: %u", entry->key.port_no,
+                  entry->value.sampling_rate, entry->value.header_size,
+                  entry->value.polling_interval);
 
     *entry_priv = entry;
 
@@ -1050,7 +1282,17 @@ sflow_sampler_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
     sfl_sampler_set_sFlowFsMaximumHeaderSize(sampler, entry->value.header_size);
     sfl_sampler_set_sFlowFsReceiver(sampler, SFLOW_RECEIVER_INDEX);
 
-    //Todo: add a poller for this interface too
+    /*
+     * Add poller for this port if polling_interval is non zero
+     */
+    if (entry->value.polling_interval) {
+        AIM_LOG_TRACE("%s: Add poller for port: %u", __FUNCTION__,
+                      entry->key.port_no);
+        SFLPoller *poller = sfl_agent_addPoller(&dummy_agent, &dsi, NULL,
+                                                sflow_get_counters);
+        sfl_poller_set_sFlowCpInterval(poller, entry->value.polling_interval);
+        sfl_poller_set_sFlowCpReceiver(poller, SFLOW_RECEIVER_INDEX);
+    }
 
     return INDIGO_ERROR_NONE;
 }
@@ -1082,11 +1324,13 @@ sflow_sampler_modify(void *table_priv, void *entry_priv,
     }
 
     AIM_LOG_TRACE("Modify sampler table entry, port: %u -> from sampling_rate: "
-                  "%u, header_size: %u to sampling_rate: %u, header_size: %u",
+                  "%u, header_size: %u, polling_interval: %u to sampling_rate: "
+                  "%u, header_size: %u, polling_interval: %u",
                   entry->key.port_no, entry->value.sampling_rate,
-                  entry->value.header_size, value.sampling_rate,
-                  value.header_size);
+                  entry->value.header_size, entry->value.polling_interval,
+                  value.sampling_rate, value.header_size, value.polling_interval);
 
+    uint32_t prev_polling_interval = entry->value.polling_interval;
     entry->value = value;
 
     /*
@@ -1098,6 +1342,41 @@ sflow_sampler_modify(void *table_priv, void *entry_priv,
     sfl_sampler_set_sFlowFsPacketSamplingRate(sampler,
                                               entry->value.sampling_rate);
     sfl_sampler_set_sFlowFsMaximumHeaderSize(sampler, entry->value.header_size);
+
+    /*
+     * Update Poller fields
+     *
+     * Modify is a bit complicated:
+     * 1) Identify if there is a change in polling_interval.
+     *    Set polling_interval only if changed, beacuse it will reset the
+     *    random poll countdown too and we dont want to change the countdown
+     *    if there is no change in the polling_interval.
+     * 2) If there is a change:
+     *    (a) 0 -> polling_interval => Add poller with polling_interval
+     *    (b) x -> y => Set new polling_interval
+     *    (c) polling_interval -> 0 => Remove poller
+     */
+    if (prev_polling_interval != entry->value.polling_interval) {
+        SFLDataSource_instance dsi;
+        SFL_DS_SET(dsi, 0, entry->key.port_no, 0);
+        if (entry->value.polling_interval != 0) {
+            SFLPoller *poller = sfl_agent_getPoller(&dummy_agent, &dsi);
+            if (poller == NULL) {
+                AIM_LOG_TRACE("%s: Add poller for port: %u", __FUNCTION__,
+                              entry->key.port_no);
+                poller = sfl_agent_addPoller(&dummy_agent, &dsi, NULL,
+                                             sflow_get_counters);
+                sfl_poller_set_sFlowCpReceiver(poller, SFLOW_RECEIVER_INDEX);
+            }
+
+            sfl_poller_set_sFlowCpInterval(poller,
+                                           entry->value.polling_interval);
+        } else {
+            AIM_LOG_TRACE("%s: Remove poller for port: %u", __FUNCTION__,
+                          entry->key.port_no);
+            sfl_agent_removePoller(&dummy_agent, &dsi);
+        }
+    }
 
     return INDIGO_ERROR_NONE;
 }
@@ -1114,8 +1393,9 @@ sflow_sampler_delete(void *table_priv, void *entry_priv,
     sflow_sampler_entry_t *entry = entry_priv;
 
     AIM_LOG_TRACE("Delete sampler table entry, port: %u -> sampling_rate: %u, "
-                  "header_size: %u", entry->key.port_no,
-                  entry->value.sampling_rate, entry->value.header_size);
+                  "header_size: %u, polling_interval: %u", entry->key.port_no,
+                  entry->value.sampling_rate, entry->value.header_size,
+                  entry->value.polling_interval);
 
     /*
      * Set the sampling rate to 0 to disable sampling on this port
@@ -1128,6 +1408,7 @@ sflow_sampler_delete(void *table_priv, void *entry_priv,
     SFLDataSource_instance dsi;
     SFL_DS_SET(dsi, 0, entry->key.port_no, 0);
     sfl_agent_removeSampler(&dummy_agent, &dsi);
+    sfl_agent_removePoller(&dummy_agent, &dsi);
     sflow_remove_hsflow_agent();
 
     SFLOWA_MEMSET(entry, 0, sizeof(*entry));

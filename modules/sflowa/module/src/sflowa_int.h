@@ -30,6 +30,7 @@
 #include <loci/loci.h>
 #include <indigo/of_state_manager.h>
 #include <SocketManager/socketmanager.h>
+#include <indigo/port_manager.h>
 #include <AIM/aim_list.h>
 #include <host_sflow/host_sflow.h>
 
@@ -67,6 +68,7 @@ typedef struct sflow_sampler_entry_key_s { /* sflow_sampler_entry_key */
 typedef struct sflow_sampler_entry_value_s { /* sflow_sampler_entry_value */
     uint32_t sampling_rate;
     uint32_t header_size;
+    uint32_t polling_interval;
 } sflow_sampler_entry_value_t;
 
 typedef struct sflow_sampler_entry_s { /* sflow_sampler_entry */
@@ -79,6 +81,17 @@ typedef enum sflow_send_mode_e { /* sflow_send_mode */
     SFLOW_SEND_MODE_DATAPLANE,
 } sflow_send_mode_t;
 
+typedef struct sflow_port_features_s { /* sflow_port_features */
+    uint64_t speed;             /* Interface's current bandwidth in
+                                   bits per second */
+    uint32_t direction;         /* Derived from MAU MIB (RFC 2668)
+                                   0 = unknown, 1 = full-duplex,
+                                   2 = half-duplex, 3 = in, 4 = out */
+    uint32_t status;            /* bit field with the following bits assigned:
+                                   bit 0 = ifAdminStatus (0 = down, 1 = up)
+                                   bit 1 = ifOperStatus (0 = down, 1 = up) */
+} sflow_port_features_t;
+
 /* Internal functions used by utest module */
 list_head_t *sflow_collectors_list(void);
 
@@ -86,5 +99,8 @@ void sflow_timer(void *cookie);
 
 indigo_core_listener_result_t
 sflowa_packet_in_handler(of_packet_in_t *packet_in);
+
+indigo_core_listener_result_t
+sflowa_port_status_handler(of_port_status_t *port_status);
 
 #endif /* __SFLOWA_INT_H__ */
