@@ -72,9 +72,14 @@ typedef struct sflow_sampler_entry_value_s { /* sflow_sampler_entry_value */
     uint32_t polling_interval;
 } sflow_sampler_entry_value_t;
 
+typedef struct sflow_sampler_entry_stats_s { /* sflow_sampler_entry_stats */
+    uint64_t rx_packets;
+} sflow_sampler_entry_stats_t;
+
 typedef struct sflow_sampler_entry_s { /* sflow_sampler_entry */
     sflow_sampler_entry_key_t key;
     sflow_sampler_entry_value_t value;
+    sflow_sampler_entry_stats_t stats;
 } sflow_sampler_entry_t;
 
 typedef enum sflow_send_mode_e { /* sflow_send_mode */

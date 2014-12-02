@@ -225,6 +225,7 @@ sflowa_receive_packet(of_octets_t *octets, of_port_no_t in_port)
 
     AIM_LOG_TRACE("Sampled packet_in received for in_port: %u", in_port);
     debug_counter_inc(&sflow_counters.total_in_packets);
+    ++sampler_entries[in_port].stats.rx_packets;
 
     ppe_packet_init(&ppep, octets->data, octets->bytes);
     if (ppe_parse(&ppep) < 0) {
@@ -1456,13 +1457,21 @@ sflow_sampler_delete(void *table_priv, void *entry_priv,
 /*
  * sflow_sampler_get_stats
  *
- * Dummy function
+ * Return the stats related with a entry in sflow_sampler table
  */
 static void
 sflow_sampler_get_stats(void *table_priv, void *entry_priv,
                         of_list_bsn_tlv_t *key, of_list_bsn_tlv_t *stats)
 {
-    /* No stats */
+    sflow_sampler_entry_t *entry = entry_priv;
+
+    /* rx_packets */
+    {
+        of_bsn_tlv_rx_packets_t tlv;
+        of_bsn_tlv_rx_packets_init(&tlv, stats->version, -1, 1);
+        of_list_bsn_tlv_append_bind(stats, &tlv);
+        of_bsn_tlv_rx_packets_value_set(&tlv, entry->stats.rx_packets);
+    }
 }
 
 static const indigo_core_gentable_ops_t sflow_sampler_ops = {
