@@ -13,6 +13,8 @@
 #include <uCli/ucli_argparse.h>
 #include <uCli/ucli_handler_macros.h>
 
+static bool print_once = true;
+
 static ucli_status_t
 sflowa_ucli_ucli__clear_counters__(ucli_context_t* uc)
 {
@@ -77,6 +79,67 @@ sflowa_ucli_ucli__show_collectors__(ucli_context_t* uc)
     return UCLI_STATUS_OK;
 }
 
+static void
+sflowa_show_portattributes__(ucli_context_t* uc, uint32_t port_no)
+{
+    if (port_no > SFLOWA_CONFIG_OF_PORTS_MAX) return;
+
+    /*
+     * Don't print anything for ports not sampling/polling
+     */
+    if (sampler_entries[port_no].value.sampling_rate == 0 &&
+        sampler_entries[port_no].value.polling_interval == 0) {
+        return;
+    }
+
+    if (print_once == true) {
+        ucli_printf(uc,
+                    "PORT      OF port number\n"
+                    "rate      Ingress sampling rate\n"
+                    "size      Header size\n"
+                    "poll      Polling interval\n"
+                    "speed     Intf bandwidth(bits/sec)\n"
+                    "direction 0 = Unknown, 1 = FD, 2 = HD\n"
+                    "admin     Administrative status\n"
+                    "link      Operational status\n"
+                    "pkt_in    Num of sampled packet_ins\n");
+        ucli_printf(uc, "PORT\trate\tsize\tpoll\tspeed\t\tdirection\t"
+                    "admin\tlink\tpkt_in\n");
+        print_once = false;
+    }
+
+    ucli_printf(uc, "%u\t\t%u\t%u\t%u\t%"PRId64"\t%u\t\t%s\t%s\t%"PRId64"\n",
+                port_no, sampler_entries[port_no].value.sampling_rate,
+                sampler_entries[port_no].value.header_size,
+                sampler_entries[port_no].value.polling_interval,
+                port_features[port_no].speed, port_features[port_no].direction,
+                port_features[port_no].status & IF_ADMIN_UP? "up":"down",
+                port_features[port_no].status & IF_OPER_UP? "up":"down",
+                sampler_entries[port_no].stats.rx_packets);
+}
+
+static ucli_status_t
+sflowa_ucli_ucli__show_portattributes__(ucli_context_t* uc)
+{
+    uint32_t port = 0;
+
+    UCLI_COMMAND_INFO(uc,
+                      "port_attributes", -1,
+                      "$summary#Display the sflow attributes per port."
+                      "$args#[Port]");
+
+    if (uc->pargs->count == 1) {
+        UCLI_ARGPARSE_OR_RETURN(uc, "i", &port);
+        sflowa_show_portattributes__(uc, port);
+    } else {
+        for (port = 0; port <= SFLOWA_CONFIG_OF_PORTS_MAX; port++) {
+            sflowa_show_portattributes__(uc, port);
+        }
+    }
+
+    return UCLI_STATUS_OK;
+}
+
 static ucli_status_t
 sflowa_ucli_ucli__config__(ucli_context_t* uc)
 {
@@ -90,11 +153,12 @@ sflowa_ucli_ucli__config__(ucli_context_t* uc)
  * source file.
  *
  *****************************************************************************/
-static ucli_command_handler_f sflowa_ucli_ucli_handlers__[] =
+static ucli_command_handler_f sflowa_ucli_ucli_handlers__[] = 
 {
     sflowa_ucli_ucli__clear_counters__,
     sflowa_ucli_ucli__show_counters__,
     sflowa_ucli_ucli__show_collectors__,
+    sflowa_ucli_ucli__show_portattributes__,
     sflowa_ucli_ucli__config__,
     NULL
 };

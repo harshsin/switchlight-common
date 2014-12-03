@@ -35,6 +35,12 @@
 #include <AIM/aim_list.h>
 #include <host_sflow/host_sflow.h>
 
+/*
+ * if-status, admin and oper state
+ */
+#define IF_ADMIN_UP 0x01
+#define IF_OPER_UP  0x02
+
 typedef struct sflow_collector_entry_key_s { /* sflow_collector_entry_key */
     uint32_t collector_ip;
 } sflow_collector_entry_key_t;
@@ -107,6 +113,8 @@ typedef struct sflow_debug_counters_s { /* sflow_debug_counters */
 } sflow_debug_counters_t;
 
 extern sflow_debug_counters_t sflow_counters;
+extern sflow_sampler_entry_t sampler_entries[SFLOWA_CONFIG_OF_PORTS_MAX+1];
+extern sflow_port_features_t port_features[SFLOWA_CONFIG_OF_PORTS_MAX+1];
 
 /* Internal functions used by utest module */
 list_head_t *sflow_collectors_list(void);

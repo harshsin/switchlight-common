@@ -53,12 +53,6 @@
 #define SFLOW_MAX_HEADER_SIZE 1300
 
 /*
- * if-status, admin and oper state
- */
-#define IF_ADMIN_UP 0x01
-#define IF_OPER_UP  0x02
-
-/*
  * Duplex, half or full.
  * 0 = unknown, 1 = full-duplex,
  * 2 = half-duplex, 3 = in, 4 = out
@@ -77,7 +71,7 @@ static const indigo_core_gentable_ops_t sflow_sampler_ops;
 static bool sflowa_initialized = false;
 static uint16_t sflow_enabled_ports = 0;
 
-static sflow_sampler_entry_t sampler_entries[SFLOWA_CONFIG_OF_PORTS_MAX+1];
+sflow_sampler_entry_t sampler_entries[SFLOWA_CONFIG_OF_PORTS_MAX+1];
 static LIST_DEFINE(sflow_collectors);
 
 static sflowa_sampling_rate_handler_f sflowa_sampling_rate_handler;
@@ -85,7 +79,7 @@ static sflowa_sampling_rate_handler_f sflowa_sampling_rate_handler;
 static SFLAgent dummy_agent;
 aim_ratelimiter_t sflow_pktin_log_limiter;
 
-static sflow_port_features_t port_features[SFLOWA_CONFIG_OF_PORTS_MAX+1];
+sflow_port_features_t port_features[SFLOWA_CONFIG_OF_PORTS_MAX+1];
 static bool port_features_stale = true;
 
 sflow_debug_counters_t sflow_counters;
