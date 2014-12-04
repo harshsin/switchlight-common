@@ -58,6 +58,8 @@
 #define ICMP_ECHO_REQUEST       8   /* Echo Request             */
 #define ICMP_TIME_EXCEEDED      11  /* Time Exceeded            */
 
+#define MAX_VLAN                4095
+
 extern aim_ratelimiter_t icmp_pktin_log_limiter;
 
 typedef struct icmpa_packet_counter_s { /* icmpa_packet_counter */
@@ -76,6 +78,20 @@ typedef struct icmpa_typecode_packet_counter_s { /* icmpa_typecode_packet_counte
 
 extern icmpa_packet_counter_t pkt_counters;
 extern icmpa_typecode_packet_counter_t port_pkt_counters[ICMPA_CONFIG_OF_PORTS_MAX+1];
+
+typedef struct icmp_entry_key_s { /* icmp_entry_key */
+    uint16_t vlan_id;
+    uint32_t ipv4;
+} icmp_entry_key_t;
+
+typedef struct icmp_entry_value_s { /* icmp_entry_value */
+    uint16_t vlan_id;
+} icmp_entry_value_t;
+
+typedef struct icmp_entry_s { /* icmp_entry */
+    icmp_entry_key_t key;
+    icmp_entry_value_t value;
+} icmp_entry_t;
 
 /******************************************************************************
  *

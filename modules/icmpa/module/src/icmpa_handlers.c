@@ -32,6 +32,9 @@ aim_ratelimiter_t icmp_pktin_log_limiter;
 icmpa_packet_counter_t pkt_counters;
 icmpa_typecode_packet_counter_t port_pkt_counters[ICMPA_CONFIG_OF_PORTS_MAX+1];
 
+static indigo_core_gentable_t *icmp_table;
+static const indigo_core_gentable_ops_t icmp_ops;
+
 /*
  * is_ephemeral
  *
@@ -241,6 +244,9 @@ icmpa_init (void)
 
     AIM_LOG_INFO("init");
 
+    indigo_core_gentable_register("icmp", &icmp_ops, NULL, MAX_VLAN+1, 256,
+                                  &icmp_table);
+
     /*
      * Register system debug counters
      */
@@ -285,6 +291,8 @@ icmpa_finish (void)
 {
     if (!icmpa_is_initialized()) return;
 
+    indigo_core_gentable_unregister(icmp_table);
+
     /*
      * Unregister system debug counters
      */
@@ -303,3 +311,200 @@ icmpa_finish (void)
 
     icmp_initialized = false;
 }
+
+/*
+ * icmp_parse_key
+ *
+ * Parse key for icmp table entry from tlv list
+ */
+static indigo_error_t
+icmp_parse_key (of_list_bsn_tlv_t *tlvs, icmp_entry_key_t *key)
+{
+    of_object_t tlv;
+
+    ICMPA_MEMSET(key, 0, sizeof(*key));
+
+    if (of_list_bsn_tlv_first(tlvs, &tlv) < 0) {
+        AIM_LOG_ERROR("empty key list");
+        return INDIGO_ERROR_PARAM;
+    }
+
+    /*
+     * Vlan id
+     */
+    if (tlv.object_id == OF_BSN_TLV_VLAN_VID) {
+        of_bsn_tlv_vlan_vid_value_get(&tlv, &key->vlan_id);
+    } else {
+        AIM_LOG_ERROR("expected vlan key TLV, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
+    if (key->vlan_id > MAX_VLAN) {
+        AIM_LOG_ERROR("%s: VLAN out of range (%u)", __FUNCTION__, key->vlan_id);
+        return INDIGO_ERROR_PARAM;
+    }
+
+    if (of_list_bsn_tlv_next(tlvs, &tlv) < 0) {
+        AIM_LOG_ERROR("unexpected end of value list");
+        return INDIGO_ERROR_PARAM;
+    }
+
+    /*
+     * Virtual Router IP
+     */
+    if (tlv.object_id == OF_BSN_TLV_IPV4) {
+        of_bsn_tlv_ipv4_value_get(&tlv, &key->ipv4);
+    } else {
+        AIM_LOG_ERROR("expected ipv4 key TLV, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
+    if (of_list_bsn_tlv_next(tlvs, &tlv) == 0) {
+        AIM_LOG_ERROR("expected end of key list, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
+    return INDIGO_ERROR_NONE;
+}
+
+/*
+ * icmp_parse_value
+ *
+ * Parse values for icmp table entry from tlv list
+ */
+static indigo_error_t
+icmp_parse_value (of_list_bsn_tlv_t *tlvs, icmp_entry_value_t *value)
+{
+    of_object_t tlv;
+
+    ICMPA_MEMSET(value, 0, sizeof(*value));
+
+    if (of_list_bsn_tlv_first(tlvs, &tlv) < 0) {
+        AIM_LOG_ERROR("empty value list");
+        return INDIGO_ERROR_PARAM;
+    }
+
+    /*
+     * Vlan id
+     */
+    if (tlv.object_id == OF_BSN_TLV_VLAN_VID) {
+        of_bsn_tlv_vlan_vid_value_get(&tlv, &value->vlan_id);
+    } else {
+        AIM_LOG_ERROR("expected vlan value TLV, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
+    if (value->vlan_id > MAX_VLAN) {
+        AIM_LOG_ERROR("%s: VLAN out of range (%u)",
+                      __FUNCTION__, value->vlan_id);
+        return INDIGO_ERROR_PARAM;
+    }
+
+    if (of_list_bsn_tlv_next(tlvs, &tlv) == 0) {
+        AIM_LOG_ERROR("expected end of value list, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
+    return INDIGO_ERROR_NONE;
+}
+
+/*
+ * icmp_add
+ *
+ * Add a new entry to icmp table
+ */
+static indigo_error_t
+icmp_add (void *table_priv, of_list_bsn_tlv_t *key_tlvs,
+          of_list_bsn_tlv_t *value_tlvs, void **entry_priv)
+{
+    indigo_error_t rv;
+    icmp_entry_key_t key;
+    icmp_entry_value_t value;
+
+    rv = icmp_parse_key(key_tlvs, &key);
+    if (rv < 0) {
+        return rv;
+    }
+
+    rv = icmp_parse_value(value_tlvs, &value);
+    if (rv < 0) {
+        return rv;
+    }
+
+    icmp_entry_t *entry = aim_zmalloc(sizeof(icmp_entry_t));
+    entry->key = key;
+    entry->value = value;
+
+    AIM_LOG_TRACE("Add icmp table entry, vlan_id:%u, ip:%{ipv4a} -> vlan_id:%u",
+                  entry->key.vlan_id, entry->key.ipv4, entry->value.vlan_id);
+
+    *entry_priv = entry;
+
+    return INDIGO_ERROR_NONE;
+}
+
+/*
+ * icmp_modify
+ *
+ * Modify a existing entry in icmp table
+ */
+static indigo_error_t
+icmp_modify (void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key_tlvs,
+             of_list_bsn_tlv_t *value_tlvs)
+{
+    indigo_error_t rv;
+    icmp_entry_value_t value;
+    icmp_entry_t *entry = entry_priv;
+
+    rv = icmp_parse_value(value_tlvs, &value);
+    if (rv < 0) {
+        return rv;
+    }
+
+    AIM_LOG_TRACE("Modify icmp table entry, vlan_id:%u, ip:%{ipv4a} -> from "
+                  "vlan_id:%u to vlan_id:%u", entry->key.vlan_id,
+                  entry->key.ipv4, entry->value.vlan_id, value.vlan_id);
+
+    entry->value = value;
+
+    return INDIGO_ERROR_NONE;
+}
+
+/*
+ * icmp_delete
+ *
+ * Remove a entry from icmp table
+ */
+static indigo_error_t
+icmp_delete (void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key_tlvs)
+{
+    icmp_entry_t *entry = entry_priv;
+
+    AIM_LOG_TRACE("Delete icmp table entry, vlan_id:%u, ip:%{ipv4a} -> "
+                  "vlan_id:%u", entry->key.vlan_id, entry->key.ipv4,
+                  entry->value.vlan_id);
+
+    aim_free(entry);
+    return INDIGO_ERROR_NONE;
+}
+
+static void
+icmp_get_stats (void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key,
+                of_list_bsn_tlv_t *stats)
+{
+    /*
+     * No stats
+     */
+}
+
+static const indigo_core_gentable_ops_t icmp_ops = {
+    .add = icmp_add,
+    .modify = icmp_modify,
+    .del = icmp_delete,
+    .get_stats = icmp_get_stats,
+};
