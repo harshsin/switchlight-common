@@ -34,7 +34,6 @@
  */
 
 #include <AIM/aim.h>
-#include <debug_counter/debug_counter.h>
 #include <OS/os_time.h>
 #include <PPE/ppe.h>
 #include <fcntl.h>
@@ -52,12 +51,6 @@
  * because host sFlow agent breaks for anything over this size.
  */
 #define SFLOW_MAX_HEADER_SIZE 1300
-
-/*
- * if-status, admin and oper state
- */
-#define IF_ADMIN_UP 0x01
-#define IF_OPER_UP  0x02
 
 /*
  * Duplex, half or full.
@@ -78,7 +71,7 @@ static const indigo_core_gentable_ops_t sflow_sampler_ops;
 static bool sflowa_initialized = false;
 static uint16_t sflow_enabled_ports = 0;
 
-static sflow_sampler_entry_t sampler_entries[SFLOWA_CONFIG_OF_PORTS_MAX+1];
+sflow_sampler_entry_t sampler_entries[SFLOWA_CONFIG_OF_PORTS_MAX+1];
 static LIST_DEFINE(sflow_collectors);
 
 static sflowa_sampling_rate_handler_f sflowa_sampling_rate_handler;
@@ -86,8 +79,10 @@ static sflowa_sampling_rate_handler_f sflowa_sampling_rate_handler;
 static SFLAgent dummy_agent;
 aim_ratelimiter_t sflow_pktin_log_limiter;
 
-static sflow_port_features_t port_features[SFLOWA_CONFIG_OF_PORTS_MAX+1];
+sflow_port_features_t port_features[SFLOWA_CONFIG_OF_PORTS_MAX+1];
 static bool port_features_stale = true;
+
+sflow_debug_counters_t sflow_counters;
 
 /*
  * sflowa_init
@@ -126,6 +121,23 @@ sflowa_init(void)
         return INDIGO_ERROR_INIT;
     }
 
+    /*
+     * Register debug counters
+     */
+    debug_counter_register(&sflow_counters.packet_in, "sflowa.packet_in",
+                           "Sampled pkt's recv'd by sflowa");
+    debug_counter_register(&sflow_counters.packet_out, "sflowa.packet_out",
+                           "Sflow datagrams sent by sflowa");
+    debug_counter_register(&sflow_counters.counter_request,
+                           "sflowa.counter_request",
+                           "Counter requests polled by sflowa");
+    debug_counter_register(&sflow_counters.port_status_notification,
+                           "sflowa.port_status_notification",
+                           "Port status notif's recv'd by sflowa");
+    debug_counter_register(&sflow_counters.port_features_update,
+                           "sflowa.port_features_update",
+                            "Port features updated by sflowa");
+
     aim_ratelimiter_init(&sflow_pktin_log_limiter, 1000*1000, 5, NULL);
 
     sflowa_initialized = true;
@@ -146,6 +158,15 @@ sflowa_finish(void)
     indigo_core_gentable_unregister(sflow_sampler_table);
     indigo_core_packet_in_listener_unregister(sflowa_packet_in_handler);
     indigo_core_port_status_listener_unregister(sflowa_port_status_handler);
+
+    /*
+     * Unregister debug counters
+     */
+    debug_counter_unregister(&sflow_counters.packet_in);
+    debug_counter_unregister(&sflow_counters.packet_out);
+    debug_counter_unregister(&sflow_counters.counter_request);
+    debug_counter_unregister(&sflow_counters.port_status_notification);
+    debug_counter_unregister(&sflow_counters.port_features_update);
 
     sflowa_initialized = false;
     sflowa_sampling_rate_handler = NULL;
@@ -195,6 +216,8 @@ sflowa_receive_packet(of_octets_t *octets, of_port_no_t in_port)
     AIM_ASSERT(octets->data, "NULL data in pkt receive api");
 
     AIM_LOG_TRACE("Sampled packet_in received for in_port: %u", in_port);
+    debug_counter_inc(&sflow_counters.packet_in);
+    ++sampler_entries[in_port].stats.rx_packets;
 
     ppe_packet_init(&ppep, octets->data, octets->bytes);
     if (ppe_parse(&ppep) < 0) {
@@ -338,6 +361,7 @@ sflowa_port_status_handler(of_port_status_t *port_status)
     AIM_LOG_TRACE("Received port_status notification, "
                   "mark port_features cache to be_stale");
     port_features_stale = true;
+    debug_counter_inc(&sflow_counters.port_status_notification);
     return INDIGO_CORE_LISTENER_RESULT_PASS;
 }
 
@@ -439,6 +463,8 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
         memcpy(pkt+8, &agent_ip, sizeof(entry->value.agent_ip));
         memcpy(pkt+12, &sub_agent_id, sizeof(sub_agent_id));
 
+        debug_counter_inc(&sflow_counters.packet_out);
+
         switch(sflow_get_send_mode(entry)) {
         case SFLOW_SEND_MODE_MGMT: {
 
@@ -452,9 +478,9 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
              * log any errors while sending - EAGAIN or EWOULDBLOCK, EINTR
              * and move on
              */
-           int result = sendto(entry->sd, pkt, pktLen, 0,
-                               (struct sockaddr *)&sa,
-                               sizeof(struct sockaddr_in));
+            int result = sendto(entry->sd, pkt, pktLen, 0,
+                                (struct sockaddr *)&sa,
+                                sizeof(struct sockaddr_in));
             if (result < 0) {
                 if (errno == EWOULDBLOCK || errno == EAGAIN) {
                     AIM_LOG_WARN("socket: %d, buffer full");
@@ -516,6 +542,8 @@ sflow_update_port_features(void)
         of_object_delete(reply);
         return;
     }
+
+    debug_counter_inc(&sflow_counters.port_features_update);
 
     /*
      * reset everything
@@ -615,6 +643,8 @@ sflow_get_counters(void *magic, SFLPoller *poller, SFL_COUNTERS_SAMPLE_TYPE *cs)
      * Default to "counter not supported"
      */
     memset(&stats, 0xff, sizeof(stats));
+
+    debug_counter_inc(&sflow_counters.counter_request);
 
     indigo_port_extended_stats_get(port_no, &stats);
     sflow_update_port_features();
@@ -1419,13 +1449,21 @@ sflow_sampler_delete(void *table_priv, void *entry_priv,
 /*
  * sflow_sampler_get_stats
  *
- * Dummy function
+ * Return the stats related with a entry in sflow_sampler table
  */
 static void
 sflow_sampler_get_stats(void *table_priv, void *entry_priv,
                         of_list_bsn_tlv_t *key, of_list_bsn_tlv_t *stats)
 {
-    /* No stats */
+    sflow_sampler_entry_t *entry = entry_priv;
+
+    /* rx_packets */
+    {
+        of_bsn_tlv_rx_packets_t tlv;
+        of_bsn_tlv_rx_packets_init(&tlv, stats->version, -1, 1);
+        of_list_bsn_tlv_append_bind(stats, &tlv);
+        of_bsn_tlv_rx_packets_value_set(&tlv, entry->stats.rx_packets);
+    }
 }
 
 static const indigo_core_gentable_ops_t sflow_sampler_ops = {

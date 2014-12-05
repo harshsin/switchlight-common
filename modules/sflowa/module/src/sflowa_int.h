@@ -31,8 +31,15 @@
 #include <indigo/of_state_manager.h>
 #include <SocketManager/socketmanager.h>
 #include <indigo/port_manager.h>
+#include <debug_counter/debug_counter.h>
 #include <AIM/aim_list.h>
 #include <host_sflow/host_sflow.h>
+
+/*
+ * if-status, admin and oper state
+ */
+#define IF_ADMIN_UP 0x01
+#define IF_OPER_UP  0x02
 
 typedef struct sflow_collector_entry_key_s { /* sflow_collector_entry_key */
     uint32_t collector_ip;
@@ -71,9 +78,14 @@ typedef struct sflow_sampler_entry_value_s { /* sflow_sampler_entry_value */
     uint32_t polling_interval;
 } sflow_sampler_entry_value_t;
 
+typedef struct sflow_sampler_entry_stats_s { /* sflow_sampler_entry_stats */
+    uint64_t rx_packets;
+} sflow_sampler_entry_stats_t;
+
 typedef struct sflow_sampler_entry_s { /* sflow_sampler_entry */
     sflow_sampler_entry_key_t key;
     sflow_sampler_entry_value_t value;
+    sflow_sampler_entry_stats_t stats;
 } sflow_sampler_entry_t;
 
 typedef enum sflow_send_mode_e { /* sflow_send_mode */
@@ -91,6 +103,18 @@ typedef struct sflow_port_features_s { /* sflow_port_features */
                                    bit 0 = ifAdminStatus (0 = down, 1 = up)
                                    bit 1 = ifOperStatus (0 = down, 1 = up) */
 } sflow_port_features_t;
+
+typedef struct sflow_debug_counters_s { /* sflow_debug_counters */
+    debug_counter_t packet_in;
+    debug_counter_t packet_out;
+    debug_counter_t counter_request;
+    debug_counter_t port_status_notification;
+    debug_counter_t port_features_update;
+} sflow_debug_counters_t;
+
+extern sflow_debug_counters_t sflow_counters;
+extern sflow_sampler_entry_t sampler_entries[SFLOWA_CONFIG_OF_PORTS_MAX+1];
+extern sflow_port_features_t port_features[SFLOWA_CONFIG_OF_PORTS_MAX+1];
 
 /* Internal functions used by utest module */
 list_head_t *sflow_collectors_list(void);
