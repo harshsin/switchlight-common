@@ -124,20 +124,18 @@ sflowa_init(void)
     /*
      * Register debug counters
      */
-    debug_counter_register(&sflow_counters.total_in_packets,
-                           "sflowa.total_in_packets",
+    debug_counter_register(&sflow_counters.packet_in, "sflowa.packet_in",
                            "Sampled pkt's recv'd by sflowa");
-    debug_counter_register(&sflow_counters.total_out_packets,
-                           "sflowa.total_out_packets",
+    debug_counter_register(&sflow_counters.packet_out, "sflowa.packet_out",
                            "Sflow datagrams sent by sflowa");
-    debug_counter_register(&sflow_counters.counter_requests,
-                           "sflowa.counter_requests",
-                            "Counter requests polled by sflowa");
-    debug_counter_register(&sflow_counters.port_status_notifications,
-                           "sflowa.port_status_notifications",
+    debug_counter_register(&sflow_counters.counter_request,
+                           "sflowa.counter_request",
+                           "Counter requests polled by sflowa");
+    debug_counter_register(&sflow_counters.port_status_notification,
+                           "sflowa.port_status_notification",
                            "Port status notif's recv'd by sflowa");
-    debug_counter_register(&sflow_counters.port_features_updates,
-                           "sflowa.port_features_updates",
+    debug_counter_register(&sflow_counters.port_features_update,
+                           "sflowa.port_features_update",
                             "Port features updated by sflowa");
 
     aim_ratelimiter_init(&sflow_pktin_log_limiter, 1000*1000, 5, NULL);
@@ -164,11 +162,11 @@ sflowa_finish(void)
     /*
      * Unregister debug counters
      */
-    debug_counter_unregister(&sflow_counters.total_in_packets);
-    debug_counter_unregister(&sflow_counters.total_out_packets);
-    debug_counter_unregister(&sflow_counters.counter_requests);
-    debug_counter_unregister(&sflow_counters.port_status_notifications);
-    debug_counter_unregister(&sflow_counters.port_features_updates);
+    debug_counter_unregister(&sflow_counters.packet_in);
+    debug_counter_unregister(&sflow_counters.packet_out);
+    debug_counter_unregister(&sflow_counters.counter_request);
+    debug_counter_unregister(&sflow_counters.port_status_notification);
+    debug_counter_unregister(&sflow_counters.port_features_update);
 
     sflowa_initialized = false;
     sflowa_sampling_rate_handler = NULL;
@@ -218,7 +216,7 @@ sflowa_receive_packet(of_octets_t *octets, of_port_no_t in_port)
     AIM_ASSERT(octets->data, "NULL data in pkt receive api");
 
     AIM_LOG_TRACE("Sampled packet_in received for in_port: %u", in_port);
-    debug_counter_inc(&sflow_counters.total_in_packets);
+    debug_counter_inc(&sflow_counters.packet_in);
     ++sampler_entries[in_port].stats.rx_packets;
 
     ppe_packet_init(&ppep, octets->data, octets->bytes);
@@ -363,7 +361,7 @@ sflowa_port_status_handler(of_port_status_t *port_status)
     AIM_LOG_TRACE("Received port_status notification, "
                   "mark port_features cache to be_stale");
     port_features_stale = true;
-    debug_counter_inc(&sflow_counters.port_status_notifications);
+    debug_counter_inc(&sflow_counters.port_status_notification);
     return INDIGO_CORE_LISTENER_RESULT_PASS;
 }
 
@@ -465,7 +463,7 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
         memcpy(pkt+8, &agent_ip, sizeof(entry->value.agent_ip));
         memcpy(pkt+12, &sub_agent_id, sizeof(sub_agent_id));
 
-        debug_counter_inc(&sflow_counters.total_out_packets);
+        debug_counter_inc(&sflow_counters.packet_out);
 
         switch(sflow_get_send_mode(entry)) {
         case SFLOW_SEND_MODE_MGMT: {
@@ -545,7 +543,7 @@ sflow_update_port_features(void)
         return;
     }
 
-    debug_counter_inc(&sflow_counters.port_features_updates);
+    debug_counter_inc(&sflow_counters.port_features_update);
 
     /*
      * reset everything
@@ -646,7 +644,7 @@ sflow_get_counters(void *magic, SFLPoller *poller, SFL_COUNTERS_SAMPLE_TYPE *cs)
      */
     memset(&stats, 0xff, sizeof(stats));
 
-    debug_counter_inc(&sflow_counters.counter_requests);
+    debug_counter_inc(&sflow_counters.counter_request);
 
     indigo_port_extended_stats_get(port_no, &stats);
     sflow_update_port_features();

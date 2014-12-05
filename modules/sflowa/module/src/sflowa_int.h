@@ -105,11 +105,11 @@ typedef struct sflow_port_features_s { /* sflow_port_features */
 } sflow_port_features_t;
 
 typedef struct sflow_debug_counters_s { /* sflow_debug_counters */
-    debug_counter_t total_in_packets;
-    debug_counter_t total_out_packets;
-    debug_counter_t counter_requests;
-    debug_counter_t port_status_notifications;
-    debug_counter_t port_features_updates;
+    debug_counter_t packet_in;
+    debug_counter_t packet_out;
+    debug_counter_t counter_request;
+    debug_counter_t port_status_notification;
+    debug_counter_t port_features_update;
 } sflow_debug_counters_t;
 
 extern sflow_debug_counters_t sflow_counters;

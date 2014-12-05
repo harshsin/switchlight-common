@@ -22,11 +22,11 @@ sflowa_ucli_ucli__clear_counters__(ucli_context_t* uc)
                       "clear", 0,
                       "$summary#Clear counters.");
 
-    debug_counter_reset(&sflow_counters.total_in_packets);
-    debug_counter_reset(&sflow_counters.total_out_packets);
-    debug_counter_reset(&sflow_counters.counter_requests);
-    debug_counter_reset(&sflow_counters.port_status_notifications);
-    debug_counter_reset(&sflow_counters.port_features_updates);
+    debug_counter_reset(&sflow_counters.packet_in);
+    debug_counter_reset(&sflow_counters.packet_out);
+    debug_counter_reset(&sflow_counters.counter_request);
+    debug_counter_reset(&sflow_counters.port_status_notification);
+    debug_counter_reset(&sflow_counters.port_features_update);
 
     return UCLI_STATUS_OK;
 }
@@ -40,15 +40,15 @@ sflowa_ucli_ucli__show_counters__(ucli_context_t* uc)
 
     ucli_printf(uc, "*************DUMPING COUNTERS*************\n");
     ucli_printf(uc, "TOTAL SAMPLES RECV'D       : %" PRId64 "\n",
-                debug_counter_get(&sflow_counters.total_in_packets));
+                debug_counter_get(&sflow_counters.packet_in));
     ucli_printf(uc, "TOTAL DATAGRAMS SENT       : %" PRId64 "\n",
-                debug_counter_get(&sflow_counters.total_out_packets));
+                debug_counter_get(&sflow_counters.packet_out));
     ucli_printf(uc, "COUNTER REQUESTS           : %" PRId64 "\n",
-                debug_counter_get(&sflow_counters.counter_requests));
+                debug_counter_get(&sflow_counters.counter_request));
     ucli_printf(uc, "PORT STATUS NOTIF'S RECV'D : %" PRId64 "\n",
-                debug_counter_get(&sflow_counters.port_status_notifications));
+                debug_counter_get(&sflow_counters.port_status_notification));
     ucli_printf(uc, "PORT FEATURES UPDATES      : %" PRId64 "\n",
-                debug_counter_get(&sflow_counters.port_features_updates));
+                debug_counter_get(&sflow_counters.port_features_update));
     ucli_printf(uc, "*************END DUMPING INFO********************\n");
 
     return UCLI_STATUS_OK;
@@ -128,6 +128,8 @@ sflowa_ucli_ucli__show_portattributes__(ucli_context_t* uc)
                       "$summary#Display the sflow attributes per port."
                       "$args#[Port]");
 
+    print_once = true;
+
     if (uc->pargs->count == 1) {
         UCLI_ARGPARSE_OR_RETURN(uc, "i", &port);
         sflowa_show_portattributes__(uc, port);
@@ -153,7 +155,7 @@ sflowa_ucli_ucli__config__(ucli_context_t* uc)
  * source file.
  *
  *****************************************************************************/
-static ucli_command_handler_f sflowa_ucli_ucli_handlers__[] = 
+static ucli_command_handler_f sflowa_ucli_ucli_handlers__[] =
 {
     sflowa_ucli_ucli__clear_counters__,
     sflowa_ucli_ucli__show_counters__,
