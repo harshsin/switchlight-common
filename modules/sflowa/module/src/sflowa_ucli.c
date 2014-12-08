@@ -1,8 +1,22 @@
-/**************************************************************************//**
+/****************************************************************
  *
+ *        Copyright 2014, Big Switch Networks, Inc.
  *
+ * Licensed under the Eclipse Public License, Version 1.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
  *
- *****************************************************************************/
+ *        http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the shard
+ * language governing permissions and limitations under the
+ * License.
+ *
+ ****************************************************************/
+
 #include <sflowa/sflowa_config.h>
 #include "sflowa_log.h"
 #include "sflowa_int.h"
@@ -66,7 +80,7 @@ sflowa_ucli_ucli__show_collectors__(ucli_context_t* uc)
 
     if (list_empty(list)) return UCLI_STATUS_OK;
 
-    ucli_printf(uc, "IP --> MAC\t\t\t\t PORT\t STATS(tx-pkts: tx-bytes)\n");
+    ucli_printf(uc, "IP\t --> MAC\t\t PORT\t STATS(tx-pkts: tx-bytes)\n");
     LIST_FOREACH(list, cur) {
         sflow_collector_entry_t *entry = container_of(cur, links,
                                                       sflow_collector_entry_t);
@@ -96,8 +110,8 @@ sflowa_show_portattributes__(ucli_context_t* uc, uint32_t port_no)
         ucli_printf(uc,
                     "PORT      OF port number\n"
                     "rate      Ingress sampling rate\n"
-                    "size      Header size\n"
-                    "poll      Polling interval\n"
+                    "size      Header size(bytes)\n"
+                    "poll      Polling interval(sec)\n"
                     "speed     Intf bandwidth(bits/sec)\n"
                     "direction 0 = Unknown, 1 = FD, 2 = HD\n"
                     "admin     Administrative status\n"
@@ -108,7 +122,7 @@ sflowa_show_portattributes__(ucli_context_t* uc, uint32_t port_no)
         print_once = false;
     }
 
-    ucli_printf(uc, "%u\t\t%u\t%u\t%u\t%"PRId64"\t%u\t\t%s\t%s\t%"PRId64"\n",
+    ucli_printf(uc, "%u\t%u\t%u\t%u\t%"PRId64"\t%u\t\t%s\t%s\t%"PRId64"\n",
                 port_no, sampler_entries[port_no].value.sampling_rate,
                 sampler_entries[port_no].value.header_size,
                 sampler_entries[port_no].value.polling_interval,
