@@ -89,6 +89,7 @@ typedef struct icmp_entry_key_s { /* icmp_entry_key */
 
 typedef struct icmp_entry_value_s { /* icmp_entry_value */
     uint16_t vlan_id;
+    uint32_t ipv4_netmask;
 } icmp_entry_value_t;
 
 typedef struct icmp_entry_s { /* icmp_entry */
@@ -112,6 +113,7 @@ indigo_error_t icmpa_send_packet_out (of_octets_t *octets);
 indigo_core_listener_result_t
 icmpa_packet_in_handler (of_packet_in_t *packet_in);
 
+bool icmpa_router_ip_lookup (uint32_t dest_ip, uint32_t *router_ip);
 icmp_entry_t *icmpa_lookup (uint16_t vlan_id, uint32_t ipv4);
 
 #endif /* __ICMPA_INT_H__ */

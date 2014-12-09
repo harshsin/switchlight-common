@@ -323,6 +323,37 @@ icmpa_finish (void)
 }
 
 /*
+ * icmpa_router_ip_lookup
+ *
+ * Given host ip, determine the VRouter ip associated with this host
+ *
+ * Return true if found; else false
+ */
+bool
+icmpa_router_ip_lookup (uint32_t dest_ip, uint32_t *router_ip)
+{
+    icmp_entry_t *entry;
+    bighash_iter_t iter;
+
+    AIM_ASSERT(router_ip, "NULL router_ip");
+
+    for (entry = (icmp_entry_t *)bighash_iter_start(icmp_entries, &iter);
+         entry != NULL;
+         entry = (icmp_entry_t *)bighash_iter_next(&iter)) {
+
+        if ((entry->key.ipv4 & entry->value.ipv4_netmask) ==
+            (dest_ip & entry->value.ipv4_netmask)) {
+            AIM_LOG_TRACE("Found router ip:%{ipv4a} for dest_ip:%{ipv4a}",
+                          entry->key.ipv4, dest_ip);
+            *router_ip = entry->key.ipv4;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/*
  * icmpa_lookup
  *
  * Hashtable lookup
@@ -434,6 +465,22 @@ icmp_parse_value (of_list_bsn_tlv_t *tlvs, icmp_entry_value_t *value)
         return INDIGO_ERROR_PARAM;
     }
 
+    if (of_list_bsn_tlv_next(tlvs, &tlv) < 0) {
+        AIM_LOG_ERROR("unexpected end of value list");
+        return INDIGO_ERROR_PARAM;
+    }
+
+    /*
+     * Ipv4 netmask
+     */
+    if (tlv.object_id == OF_BSN_TLV_IPV4_NETMASK) {
+        of_bsn_tlv_ipv4_netmask_value_get(&tlv, &value->ipv4_netmask);
+    } else {
+        AIM_LOG_ERROR("expected ipv4_netmask value TLV, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
     if (of_list_bsn_tlv_next(tlvs, &tlv) == 0) {
         AIM_LOG_ERROR("expected end of value list, instead got %s",
                       of_class_name(&tlv));
@@ -470,8 +517,9 @@ icmp_add (void *table_priv, of_list_bsn_tlv_t *key_tlvs,
     entry->key = key;
     entry->value = value;
 
-    AIM_LOG_TRACE("Add icmp table entry, vlan_id:%u, ip:%{ipv4a} -> vlan_id:%u",
-                  entry->key.vlan_id, entry->key.ipv4, entry->value.vlan_id);
+    AIM_LOG_TRACE("Add icmp table entry, vlan_id:%u, ip:%{ipv4a} -> vlan_id:%u"
+                  ", ip_netmask:%{ipv4a}", entry->key.vlan_id, entry->key.ipv4,
+                  entry->value.vlan_id, entry->value.ipv4_netmask);
 
     *entry_priv = entry;
     icmp_entries_hashtable_insert(icmp_entries, entry);
@@ -498,8 +546,10 @@ icmp_modify (void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key_tlvs,
     }
 
     AIM_LOG_TRACE("Modify icmp table entry, vlan_id:%u, ip:%{ipv4a} -> from "
-                  "vlan_id:%u to vlan_id:%u", entry->key.vlan_id,
-                  entry->key.ipv4, entry->value.vlan_id, value.vlan_id);
+                  "vlan_id:%u, ip_netmask:%{ipv4a} to vlan_id:%u, "
+                  "ip_netmask:%{ipv4a}", entry->key.vlan_id, entry->key.ipv4,
+                  entry->value.vlan_id, entry->value.ipv4_netmask,
+                  value.vlan_id, value.ipv4_netmask);
 
     entry->value = value;
 
@@ -517,8 +567,9 @@ icmp_delete (void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key_tlvs)
     icmp_entry_t *entry = entry_priv;
 
     AIM_LOG_TRACE("Delete icmp table entry, vlan_id:%u, ip:%{ipv4a} -> "
-                  "vlan_id:%u", entry->key.vlan_id, entry->key.ipv4,
-                  entry->value.vlan_id);
+                  "vlan_id:%u, ip_netmask:%{ipv4a}",
+                  entry->key.vlan_id, entry->key.ipv4, entry->value.vlan_id,
+                  entry->value.ipv4_netmask);
 
     bighash_remove(icmp_entries, &entry->hash_entry);
     aim_free(entry);

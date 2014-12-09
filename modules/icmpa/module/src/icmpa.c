@@ -324,7 +324,7 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
     uint32_t                   vlan_id, vlan_pcp;
     uint32_t                   router_ip;
     of_mac_addr_t              router_mac;
-    uint32_t                   src_ip;
+    uint32_t                   src_ip, dest_ip;
     indigo_error_t             rv;
 
     if (!ppep) return false;
@@ -354,20 +354,28 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
      *
      * For Icmp TTL Expired and ICMP Net Unreachable cases we need to
      * lookup the Vrouter IP based on the Vlan to use as src ip
+     *
+     * In case of traceroute to a host, packet triggerring ttl expired will
+     * arrive on SYSTEM_VLAN and will be destined to the host and hence a
+     * lookup will SYSTEM_VLAN key in router_ip_table will fail.
+     * Check in icmp table to determine the VRouter ip associated
+     * with this host to use as src ip in ttl expired msg.
      */
+    ppe_field_get(ppep, PPE_FIELD_IP4_DST_ADDR, &dest_ip);
     if (type == ICMP_DEST_UNREACHABLE && code == 3) {
-        ppe_field_get(ppep, PPE_FIELD_IP4_DST_ADDR, &router_ip);
+        router_ip = dest_ip;
     } else {
         if (router_ip_table_lookup(vlan_id, &router_ip, &router_mac) < 0) {
-            if (vlan_id == ICMPA_CONFIG_SYSTEM_VLAN) {
-                AIM_LOG_TRACE("ICMPA: Router IP lookup failed for System vlan");
-            } else {
-                AIM_LOG_ERROR("ICMPA: Router IP lookup failed for vlan: %u",
-                              vlan_id);
-            }
+            AIM_LOG_TRACE("ICMPA: Router IP lookup failed for vlan: %u",
+                          vlan_id);
 
-            debug_counter_inc(&pkt_counters.icmp_internal_errors);
-            return false;
+
+            if (!icmpa_router_ip_lookup(dest_ip, &router_ip)) {
+                AIM_LOG_ERROR("ICMPA: Router IP lookup failed in icmp table "
+                              "for dest_ip:%{ipv4a}", dest_ip);
+                debug_counter_inc(&pkt_counters.icmp_internal_errors);
+                return false;
+            }
         }
     }
 
