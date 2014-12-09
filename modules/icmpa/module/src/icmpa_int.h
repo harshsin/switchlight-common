@@ -31,6 +31,7 @@
 #include <router_ip_table/router_ip_table.h>
 #include <debug_counter/debug_counter.h>
 #include <BigHash/bighash.h>
+#include <uCli/ucli.h>
 
 /******************************************************************************
  *
@@ -113,6 +114,7 @@ indigo_error_t icmpa_send_packet_out (of_octets_t *octets);
 indigo_core_listener_result_t
 icmpa_packet_in_handler (of_packet_in_t *packet_in);
 
+void icmpa_table_entries_print(ucli_context_t* uc);
 bool icmpa_router_ip_lookup (uint32_t dest_ip, uint32_t *router_ip);
 icmp_entry_t *icmpa_lookup (uint16_t vlan_id, uint32_t ipv4);
 

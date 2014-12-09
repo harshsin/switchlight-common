@@ -44,6 +44,16 @@ static const indigo_core_gentable_ops_t icmp_ops;
 static bighash_table_t *icmp_entries;
 
 /*
+ * Iterate on entries of icmp_table.
+ * bighash_iter_t _iter - Big Hash iterator,
+ * icmp_entry_t   *_entry - Pointer to icmp_table entry.
+ */
+#define ICMP_TABLE_ITERATE(_iter, _entry)        \
+    for (_entry = (icmp_entry_t *)bighash_iter_start(icmp_entries, &_iter); \
+         _entry != NULL;                         \
+         _entry = (icmp_entry_t *)bighash_iter_next(&_iter))
+
+/*
  * is_ephemeral
  *
  * Returns true if a given port is ephemeral, else returns false
@@ -323,6 +333,28 @@ icmpa_finish (void)
 }
 
 /*
+ * icmpa_table_entries_print
+ *
+ * Print the entries in icmp_table
+ */
+void
+icmpa_table_entries_print (ucli_context_t* uc)
+{
+    icmp_entry_t *entry;
+    bighash_iter_t iter;
+
+    if (!bighash_entry_count(icmp_entries)) return;
+
+    ucli_printf(uc, "VLAN\t VROUTER IP --> OUT VLAN\t NETMASK\n");
+
+    ICMP_TABLE_ITERATE(iter, entry) {
+        ucli_printf(uc, "%u\t %{ipv4a} --> %u\t\t %{ipv4a}\n",
+                    entry->key.vlan_id, entry->key.ipv4,
+                    entry->value.vlan_id, entry->value.ipv4_netmask);
+    }
+}
+
+/*
  * icmpa_router_ip_lookup
  *
  * Given host ip, determine the VRouter ip associated with this host
@@ -337,10 +369,7 @@ icmpa_router_ip_lookup (uint32_t dest_ip, uint32_t *router_ip)
 
     AIM_ASSERT(router_ip, "NULL router_ip");
 
-    for (entry = (icmp_entry_t *)bighash_iter_start(icmp_entries, &iter);
-         entry != NULL;
-         entry = (icmp_entry_t *)bighash_iter_next(&iter)) {
-
+    ICMP_TABLE_ITERATE(iter, entry) {
         if ((entry->key.ipv4 & entry->value.ipv4_netmask) ==
             (dest_ip & entry->value.ipv4_netmask)) {
             AIM_LOG_TRACE("Found router ip:%{ipv4a} for dest_ip:%{ipv4a}",
