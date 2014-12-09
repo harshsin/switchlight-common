@@ -35,6 +35,14 @@ icmpa_typecode_packet_counter_t port_pkt_counters[ICMPA_CONFIG_OF_PORTS_MAX+1];
 static indigo_core_gentable_t *icmp_table;
 static const indigo_core_gentable_ops_t icmp_ops;
 
+#define TEMPLATE_NAME icmp_entries_hashtable
+#define TEMPLATE_OBJ_TYPE icmp_entry_t
+#define TEMPLATE_KEY_FIELD key
+#define TEMPLATE_ENTRY_FIELD hash_entry
+#include <BigHash/bighash_template.h>
+
+static bighash_table_t *icmp_entries;
+
 /*
  * is_ephemeral
  *
@@ -246,6 +254,7 @@ icmpa_init (void)
 
     indigo_core_gentable_register("icmp", &icmp_ops, NULL, MAX_VLAN+1, 256,
                                   &icmp_table);
+    icmp_entries = bighash_table_create(MAX_VLAN+1);
 
     /*
      * Register system debug counters
@@ -292,6 +301,7 @@ icmpa_finish (void)
     if (!icmpa_is_initialized()) return;
 
     indigo_core_gentable_unregister(icmp_table);
+    bighash_table_destroy(icmp_entries, NULL);
 
     /*
      * Unregister system debug counters
@@ -310,6 +320,26 @@ icmpa_finish (void)
     indigo_core_packet_in_listener_unregister(icmpa_packet_in_handler);
 
     icmp_initialized = false;
+}
+
+/*
+ * icmpa_lookup
+ *
+ * Hashtable lookup
+ * key = System_Vlan, VRouter IP
+ * value = Vlan (vlan to send echo replies)
+ *
+ * Return a pointer to icmp table entry if found; else NULL
+ */
+icmp_entry_t *
+icmpa_lookup (uint16_t vlan_id, uint32_t ipv4)
+{
+    icmp_entry_key_t key;
+    memset(&key, 0, sizeof(key));
+    key.vlan_id = vlan_id;
+    key.ipv4 = ipv4;
+
+    return icmp_entries_hashtable_first(icmp_entries, &key);
 }
 
 /*
@@ -444,6 +474,7 @@ icmp_add (void *table_priv, of_list_bsn_tlv_t *key_tlvs,
                   entry->key.vlan_id, entry->key.ipv4, entry->value.vlan_id);
 
     *entry_priv = entry;
+    icmp_entries_hashtable_insert(icmp_entries, entry);
 
     return INDIGO_ERROR_NONE;
 }
@@ -489,6 +520,7 @@ icmp_delete (void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key_tlvs)
                   "vlan_id:%u", entry->key.vlan_id, entry->key.ipv4,
                   entry->value.vlan_id);
 
+    bighash_remove(icmp_entries, &entry->hash_entry);
     aim_free(entry);
     return INDIGO_ERROR_NONE;
 }

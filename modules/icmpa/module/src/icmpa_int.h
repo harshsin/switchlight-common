@@ -30,6 +30,7 @@
 #include <indigo/of_state_manager.h>
 #include <router_ip_table/router_ip_table.h>
 #include <debug_counter/debug_counter.h>
+#include <BigHash/bighash.h>
 
 /******************************************************************************
  *
@@ -58,7 +59,9 @@
 #define ICMP_ECHO_REQUEST       8   /* Echo Request             */
 #define ICMP_TIME_EXCEEDED      11  /* Time Exceeded            */
 
-#define MAX_VLAN                4095
+#define VLAN_VID(tci) ((tci) & 0xfff)
+#define VLAN_PCP(tci) ((tci) >> 13)
+#define MAX_VLAN      4095
 
 extern aim_ratelimiter_t icmp_pktin_log_limiter;
 
@@ -89,6 +92,7 @@ typedef struct icmp_entry_value_s { /* icmp_entry_value */
 } icmp_entry_value_t;
 
 typedef struct icmp_entry_s { /* icmp_entry */
+    bighash_entry_t hash_entry;
     icmp_entry_key_t key;
     icmp_entry_value_t value;
 } icmp_entry_t;
@@ -107,5 +111,7 @@ indigo_error_t icmpa_send_packet_out (of_octets_t *octets);
 
 indigo_core_listener_result_t
 icmpa_packet_in_handler (of_packet_in_t *packet_in);
+
+icmp_entry_t *icmpa_lookup (uint16_t vlan_id, uint32_t ipv4);
 
 #endif /* __ICMPA_INT_H__ */
