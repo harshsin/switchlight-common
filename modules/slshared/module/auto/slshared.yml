@@ -29,6 +29,9 @@ cdefs: &cdefs
 - SLSHARED_CONFIG_PACKET_IN_REASON_SFLOW:
     doc: "Packet-in reason code for sflow packets"
     default: 0x2
+- SLSHARED_CONFIG_MAX_VLAN:
+    doc: "Max Vlan id"
+    default: 4095
 
 definitions:
   cdefs:

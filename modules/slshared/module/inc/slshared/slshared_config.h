@@ -99,6 +99,16 @@
 #define SLSHARED_CONFIG_PACKET_IN_REASON_SFLOW 2
 #endif
 
+/**
+ * SLSHARED_CONFIG_MAX_VLAN
+ *
+ * Max Vlan id */
+
+
+#ifndef SLSHARED_CONFIG_MAX_VLAN
+#define SLSHARED_CONFIG_MAX_VLAN 4095
+#endif
+
 
 
 /**

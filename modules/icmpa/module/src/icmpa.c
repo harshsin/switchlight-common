@@ -369,7 +369,6 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
             AIM_LOG_TRACE("ICMPA: Router IP lookup failed for vlan: %u",
                           vlan_id);
 
-
             if (!icmpa_router_ip_lookup(dest_ip, &router_ip)) {
                 AIM_LOG_ERROR("ICMPA: Router IP lookup failed in icmp table "
                               "for dest_ip:%{ipv4a}", dest_ip);

@@ -62,7 +62,6 @@
 
 #define VLAN_VID(tci) ((tci) & 0xfff)
 #define VLAN_PCP(tci) ((tci) >> 13)
-#define MAX_VLAN      4095
 
 extern aim_ratelimiter_t icmp_pktin_log_limiter;
 

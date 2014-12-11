@@ -262,9 +262,9 @@ icmpa_init (void)
 
     AIM_LOG_INFO("init");
 
-    indigo_core_gentable_register("icmp", &icmp_ops, NULL, MAX_VLAN+1, 256,
-                                  &icmp_table);
-    icmp_entries = bighash_table_create(MAX_VLAN+1);
+    indigo_core_gentable_register("icmp", &icmp_ops, NULL,
+                                  SLSHARED_CONFIG_MAX_VLAN+1, 256, &icmp_table);
+    icmp_entries = bighash_table_create(SLSHARED_CONFIG_MAX_VLAN+1);
 
     /*
      * Register system debug counters
@@ -430,7 +430,7 @@ icmp_parse_key (of_list_bsn_tlv_t *tlvs, icmp_entry_key_t *key)
         return INDIGO_ERROR_PARAM;
     }
 
-    if (key->vlan_id > MAX_VLAN) {
+    if (key->vlan_id > SLSHARED_CONFIG_MAX_VLAN) {
         AIM_LOG_ERROR("%s: VLAN out of range (%u)", __FUNCTION__, key->vlan_id);
         return INDIGO_ERROR_PARAM;
     }
@@ -488,7 +488,7 @@ icmp_parse_value (of_list_bsn_tlv_t *tlvs, icmp_entry_value_t *value)
         return INDIGO_ERROR_PARAM;
     }
 
-    if (value->vlan_id > MAX_VLAN) {
+    if (value->vlan_id > SLSHARED_CONFIG_MAX_VLAN) {
         AIM_LOG_ERROR("%s: VLAN out of range (%u)",
                       __FUNCTION__, value->vlan_id);
         return INDIGO_ERROR_PARAM;
