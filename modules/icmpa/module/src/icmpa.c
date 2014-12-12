@@ -357,7 +357,7 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
      *
      * In case of traceroute to a host, packet triggerring ttl expired will
      * arrive on SYSTEM_VLAN and will be destined to the host and hence a
-     * lookup will SYSTEM_VLAN key in router_ip_table will fail.
+     * lookup with SYSTEM_VLAN key in router_ip_table will fail.
      * Check in icmp table to determine the VRouter ip associated
      * with this host to use as src ip in ttl expired msg.
      */
