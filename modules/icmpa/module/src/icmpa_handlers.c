@@ -32,6 +32,27 @@ aim_ratelimiter_t icmp_pktin_log_limiter;
 icmpa_packet_counter_t pkt_counters;
 icmpa_typecode_packet_counter_t port_pkt_counters[ICMPA_CONFIG_OF_PORTS_MAX+1];
 
+static indigo_core_gentable_t *icmp_table;
+static const indigo_core_gentable_ops_t icmp_ops;
+
+#define TEMPLATE_NAME icmp_entries_hashtable
+#define TEMPLATE_OBJ_TYPE icmp_entry_t
+#define TEMPLATE_KEY_FIELD key
+#define TEMPLATE_ENTRY_FIELD hash_entry
+#include <BigHash/bighash_template.h>
+
+static bighash_table_t *icmp_entries;
+
+/*
+ * Iterate on entries of icmp_table.
+ * bighash_iter_t _iter - Big Hash iterator,
+ * icmp_entry_t   *_entry - Pointer to icmp_table entry.
+ */
+#define ICMP_TABLE_ITERATE(_iter, _entry)        \
+    for (_entry = (icmp_entry_t *)bighash_iter_start(icmp_entries, &_iter); \
+         _entry != NULL;                         \
+         _entry = (icmp_entry_t *)bighash_iter_next(&_iter))
+
 /*
  * is_ephemeral
  *
@@ -241,6 +262,10 @@ icmpa_init (void)
 
     AIM_LOG_INFO("init");
 
+    indigo_core_gentable_register("icmp", &icmp_ops, NULL,
+                                  SLSHARED_CONFIG_MAX_VLAN+1, 256, &icmp_table);
+    icmp_entries = bighash_table_create(SLSHARED_CONFIG_MAX_VLAN+1);
+
     /*
      * Register system debug counters
      */
@@ -285,6 +310,9 @@ icmpa_finish (void)
 {
     if (!icmpa_is_initialized()) return;
 
+    indigo_core_gentable_unregister(icmp_table);
+    bighash_table_destroy(icmp_entries, NULL);
+
     /*
      * Unregister system debug counters
      */
@@ -303,3 +331,292 @@ icmpa_finish (void)
 
     icmp_initialized = false;
 }
+
+/*
+ * icmpa_table_entries_print
+ *
+ * Print the entries in icmp_table
+ */
+void
+icmpa_table_entries_print (ucli_context_t* uc)
+{
+    icmp_entry_t *entry;
+    bighash_iter_t iter;
+
+    if (!bighash_entry_count(icmp_entries)) return;
+
+    ucli_printf(uc, "VLAN\t VROUTER IP --> OUT VLAN\t NETMASK\n");
+
+    ICMP_TABLE_ITERATE(iter, entry) {
+        ucli_printf(uc, "%u\t %{ipv4a} --> %u\t\t %{ipv4a}\n",
+                    entry->key.vlan_id, entry->key.ipv4,
+                    entry->value.vlan_id, entry->value.ipv4_netmask);
+    }
+}
+
+/*
+ * icmpa_router_ip_lookup
+ *
+ * Given host ip, determine the VRouter ip associated with this host
+ *
+ * Return true if found; else false
+ */
+bool
+icmpa_router_ip_lookup (uint32_t dest_ip, uint32_t *router_ip)
+{
+    icmp_entry_t *entry;
+    bighash_iter_t iter;
+
+    AIM_ASSERT(router_ip, "NULL router_ip");
+
+    ICMP_TABLE_ITERATE(iter, entry) {
+        if ((entry->key.ipv4 & entry->value.ipv4_netmask) ==
+            (dest_ip & entry->value.ipv4_netmask)) {
+            AIM_LOG_TRACE("Found router ip:%{ipv4a} for dest_ip:%{ipv4a}",
+                          entry->key.ipv4, dest_ip);
+            *router_ip = entry->key.ipv4;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/*
+ * icmpa_lookup
+ *
+ * Hashtable lookup
+ * key = System_Vlan, VRouter IP
+ * value = Vlan (vlan to send echo replies)
+ *
+ * Return a pointer to icmp table entry if found; else NULL
+ */
+icmp_entry_t *
+icmpa_lookup (uint16_t vlan_id, uint32_t ipv4)
+{
+    icmp_entry_key_t key;
+    memset(&key, 0, sizeof(key));
+    key.vlan_id = vlan_id;
+    key.ipv4 = ipv4;
+
+    return icmp_entries_hashtable_first(icmp_entries, &key);
+}
+
+/*
+ * icmp_parse_key
+ *
+ * Parse key for icmp table entry from tlv list
+ */
+static indigo_error_t
+icmp_parse_key (of_list_bsn_tlv_t *tlvs, icmp_entry_key_t *key)
+{
+    of_object_t tlv;
+
+    ICMPA_MEMSET(key, 0, sizeof(*key));
+
+    if (of_list_bsn_tlv_first(tlvs, &tlv) < 0) {
+        AIM_LOG_ERROR("empty key list");
+        return INDIGO_ERROR_PARAM;
+    }
+
+    /*
+     * Vlan id
+     */
+    if (tlv.object_id == OF_BSN_TLV_VLAN_VID) {
+        of_bsn_tlv_vlan_vid_value_get(&tlv, &key->vlan_id);
+    } else {
+        AIM_LOG_ERROR("expected vlan key TLV, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
+    if (key->vlan_id > SLSHARED_CONFIG_MAX_VLAN) {
+        AIM_LOG_ERROR("%s: VLAN out of range (%u)", __FUNCTION__, key->vlan_id);
+        return INDIGO_ERROR_PARAM;
+    }
+
+    if (of_list_bsn_tlv_next(tlvs, &tlv) < 0) {
+        AIM_LOG_ERROR("unexpected end of value list");
+        return INDIGO_ERROR_PARAM;
+    }
+
+    /*
+     * Virtual Router IP
+     */
+    if (tlv.object_id == OF_BSN_TLV_IPV4) {
+        of_bsn_tlv_ipv4_value_get(&tlv, &key->ipv4);
+    } else {
+        AIM_LOG_ERROR("expected ipv4 key TLV, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
+    if (of_list_bsn_tlv_next(tlvs, &tlv) == 0) {
+        AIM_LOG_ERROR("expected end of key list, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
+    return INDIGO_ERROR_NONE;
+}
+
+/*
+ * icmp_parse_value
+ *
+ * Parse values for icmp table entry from tlv list
+ */
+static indigo_error_t
+icmp_parse_value (of_list_bsn_tlv_t *tlvs, icmp_entry_value_t *value)
+{
+    of_object_t tlv;
+
+    ICMPA_MEMSET(value, 0, sizeof(*value));
+
+    if (of_list_bsn_tlv_first(tlvs, &tlv) < 0) {
+        AIM_LOG_ERROR("empty value list");
+        return INDIGO_ERROR_PARAM;
+    }
+
+    /*
+     * Vlan id
+     */
+    if (tlv.object_id == OF_BSN_TLV_VLAN_VID) {
+        of_bsn_tlv_vlan_vid_value_get(&tlv, &value->vlan_id);
+    } else {
+        AIM_LOG_ERROR("expected vlan value TLV, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
+    if (value->vlan_id > SLSHARED_CONFIG_MAX_VLAN) {
+        AIM_LOG_ERROR("%s: VLAN out of range (%u)",
+                      __FUNCTION__, value->vlan_id);
+        return INDIGO_ERROR_PARAM;
+    }
+
+    if (of_list_bsn_tlv_next(tlvs, &tlv) < 0) {
+        AIM_LOG_ERROR("unexpected end of value list");
+        return INDIGO_ERROR_PARAM;
+    }
+
+    /*
+     * Ipv4 netmask
+     */
+    if (tlv.object_id == OF_BSN_TLV_IPV4_NETMASK) {
+        of_bsn_tlv_ipv4_netmask_value_get(&tlv, &value->ipv4_netmask);
+    } else {
+        AIM_LOG_ERROR("expected ipv4_netmask value TLV, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
+    if (of_list_bsn_tlv_next(tlvs, &tlv) == 0) {
+        AIM_LOG_ERROR("expected end of value list, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
+    return INDIGO_ERROR_NONE;
+}
+
+/*
+ * icmp_add
+ *
+ * Add a new entry to icmp table
+ */
+static indigo_error_t
+icmp_add (void *table_priv, of_list_bsn_tlv_t *key_tlvs,
+          of_list_bsn_tlv_t *value_tlvs, void **entry_priv)
+{
+    indigo_error_t rv;
+    icmp_entry_key_t key;
+    icmp_entry_value_t value;
+
+    rv = icmp_parse_key(key_tlvs, &key);
+    if (rv < 0) {
+        return rv;
+    }
+
+    rv = icmp_parse_value(value_tlvs, &value);
+    if (rv < 0) {
+        return rv;
+    }
+
+    icmp_entry_t *entry = aim_zmalloc(sizeof(icmp_entry_t));
+    entry->key = key;
+    entry->value = value;
+
+    AIM_LOG_TRACE("Add icmp table entry, vlan_id:%u, ip:%{ipv4a} -> vlan_id:%u"
+                  ", ip_netmask:%{ipv4a}", entry->key.vlan_id, entry->key.ipv4,
+                  entry->value.vlan_id, entry->value.ipv4_netmask);
+
+    *entry_priv = entry;
+    icmp_entries_hashtable_insert(icmp_entries, entry);
+
+    return INDIGO_ERROR_NONE;
+}
+
+/*
+ * icmp_modify
+ *
+ * Modify a existing entry in icmp table
+ */
+static indigo_error_t
+icmp_modify (void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key_tlvs,
+             of_list_bsn_tlv_t *value_tlvs)
+{
+    indigo_error_t rv;
+    icmp_entry_value_t value;
+    icmp_entry_t *entry = entry_priv;
+
+    rv = icmp_parse_value(value_tlvs, &value);
+    if (rv < 0) {
+        return rv;
+    }
+
+    AIM_LOG_TRACE("Modify icmp table entry, vlan_id:%u, ip:%{ipv4a} -> from "
+                  "vlan_id:%u, ip_netmask:%{ipv4a} to vlan_id:%u, "
+                  "ip_netmask:%{ipv4a}", entry->key.vlan_id, entry->key.ipv4,
+                  entry->value.vlan_id, entry->value.ipv4_netmask,
+                  value.vlan_id, value.ipv4_netmask);
+
+    entry->value = value;
+
+    return INDIGO_ERROR_NONE;
+}
+
+/*
+ * icmp_delete
+ *
+ * Remove a entry from icmp table
+ */
+static indigo_error_t
+icmp_delete (void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key_tlvs)
+{
+    icmp_entry_t *entry = entry_priv;
+
+    AIM_LOG_TRACE("Delete icmp table entry, vlan_id:%u, ip:%{ipv4a} -> "
+                  "vlan_id:%u, ip_netmask:%{ipv4a}",
+                  entry->key.vlan_id, entry->key.ipv4, entry->value.vlan_id,
+                  entry->value.ipv4_netmask);
+
+    bighash_remove(icmp_entries, &entry->hash_entry);
+    aim_free(entry);
+    return INDIGO_ERROR_NONE;
+}
+
+static void
+icmp_get_stats (void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key,
+                of_list_bsn_tlv_t *stats)
+{
+    /*
+     * No stats
+     */
+}
+
+static const indigo_core_gentable_ops_t icmp_ops = {
+    .add = icmp_add,
+    .modify = icmp_modify,
+    .del = icmp_delete,
+    .get_stats = icmp_get_stats,
+};

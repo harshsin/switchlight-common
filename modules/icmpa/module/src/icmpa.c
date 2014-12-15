@@ -132,6 +132,22 @@ icmpa_build_pdu (ppe_packet_t *ppep_rx, of_octets_t *octets, uint32_t vlan_id,
      */
     ppe_wide_field_set(&ppep_tx, PPE_FIELD_ETHERNET_SRC_MAC, dest_mac);
     ppe_wide_field_set(&ppep_tx, PPE_FIELD_ETHERNET_DST_MAC, src_mac);
+
+    /*
+     * Check in icmp table if there is a vlan translation available for
+     * this (vlan_id, vrouter_ip) key; else use the vlan in packet_in
+     */
+    icmp_entry_t *entry = icmpa_lookup(vlan_id, router_ip);
+    if (entry == NULL) {
+        AIM_LOG_TRACE("Entry with vlan: %u, ip: %{ipv4a} "
+                      "not found in ICMP table", vlan_id, router_ip);
+    } else {
+        vlan_id = VLAN_VID(entry->value.vlan_id);
+        vlan_pcp = VLAN_PCP(entry->value.vlan_id);
+    }
+
+    AIM_LOG_TRACE("Using vlan: %u, prio: %u for packet_out",
+                  vlan_id, vlan_pcp);
     ppe_field_set(&ppep_tx, PPE_FIELD_8021Q_VLAN, vlan_id);
     ppe_field_set(&ppep_tx, PPE_FIELD_8021Q_PRI, vlan_pcp);
 
@@ -215,6 +231,8 @@ icmpa_reply (ppe_packet_t *ppep, of_port_no_t port_no,
         return false;
     }
 
+    AIM_LOG_TRACE("ICMP ECHO Request received on port: %d", port_no);
+
     /*
      * MUST NOT reply to a multicast/broadcast IP address.
      */
@@ -226,7 +244,6 @@ icmpa_reply (ppe_packet_t *ppep, of_port_no_t port_no,
         return false;
     }
 
-    AIM_LOG_TRACE("ICMP ECHO Request received on port: %d", port_no);
     if (AIM_LOG_CUSTOM_ENABLED(ICMPA_LOG_FLAG_PACKET)) {
         ICMPA_LOG_PACKET("DUMPING INCOMING ICMP PACKET");
         ppe_packet_dump(ppep, aim_log_pvs_get(&AIM_LOG_STRUCT));
@@ -307,7 +324,7 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
     uint32_t                   vlan_id, vlan_pcp;
     uint32_t                   router_ip;
     of_mac_addr_t              router_mac;
-    uint32_t                   src_ip;
+    uint32_t                   src_ip, dest_ip;
     indigo_error_t             rv;
 
     if (!ppep) return false;
@@ -332,25 +349,32 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
     }
 
     /*
-     * Traceroute if destined to the VRouter IP, hence we should use
+     * Traceroute is destined to the VRouter IP, hence we should use
      * that as the src IP for Icmp Port Unreachable.
      *
      * For Icmp TTL Expired and ICMP Net Unreachable cases we need to
      * lookup the Vrouter IP based on the Vlan to use as src ip
+     *
+     * In case of traceroute to a host, packet triggerring ttl expired will
+     * arrive on SYSTEM_VLAN and will be destined to the host and hence a
+     * lookup with SYSTEM_VLAN key in router_ip_table will fail.
+     * Check in icmp table to determine the VRouter ip associated
+     * with this host to use as src ip in ttl expired msg.
      */
+    ppe_field_get(ppep, PPE_FIELD_IP4_DST_ADDR, &dest_ip);
     if (type == ICMP_DEST_UNREACHABLE && code == 3) {
-        ppe_field_get(ppep, PPE_FIELD_IP4_DST_ADDR, &router_ip);
+        router_ip = dest_ip;
     } else {
         if (router_ip_table_lookup(vlan_id, &router_ip, &router_mac) < 0) {
-            if (vlan_id == ICMPA_CONFIG_SYSTEM_VLAN) {
-                AIM_LOG_TRACE("ICMPA: Router IP lookup failed for System vlan");
-            } else {
-                AIM_LOG_ERROR("ICMPA: Router IP lookup failed for vlan: %u",
-                              vlan_id);
-            }
+            AIM_LOG_TRACE("ICMPA: Router IP lookup failed for vlan: %u",
+                          vlan_id);
 
-            debug_counter_inc(&pkt_counters.icmp_internal_errors);
-            return false;
+            if (!icmpa_router_ip_lookup(dest_ip, &router_ip)) {
+                AIM_LOG_ERROR("ICMPA: Router IP lookup failed in icmp table "
+                              "for dest_ip:%{ipv4a}", dest_ip);
+                debug_counter_inc(&pkt_counters.icmp_internal_errors);
+                return false;
+            }
         }
     }
 

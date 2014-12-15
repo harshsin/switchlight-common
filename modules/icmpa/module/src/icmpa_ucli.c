@@ -134,6 +134,20 @@ icmpa_ucli_ucli__clear_counters__(ucli_context_t* uc)
 }
 
 static ucli_status_t
+icmpa_ucli_ucli__icmp_table__(ucli_context_t* uc)
+{
+    UCLI_COMMAND_INFO(uc,
+                      "icmp_table", 0,
+                      "$summary#Display icmp table entries.");
+
+    if (!icmpa_is_initialized()) return UCLI_STATUS_E_ERROR;
+
+    icmpa_table_entries_print(uc);
+
+    return UCLI_STATUS_OK;
+}
+
+static ucli_status_t
 icmpa_ucli_ucli__config__(ucli_context_t* uc)
 {
     UCLI_HANDLER_MACRO_MODULE_CONFIG(icmpa)
@@ -146,10 +160,11 @@ icmpa_ucli_ucli__config__(ucli_context_t* uc)
  * source file.
  *
  *****************************************************************************/
-static ucli_command_handler_f icmpa_ucli_ucli_handlers__[] =
+static ucli_command_handler_f icmpa_ucli_ucli_handlers__[] = 
 {
     icmpa_ucli_ucli__show_counters__,
     icmpa_ucli_ucli__clear_counters__,
+    icmpa_ucli_ucli__icmp_table__,
     icmpa_ucli_ucli__config__,
     NULL
 };
