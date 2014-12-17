@@ -36,14 +36,14 @@ static ind_soc_config_t soc_cfg;
 static const of_mac_addr_t zero_mac = { {0x00, 0x00, 0x00, 0x00, 0x00, 0x00} };
 
 static const sflow_collector_entry_t collector_entry_1 = {
-    .key.collector_ip = 0xc0a80101, //192.168.1.1
+    .key.collector_ip = 0xc0a86401, //192.168.100.1
     .value.vlan_id = 7,
     .value.agent_mac = { .addr = {0x55, 0x16, 0xc7, 0x01, 0x02, 0x03} },
-    .value.agent_ip = 0xc0a86401, //192.168.100.1
+    .value.agent_ip = 0xc0a80101, //192.168.1.1
     .value.agent_udp_sport = 50000,
     .value.collector_mac = { .addr = {0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f} },
     .value.collector_udp_dport = SFL_DEFAULT_COLLECTOR_PORT,
-    .value.sub_agent_id = 1,
+    .value.sub_agent_id = 10,
 };
 static sflow_collector_entry_t collector_entry_2 = {
     .key.collector_ip = 0x0a0a0505, //10.10.5.5
@@ -71,6 +71,18 @@ uint8_t expected[172] = {0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x01, 0xc0, 0
 
 static int fd;
 static int port_desc_count = 0;
+
+void
+hex_dump(uint8_t *ptr, int length)
+{
+    printf("received message: ");
+    int i;
+    for (i=0; i < length; i++) {
+        printf("%02x ", ptr[i]);
+        printf(" ");
+    }
+    printf("\n");
+}
 
 void
 indigo_core_gentable_register(
@@ -132,6 +144,45 @@ indigo_port_extended_stats_get(of_port_no_t port_no,
     stats->tx_packets_unicast = (port_stats.tx_packets_unicast += 2);
     stats->tx_packets_broadcast = (port_stats.tx_packets_broadcast += 2);
     stats->tx_packets_multicast = (port_stats.tx_packets_multicast += 2);
+}
+
+indigo_error_t
+indigo_fwd_packet_out(of_packet_out_t *of_packet_out)
+{
+    of_octets_t      of_octets;
+    uint32_t         flow_sample = htonl(SFLFLOW_SAMPLE);
+    uint32_t         counter_sample = htonl(SFLCOUNTERS_SAMPLE);
+    static int       cs_count = 0;
+
+    if (!of_packet_out) return INDIGO_ERROR_NONE;
+
+    of_packet_out_data_get(of_packet_out, &of_octets);
+
+    printf("Send a packet with %u bytes out\n", of_octets.bytes);
+
+    if (!memcmp(&of_octets.data[74], &flow_sample, 4)) {
+        printf("Flow Sample received\n");
+        AIM_ASSERT(of_octets.bytes == 218, "mismatch in flow sample length, "
+                   "expected 218, got (%u)", of_octets.bytes);
+        AIM_ASSERT(!memcmp(&of_octets.data[46], expected, 172),
+                   "mismatch in flow sample recv'd");
+    } else if (!memcmp(&of_octets.data[74], &counter_sample, 4)) {
+        printf("Counter Sample received\n");
+        if (cs_count == 0) {
+            AIM_ASSERT(of_octets.bytes == 190, "mismatch in counter sample "
+                       "length, expected 190, got (%u)", of_octets.bytes);
+            cs_count++;
+        } else if (cs_count == 1) {
+            AIM_ASSERT(of_octets.bytes == 306, "mismatch in counter sample "
+                       "length, expected 306, got (%u)", of_octets.bytes);
+        }
+    }
+
+#ifdef PRINT_PKT
+    hex_dump(of_octets.data, of_octets.bytes);
+#endif
+
+    return INDIGO_ERROR_NONE;
 }
 
 static void
@@ -588,18 +639,6 @@ close_socket(void)
     close(fd);
 }
 
-void
-hex_dump(uint8_t *ptr, int length)
-{
-    printf("received message: ");
-    int i;
-    for (i=0; i < length; i++) {
-        printf("%02x ", ptr[i]);
-        printf(" ");
-    }
-    printf("\n");
-}
-
 static void
 receive_socket(int type)
 {
@@ -612,7 +651,6 @@ receive_socket(int type)
     AIM_ASSERT(recvlen, "received 0 bytes from fd");
     AIM_ASSERT(recvlen != -1, "recvfrom() failed with %s", strerror(errno));
     if (type == SFLFLOW_SAMPLE) {
-        memcpy(&expected[92], sample, PACKET_BUF_SIZE);
         AIM_ASSERT(!memcmp(buf, expected, recvlen), "mismatch in recv output");
     } else if (type == SFLCOUNTERS_SAMPLE) {
         if (port_desc_count == 1) {
@@ -638,8 +676,10 @@ test_sampled_packet_in(void)
     of_list_bsn_tlv_t *key, *value;
     indigo_error_t rv;
     void *sampler_entry_priv_1, *sampler_entry_priv_2;
-    void *collector_entry_priv_1;
+    void *collector_entry_priv_1, *collector_entry_priv_2;
     of_octets_t octets;
+
+    memcpy(&expected[92], sample, PACKET_BUF_SIZE);
 
     sflowa_sampling_rate_handler_register(handler);
 
@@ -667,13 +707,30 @@ test_sampled_packet_in(void)
     of_object_delete(key);
     of_object_delete(value);
 
-    /* Add collector_table entry */
+    /* Add bt collector_table entry */
     key = make_key_collector(0x7F000001); //127.0.0.1
     value = make_value(0, zero_mac, 0xc0a80101, 0, zero_mac,
                        SFL_DEFAULT_COLLECTOR_PORT, 10);
 
     AIM_ASSERT((rv = ops_collector->add(table_priv_collector, key, value,
                &collector_entry_priv_1)) == INDIGO_ERROR_NONE,
+               "Error in collector table add: %s\n", indigo_strerror(rv));
+
+    of_object_delete(key);
+    of_object_delete(value);
+
+    /* Add bcf collector_table entry */
+    key = make_key_collector(collector_entry_1.key.collector_ip);
+    value = make_value(collector_entry_1.value.vlan_id,
+                       collector_entry_1.value.agent_mac,
+                       collector_entry_1.value.agent_ip,
+                       collector_entry_1.value.agent_udp_sport,
+                       collector_entry_1.value.collector_mac,
+                       collector_entry_1.value.collector_udp_dport,
+                       collector_entry_1.value.sub_agent_id);
+
+    AIM_ASSERT((rv = ops_collector->add(table_priv_collector, key, value,
+               &collector_entry_priv_2)) == INDIGO_ERROR_NONE,
                "Error in collector table add: %s\n", indigo_strerror(rv));
 
     of_object_delete(key);
@@ -746,9 +803,13 @@ test_sampled_packet_in(void)
                NULL)) == INDIGO_ERROR_NONE,
                "Error in sampler table delete: %s\n", indigo_strerror(rv));
 
-    /* Delete collector_table entry */
+    /* Delete collector_table entries */
     AIM_ASSERT((rv = ops_collector->del(table_priv_collector,
                collector_entry_priv_1, NULL)) == INDIGO_ERROR_NONE,
+               "Error in collector table delete: %s\n", indigo_strerror(rv));
+
+    AIM_ASSERT((rv = ops_collector->del(table_priv_collector,
+               collector_entry_priv_2, NULL)) == INDIGO_ERROR_NONE,
                "Error in collector table delete: %s\n", indigo_strerror(rv));
 
     sflowa_sampling_rate_handler_unregister(handler);

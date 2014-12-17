@@ -433,6 +433,116 @@ sflow_error(void *magic, SFLAgent *agent, char *msg)
 }
 
 /*
+ * sflow_send_packet_out
+ *
+ * Slap Ethernet + IP + UDP headers on a sflow datagram and
+ * send it out on dataplane
+ */
+static void
+sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
+                      sflow_collector_entry_t *entry)
+{
+    ppe_packet_t       ppep;
+    of_packet_out_t    *obj;
+    of_list_action_t   *list;
+    of_action_output_t *action;
+    indigo_error_t     rv;
+    uint8_t            data[1600];
+
+    AIM_ASSERT(sizeof(data) > SFLOW_PKT_HEADER_SIZE+pktLen, "Buffer overflow");
+    SFLOWA_MEMSET(data, 0, sizeof(data));
+    SFLOWA_MEMCPY(data+SFLOW_PKT_HEADER_SIZE, pkt, pktLen);
+
+    ppe_packet_init(&ppep, data, SFLOW_PKT_HEADER_SIZE+pktLen);
+
+    /*
+     * Set ethertype as 802.1Q and type as IPv4
+     * Parse to recognize tagged Ethernet packet.
+     */
+    data[12] = SLSHARED_CONFIG_ETHERTYPE_DOT1Q >> 8;
+    data[13] = SLSHARED_CONFIG_ETHERTYPE_DOT1Q & 0xFF;
+    data[16] = PPE_ETHERTYPE_IP4 >> 8;
+    data[17] = PPE_ETHERTYPE_IP4 & 0xFF;
+    if (ppe_parse(&ppep) < 0) {
+        AIM_DIE("Packet_out parsing failed after IPv4 header");
+        return;
+    }
+
+    /*
+     * Set the Src Mac, Dest Mac and the Vlan-ID in the outgoing frame
+     */
+    ppe_wide_field_set(&ppep, PPE_FIELD_ETHERNET_SRC_MAC,
+                       entry->value.agent_mac.addr);
+    ppe_wide_field_set(&ppep, PPE_FIELD_ETHERNET_DST_MAC,
+                       entry->value.collector_mac.addr);
+
+    ppe_field_set(&ppep, PPE_FIELD_8021Q_VLAN, VLAN_VID(entry->value.vlan_id));
+    ppe_field_set(&ppep, PPE_FIELD_8021Q_PRI, VLAN_PCP(entry->value.vlan_id));
+
+    /*
+     * Build the IP header, ip_proto = UDP
+     */
+    AIM_LOG_TRACE("Build IP header with src_ip: %{ipv4a}, dest_ip: %{ipv4a}",
+                  entry->value.agent_ip, entry->key.collector_ip);
+    ppe_build_ipv4_header(&ppep, entry->value.agent_ip, entry->key.collector_ip,
+                          pktLen+SLSHARED_CONFIG_IPV4_HEADER_SIZE+
+                          SLSHARED_CONFIG_UDP_HEADER_SIZE,
+                          PPE_IP_PROTOCOL_UDP, 128);
+
+    /*
+     * Build the UDP header
+     */
+    AIM_LOG_TRACE("Build UDP header with sport: %u, dport: %u, length: %u",
+                  entry->value.agent_udp_sport, entry->value.collector_udp_dport,
+                  pktLen+SLSHARED_CONFIG_UDP_HEADER_SIZE);
+    ppe_build_udp_header(&ppep, entry->value.agent_udp_sport,
+                         entry->value.collector_udp_dport,
+                         pktLen+SLSHARED_CONFIG_UDP_HEADER_SIZE);
+
+    /*
+     * Send the packet out on dataplane
+     */
+    obj = of_packet_out_new(OF_VERSION_1_3);
+    AIM_TRUE_OR_DIE(obj != NULL);
+
+    list = of_list_action_new(obj->version);
+    AIM_TRUE_OR_DIE(list != NULL);
+
+    action = of_action_output_new(list->version);
+    AIM_TRUE_OR_DIE(action != NULL);
+
+    of_packet_out_buffer_id_set(obj, -1);
+    of_packet_out_in_port_set(obj, OF_PORT_DEST_CONTROLLER);
+    of_action_output_port_set(action, OF_PORT_DEST_USE_TABLE);
+    of_list_append(list, action);
+    of_object_delete(action);
+    rv = of_packet_out_actions_set(obj, list);
+    AIM_ASSERT(rv == 0);
+    of_object_delete(list);
+
+    of_octets_t octets;
+    octets.data = data;
+    octets.bytes = SFLOW_PKT_HEADER_SIZE+pktLen;
+    rv = of_packet_out_data_set(obj, &octets);
+    if (rv < 0) {
+        AIM_DIE("Failed to set data on Sflow packet out");
+    }
+
+    rv = indigo_fwd_packet_out(obj);
+    if (rv < 0) {
+        AIM_LOG_ERROR("Failed to send packet to collector: %{ipv4a}",
+                      entry->key.collector_ip);
+    } else {
+        AIM_LOG_TRACE("Successfully sent %u bytes to collector: %{ipv4a}",
+                      octets.bytes, entry->key.collector_ip);
+        ++entry->stats.tx_packets;
+        entry->stats.tx_bytes += octets.bytes;
+    }
+
+    of_packet_out_delete(obj);
+}
+
+/*
  * sflow_send_packet
  *
  * Callback to send a sflow datagram out to the collectors
@@ -502,8 +612,10 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
             break;
         }
 
-        case SFLOW_SEND_MODE_DATAPLANE:
+        case SFLOW_SEND_MODE_DATAPLANE: {
+            sflow_send_packet_out(pkt, pktLen, entry);
             break;
+        }
 
         default:
             break;

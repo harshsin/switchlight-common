@@ -41,6 +41,20 @@
 #define IF_ADMIN_UP 0x01
 #define IF_OPER_UP  0x02
 
+/*
+ * SFLOW Packet Structure
+ ------------------------------------------------------
+| 6  | 6  |    4   | 2  |  20  |   8   |               |
+|DMAC|SMAC|TAG|VLAN|TYPE|IP HDR|UDP HDR| SFLOW DATAGRAM|
+ ------------------------------------------------------
+*/
+
+#define SFLOW_PKT_HEADER_SIZE (SLSHARED_CONFIG_DOT1Q_HEADER_SIZE + \
+    SLSHARED_CONFIG_IPV4_HEADER_SIZE + SLSHARED_CONFIG_UDP_HEADER_SIZE) //18 + 20 + 8
+
+#define VLAN_VID(tci) ((tci) & 0xfff)
+#define VLAN_PCP(tci) ((tci) >> 13)
+
 typedef struct sflow_collector_entry_key_s { /* sflow_collector_entry_key */
     uint32_t collector_ip;
 } sflow_collector_entry_key_t;
