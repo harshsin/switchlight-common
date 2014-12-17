@@ -439,26 +439,32 @@ sflow_error(void *magic, SFLAgent *agent, char *msg)
  * send it out on dataplane
  */
 static void
-sflow_send_packet_out(of_octets_t *octets, sflow_collector_entry_t *entry)
+sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
+                      sflow_collector_entry_t *entry)
 {
     ppe_packet_t       ppep;
     of_packet_out_t    *obj;
     of_list_action_t   *list;
     of_action_output_t *action;
     indigo_error_t     rv;
+    uint8_t            data[1600];
 
-    ppe_packet_init(&ppep, octets->data, octets->bytes);
+    AIM_ASSERT(sizeof(data) > SFLOW_PKT_HEADER_SIZE+pktLen, "Buffer overflow");
+    SFLOWA_MEMSET(data, 0, sizeof(data));
+    SFLOWA_MEMCPY(data+SFLOW_PKT_HEADER_SIZE, pkt, pktLen);
+
+    ppe_packet_init(&ppep, data, SFLOW_PKT_HEADER_SIZE+pktLen);
 
     /*
      * Set ethertype as 802.1Q and type as IPv4
      * Parse to recognize tagged Ethernet packet.
      */
-    octets->data[12] = SLSHARED_CONFIG_ETHERTYPE_DOT1Q >> 8;
-    octets->data[13] = SLSHARED_CONFIG_ETHERTYPE_DOT1Q & 0xFF;
-    octets->data[16] = PPE_ETHERTYPE_IP4 >> 8;
-    octets->data[17] = PPE_ETHERTYPE_IP4 & 0xFF;
+    data[12] = SLSHARED_CONFIG_ETHERTYPE_DOT1Q >> 8;
+    data[13] = SLSHARED_CONFIG_ETHERTYPE_DOT1Q & 0xFF;
+    data[16] = PPE_ETHERTYPE_IP4 >> 8;
+    data[17] = PPE_ETHERTYPE_IP4 & 0xFF;
     if (ppe_parse(&ppep) < 0) {
-        AIM_LOG_ERROR("Packet_out parsing failed after IPv4 header");
+        AIM_DIE("Packet_out parsing failed after IPv4 header");
         return;
     }
 
@@ -479,7 +485,8 @@ sflow_send_packet_out(of_octets_t *octets, sflow_collector_entry_t *entry)
     AIM_LOG_TRACE("Build IP header with src_ip: %{ipv4a}, dest_ip: %{ipv4a}",
                   entry->value.agent_ip, entry->key.collector_ip);
     ppe_build_ipv4_header(&ppep, entry->value.agent_ip, entry->key.collector_ip,
-                          octets->bytes-SLSHARED_CONFIG_DOT1Q_HEADER_SIZE,
+                          pktLen+SLSHARED_CONFIG_IPV4_HEADER_SIZE+
+                          SLSHARED_CONFIG_UDP_HEADER_SIZE,
                           PPE_IP_PROTOCOL_UDP, 128);
 
     /*
@@ -487,12 +494,10 @@ sflow_send_packet_out(of_octets_t *octets, sflow_collector_entry_t *entry)
      */
     AIM_LOG_TRACE("Build UDP header with sport: %u, dport: %u, length: %u",
                   entry->value.agent_udp_sport, entry->value.collector_udp_dport,
-                  octets->bytes-(SLSHARED_CONFIG_DOT1Q_HEADER_SIZE+
-                  SLSHARED_CONFIG_IPV4_HEADER_SIZE));
+                  pktLen+SLSHARED_CONFIG_UDP_HEADER_SIZE);
     ppe_build_udp_header(&ppep, entry->value.agent_udp_sport,
                          entry->value.collector_udp_dport,
-                         octets->bytes-(SLSHARED_CONFIG_DOT1Q_HEADER_SIZE+
-                         SLSHARED_CONFIG_IPV4_HEADER_SIZE));
+                         pktLen+SLSHARED_CONFIG_UDP_HEADER_SIZE);
 
     /*
      * Send the packet out on dataplane
@@ -500,10 +505,10 @@ sflow_send_packet_out(of_octets_t *octets, sflow_collector_entry_t *entry)
     obj = of_packet_out_new(OF_VERSION_1_3);
     AIM_TRUE_OR_DIE(obj != NULL);
 
-    list = of_list_action_new(OF_VERSION_1_3);
+    list = of_list_action_new(obj->version);
     AIM_TRUE_OR_DIE(list != NULL);
 
-    action = of_action_output_new(OF_VERSION_1_3);
+    action = of_action_output_new(list->version);
     AIM_TRUE_OR_DIE(action != NULL);
 
     of_packet_out_buffer_id_set(obj, -1);
@@ -515,11 +520,12 @@ sflow_send_packet_out(of_octets_t *octets, sflow_collector_entry_t *entry)
     AIM_ASSERT(rv == 0);
     of_object_delete(list);
 
-    rv = of_packet_out_data_set(obj, octets);
+    of_octets_t octets;
+    octets.data = data;
+    octets.bytes = SFLOW_PKT_HEADER_SIZE+pktLen;
+    rv = of_packet_out_data_set(obj, &octets);
     if (rv < 0) {
-        AIM_LOG_ERROR("Failed to set data on packet out");
-        of_packet_out_delete(obj);
-        return;
+        AIM_DIE("Failed to set data on Sflow packet out");
     }
 
     rv = indigo_fwd_packet_out(obj);
@@ -528,9 +534,9 @@ sflow_send_packet_out(of_octets_t *octets, sflow_collector_entry_t *entry)
                       entry->key.collector_ip);
     } else {
         AIM_LOG_TRACE("Successfully sent %u bytes to collector: %{ipv4a}",
-                      octets->bytes, entry->key.collector_ip);
+                      octets.bytes, entry->key.collector_ip);
         ++entry->stats.tx_packets;
-        entry->stats.tx_bytes += octets->bytes;
+        entry->stats.tx_bytes += octets.bytes;
     }
 
     of_packet_out_delete(obj);
@@ -545,8 +551,6 @@ static void
 sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
                   uint8_t *pkt, uint32_t pktLen)
 {
-    uint8_t data[1600];
-
     AIM_LOG_TRACE("Received callback to send packet with %u bytes", pktLen);
 
     /*
@@ -609,13 +613,7 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
         }
 
         case SFLOW_SEND_MODE_DATAPLANE: {
-            of_octets_t octets;
-            octets.data = data;
-            octets.bytes = SFLOW_PKT_HEADER_SIZE + pktLen;
-            AIM_ASSERT(sizeof(data) > octets.bytes, "Buffer overflow");
-            SFLOWA_MEMSET(data, 0, sizeof(data));
-            SFLOWA_MEMCPY(octets.data+SFLOW_PKT_HEADER_SIZE, pkt, pktLen);
-            sflow_send_packet_out(&octets, entry);
+            sflow_send_packet_out(pkt, pktLen, entry);
             break;
         }
 
