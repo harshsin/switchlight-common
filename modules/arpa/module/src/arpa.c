@@ -151,6 +151,9 @@ static debug_counter_t pktout_failure_counter;
 static debug_counter_t unicast_requery_counter;
 static debug_counter_t broadcast_requery_counter;
 static debug_counter_t idle_notification_counter;
+static debug_counter_t router_ip_hit_counter;
+static debug_counter_t arp_reply_hit_counter;
+static debug_counter_t unknown_target_counter;
 
 
 /* Public interface */
@@ -239,6 +242,18 @@ arpa_init()
     debug_counter_register(
         &idle_notification_counter, "arpa.idle_notification",
         "Sent a notification to the controller that an ARP table entry was idle");
+
+    debug_counter_register(
+        &router_ip_hit_counter, "arpa.router_ip_hit",
+        "ARP request for the virtual router");
+
+    debug_counter_register(
+        &arp_reply_hit_counter, "arpa.arp_reply_hit",
+        "ARP request for an entry in the arp_reply table");
+
+    debug_counter_register(
+        &unknown_target_counter, "arpa.unknown_target",
+        "ARP request for an unknown target IP");
 
     arpa_reply_table_init();
 
@@ -526,7 +541,10 @@ arpa_handle_pkt(of_packet_in_t *packet_in)
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
-    AIM_LOG_TRACE("received ARP packet: op=%d spa=%#x tpa=%#x", info.operation, info.spa, info.tpa);
+    AIM_LOG_TRACE("received ARP packet: vlan=%u op=%d (%s) spa=%{ipv4a} sha=%{mac} tpa=%{ipv4a} tha=%{mac}",
+                  info.vlan_vid,
+                  info.operation, info.operation == 1 ? "request" : "reply",
+                  info.spa, &info.sha, info.tpa, &info.tha);
 
     if (!arpa_check_source(&info)) {
         return INDIGO_CORE_LISTENER_RESULT_PASS;
@@ -574,6 +592,7 @@ find_mac(uint16_t vlan_vid, uint32_t ip, of_mac_addr_t *mac)
     if (!router_ip_table_lookup(vlan_vid, &router_ip, mac)) {
         if (router_ip == ip) {
             AIM_LOG_TRACE("destined for our router IP");
+            debug_counter_inc(&router_ip_hit_counter);
             return INDIGO_ERROR_NONE;
         } else {
             AIM_LOG_TRACE("not destined for our router IP");
@@ -586,8 +605,12 @@ find_mac(uint16_t vlan_vid, uint32_t ip, of_mac_addr_t *mac)
 
     if (!arpa_reply_table_lookup(vlan_vid, ip, mac)) {
         AIM_LOG_TRACE("hit in arp reply table");
+        debug_counter_inc(&arp_reply_hit_counter);
         return INDIGO_ERROR_NONE;
     }
+
+    AIM_LOG_TRACE("target of ARP request is unknown, not replying");
+    debug_counter_inc(&unknown_target_counter);
 
     return INDIGO_ERROR_NOT_FOUND;
 }
