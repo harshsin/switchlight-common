@@ -28,6 +28,7 @@
 #include <SocketManager/socketmanager.h>
 #include <debug_counter/debug_counter.h>
 #include <timer_wheel/timer_wheel.h>
+#include "arpa_int.h"
 
 #include "arpa_log.h"
 
@@ -116,6 +117,7 @@ static void arpa_set_timer_state(struct arp_entry *entry, enum arp_timer_state s
 static void arpa_timer(void *cookie);
 static void arpa_send_idle_notification(struct arp_entry *entry);
 static void arpa_send_query(struct arp_entry *entry, bool broadcast);
+static indigo_error_t find_mac(uint16_t vlan_vid, uint32_t ip, of_mac_addr_t *mac);
 
 static indigo_core_gentable_t *arp_table;
 
@@ -238,6 +240,8 @@ arpa_init()
         &idle_notification_counter, "arpa.idle_notification",
         "Sent a notification to the controller that an ARP table entry was idle");
 
+    arpa_reply_table_init();
+
     return INDIGO_ERROR_NONE;
 }
 
@@ -248,6 +252,7 @@ arpa_finish()
     indigo_core_gentable_unregister(arp_table);
     indigo_core_packet_in_listener_unregister(arpa_handle_pkt);
     bighash_table_destroy(arp_entries, NULL);
+    arpa_reply_table_finish();
 }
 
 
@@ -532,36 +537,59 @@ arpa_handle_pkt(of_packet_in_t *packet_in)
         return INDIGO_CORE_LISTENER_RESULT_DROP;
     }
 
-    uint32_t router_ip;
-    of_mac_addr_t router_mac;
-    if (router_ip_table_lookup(info.vlan_vid, &router_ip, &router_mac) < 0) {
-        AIM_LOG_TRACE("no router configured on vlan %u", info.vlan_vid);
-        debug_counter_inc(&unconfigured_vlan_counter);
+    of_mac_addr_t mac;
+    if (find_mac(info.vlan_vid, info.tpa, &mac) < 0) {
         return INDIGO_CORE_LISTENER_RESULT_DROP;
     }
 
-    if (router_ip != info.tpa) {
-        AIM_LOG_TRACE("not destined for our router IP");
-        debug_counter_inc(&router_ip_mismatch_counter);
-        return INDIGO_CORE_LISTENER_RESULT_DROP;
-    }
+    AIM_LOG_TRACE("Sending ARP reply vlan=%u ip=%{ipv4a} -> mac=%{mac}",
+                  info.vlan_vid, info.spa, &mac);
 
-    AIM_LOG_TRACE("handling ARP request for router IP");
-
-    /* Send an ARP reply to the SHA of the request, from the router */
+    /* Send an ARP reply to the SHA of the request */
     struct arp_info reply_info = info;
     memcpy(reply_info.eth_dst.addr, info.sha.addr, sizeof(reply_info.eth_dst));
-    memcpy(reply_info.eth_src.addr, router_mac.addr, sizeof(reply_info.eth_src));
+    memcpy(reply_info.eth_src.addr, mac.addr, sizeof(reply_info.eth_src));
     reply_info.tpa = info.spa;
     memcpy(reply_info.tha.addr, info.sha.addr, sizeof(reply_info.tha));
-    reply_info.spa = router_ip;
-    memcpy(reply_info.sha.addr, router_mac.addr, sizeof(reply_info.tha));
+    reply_info.spa = info.tpa;
+    memcpy(reply_info.sha.addr, mac.addr, sizeof(reply_info.tha));
     reply_info.operation = 2;
 
     arpa_send_packet(&reply_info);
 
     debug_counter_inc(&reply_counter);
     return INDIGO_CORE_LISTENER_RESULT_DROP;
+}
+
+/*
+ * Determine the MAC to send in an ARP reply
+ *
+ * Returns INDIGO_ERROR_NOT_FOUND if we don't have this (vlan, ip) in
+ * any of our tables.
+ */
+static indigo_error_t
+find_mac(uint16_t vlan_vid, uint32_t ip, of_mac_addr_t *mac)
+{
+    uint32_t router_ip;
+    if (!router_ip_table_lookup(vlan_vid, &router_ip, mac)) {
+        if (router_ip == ip) {
+            AIM_LOG_TRACE("destined for our router IP");
+            return INDIGO_ERROR_NONE;
+        } else {
+            AIM_LOG_TRACE("not destined for our router IP");
+            debug_counter_inc(&router_ip_mismatch_counter);
+        }
+    } else {
+        AIM_LOG_TRACE("no router configured on vlan %u", vlan_vid);
+        debug_counter_inc(&unconfigured_vlan_counter);
+    }
+
+    if (!arpa_reply_table_lookup(vlan_vid, ip, mac)) {
+        AIM_LOG_TRACE("hit in arp reply table");
+        return INDIGO_ERROR_NONE;
+    }
+
+    return INDIGO_ERROR_NOT_FOUND;
 }
 
 static indigo_error_t
