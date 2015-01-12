@@ -1419,8 +1419,7 @@ sflow_sampler_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
     SFLDataSource_instance dsi;
     SFL_DS_SET(dsi, 0, entry->key.port_no, 0);
     SFLSampler *sampler = sfl_agent_addSampler(&dummy_agent, &dsi);
-    sfl_sampler_set_sFlowFsPacketSamplingRate(sampler,
-                                              entry->value.sampling_rate);
+    sampler->sFlowFsPacketSamplingRate = entry->value.sampling_rate;
     sfl_sampler_set_sFlowFsMaximumHeaderSize(sampler, entry->value.header_size);
     sfl_sampler_set_sFlowFsReceiver(sampler, SFLOW_RECEIVER_INDEX);
 
@@ -1481,8 +1480,7 @@ sflow_sampler_modify(void *table_priv, void *entry_priv,
     SFLSampler *sampler = sfl_agent_getSamplerByIfIndex(&dummy_agent,
                                                         entry->key.port_no);
     AIM_ASSERT(sampler, "Sampler table modify: NULL Sampler");
-    sfl_sampler_set_sFlowFsPacketSamplingRate(sampler,
-                                              entry->value.sampling_rate);
+    sampler->sFlowFsPacketSamplingRate = entry->value.sampling_rate;
     sfl_sampler_set_sFlowFsMaximumHeaderSize(sampler, entry->value.header_size);
 
     /*
