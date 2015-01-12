@@ -348,7 +348,10 @@ lacpa_update_convergence (lacpa_port_t *port, bool *ntt)
         lacpa_update_controller(port);
     }
 
-    LACPA_CLR_STATE_LACP_TIMEOUT(port->actor.state);
+    /*
+     * Allow lacp to operate in fast mode even after convergence
+     */
+    //LACPA_CLR_STATE_LACP_TIMEOUT(port->actor.state);
     return;
 
 unconverged:
