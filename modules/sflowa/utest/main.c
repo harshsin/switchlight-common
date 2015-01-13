@@ -71,6 +71,7 @@ uint8_t expected[172] = {0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x01, 0xc0, 0
 
 static int fd;
 static int port_desc_count = 0;
+indigo_cxn_id_t cxn_id = 1;
 
 void
 hex_dump(uint8_t *ptr, int length)
@@ -488,10 +489,11 @@ make_value_sampler(uint32_t sampling_rate, uint32_t header_size,
 }
 
 static indigo_error_t
-handler(uint32_t port_no, uint32_t sampling_rate)
+handler(uint32_t port_no, uint32_t sampling_rate, indigo_cxn_id_t test_cxn_id)
 {
     AIM_ASSERT(port_no == current_port_no, "Mismatch in port");
     AIM_ASSERT(sampling_rate == current_sampling_rate, "Mismatch in sampling rate");
+    AIM_ASSERT(test_cxn_id == cxn_id, "Mismatch in cxn_id");
 
     return INDIGO_ERROR_NONE;
 }
@@ -514,7 +516,7 @@ test_sflow_sampler_table(void)
     key = make_key_sampler(57);
     value = make_value_sampler(512, 128, 20000);
 
-    AIM_ASSERT((rv = ops_sampler->add(table_priv_sampler, key, value,
+    AIM_ASSERT((rv = ops_sampler->add2(cxn_id, table_priv_sampler, key, value,
                &entry_priv_1)) == INDIGO_ERROR_NONE,
                "Error in sampler table add: %s\n", indigo_strerror(rv));
 
@@ -524,7 +526,7 @@ test_sflow_sampler_table(void)
     key = make_key_sampler(92);
     value = make_value_sampler(1024, 64, 0);
 
-    AIM_ASSERT((rv = ops_sampler->add(table_priv_sampler, key, value,
+    AIM_ASSERT((rv = ops_sampler->add2(cxn_id, table_priv_sampler, key, value,
                &entry_priv_2)) == INDIGO_ERROR_NONE,
                "Error in sampler table add: %s\n", indigo_strerror(rv));
 
@@ -534,15 +536,15 @@ test_sflow_sampler_table(void)
      * Test modify
      */
     value = make_value_sampler(2048, 64, 30982);
-    AIM_ASSERT((rv = ops_sampler->modify(table_priv_sampler, entry_priv_2, key,
-               value)) == INDIGO_ERROR_NONE,
+    AIM_ASSERT((rv = ops_sampler->modify2(cxn_id, table_priv_sampler,
+               entry_priv_2, key, value)) == INDIGO_ERROR_NONE,
                "Error in sampler table modify: %s\n", indigo_strerror(rv));
 
     of_object_delete(value);
 
     value = make_value_sampler(2048, 64, 0);
-    AIM_ASSERT((rv = ops_sampler->modify(table_priv_sampler, entry_priv_2, key,
-               value)) == INDIGO_ERROR_NONE,
+    AIM_ASSERT((rv = ops_sampler->modify2(cxn_id, table_priv_sampler,
+               entry_priv_2, key, value)) == INDIGO_ERROR_NONE,
                "Error in sampler table modify: %s\n", indigo_strerror(rv));
 
     of_object_delete(key);
@@ -552,13 +554,13 @@ test_sflow_sampler_table(void)
      * Test delete
      */
     current_sampling_rate = 0;
-    AIM_ASSERT((rv = ops_sampler->del(table_priv_sampler, entry_priv_2, NULL))
-               == INDIGO_ERROR_NONE,
+    AIM_ASSERT((rv = ops_sampler->del2(cxn_id, table_priv_sampler,
+               entry_priv_2, NULL)) == INDIGO_ERROR_NONE,
                "Error in sampler table delete: %s\n", indigo_strerror(rv));
 
     current_port_no = 57;
-    AIM_ASSERT((rv = ops_sampler->del(table_priv_sampler, entry_priv_1, NULL))
-               == INDIGO_ERROR_NONE,
+    AIM_ASSERT((rv = ops_sampler->del2(cxn_id, table_priv_sampler,
+               entry_priv_1, NULL)) == INDIGO_ERROR_NONE,
                "Error in sampler table delete: %s\n", indigo_strerror(rv));
 
     sflowa_sampling_rate_handler_unregister(handler);
@@ -690,7 +692,7 @@ test_sampled_packet_in(void)
     key = make_key_sampler(10);
     value = make_value_sampler(512, 256, 2000);
 
-    AIM_ASSERT((rv = ops_sampler->add(table_priv_sampler, key, value,
+    AIM_ASSERT((rv = ops_sampler->add2(cxn_id, table_priv_sampler, key, value,
                &sampler_entry_priv_1)) == INDIGO_ERROR_NONE,
                "Error in sampler table add: %s\n", indigo_strerror(rv));
 
@@ -700,7 +702,7 @@ test_sampled_packet_in(void)
     key = make_key_sampler(20);
     value = make_value_sampler(1024, 128, 1000);
 
-    AIM_ASSERT((rv = ops_sampler->add(table_priv_sampler, key, value,
+    AIM_ASSERT((rv = ops_sampler->add2(cxn_id, table_priv_sampler, key, value,
                &sampler_entry_priv_2)) == INDIGO_ERROR_NONE,
                "Error in sampler table add: %s\n", indigo_strerror(rv));
 
@@ -794,13 +796,13 @@ test_sampled_packet_in(void)
 
     /* Delete sampler_table entries */
     current_sampling_rate = 0;
-    AIM_ASSERT((rv = ops_sampler->del(table_priv_sampler, sampler_entry_priv_2,
-               NULL)) == INDIGO_ERROR_NONE,
+    AIM_ASSERT((rv = ops_sampler->del2(cxn_id, table_priv_sampler,
+               sampler_entry_priv_2, NULL)) == INDIGO_ERROR_NONE,
                "Error in sampler table delete: %s\n", indigo_strerror(rv));
 
     current_port_no = 10;
-    AIM_ASSERT((rv = ops_sampler->del(table_priv_sampler, sampler_entry_priv_1,
-               NULL)) == INDIGO_ERROR_NONE,
+    AIM_ASSERT((rv = ops_sampler->del2(cxn_id, table_priv_sampler,
+               sampler_entry_priv_1, NULL)) == INDIGO_ERROR_NONE,
                "Error in sampler table delete: %s\n", indigo_strerror(rv));
 
     /* Delete collector_table entries */
