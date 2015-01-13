@@ -329,7 +329,7 @@ sflowa_packet_in_handler(of_packet_in_t *packet_in)
          * identify if this is a sflow packet
          */
         if (match.fields.metadata ^ OFP_BSN_PKTIN_FLAG_SFLOW) {
-            AIM_LOG_INFO("Sflow flag not set");
+            AIM_LOG_TRACE("Not a sflow packet-in");
             return INDIGO_CORE_LISTENER_RESULT_PASS;
         }
 
