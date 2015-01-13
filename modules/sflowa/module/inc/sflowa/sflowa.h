@@ -47,9 +47,11 @@ void sflowa_finish(void);
  * on average, 1 sample will be generated for every 100 packets observed.
  * Sampling rate of 1 signifies sample all packets and a sampling rate of 0
  * disables sampling.
+ * @param cxn_id cxn_id Controller connection ID
  */
 typedef indigo_error_t (*sflowa_sampling_rate_handler_f)(of_port_no_t port_no,
-                                                         uint32_t sampling_rate);
+                                                         uint32_t sampling_rate,
+                                                         indigo_cxn_id_t cxn_id);
 
 /**
  * @brief Register application specific handler for sampling rate update

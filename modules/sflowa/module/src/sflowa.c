@@ -865,13 +865,14 @@ sflow_remove_hsflow_agent(void)
  * Notify handler about the change in sampling rate
  */
 static indigo_error_t
-sflow_sampling_rate_notify(of_port_no_t port_no, uint32_t sampling_rate)
+sflow_sampling_rate_notify(of_port_no_t port_no, uint32_t sampling_rate,
+                           indigo_cxn_id_t cxn_id)
 {
     if (sflowa_sampling_rate_handler == NULL) {
         return INDIGO_ERROR_INIT;
     }
 
-    return (*sflowa_sampling_rate_handler)(port_no, sampling_rate);
+    return (*sflowa_sampling_rate_handler)(port_no, sampling_rate, cxn_id);
 }
 
 /*
@@ -1375,8 +1376,9 @@ sflow_sampler_parse_value(of_list_bsn_tlv_t *tlvs,
  * Add a new entry to sflow_sampler table
  */
 static indigo_error_t
-sflow_sampler_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
-                  of_list_bsn_tlv_t *value_tlvs, void **entry_priv)
+sflow_sampler_add(indigo_cxn_id_t cxn_id, void *table_priv,
+                  of_list_bsn_tlv_t *key_tlvs, of_list_bsn_tlv_t *value_tlvs,
+                  void **entry_priv)
 {
     indigo_error_t rv;
     sflow_sampler_entry_key_t key;
@@ -1395,7 +1397,7 @@ sflow_sampler_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
     /*
      * Send notifications to enable sampling on this port
      */
-    rv = sflow_sampling_rate_notify(key.port_no, value.sampling_rate);
+    rv = sflow_sampling_rate_notify(key.port_no, value.sampling_rate, cxn_id);
     if (rv < 0) {
         return rv;
     }
@@ -1444,7 +1446,7 @@ sflow_sampler_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
  * Modify a existing entry in sflow_sampler table
  */
 static indigo_error_t
-sflow_sampler_modify(void *table_priv, void *entry_priv,
+sflow_sampler_modify(indigo_cxn_id_t cxn_id, void *table_priv, void *entry_priv,
                      of_list_bsn_tlv_t *key_tlvs, of_list_bsn_tlv_t *value_tlvs)
 {
     indigo_error_t rv;
@@ -1459,7 +1461,8 @@ sflow_sampler_modify(void *table_priv, void *entry_priv,
     /*
      * Notify about the change in sampling rate on this port
      */
-    rv = sflow_sampling_rate_notify(entry->key.port_no, value.sampling_rate);
+    rv = sflow_sampling_rate_notify(entry->key.port_no, value.sampling_rate,
+                                    cxn_id);
     if (rv < 0) {
         return rv;
     }
@@ -1527,7 +1530,7 @@ sflow_sampler_modify(void *table_priv, void *entry_priv,
  * Remove a entry from sflow_sampler table
  */
 static indigo_error_t
-sflow_sampler_delete(void *table_priv, void *entry_priv,
+sflow_sampler_delete(indigo_cxn_id_t cxn_id, void *table_priv, void *entry_priv,
                      of_list_bsn_tlv_t *key_tlvs)
 {
     sflow_sampler_entry_t *entry = entry_priv;
@@ -1543,7 +1546,7 @@ sflow_sampler_delete(void *table_priv, void *entry_priv,
      *
      * Also remove the Sampler and Poller instances.
      */
-    sflow_sampling_rate_notify(entry->key.port_no, 0);
+    sflow_sampling_rate_notify(entry->key.port_no, 0, cxn_id);
 
     SFLDataSource_instance dsi;
     SFL_DS_SET(dsi, 0, entry->key.port_no, 0);
@@ -1577,8 +1580,8 @@ sflow_sampler_get_stats(void *table_priv, void *entry_priv,
 }
 
 static const indigo_core_gentable_ops_t sflow_sampler_ops = {
-    .add = sflow_sampler_add,
-    .modify = sflow_sampler_modify,
-    .del = sflow_sampler_delete,
+    .add2 = sflow_sampler_add,
+    .modify2 = sflow_sampler_modify,
+    .del2 = sflow_sampler_delete,
     .get_stats = sflow_sampler_get_stats,
 };
