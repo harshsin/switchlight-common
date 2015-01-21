@@ -205,9 +205,11 @@ icmpa_reply (ppe_packet_t *ppep, of_port_no_t port_no,
 
     /*
      * Check to make sure this is an ICMP ECHO Request
+     * else, pass the packet-in to the controller
      */
     if (icmp_type != ICMP_ECHO_REQUEST) {
         AIM_LOG_TRACE("Not a ICMP ECHO Request Packet, type: %d", icmp_type);
+        *result = INDIGO_CORE_LISTENER_RESULT_PASS;
         return false;
     }
 
