@@ -154,6 +154,7 @@ static debug_counter_t idle_notification_counter;
 static debug_counter_t router_ip_hit_counter;
 static debug_counter_t arp_reply_hit_counter;
 static debug_counter_t unknown_target_counter;
+static debug_counter_t arp_vlan_reply_hit_counter;
 
 
 /* Public interface */
@@ -255,7 +256,12 @@ arpa_init()
         &unknown_target_counter, "arpa.unknown_target",
         "ARP request for an unknown target IP");
 
+    debug_counter_register(
+        &arp_reply_hit_counter, "arpa.arp_vlan_reply_hit",
+        "ARP request for an entry in the arp_vlan_reply table");
+
     arpa_reply_table_init();
+    arpa_vlan_reply_table_init();
 
     return INDIGO_ERROR_NONE;
 }
@@ -268,6 +274,7 @@ arpa_finish()
     indigo_core_packet_in_listener_unregister(arpa_handle_pkt);
     bighash_table_destroy(arp_entries, NULL);
     arpa_reply_table_finish();
+    arpa_vlan_reply_table_finish();
 }
 
 
@@ -606,6 +613,12 @@ find_mac(uint16_t vlan_vid, uint32_t ip, of_mac_addr_t *mac)
     if (!arpa_reply_table_lookup(vlan_vid, ip, mac)) {
         AIM_LOG_TRACE("hit in arp reply table");
         debug_counter_inc(&arp_reply_hit_counter);
+        return INDIGO_ERROR_NONE;
+    }
+
+    if (!arpa_vlan_reply_table_lookup(vlan_vid, mac)) {
+        AIM_LOG_TRACE("hit in arp vlan_reply table");
+        debug_counter_inc(&arp_vlan_reply_hit_counter);
         return INDIGO_ERROR_NONE;
     }
 
