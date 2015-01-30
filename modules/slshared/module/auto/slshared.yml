@@ -32,6 +32,9 @@ cdefs: &cdefs
 - SLSHARED_CONFIG_MAX_VLAN:
     doc: "Max Vlan id"
     default: 4095
+- SLSHARED_CONFIG_PDU_QUEUE_PRIORITY:
+    doc: "Priority for cpu generated traffic not going through the pipeline"
+    default: 1
 
 definitions:
   cdefs:

@@ -129,7 +129,9 @@ indigo_fwd_packet_out(of_packet_out_t *of_packet_out)
 
     of_packet_out_actions_bind(of_packet_out, &action);
     OF_LIST_ACTION_ITER(&action, &act, rv) {
-        of_action_output_port_get(&act, &port_no);
+        if (act.object_id == OF_ACTION_OUTPUT) {
+            of_action_output_port_get(&act, &port_no);
+        }
     }
 
     of_packet_out_data_get(of_packet_out, &of_octets);
