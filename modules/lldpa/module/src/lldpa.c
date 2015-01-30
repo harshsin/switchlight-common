@@ -201,6 +201,7 @@ lldpdu_periodic_tx(void *cookie)
     of_packet_out_t *pkt_out;
     of_list_action_t   *list;
     of_action_output_t *action;
+    of_action_set_queue_t *queue_action;
     int     rv;
 
     /* Always use OF_VERSION_1_3 */
@@ -215,22 +216,28 @@ lldpdu_periodic_tx(void *cookie)
         return;
     }
 
-    action = of_action_output_new(version);
-    if(!action){
-        of_packet_out_delete(pkt_out);
-        AIM_LOG_INTERNAL("Failed to allocation action");
-        return;
-    }
-    of_action_output_port_set(action, port->port_no);
-
     list = of_list_action_new(version);
     if(!list){
         of_packet_out_delete(pkt_out);
-        of_object_delete(action);
         AIM_LOG_INTERNAL("Failed to allocate action list");
         return;
     }
 
+    queue_action = of_action_set_queue_new(OF_VERSION_1_3);
+    AIM_TRUE_OR_DIE(queue_action != NULL);
+    of_action_set_queue_queue_id_set(queue_action,
+                                     SLSHARED_CONFIG_PDU_QUEUE_PRIORITY);
+    of_list_append(list, queue_action);
+    of_object_delete(queue_action);
+
+    action = of_action_output_new(version);
+    if(!action){
+        of_packet_out_delete(pkt_out);
+        of_object_delete(list);
+        AIM_LOG_INTERNAL("Failed to allocation action");
+        return;
+    }
+    of_action_output_port_set(action, port->port_no);
     of_list_append(list, action);
     of_object_delete(action);
 

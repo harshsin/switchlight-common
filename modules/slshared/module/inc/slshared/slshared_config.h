@@ -109,6 +109,16 @@
 #define SLSHARED_CONFIG_MAX_VLAN 4095
 #endif
 
+/**
+ * SLSHARED_CONFIG_PDU_QUEUE_PRIORITY
+ *
+ * Priority for cpu generated traffic not going through the pipeline */
+
+
+#ifndef SLSHARED_CONFIG_PDU_QUEUE_PRIORITY
+#define SLSHARED_CONFIG_PDU_QUEUE_PRIORITY 1
+#endif
+
 
 
 /**
