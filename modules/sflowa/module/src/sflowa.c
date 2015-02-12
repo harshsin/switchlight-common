@@ -442,12 +442,13 @@ static void
 sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
                       sflow_collector_entry_t *entry)
 {
-    ppe_packet_t       ppep;
-    of_packet_out_t    *obj;
-    of_list_action_t   *list;
-    of_action_output_t *action;
-    indigo_error_t     rv;
-    uint8_t            data[1600];
+    ppe_packet_t          ppep;
+    of_packet_out_t       *obj;
+    of_list_action_t      *list;
+    of_action_set_queue_t *queue_action;
+    of_action_output_t    *action;
+    indigo_error_t        rv;
+    uint8_t               data[1600];
 
     AIM_ASSERT(sizeof(data) > SFLOW_PKT_HEADER_SIZE+pktLen, "Buffer overflow");
     SFLOWA_MEMSET(data, 0, sizeof(data));
@@ -507,6 +508,14 @@ sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
 
     list = of_list_action_new(obj->version);
     AIM_TRUE_OR_DIE(list != NULL);
+
+    queue_action = of_action_set_queue_new(obj->version);
+    AIM_TRUE_OR_DIE(queue_action != NULL);
+
+    of_action_set_queue_queue_id_set(queue_action,
+                                     SLSHARED_CONFIG_SPAN_SFLOW_QUEUE_PRIORITY);
+    of_list_append(list, queue_action);
+    of_object_delete(queue_action);
 
     action = of_action_output_new(list->version);
     AIM_TRUE_OR_DIE(action != NULL);
