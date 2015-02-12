@@ -34,7 +34,10 @@ cdefs: &cdefs
     default: 4095
 - SLSHARED_CONFIG_PDU_QUEUE_PRIORITY:
     doc: "Priority for cpu generated traffic not going through the pipeline"
-    default: 1
+    default: 8
+- SLSHARED_CONFIG_SPAN_SFLOW_QUEUE_PRIORITY:
+    doc: "Priority for span and sflow packets"
+    default: 4
 
 definitions:
   cdefs:
