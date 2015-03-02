@@ -207,7 +207,6 @@ lacpa_packet_in_handler (of_packet_in_t *packet_in)
     of_match_t                 match;
     ppe_packet_t               ppep;
 
-    debug_counter_inc(&lacpa_system.debug_info.lacp_total_in_packets);
     if (!packet_in) return INDIGO_CORE_LISTENER_RESULT_PASS;
 
     of_packet_in_data_get(packet_in, &octets);

@@ -28,9 +28,6 @@
 static inline void
 lacpa_register_system_counters (void)
 {
-    debug_counter_register(&lacpa_system.debug_info.lacp_total_in_packets,
-                           "lacpa.lacp_total_in_packets",
-                           "Packet-ins recv'd by lacpa");
     debug_counter_register(&lacpa_system.debug_info.lacp_system_in_packets,
                            "lacpa.lacp_system_in_packets",
                            "Lacp packets recv'd by lacpa");
@@ -51,7 +48,6 @@ lacpa_register_system_counters (void)
 static inline void
 lacpa_unregister_system_counters (void)
 {
-    debug_counter_unregister(&lacpa_system.debug_info.lacp_total_in_packets);
     debug_counter_unregister(&lacpa_system.debug_info.lacp_system_in_packets);
     debug_counter_unregister(&lacpa_system.debug_info.lacp_system_out_packets);
     debug_counter_unregister(&lacpa_system.debug_info.lacp_controller_set_requests);
@@ -64,7 +60,6 @@ lacpa_unregister_system_counters (void)
 static inline void
 lacpa_clear_system_counters (void)
 {
-    debug_counter_reset(&lacpa_system.debug_info.lacp_total_in_packets);
     debug_counter_reset(&lacpa_system.debug_info.lacp_system_in_packets);
     debug_counter_reset(&lacpa_system.debug_info.lacp_system_out_packets);
     debug_counter_reset(&lacpa_system.debug_info.lacp_controller_set_requests);

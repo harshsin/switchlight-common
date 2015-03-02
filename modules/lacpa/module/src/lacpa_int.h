@@ -168,7 +168,6 @@ typedef struct lacpa_port_s { /* lacpa_port */
  * LACP : LINK AGGREGATION CONTROL PROTOCOL : SYSTEM DATA & API DECLARATIONS
  *****************************************************************************/
 typedef struct lacpa_system_debug_s { /* lacpa_system_debug */
-    debug_counter_t   lacp_total_in_packets;
     debug_counter_t   lacp_system_in_packets;
     debug_counter_t   lacp_system_out_packets;
     debug_counter_t   lacp_controller_set_requests;

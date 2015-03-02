@@ -80,8 +80,6 @@ lacpa_ucli_ucli__show_lacp_counters__(ucli_context_t* uc)
     if (!lacpa_is_initialized()) return UCLI_STATUS_E_ERROR;
 
     ucli_printf(uc, "*************DUMPING SYSTEM COUNTERS*************\n");
-    ucli_printf(uc, "TOTAL PACKETS RECV'D    : %" PRId64 "\n", debug_counter_get(
-                &lacpa_system.debug_info.lacp_total_in_packets));
     ucli_printf(uc, "LACPDU's RECV'D         : %" PRId64 "\n", debug_counter_get(
                 &lacpa_system.debug_info.lacp_system_in_packets));
     ucli_printf(uc, "LACPDU's SENT           : %" PRId64 "\n", debug_counter_get(
