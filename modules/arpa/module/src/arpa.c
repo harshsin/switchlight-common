@@ -19,7 +19,6 @@
 
 #include <arpa/arpa.h>
 #include <indigo/of_state_manager.h>
-#include <PPE/ppe.h>
 #include <router_ip_table/router_ip_table.h>
 #include <OS/os.h>
 #include <BigHash/bighash.h>
@@ -110,7 +109,7 @@ struct arp_entry {
 #include <BigHash/bighash_template.h>
 
 static indigo_core_listener_result_t arpa_handle_pkt(of_packet_in_t *packet_in);
-static indigo_error_t arpa_parse_packet(of_octets_t *data, struct arp_info *info);
+static indigo_error_t arpa_parse_packet(ppe_packet_t *ppep, struct arp_info *info);
 static void arpa_send_packet(struct arp_info *info);
 static bool arpa_check_source(struct arp_info *info);
 static void arpa_set_timer_state(struct arp_entry *entry, enum arp_timer_state state);
@@ -516,55 +515,39 @@ arpa_lookup(uint16_t vlan_vid, uint32_t ipv4)
     return arp_entries_hashtable_first(arp_entries, &key);
 }
 
+/* packet-in handler */
 
-/* packet-in listener */
-
-static indigo_core_listener_result_t
-arpa_handle_pkt(of_packet_in_t *packet_in)
+indigo_error_t
+arpa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
 {
-    of_match_t match;
-    of_octets_t octets;
     struct arp_info info;
     indigo_error_t rv;
 
-    if (packet_in->version < OF_VERSION_1_3) {
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
-    }
-
-    AIM_TRUE_OR_DIE(of_packet_in_match_get(packet_in, &match) == 0);
-    of_packet_in_data_get(packet_in, &octets);
-
-    if ((match.fields.metadata & OFP_BSN_PKTIN_FLAG_ARP) == 0) {
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
-    }
-
-    debug_counter_inc(&pktin_counter);
-
-    rv = arpa_parse_packet(&octets, &info);
+    rv = arpa_parse_packet(ppep, &info);
     if (rv < 0) {
         AIM_LOG_RL_ERROR(&arpa_pktin_log_limiter, os_time_monotonic(),
                          "not a valid ARP packet: %s", indigo_strerror(rv));
         debug_counter_inc(&parse_failure_counter);
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
+        return INDIGO_ERROR_PARSE;
     }
 
-    AIM_LOG_TRACE("received ARP packet: vlan=%u op=%d (%s) spa=%{ipv4a} sha=%{mac} tpa=%{ipv4a} tha=%{mac}",
-                  info.vlan_vid,
+    AIM_LOG_TRACE("received ARP packet: port=%u vlan=%u op=%d (%s) spa=%{ipv4a} sha=%{mac} tpa=%{ipv4a} tha=%{mac}",
+                  in_port, info.vlan_vid,
                   info.operation, info.operation == 1 ? "request" : "reply",
                   info.spa, &info.sha, info.tpa, &info.tha);
 
     if (!arpa_check_source(&info)) {
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
+        return INDIGO_ERROR_UNKNOWN;
     }
 
     if (info.operation != 1) {
         AIM_LOG_TRACE("Ignoring ARP reply");
-        return INDIGO_CORE_LISTENER_RESULT_DROP;
+        return INDIGO_ERROR_NONE;
     }
 
     of_mac_addr_t mac;
     if (find_mac(info.vlan_vid, info.tpa, &mac) < 0) {
-        return INDIGO_CORE_LISTENER_RESULT_DROP;
+        return INDIGO_ERROR_NONE;
     }
 
     AIM_LOG_TRACE("Sending ARP reply vlan=%u ip=%{ipv4a} -> mac=%{mac}",
@@ -583,6 +566,41 @@ arpa_handle_pkt(of_packet_in_t *packet_in)
     arpa_send_packet(&reply_info);
 
     debug_counter_inc(&reply_counter);
+    return INDIGO_ERROR_NONE;
+}
+
+/* packet-in listener */
+
+static indigo_core_listener_result_t
+arpa_handle_pkt(of_packet_in_t *packet_in)
+{
+    of_match_t match;
+    of_octets_t octets;
+
+    if (packet_in->version < OF_VERSION_1_3) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    AIM_TRUE_OR_DIE(of_packet_in_match_get(packet_in, &match) == 0);
+    of_packet_in_data_get(packet_in, &octets);
+
+    if ((match.fields.metadata & OFP_BSN_PKTIN_FLAG_ARP) == 0) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    ppe_packet_t ppep;
+    ppe_packet_init(&ppep, octets.data, octets.bytes);
+    if (ppe_parse(&ppep) < 0) {
+        AIM_LOG_RL_ERROR(&arpa_pktin_log_limiter, os_time_monotonic(),
+                         "Packet_in parsing failed.");
+        debug_counter_inc(&parse_failure_counter);
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    if (arpa_receive_packet(&ppep, match.fields.in_port) < 0) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
     return INDIGO_CORE_LISTENER_RESULT_DROP;
 }
 
@@ -629,65 +647,59 @@ find_mac(uint16_t vlan_vid, uint32_t ip, of_mac_addr_t *mac)
 }
 
 static indigo_error_t
-arpa_parse_packet(of_octets_t *octets, struct arp_info *info)
+arpa_parse_packet(ppe_packet_t *ppep, struct arp_info *info)
 {
-    ppe_packet_t ppep;
     uint32_t tmp;
 
-    ppe_packet_init(&ppep, octets->data, octets->bytes);
-    if (ppe_parse(&ppep) < 0) {
+    if (!ppe_header_get(ppep, PPE_HEADER_8021Q)) {
         return INDIGO_ERROR_PARSE;
     }
 
-    if (!ppe_header_get(&ppep, PPE_HEADER_8021Q)) {
+    if (!ppe_header_get(ppep, PPE_HEADER_ARP)) {
         return INDIGO_ERROR_PARSE;
     }
 
-    if (!ppe_header_get(&ppep, PPE_HEADER_ARP)) {
-        return INDIGO_ERROR_PARSE;
-    }
+    ppe_wide_field_get(ppep, PPE_FIELD_ETHERNET_DST_MAC, info->eth_dst.addr);
 
-    ppe_wide_field_get(&ppep, PPE_FIELD_ETHERNET_DST_MAC, info->eth_dst.addr);
+    ppe_wide_field_get(ppep, PPE_FIELD_ETHERNET_SRC_MAC, info->eth_src.addr);
 
-    ppe_wide_field_get(&ppep, PPE_FIELD_ETHERNET_SRC_MAC, info->eth_src.addr);
-
-    ppe_field_get(&ppep, PPE_FIELD_8021Q_VLAN, &tmp);
+    ppe_field_get(ppep, PPE_FIELD_8021Q_VLAN, &tmp);
     info->vlan_vid = tmp;
 
-    ppe_field_get(&ppep, PPE_FIELD_8021Q_PRI, &tmp);
+    ppe_field_get(ppep, PPE_FIELD_8021Q_PRI, &tmp);
     info->vlan_pcp = tmp;
 
-    ppe_field_get(&ppep, PPE_FIELD_ARP_HTYPE, &tmp);
+    ppe_field_get(ppep, PPE_FIELD_ARP_HTYPE, &tmp);
     if (tmp != 1) {
         return INDIGO_ERROR_PARSE;
     }
 
-    ppe_field_get(&ppep, PPE_FIELD_ARP_PTYPE, &tmp);
+    ppe_field_get(ppep, PPE_FIELD_ARP_PTYPE, &tmp);
     if (tmp != 0x0800) {
         return INDIGO_ERROR_PARSE;
     }
 
-    ppe_field_get(&ppep, PPE_FIELD_ARP_HLEN, &tmp);
+    ppe_field_get(ppep, PPE_FIELD_ARP_HLEN, &tmp);
     if (tmp != 6) {
         return INDIGO_ERROR_PARSE;
     }
 
-    ppe_field_get(&ppep, PPE_FIELD_ARP_PLEN, &tmp);
+    ppe_field_get(ppep, PPE_FIELD_ARP_PLEN, &tmp);
     if (tmp != 4) {
         return INDIGO_ERROR_PARSE;
     }
 
-    ppe_field_get(&ppep, PPE_FIELD_ARP_OPERATION, &tmp);
+    ppe_field_get(ppep, PPE_FIELD_ARP_OPERATION, &tmp);
     info->operation = tmp;
 
-    ppe_wide_field_get(&ppep, PPE_FIELD_ARP_SHA, info->sha.addr);
+    ppe_wide_field_get(ppep, PPE_FIELD_ARP_SHA, info->sha.addr);
 
-    ppe_field_get(&ppep, PPE_FIELD_ARP_SPA, &tmp);
+    ppe_field_get(ppep, PPE_FIELD_ARP_SPA, &tmp);
     info->spa = tmp;
 
-    ppe_wide_field_get(&ppep, PPE_FIELD_ARP_THA, info->tha.addr);
+    ppe_wide_field_get(ppep, PPE_FIELD_ARP_THA, info->tha.addr);
 
-    ppe_field_get(&ppep, PPE_FIELD_ARP_TPA, &tmp);
+    ppe_field_get(ppep, PPE_FIELD_ARP_TPA, &tmp);
     info->tpa = tmp;
 
     return INDIGO_ERROR_NONE;
