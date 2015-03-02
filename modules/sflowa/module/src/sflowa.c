@@ -35,7 +35,6 @@
 
 #include <AIM/aim.h>
 #include <OS/os_time.h>
-#include <PPE/ppe.h>
 #include <fcntl.h>
 #include <linux/ethtool.h>
 #include "sflowa_int.h"
@@ -207,30 +206,25 @@ sflowa_sampling_rate_handler_unregister(sflowa_sampling_rate_handler_f fn)
  * This api can be used to send a sflow sampled packet directly
  * to the sflow agent
  */
-static indigo_error_t
-sflowa_receive_packet(of_octets_t *octets, of_port_no_t in_port)
+indigo_error_t
+sflowa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
 {
-    ppe_packet_t ppep;
-
-    AIM_ASSERT(octets, "NULL input to pkt receive api");
-    AIM_ASSERT(octets->data, "NULL data in pkt receive api");
-
     AIM_LOG_TRACE("Sampled packet_in received for in_port: %u", in_port);
+
+    if (in_port > SFLOWA_CONFIG_OF_PORTS_MAX) {
+        AIM_LOG_ERROR("Port no: %u Out of Range %u",
+                      in_port, SFLOWA_CONFIG_OF_PORTS_MAX);
+        return INDIGO_ERROR_RANGE;
+    }
+
     debug_counter_inc(&sflow_counters.packet_in);
     ++sampler_entries[in_port].stats.rx_packets;
-
-    ppe_packet_init(&ppep, octets->data, octets->bytes);
-    if (ppe_parse(&ppep) < 0) {
-        AIM_LOG_RL_ERROR(&sflow_pktin_log_limiter, os_time_monotonic(),
-                         "Packet_in parsing failed.");
-        return INDIGO_ERROR_PARSE;
-    }
 
     /*
      * Identify if this is an ethernet Packet
      */
-    if (!ppe_header_get(&ppep, PPE_HEADER_8021Q) &&
-        !ppe_header_get(&ppep, PPE_HEADER_ETHERNET)) {
+    if (!ppe_header_get(ppep, PPE_HEADER_8021Q) &&
+        !ppe_header_get(ppep, PPE_HEADER_ETHERNET)) {
         AIM_LOG_RL_ERROR(&sflow_pktin_log_limiter, os_time_monotonic(),
                          "Not an ethernet packet.");
         return INDIGO_ERROR_UNKNOWN;
@@ -251,18 +245,18 @@ sflowa_receive_packet(of_octets_t *octets, of_port_no_t in_port)
     SFLFlow_sample_element hdr_element = { 0 };
     hdr_element.tag = SFLFLOW_HEADER;
 
-    hdr_element.flowType.header.frame_length = octets->bytes + 4;
+    hdr_element.flowType.header.frame_length = ppep->size + 4;
     hdr_element.flowType.header.stripped = 4; //CRC_bytes
 
     /*
      * Set the header_protocol to ethernet
      */
     hdr_element.flowType.header.header_protocol = SFLHEADER_ETHERNET_ISO8023;
-    hdr_element.flowType.header.header_length = (octets->bytes <
+    hdr_element.flowType.header.header_length = (ppep->size <
                                           sampler->sFlowFsMaximumHeaderSize)?
-                                          octets->bytes :
+                                          ppep->size :
                                           sampler->sFlowFsMaximumHeaderSize;
-    hdr_element.flowType.header.header_bytes = octets->data;
+    hdr_element.flowType.header.header_bytes = ppep->data;
 
     /*
      * Construct a flow sample
@@ -336,13 +330,15 @@ sflowa_packet_in_handler(of_packet_in_t *packet_in)
         in_port = match.fields.in_port;
     }
 
-    if (in_port > SFLOWA_CONFIG_OF_PORTS_MAX) {
-        AIM_LOG_INTERNAL("Port no: %u Out of Range %u",
-                         in_port, SFLOWA_CONFIG_OF_PORTS_MAX);
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    ppe_packet_t ppep;
+    ppe_packet_init(&ppep, octets.data, octets.bytes);
+    if (ppe_parse(&ppep) < 0) {
+        AIM_LOG_RL_ERROR(&sflow_pktin_log_limiter, os_time_monotonic(),
+                         "Packet_in parsing failed.");
+        return INDIGO_CORE_LISTENER_RESULT_DROP;
     }
 
-    sflowa_receive_packet(&octets, in_port);
+    sflowa_receive_packet(&ppep, in_port);
     return INDIGO_CORE_LISTENER_RESULT_DROP;
 }
 
