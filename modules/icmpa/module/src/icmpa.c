@@ -315,7 +315,7 @@ free_and_return:
  * NOTE: Controller will try to resolve unreachable hosts by sending ARP,
  * If host is still not found then controller should send ICMP Host unreachable.
  */
-bool
+indigo_error_t
 icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
             uint32_t code)
 {
@@ -329,16 +329,28 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
     uint32_t                   src_ip, dest_ip;
     indigo_error_t             rv;
 
-    if (!ppep) return false;
+    if (!ppep) return INDIGO_ERROR_PARAM;
 
     ICMPA_MEMSET(data, 0, ICMP_PKT_BUF_SIZE);
+
+    if (type == ICMP_DEST_UNREACHABLE && code == 0) {
+        AIM_LOG_TRACE("ICMP Dest Network Unreachable received on port: %u",
+                      port_no);
+        ++port_pkt_counters[port_no].icmp_net_unreachable_packets;
+    } else if (type == ICMP_DEST_UNREACHABLE && code == 3) {
+        AIM_LOG_TRACE("ICMP Port Unreachable received on port: %u", port_no);
+        ++port_pkt_counters[port_no].icmp_port_unreachable_packets;
+    } else if (type == ICMP_TIME_EXCEEDED && code == 0) {
+        AIM_LOG_TRACE("ICMP TTL Expired received on port: %u", port_no);
+        ++port_pkt_counters[port_no].icmp_time_exceeded_packets;
+    }
 
     ip_hdr = ppe_header_get(ppep, PPE_HEADER_IP4);
     if (!ip_hdr) {
         AIM_LOG_RL_TRACE(&icmp_pktin_log_limiter, os_time_monotonic(),
                          "Not an IP Packet");
         debug_counter_inc(&pkt_counters.icmp_internal_errors);
-        return false;
+        return INDIGO_ERROR_PARAM;
     }
 
     /*
@@ -347,7 +359,7 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
     if (!icmpa_get_vlan_id(ppep, &vlan_id, &vlan_pcp)) {
         AIM_LOG_INTERNAL("ICMPA: Received Untagged Packet_in");
         debug_counter_inc(&pkt_counters.icmp_internal_errors);
-        return false;
+        return INDIGO_ERROR_PARAM;
     }
 
     /*
@@ -375,7 +387,7 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
                 AIM_LOG_ERROR("ICMPA: Router IP lookup failed in icmp table "
                               "for dest_ip:%{ipv4a}", dest_ip);
                 debug_counter_inc(&pkt_counters.icmp_internal_errors);
-                return false;
+                return INDIGO_ERROR_NOT_FOUND;
             }
         }
     }
@@ -388,7 +400,7 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
         AIM_LOG_ERROR("ICMPA: src_ip %{ipv4a} in original ip packet not valid"
                       "(zero/multicast/broadcast)", src_ip);
         debug_counter_inc(&pkt_counters.icmp_internal_errors);
-        return false;
+        return INDIGO_ERROR_NOT_SUPPORTED;
     }
 
     if (AIM_LOG_CUSTOM_ENABLED(ICMPA_LOG_FLAG_PACKET)) {
@@ -407,14 +419,14 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
         AIM_LOG_ERROR("ICMPA: IP total len %d is less than required 28 bytes",
                       ip_total_len);
         debug_counter_inc(&pkt_counters.icmp_internal_errors);
-        return false;
+        return INDIGO_ERROR_NOT_SUPPORTED;
     }
 
     if (!icmpa_build_pdu(ppep, &octets_out, vlan_id, vlan_pcp, IP_TOTAL_LEN,
         router_ip, type, code, 0, ip_hdr, ICMP_DATA_LEN)) {
         AIM_LOG_INTERNAL("ICMPA: icmpa_build_pdu failed");
         debug_counter_inc(&pkt_counters.icmp_internal_errors);
-        return false;
+        return INDIGO_ERROR_UNKNOWN;
     }
 
     rv = icmpa_send_packet_out(&octets_out);
@@ -422,11 +434,11 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
         AIM_LOG_INTERNAL("ICMPA: Send packet_out failed for port: %d, reason: %s",
                          port_no, indigo_strerror(rv));
         debug_counter_inc(&pkt_counters.icmp_internal_errors);
-        return false;
+        return rv;
     } else {
         debug_counter_inc(&pkt_counters.icmp_total_out_packets);
         AIM_LOG_TRACE("Successfully sent packet out the port: %d", port_no);
     }
 
-    return true;
+    return INDIGO_ERROR_NONE;
 }

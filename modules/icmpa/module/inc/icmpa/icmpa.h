@@ -21,7 +21,8 @@
 #define __ICMPA_H__
 
 #include <stdbool.h>
-#include <indigo/error.h>
+#include <indigo/indigo.h>
+#include <PPE/ppe.h>
 
 /* <auto.start.enum(ALL).header> */
 /** icmpa_log_flag */
@@ -65,5 +66,8 @@ extern aim_map_si_t icmpa_log_flag_desc_map[];
 indigo_error_t icmpa_init (void);
 bool icmpa_is_initialized (void);
 void icmpa_finish (void);
+
+indigo_error_t icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no,
+                           uint32_t type, uint32_t code);
 
 #endif /* __ICMPA__H__ */

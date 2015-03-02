@@ -200,13 +200,10 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
 
         if (router_ip_check(dest_ip) && is_ephemeral(src_port) &&
             is_ephemeral(dest_port)) {
-            AIM_LOG_TRACE("ICMP Port Unreachable received on port: %d",
-                          port_no);
             type = ICMP_DEST_UNREACHABLE;
             code = 3;
             result = INDIGO_CORE_LISTENER_RESULT_DROP;
-            if (icmpa_send(&ppep, port_no, type, code)) {
-                ++port_pkt_counters[port_no].icmp_port_unreachable_packets;
+            if (icmpa_send(&ppep, port_no, type, code) == INDIGO_ERROR_NONE) {
                 return result;
             }
         }
@@ -216,22 +213,15 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
      * Identify if the reason is valid for ICMP Agent to consume the packet
      */
     if (match.fields.metadata & OFP_BSN_PKTIN_FLAG_L3_MISS) {
-        AIM_LOG_TRACE("ICMP Dest Network Unreachable received on port: %d",
-                      port_no);
         type = ICMP_DEST_UNREACHABLE;
         code = 0;
         result = INDIGO_CORE_LISTENER_RESULT_DROP;
-        if (icmpa_send(&ppep, port_no, type, code)) {
-            ++port_pkt_counters[port_no].icmp_net_unreachable_packets;
-        }
+        icmpa_send(&ppep, port_no, type, code);
     } else if (match.fields.metadata & OFP_BSN_PKTIN_FLAG_TTL_EXPIRED) {
-        AIM_LOG_TRACE("ICMP TTL Expired received on port: %d", port_no);
         type = ICMP_TIME_EXCEEDED;
         code = 0;
         result = INDIGO_CORE_LISTENER_RESULT_DROP;
-        if (icmpa_send(&ppep, port_no, type, code)) {
-            ++port_pkt_counters[port_no].icmp_time_exceeded_packets;
-        }
+        icmpa_send(&ppep, port_no, type, code);
     }
 
     return result;
