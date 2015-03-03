@@ -129,6 +129,16 @@
 #define SLSHARED_CONFIG_SPAN_SFLOW_QUEUE_PRIORITY 4
 #endif
 
+/**
+ * SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER
+ *
+ * If set, register with socketmanager as pktin listerner */
+
+
+#ifndef SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER
+#define SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER 1
+#endif
+
 
 
 /**
