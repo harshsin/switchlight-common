@@ -171,7 +171,9 @@ arpa_init()
     indigo_core_gentable_register("arp", &arp_ops, NULL, 16384, 1024,
                                   &arp_table);
 
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     indigo_core_packet_in_listener_register(arpa_handle_pkt);
+#endif
 
     aim_ratelimiter_init(&arpa_pktin_log_limiter, 1000*1000, 5, NULL);
 
@@ -270,7 +272,9 @@ arpa_finish()
 {
     ind_soc_timer_event_unregister(arpa_timer, NULL);
     indigo_core_gentable_unregister(arp_table);
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     indigo_core_packet_in_listener_unregister(arpa_handle_pkt);
+#endif
     bighash_table_destroy(arp_entries, NULL);
     arpa_reply_table_finish();
     arpa_vlan_reply_table_finish();

@@ -616,7 +616,9 @@ lldpa_system_init()
     }
 
     indigo_core_message_listener_register(lldpa_handle_msg);
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     indigo_core_packet_in_listener_register(lldpa_handle_pkt);
+#endif
 
     return 0;
 }
@@ -628,7 +630,9 @@ lldpa_system_finish()
     lldpa_port_t *port;
 
     indigo_core_message_listener_unregister(lldpa_handle_msg);
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     indigo_core_packet_in_listener_unregister(lldpa_handle_pkt);
+#endif
 
     for (i=0; i < lldpa_port_sys.lldpa_total_of_ports; i++) {
         port = lldpa_find_port(i);

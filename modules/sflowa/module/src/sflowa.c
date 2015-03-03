@@ -102,6 +102,7 @@ sflowa_init(void)
                                   SFLOWA_CONFIG_OF_PORTS_MAX, 128,
                                   &sflow_sampler_table);
 
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     /*
      * Register listener for packet_in
      */
@@ -110,6 +111,7 @@ sflowa_init(void)
         AIM_LOG_ERROR("Failed to register for packet_in in SFLOW module");
         return INDIGO_ERROR_INIT;
     }
+#endif
 
     /*
      * Register listener for port_status msg
@@ -155,7 +157,9 @@ sflowa_finish(void)
 {
     indigo_core_gentable_unregister(sflow_collector_table);
     indigo_core_gentable_unregister(sflow_sampler_table);
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     indigo_core_packet_in_listener_unregister(sflowa_packet_in_handler);
+#endif
     indigo_core_port_status_listener_unregister(sflowa_port_status_handler);
 
     /*

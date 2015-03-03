@@ -17,6 +17,8 @@
 #include <arpa_custom_config.h>
 #endif
 
+#include <slshared/slshared_config.h>
+
 /* <auto.start.cdefs(ARPA_CONFIG_HEADER).header> */
 #include <AIM/aim.h>
 /**

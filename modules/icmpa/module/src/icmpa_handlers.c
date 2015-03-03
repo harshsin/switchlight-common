@@ -268,6 +268,7 @@ icmpa_init (void)
        sizeof(icmpa_typecode_packet_counter_t) * (ICMPA_CONFIG_OF_PORTS_MAX+1));
     aim_ratelimiter_init(&icmp_pktin_log_limiter, 1000*1000, 5, NULL);
 
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     /*
      * Register listerner for packet_in
      */
@@ -276,6 +277,7 @@ icmpa_init (void)
         AIM_LOG_FATAL("Failed to register for packet_in in ICMPA module");
         return INDIGO_ERROR_INIT;
     }
+#endif
 
     icmp_initialized = true;
     return INDIGO_ERROR_NONE;
@@ -306,10 +308,12 @@ icmpa_finish (void)
     ICMPA_MEMSET(&port_pkt_counters[0], 0,
        sizeof(icmpa_typecode_packet_counter_t) * (ICMPA_CONFIG_OF_PORTS_MAX+1));
 
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     /*
      * Unregister listerner for packet_in
      */
     indigo_core_packet_in_listener_unregister(icmpa_packet_in_handler);
+#endif
 
     icmp_initialized = false;
 }
