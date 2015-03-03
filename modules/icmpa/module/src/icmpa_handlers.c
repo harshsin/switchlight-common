@@ -148,13 +148,6 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
-    if (port_no > ICMPA_CONFIG_OF_PORTS_MAX) {
-        AIM_LOG_INTERNAL("ICMPA: Port No: %d Out of Range %d",
-                         port_no, ICMPA_CONFIG_OF_PORTS_MAX);
-        debug_counter_inc(&pkt_counters.icmp_internal_errors);
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
-    }
-
     /*
      * Check the packet-in reasons in metadata
      *
@@ -179,9 +172,8 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
      * Identify if this is an Echo Request, destined to one of VRouter
      */
     if (ppe_header_get(&ppep, PPE_HEADER_ICMP)) {
-        if (icmpa_reply(&ppep, port_no, &result)) {
-            ++port_pkt_counters[port_no].icmp_echo_packets;
-            return result;
+        if (icmpa_reply(&ppep, port_no) == INDIGO_ERROR_NONE) {
+            return INDIGO_CORE_LISTENER_RESULT_DROP;
         }
     }
 

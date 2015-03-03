@@ -103,8 +103,6 @@ typedef struct icmp_entry_s { /* icmp_entry */
  *
  *****************************************************************************/
 
-bool icmpa_reply (ppe_packet_t *ppep, of_port_no_t port_no,
-                  indigo_core_listener_result_t *result);
 indigo_error_t icmpa_send_packet_out (of_octets_t *octets);
 
 indigo_core_listener_result_t

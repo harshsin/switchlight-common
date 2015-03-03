@@ -67,6 +67,7 @@ indigo_error_t icmpa_init (void);
 bool icmpa_is_initialized (void);
 void icmpa_finish (void);
 
+indigo_error_t icmpa_reply (ppe_packet_t *ppep, of_port_no_t port_no);
 indigo_error_t icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no,
                            uint32_t type, uint32_t code);
 
