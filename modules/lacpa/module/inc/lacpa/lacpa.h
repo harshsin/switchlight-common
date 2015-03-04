@@ -245,6 +245,7 @@ extern aim_map_si_t lacpa_transmit_desc_map[];
 indigo_error_t lacpa_init (void);
 bool lacpa_is_initialized (void);
 void lacpa_finish(void);
-indigo_error_t lacpa_receive_packet (ppe_packet_t *ppep, of_port_no_t port_no);
+indigo_core_listener_result_t lacpa_receive_packet (ppe_packet_t *ppep,
+                                                    of_port_no_t port_no);
 
 #endif /* __LACP__H__ */

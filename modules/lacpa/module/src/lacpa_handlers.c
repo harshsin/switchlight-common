@@ -158,7 +158,7 @@ lacpa_send_packet_out (lacpa_port_t *port, of_octets_t *octets)
  *
  * This api can be used to send a lacpdu directly to the lacp agent
  */
-indigo_error_t
+indigo_core_listener_result_t
 lacpa_receive_packet (ppe_packet_t *ppep, of_port_no_t port_no)
 {
     lacpa_port_t *port;
@@ -173,12 +173,12 @@ lacpa_receive_packet (ppe_packet_t *ppep, of_port_no_t port_no)
      * Identify the recv port and see if it has LACP agent running
      */
     port = lacpa_find_port(port_no);
-    if (!port) return INDIGO_ERROR_NOT_FOUND;
+    if (!port) return INDIGO_CORE_LISTENER_RESULT_PASS;
 
     if (!port->lacp_enabled) {
         AIM_LOG_TRACE("LACPDU-Rx-FAILED - Agent is Disabled on port: %d",
                       port_no);
-        return INDIGO_ERROR_UNKNOWN;
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
     /*
@@ -187,11 +187,12 @@ lacpa_receive_packet (ppe_packet_t *ppep, of_port_no_t port_no)
     if (!lacpa_parse_pdu(ppep, &pdu)) {
         AIM_LOG_RL_WARN(&lacpa_parse_log_limiter, os_time_monotonic(),
                         "Packet parsing failed on port: %d", port_no);
-        return INDIGO_ERROR_PARSE;
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
     lacpa_machine(port, &pdu, LACPA_EVENT_PDU_RECEIVED);
-    return INDIGO_ERROR_NONE;
+
+    return INDIGO_CORE_LISTENER_RESULT_DROP;
 }
 
 /*
@@ -235,11 +236,7 @@ lacpa_packet_in_handler (of_packet_in_t *packet_in)
         port_no = match.fields.in_port;
     }
 
-    if (lacpa_receive_packet(&ppep, port_no) < 0) {
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
-    }
-
-    return INDIGO_CORE_LISTENER_RESULT_DROP;
+    return lacpa_receive_packet(&ppep, port_no);
 }
 
 /*

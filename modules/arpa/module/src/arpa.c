@@ -521,7 +521,7 @@ arpa_lookup(uint16_t vlan_vid, uint32_t ipv4)
 
 /* packet-in handler */
 
-indigo_error_t
+indigo_core_listener_result_t
 arpa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
 {
     struct arp_info info;
@@ -532,7 +532,7 @@ arpa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
         AIM_LOG_RL_ERROR(&arpa_pktin_log_limiter, os_time_monotonic(),
                          "not a valid ARP packet: %s", indigo_strerror(rv));
         debug_counter_inc(&parse_failure_counter);
-        return INDIGO_ERROR_PARSE;
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
     AIM_LOG_TRACE("received ARP packet: port=%u vlan=%u op=%d (%s) spa=%{ipv4a} sha=%{mac} tpa=%{ipv4a} tha=%{mac}",
@@ -541,17 +541,17 @@ arpa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
                   info.spa, &info.sha, info.tpa, &info.tha);
 
     if (!arpa_check_source(&info)) {
-        return INDIGO_ERROR_UNKNOWN;
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
     if (info.operation != 1) {
         AIM_LOG_TRACE("Ignoring ARP reply");
-        return INDIGO_ERROR_NONE;
+        return INDIGO_CORE_LISTENER_RESULT_DROP;
     }
 
     of_mac_addr_t mac;
     if (find_mac(info.vlan_vid, info.tpa, &mac) < 0) {
-        return INDIGO_ERROR_NONE;
+        return INDIGO_CORE_LISTENER_RESULT_DROP;
     }
 
     AIM_LOG_TRACE("Sending ARP reply vlan=%u ip=%{ipv4a} -> mac=%{mac}",
@@ -570,7 +570,7 @@ arpa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
     arpa_send_packet(&reply_info);
 
     debug_counter_inc(&reply_counter);
-    return INDIGO_ERROR_NONE;
+    return INDIGO_CORE_LISTENER_RESULT_DROP;
 }
 
 /* packet-in listener */
@@ -601,11 +601,7 @@ arpa_handle_pkt(of_packet_in_t *packet_in)
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
-    if (arpa_receive_packet(&ppep, match.fields.in_port) < 0) {
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
-    }
-
-    return INDIGO_CORE_LISTENER_RESULT_DROP;
+    return arpa_receive_packet(&ppep, match.fields.in_port);
 }
 
 /*

@@ -210,7 +210,7 @@ sflowa_sampling_rate_handler_unregister(sflowa_sampling_rate_handler_f fn)
  * This api can be used to send a sflow sampled packet directly
  * to the sflow agent
  */
-indigo_error_t
+indigo_core_listener_result_t
 sflowa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
 {
     AIM_LOG_TRACE("Sampled packet_in received for in_port: %u", in_port);
@@ -218,7 +218,7 @@ sflowa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
     if (in_port > SFLOWA_CONFIG_OF_PORTS_MAX) {
         AIM_LOG_ERROR("Port no: %u Out of Range %u",
                       in_port, SFLOWA_CONFIG_OF_PORTS_MAX);
-        return INDIGO_ERROR_RANGE;
+        return INDIGO_CORE_LISTENER_RESULT_DROP;
     }
 
     debug_counter_inc(&sflow_counters.packet_in);
@@ -231,7 +231,7 @@ sflowa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
         !ppe_header_get(ppep, PPE_HEADER_ETHERNET)) {
         AIM_LOG_RL_ERROR(&sflow_pktin_log_limiter, os_time_monotonic(),
                          "Not an ethernet packet.");
-        return INDIGO_ERROR_UNKNOWN;
+        return INDIGO_CORE_LISTENER_RESULT_DROP;
     }
 
     /*
@@ -240,7 +240,7 @@ sflowa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
     SFLSampler *sampler = sfl_agent_getSamplerByIfIndex(&dummy_agent, in_port);
     if (sampler == NULL) {
         AIM_LOG_ERROR("NULL Sampler for port: %u", in_port);
-        return INDIGO_ERROR_UNKNOWN;
+        return INDIGO_CORE_LISTENER_RESULT_DROP;
     }
 
     /*
@@ -281,7 +281,7 @@ sflowa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
      */
     sfl_sampler_writeFlowSample(sampler, &fs);
 
-    return INDIGO_ERROR_NONE;
+    return INDIGO_CORE_LISTENER_RESULT_DROP;
 }
 
 /*
@@ -342,8 +342,7 @@ sflowa_packet_in_handler(of_packet_in_t *packet_in)
         return INDIGO_CORE_LISTENER_RESULT_DROP;
     }
 
-    sflowa_receive_packet(&ppep, in_port);
-    return INDIGO_CORE_LISTENER_RESULT_DROP;
+    return sflowa_receive_packet(&ppep, in_port);
 }
 
 /*

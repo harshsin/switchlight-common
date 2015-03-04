@@ -21,7 +21,7 @@
 #define __ICMPA_H__
 
 #include <stdbool.h>
-#include <indigo/indigo.h>
+#include <indigo/of_state_manager.h>
 #include <PPE/ppe.h>
 
 /* <auto.start.enum(ALL).header> */
@@ -67,8 +67,10 @@ indigo_error_t icmpa_init (void);
 bool icmpa_is_initialized (void);
 void icmpa_finish (void);
 
-indigo_error_t icmpa_reply (ppe_packet_t *ppep, of_port_no_t port_no);
-indigo_error_t icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no,
-                           uint32_t type, uint32_t code);
+indigo_core_listener_result_t icmpa_reply (ppe_packet_t *ppep,
+                                           of_port_no_t port_no);
+indigo_core_listener_result_t icmpa_send (ppe_packet_t *ppep,
+                                          of_port_no_t port_no,
+                                          uint32_t type, uint32_t code);
 
 #endif /* __ICMPA__H__ */

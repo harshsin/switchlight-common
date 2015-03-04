@@ -520,13 +520,13 @@ lldpa_update_rx_timeout(lldpa_port_t *port)
 /*
  * This api can be used to send a lldp packet directly to the agent
  */
-indigo_error_t
+indigo_core_listener_result_t
 lldpa_receive_packet(of_octets_t *data, of_port_no_t port_no)
 {
     lldpa_port_t *port = lldpa_find_port(port_no);
     if (!port) {
         AIM_LOG_INTERNAL("LLDPA port out of range %u", port_no);
-        return INDIGO_ERROR_RANGE;
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
     port->rx_pkt_in_cnt++;
@@ -542,12 +542,12 @@ lldpa_receive_packet(of_octets_t *data, of_port_no_t port_no)
      *    as a packet-in
      */
     if (!lldpa_rx_pkt_is_expected(port, data)) {
-        return INDIGO_ERROR_UNKNOWN;
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
     lldpa_update_rx_timeout(port);
     lldpa_port_sys.total_pkt_exp_cnt++;
-    return INDIGO_ERROR_NONE;
+    return INDIGO_CORE_LISTENER_RESULT_DROP;
 }
 
 /* Register to listen to PACKETIN msg */
@@ -584,11 +584,7 @@ lldpa_handle_pkt (of_packet_in_t *packet_in)
         LLDPA_DEBUG("Port %u", port_no);
     }
 
-    if (lldpa_receive_packet(&data, port_no) < 0) {
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
-    }
-
-    return INDIGO_CORE_LISTENER_RESULT_DROP;
+    return lldpa_receive_packet(&data, port_no);
 }
 
 

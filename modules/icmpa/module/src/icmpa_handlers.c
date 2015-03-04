@@ -121,7 +121,6 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
     of_port_no_t               port_no;
     of_match_t                 match;
     ppe_packet_t               ppep;
-    indigo_core_listener_result_t result = INDIGO_CORE_LISTENER_RESULT_PASS;
     uint32_t                   type, code;
 
     debug_counter_inc(&pkt_counters.icmp_total_in_packets);
@@ -172,7 +171,7 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
      * Identify if this is an Echo Request, destined to one of VRouter
      */
     if (ppe_header_get(&ppep, PPE_HEADER_ICMP)) {
-        if (icmpa_reply(&ppep, port_no) == INDIGO_ERROR_NONE) {
+        if (icmpa_reply(&ppep, port_no) == INDIGO_CORE_LISTENER_RESULT_DROP) {
             return INDIGO_CORE_LISTENER_RESULT_DROP;
         }
     }
@@ -194,10 +193,7 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
             is_ephemeral(dest_port)) {
             type = ICMP_DEST_UNREACHABLE;
             code = 3;
-            result = INDIGO_CORE_LISTENER_RESULT_DROP;
-            if (icmpa_send(&ppep, port_no, type, code) == INDIGO_ERROR_NONE) {
-                return result;
-            }
+            return icmpa_send(&ppep, port_no, type, code);
         }
     }
 
@@ -207,16 +203,14 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
     if (match.fields.metadata & OFP_BSN_PKTIN_FLAG_L3_MISS) {
         type = ICMP_DEST_UNREACHABLE;
         code = 0;
-        result = INDIGO_CORE_LISTENER_RESULT_DROP;
-        icmpa_send(&ppep, port_no, type, code);
+        return icmpa_send(&ppep, port_no, type, code);
     } else if (match.fields.metadata & OFP_BSN_PKTIN_FLAG_TTL_EXPIRED) {
         type = ICMP_TIME_EXCEEDED;
         code = 0;
-        result = INDIGO_CORE_LISTENER_RESULT_DROP;
-        icmpa_send(&ppep, port_no, type, code);
+        return icmpa_send(&ppep, port_no, type, code);
     }
 
-    return result;
+    return INDIGO_CORE_LISTENER_RESULT_PASS;
 }
 
 /*
