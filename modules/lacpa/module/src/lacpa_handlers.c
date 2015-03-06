@@ -154,6 +154,48 @@ lacpa_send_packet_out (lacpa_port_t *port, of_octets_t *octets)
 }
 
 /*
+ * lacpa_receive_packet
+ *
+ * This api can be used to send a lacpdu directly to the lacp agent
+ */
+indigo_core_listener_result_t
+lacpa_receive_packet (ppe_packet_t *ppep, of_port_no_t port_no)
+{
+    lacpa_port_t *port;
+    lacpa_pdu_t  pdu;
+
+    AIM_LOG_TRACE("LACPDU Received on port: %d", port_no);
+    debug_counter_inc(&lacpa_system.debug_info.lacp_system_in_packets);
+
+    LACPA_MEMSET(&pdu, 0, sizeof(lacpa_pdu_t));
+
+    /*
+     * Identify the recv port and see if it has LACP agent running
+     */
+    port = lacpa_find_port(port_no);
+    if (!port) return INDIGO_CORE_LISTENER_RESULT_PASS;
+
+    if (!port->lacp_enabled) {
+        AIM_LOG_TRACE("LACPDU-Rx-FAILED - Agent is Disabled on port: %d",
+                      port_no);
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    /*
+     * Retrieve the information from the LACP packet
+     */
+    if (!lacpa_parse_pdu(ppep, &pdu)) {
+        AIM_LOG_RL_WARN(&lacpa_parse_log_limiter, os_time_monotonic(),
+                        "Packet parsing failed on port: %d", port_no);
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    lacpa_machine(port, &pdu, LACPA_EVENT_PDU_RECEIVED);
+
+    return INDIGO_CORE_LISTENER_RESULT_DROP;
+}
+
+/*
  * lacpa_packet_in_handler
  *
  * API for handling incoming port packets
@@ -164,14 +206,9 @@ lacpa_packet_in_handler (of_packet_in_t *packet_in)
     of_octets_t                octets;
     of_port_no_t               port_no;
     of_match_t                 match;
-    lacpa_port_t               *port;
-    lacpa_pdu_t                pdu;
     ppe_packet_t               ppep;
 
-    debug_counter_inc(&lacpa_system.debug_info.lacp_total_in_packets);
     if (!packet_in) return INDIGO_CORE_LISTENER_RESULT_PASS;
-
-    LACPA_MEMSET(&pdu, 0, sizeof(lacpa_pdu_t));
 
     of_packet_in_data_get(packet_in, &octets);
 
@@ -189,11 +226,6 @@ lacpa_packet_in_handler (of_packet_in_t *packet_in)
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
-    debug_counter_inc(&lacpa_system.debug_info.lacp_system_in_packets);
-
-    /*
-     * Identify the recv port and see if it has LACP agent running
-     */
     if (packet_in->version <= OF_VERSION_1_1) {
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     } else {
@@ -204,32 +236,7 @@ lacpa_packet_in_handler (of_packet_in_t *packet_in)
         port_no = match.fields.in_port;
     }
 
-    AIM_LOG_TRACE("LACPDU Received on port: %d", port_no);
-    port = lacpa_find_port(port_no);
-    if (!port) return INDIGO_CORE_LISTENER_RESULT_PASS;
-
-    if (!port->lacp_enabled) {
-        AIM_LOG_TRACE("LACPDU-Rx-FAILED - Agent is Disabled on port: %d",
-                      port_no);
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
-    }
-
-    if (AIM_LOG_CUSTOM_ENABLED(LACPA_LOG_FLAG_PORTSTATS)) {
-        ppe_packet_dump(&ppep, aim_log_pvs_get(&AIM_LOG_STRUCT));
-    }
-
-    /*
-     * Retrieve the information from the LACP packet
-     */
-    if (!lacpa_parse_pdu(&ppep, &pdu)) {
-        AIM_LOG_RL_WARN(&lacpa_parse_log_limiter, os_time_monotonic(),
-                        "Packet parsing failed on port: %d", port_no);
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
-    }
-
-    lacpa_machine(port, &pdu, LACPA_EVENT_PDU_RECEIVED);
-
-    return INDIGO_CORE_LISTENER_RESULT_DROP;
+    return lacpa_receive_packet(&ppep, port_no);
 }
 
 /*

@@ -121,7 +121,6 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
     of_port_no_t               port_no;
     of_match_t                 match;
     ppe_packet_t               ppep;
-    indigo_core_listener_result_t result = INDIGO_CORE_LISTENER_RESULT_PASS;
     uint32_t                   type, code;
 
     debug_counter_inc(&pkt_counters.icmp_total_in_packets);
@@ -145,13 +144,6 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
 
     if (port_no == OF_PORT_DEST_CONTROLLER) {
         debug_counter_inc(&pkt_counters.icmp_total_passed_packets);
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
-    }
-
-    if (port_no > ICMPA_CONFIG_OF_PORTS_MAX) {
-        AIM_LOG_INTERNAL("ICMPA: Port No: %d Out of Range %d",
-                         port_no, ICMPA_CONFIG_OF_PORTS_MAX);
-        debug_counter_inc(&pkt_counters.icmp_internal_errors);
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
@@ -179,9 +171,8 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
      * Identify if this is an Echo Request, destined to one of VRouter
      */
     if (ppe_header_get(&ppep, PPE_HEADER_ICMP)) {
-        if (icmpa_reply(&ppep, port_no, &result)) {
-            ++port_pkt_counters[port_no].icmp_echo_packets;
-            return result;
+        if (icmpa_reply(&ppep, port_no) == INDIGO_CORE_LISTENER_RESULT_DROP) {
+            return INDIGO_CORE_LISTENER_RESULT_DROP;
         }
     }
 
@@ -200,15 +191,9 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
 
         if (router_ip_check(dest_ip) && is_ephemeral(src_port) &&
             is_ephemeral(dest_port)) {
-            AIM_LOG_TRACE("ICMP Port Unreachable received on port: %d",
-                          port_no);
             type = ICMP_DEST_UNREACHABLE;
             code = 3;
-            result = INDIGO_CORE_LISTENER_RESULT_DROP;
-            if (icmpa_send(&ppep, port_no, type, code)) {
-                ++port_pkt_counters[port_no].icmp_port_unreachable_packets;
-                return result;
-            }
+            return icmpa_send(&ppep, port_no, type, code);
         }
     }
 
@@ -216,25 +201,16 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
      * Identify if the reason is valid for ICMP Agent to consume the packet
      */
     if (match.fields.metadata & OFP_BSN_PKTIN_FLAG_L3_MISS) {
-        AIM_LOG_TRACE("ICMP Dest Network Unreachable received on port: %d",
-                      port_no);
         type = ICMP_DEST_UNREACHABLE;
         code = 0;
-        result = INDIGO_CORE_LISTENER_RESULT_DROP;
-        if (icmpa_send(&ppep, port_no, type, code)) {
-            ++port_pkt_counters[port_no].icmp_net_unreachable_packets;
-        }
+        return icmpa_send(&ppep, port_no, type, code);
     } else if (match.fields.metadata & OFP_BSN_PKTIN_FLAG_TTL_EXPIRED) {
-        AIM_LOG_TRACE("ICMP TTL Expired received on port: %d", port_no);
         type = ICMP_TIME_EXCEEDED;
         code = 0;
-        result = INDIGO_CORE_LISTENER_RESULT_DROP;
-        if (icmpa_send(&ppep, port_no, type, code)) {
-            ++port_pkt_counters[port_no].icmp_time_exceeded_packets;
-        }
+        return icmpa_send(&ppep, port_no, type, code);
     }
 
-    return result;
+    return INDIGO_CORE_LISTENER_RESULT_PASS;
 }
 
 /*
@@ -286,6 +262,7 @@ icmpa_init (void)
        sizeof(icmpa_typecode_packet_counter_t) * (ICMPA_CONFIG_OF_PORTS_MAX+1));
     aim_ratelimiter_init(&icmp_pktin_log_limiter, 1000*1000, 5, NULL);
 
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     /*
      * Register listerner for packet_in
      */
@@ -294,6 +271,7 @@ icmpa_init (void)
         AIM_LOG_FATAL("Failed to register for packet_in in ICMPA module");
         return INDIGO_ERROR_INIT;
     }
+#endif
 
     icmp_initialized = true;
     return INDIGO_ERROR_NONE;
@@ -324,10 +302,12 @@ icmpa_finish (void)
     ICMPA_MEMSET(&port_pkt_counters[0], 0,
        sizeof(icmpa_typecode_packet_counter_t) * (ICMPA_CONFIG_OF_PORTS_MAX+1));
 
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     /*
      * Unregister listerner for packet_in
      */
     indigo_core_packet_in_listener_unregister(icmpa_packet_in_handler);
+#endif
 
     icmp_initialized = false;
 }

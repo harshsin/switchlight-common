@@ -18,6 +18,8 @@
  ****************************************************************/
 
 #include <indigo/indigo.h>
+#include <indigo/of_state_manager.h>
+#include <PPE/ppe.h>
 
 #ifndef __ARPA_H__
 #define __ARPA_H__
@@ -28,5 +30,8 @@
 
 indigo_error_t arpa_init();
 void arpa_finish();
+
+indigo_core_listener_result_t arpa_receive_packet(ppe_packet_t *ppep,
+                                                  of_port_no_t in_port);
 
 #endif /* __LLDPA_H__ */

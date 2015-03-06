@@ -80,14 +80,17 @@ lacpa_init (void)
     LACPA_MEMSET(lacpa_system.ports, 0, ports_size);
     lacp_system_initialized = true;
 
+
     /*
      * Register listerners for port packet_in and Controller msg's
      */
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     if (indigo_core_packet_in_listener_register((indigo_core_packet_in_listener_f)
                                                 lacpa_packet_in_handler) < 0) {
         AIM_LOG_FATAL("Failed to register for port packet_in in LACPA module");
         return INDIGO_ERROR_INIT;
     }
+#endif
 
     if (indigo_core_message_listener_register((indigo_core_message_listener_f)
                                               lacpa_controller_msg_handler) < 0) {
@@ -109,7 +112,9 @@ lacpa_init (void)
 void
 lacpa_finish (void)
 {
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     indigo_core_packet_in_listener_unregister(lacpa_packet_in_handler);
+#endif
     indigo_core_message_listener_unregister(lacpa_controller_msg_handler);
     indigo_core_gentable_unregister(lacp_table);
 

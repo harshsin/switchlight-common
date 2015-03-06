@@ -517,24 +517,57 @@ lldpa_update_rx_timeout(lldpa_port_t *port)
     }
 }
 
+/*
+ * This api can be used to send a lldp packet directly to the agent
+ */
+indigo_core_listener_result_t
+lldpa_receive_packet(of_octets_t *data, of_port_no_t port_no)
+{
+    lldpa_port_t *port = lldpa_find_port(port_no);
+    if (!port) {
+        AIM_LOG_INTERNAL("LLDPA port out of range %u", port_no);
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    port->rx_pkt_in_cnt++;
+    if (lldpa_dump_data == LLDPA_DUMP_ENABLE_ALL_PORTS ||
+        lldpa_dump_data == port_no) {
+        lldpa_data_hexdump(data->data, data->bytes, lldpa_data_display);
+    }
+
+    /* At this step we will process the LLDP packet
+     * 0. Port doesn't have data, won't expect any packet
+     * 1. If expected, reset the timeout
+     * 2. If not, it's automatically PASSED to the controller
+     *    as a packet-in
+     */
+    if (!lldpa_rx_pkt_is_expected(port, data)) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    lldpa_update_rx_timeout(port);
+    lldpa_port_sys.total_pkt_exp_cnt++;
+    return INDIGO_CORE_LISTENER_RESULT_DROP;
+}
+
 /* Register to listen to PACKETIN msg */
 indigo_core_listener_result_t
 lldpa_handle_pkt (of_packet_in_t *packet_in)
 {
-    lldpa_port_t               *port = NULL;
     of_octets_t                data;
     of_port_no_t               port_no;
     of_match_t                 match;
-    indigo_core_listener_result_t ret = INDIGO_CORE_LISTENER_RESULT_PASS;
 
-    if(!packet_in)
-        return ret;
+    if (!packet_in) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
 
     /* Data is the ether pkt */
     of_packet_in_data_get(packet_in, &data);
 
-    if(!data.data)
-        return ret;
+    if (!data.data) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
 
     /* Only count pkt_in with valid data */
     lldpa_port_sys.total_pkt_in_cnt++;
@@ -545,36 +578,13 @@ lldpa_handle_pkt (of_packet_in_t *packet_in)
     } else {
         if (of_packet_in_match_get(packet_in, &match) < 0) {
             AIM_LOG_INTERNAL("match get failed");
-            return ret;
+            return INDIGO_CORE_LISTENER_RESULT_PASS;
         }
         port_no = match.fields.in_port;
-        LLDPA_DEBUG("Port %u",port_no);
+        LLDPA_DEBUG("Port %u", port_no);
     }
 
-    port = lldpa_find_port(port_no);
-    if (!port) {
-        AIM_LOG_INTERNAL("LLDPA port out of range %u", port_no);
-        return ret;
-    }
-
-    port->rx_pkt_in_cnt++;
-    if (lldpa_dump_data == LLDPA_DUMP_ENABLE_ALL_PORTS ||
-        lldpa_dump_data == port_no)
-        lldpa_data_hexdump(data.data, data.bytes, lldpa_data_display);
-
-    /* At this step we will process the LLDP packet
-     * 0. Port doesn't have data, won't expect any packet
-     * 1. If expected, reset the timeout
-     * 2. If not, it's automatically PASSED to the controller
-     *    as a packet-in
-     */
-    if (lldpa_rx_pkt_is_expected(port, &data)) {
-        ret = INDIGO_CORE_LISTENER_RESULT_DROP;
-        lldpa_update_rx_timeout(port);
-        lldpa_port_sys.total_pkt_exp_cnt++;
-    }
-
-    return ret;
+    return lldpa_receive_packet(&data, port_no);
 }
 
 
@@ -602,7 +612,9 @@ lldpa_system_init()
     }
 
     indigo_core_message_listener_register(lldpa_handle_msg);
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     indigo_core_packet_in_listener_register(lldpa_handle_pkt);
+#endif
 
     return 0;
 }
@@ -614,7 +626,9 @@ lldpa_system_finish()
     lldpa_port_t *port;
 
     indigo_core_message_listener_unregister(lldpa_handle_msg);
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     indigo_core_packet_in_listener_unregister(lldpa_handle_pkt);
+#endif
 
     for (i=0; i < lldpa_port_sys.lldpa_total_of_ports; i++) {
         port = lldpa_find_port(i);

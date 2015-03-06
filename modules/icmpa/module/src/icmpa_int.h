@@ -24,7 +24,6 @@
 #include <icmpa/icmpa_porting.h>
 #include <icmpa/icmpa.h>
 #include "icmpa_log.h"
-#include <PPE/ppe.h>
 #include <loci/loci.h>
 #include <OS/os_time.h>
 #include <indigo/of_state_manager.h>
@@ -104,10 +103,6 @@ typedef struct icmp_entry_s { /* icmp_entry */
  *
  *****************************************************************************/
 
-bool icmpa_reply (ppe_packet_t *ppep, of_port_no_t port_no,
-                  indigo_core_listener_result_t *result);
-bool icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no,
-                 uint32_t type, uint32_t code);
 indigo_error_t icmpa_send_packet_out (of_octets_t *octets);
 
 indigo_core_listener_result_t

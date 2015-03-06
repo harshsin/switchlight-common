@@ -20,6 +20,8 @@
 #ifndef __LLDPA_H__
 #define __LLDPA_H__
 
+#include <indigo/of_state_manager.h>
+#include <PPE/ppe.h>
 
 /* <--auto.start.enum(ALL).header> */
 /* <auto.end.enum(ALL).header> */
@@ -30,5 +32,6 @@
 
 int lldpa_system_init();
 void lldpa_system_finish();
+indigo_core_listener_result_t lldpa_receive_packet(of_octets_t *data, of_port_no_t port_no);
 
 #endif /* __LLDPA_H__ */

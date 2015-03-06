@@ -21,7 +21,8 @@
 #define __SFLOWA_H__
 
 #include <stdbool.h>
-#include <indigo/indigo.h>
+#include <indigo/of_state_manager.h>
+#include <PPE/ppe.h>
 
 /******************************************************************************
  *
@@ -64,5 +65,14 @@ void sflowa_sampling_rate_handler_register(sflowa_sampling_rate_handler_f fn);
  * @param fn Application specific handler for sampling rate update
  */
 void sflowa_sampling_rate_handler_unregister(sflowa_sampling_rate_handler_f fn);
+
+/**
+ * @brief This api can be used to send a sflow sampled packet directly
+ * to the sflow agent
+ * @param ppep Parsed packet-in
+ * @param in_port Input switch port
+ */
+indigo_core_listener_result_t sflowa_receive_packet(ppe_packet_t *ppep,
+                                                    of_port_no_t in_port);
 
 #endif /* __SFLOWA__H__ */
