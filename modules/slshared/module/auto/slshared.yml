@@ -39,7 +39,7 @@ cdefs: &cdefs
     doc: "Priority for span and sflow packets"
     default: 4
 - SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER:
-    doc: "If set, register with socketmanager as pktin listerner"
+    doc: "If set, register with socketmanager as pktin listener"
     default: 1
 
 definitions:

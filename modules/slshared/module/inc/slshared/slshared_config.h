@@ -132,7 +132,7 @@
 /**
  * SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER
  *
- * If set, register with socketmanager as pktin listerner */
+ * If set, register with socketmanager as pktin listener */
 
 
 #ifndef SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER
