@@ -272,7 +272,11 @@ icmpa_reply (ppe_packet_t *ppep, of_port_no_t port_no)
         return INDIGO_CORE_LISTENER_RESULT_DROP;
     }
 
-    rv = icmpa_send_packet_out(&octets_out);
+    /*
+     * Send the ICMP echo reply out
+     */
+    rv = slshared_fwd_packet_out(&octets_out, OF_PORT_DEST_CONTROLLER,
+                                 OF_PORT_DEST_USE_TABLE, QUEUE_ID_INVALID);
     if (rv < 0) {
         AIM_LOG_INTERNAL("ICMPA: Send packet_out failed for port: %d, reason: %s",
                          port_no, indigo_strerror(rv));
@@ -416,7 +420,11 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
         return INDIGO_CORE_LISTENER_RESULT_DROP;
     }
 
-    rv = icmpa_send_packet_out(&octets_out);
+    /*
+     * Send the ICMP message out
+     */
+    rv = slshared_fwd_packet_out(&octets_out, OF_PORT_DEST_CONTROLLER,
+                                 OF_PORT_DEST_USE_TABLE, QUEUE_ID_INVALID);
     if (rv < 0) {
         AIM_LOG_INTERNAL("ICMPA: Send packet_out failed for port: %d, reason: %s",
                          port_no, indigo_strerror(rv));

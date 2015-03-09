@@ -27,6 +27,7 @@
 #include "lacpa_int.h"
 #include "lacpa_utils.h"
 #include <PPE/ppe.h>
+#include <slshared/slshared.h>
 
 /*
  * Slow-Protocols Dest Mac
@@ -472,9 +473,10 @@ lacpa_init_port (lacpa_info_t *info, bool lacp_enabled)
 void
 lacpa_transmit (lacpa_port_t *port)
 {
-    ppe_packet_t ppep;
-    uint8_t      data[LACP_PKT_BUF_SIZE];
-    of_octets_t  octets;
+    ppe_packet_t   ppep;
+    uint8_t        data[LACP_PKT_BUF_SIZE];
+    of_octets_t    octets;
+    indigo_error_t rv;
 
     if (!port) return;
 
@@ -531,11 +533,21 @@ lacpa_transmit (lacpa_port_t *port)
     }
 
     /*
-     * Send the packet out the port
+     * Send the LACPDU out the port
      */
     octets.data = data;
     octets.bytes = LACP_PKT_BUF_SIZE;
-    lacpa_send_packet_out(port, &octets);
+    rv = slshared_fwd_packet_out(&octets, 0, port->actor.port_no,
+                                 SLSHARED_CONFIG_PDU_QUEUE_PRIORITY);
+    if (rv < 0) {
+        AIM_LOG_INTERNAL("Failed to send packet out the port: %d, reason: %s",
+                         port->actor.port_no, indigo_strerror(rv));
+    } else {
+        AIM_LOG_TRACE("Successfully sent packet out the port: %d",
+                      port->actor.port_no);
+        debug_counter_inc(&port->debug_info.lacp_port_out_packets);
+        debug_counter_inc(&lacpa_system.debug_info.lacp_system_out_packets);
+    }
 
     return;
 

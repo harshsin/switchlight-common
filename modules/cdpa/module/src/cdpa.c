@@ -217,62 +217,20 @@ static void
 cdpa_periodic_tx(void *cookie)
 {
     cdpa_port_t *port = (cdpa_port_t*) cookie;
-    of_packet_out_t *pkt_out;
-    of_list_action_t *list;
-    of_action_output_t *action;
-    int rv;
-
-    /* Always use OF_VERSION_1_3 */
-    uint32_t version = OF_VERSION_1_3;
+    indigo_error_t rv;
 
     AIM_ASSERT(port, "attempted to send on a NULL port");
 
-    pkt_out = of_packet_out_new (version);
-    if (!pkt_out){
-        AIM_LOG_INTERNAL("Failed to allocate packet out");
-        return;
-    }
-
-    action = of_action_output_new(version);
-    if (!action){
-        of_packet_out_delete(pkt_out);
-        AIM_LOG_INTERNAL("Failed to allocation action");
-        return;
-    }
-    of_action_output_port_set(action, port->port_no);
-
-    list = of_list_action_new(version);
-    if (!list){
-        of_packet_out_delete(pkt_out);
-        of_object_delete(action);
-        AIM_LOG_INTERNAL("Failed to allocate action list");
-        return;
-    }
-
-    of_list_append(list, action);
-    of_object_delete(action);
-
-    rv = of_packet_out_actions_set(pkt_out, list);
-    AIM_ASSERT(rv == 0);
-    of_object_delete(list);
-
-    if ((rv = of_packet_out_data_set(pkt_out, &port->tx_pkt.data))
-        != OF_ERROR_NONE) {
-        AIM_LOG_TRACE("Packet out failed to set data %d", rv);
-        of_packet_out_delete(pkt_out);
-        return;
-    }
-
     AIM_LOG_TRACE("Port %u: fwd tx pkt out", port->port_no);
 
-    if ((rv = indigo_fwd_packet_out(pkt_out)) == INDIGO_ERROR_NONE) {
+    rv = slshared_fwd_packet_out(&port->tx_pkt.data, 0, port->port_no,
+                                 SLSHARED_CONFIG_PDU_QUEUE_PRIORITY);
+    if (rv < 0) {
+        AIM_LOG_INTERNAL("Fwd pkt out failed %s", indigo_strerror(rv));
+    } else {
         port->tx_pkt_out_cnt++;
         debug_counter_inc(&cdpa_system.debug_info.cdp_total_out_packets);
-    } else {
-        AIM_LOG_INTERNAL("Fwd pkt out failed %s", indigo_strerror(rv));
     }
-    /* Fwding pkt out HAS to delete obj */
-    of_packet_out_delete(pkt_out);
 }
 
 /*

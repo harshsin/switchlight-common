@@ -32,6 +32,7 @@
 #include <SocketManager/socketmanager.h>
 #include <indigo/port_manager.h>
 #include <debug_counter/debug_counter.h>
+#include <slshared/slshared.h>
 #include <AIM/aim_list.h>
 #include <host_sflow/host_sflow.h>
 

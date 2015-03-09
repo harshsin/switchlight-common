@@ -19,17 +19,17 @@
 
 /*
  * Implementation of BigTap ARP Agent.
- * (Not to be confused with arpa module which is t5/t6 ARP agent)  
+ * (Not to be confused with arpa module which is t5/t6 ARP agent)
  *
  * This file contains the api's for initializing and handling incoming/outgoing
  * messages to/from the agent.
  *
- * ARP Agent maintains a cache for IP --> MAC mapping and 
+ * ARP Agent maintains a cache for IP --> MAC mapping and
  * responds to ARP requests for target IP's present in the cache.
  * ARP requests for IP addresses not present in the cache are passed
  * to the controller.
  *
- * ARP Cache enteries are added/deleted by 
+ * ARP Cache enteries are added/deleted by
  * broadcom/Modules/Indigo/BRCMDriver/module/src/brcm_l2gre_port.c
  */
 
@@ -54,8 +54,8 @@ arpra_is_initialized (void)
 
 /*
  * arp_cache_list
- *  
- * Return a list of arp cache entries 
+ *
+ * Return a list of arp cache entries
  *
  * The list is through the 'links' field of arp_cache_t.
  */
@@ -67,13 +67,13 @@ arp_cache_list(void)
 
 /*
  * arpra_parse_packet
- * 
- * Parse ARP packet and extract info 
+ *
+ * Parse ARP packet and extract info
  */
 static indigo_error_t
 arpra_parse_packet (ppe_packet_t *ppep, arp_info_t *info, bool vlan_tagged)
 {
-    uint32_t tmp;    
+    uint32_t tmp;
 
     if (!ppep || !info) return INDIGO_ERROR_PARAM;
 
@@ -125,14 +125,14 @@ arpra_parse_packet (ppe_packet_t *ppep, arp_info_t *info, bool vlan_tagged)
     return INDIGO_ERROR_NONE;
 }
 
-/* 
+/*
  * arpra_lookup
  *
- * return true if target ip is one of the tunnel interface; 
+ * return true if target ip is one of the tunnel interface;
  * fill mac with addr associated with that interface
  *
  * else; returns false
- */ 
+ */
 bool
 arpra_lookup (uint32_t ipv4, of_mac_addr_t *mac)
 {
@@ -143,21 +143,21 @@ arpra_lookup (uint32_t ipv4, of_mac_addr_t *mac)
                                                       arp_cache_entry_t);
         if (cache_entry->entry.ipv4 == ipv4) {
             ARPRA_MEMCPY(mac->addr, cache_entry->entry.mac.addr,
-                         OF_MAC_ADDR_BYTES); 
-            AIM_LOG_TRACE("Target mac: %{mac} found", 
+                         OF_MAC_ADDR_BYTES);
+            AIM_LOG_TRACE("Target mac: %{mac} found",
                           cache_entry->entry.mac.addr);
-            return true; 
+            return true;
         }
     }
 
-    AIM_LOG_TRACE("Target ip: %{ipv4a} not found in ARP cache", ipv4); 
+    AIM_LOG_TRACE("Target ip: %{ipv4a} not found in ARP cache", ipv4);
     return false;
 }
 
 /*
  * arpra_send_packet
  *
- * Construct the arp response and send it out on specified port 
+ * Construct the arp response and send it out on specified port
  */
 static void
 arpra_send_packet (arp_info_t *info, of_port_no_t port_no, bool vlan_tagged)
@@ -170,8 +170,8 @@ arpra_send_packet (arp_info_t *info, of_port_no_t port_no, bool vlan_tagged)
     memset(data, 0, sizeof(data));
     ppe_packet_init(&ppep, data, sizeof(data));
 
-    /* 
-     * Set ethertypes before parsing 
+    /*
+     * Set ethertypes before parsing
      */
     if (vlan_tagged) {
         data[12] = 0x81;
@@ -243,33 +243,8 @@ arpra_send_packet (arp_info_t *info, of_port_no_t port_no, bool vlan_tagged)
         AIM_DIE("Failed to set PPE_FIELD_ARP_TPA");
     }
 
-    of_packet_out_t    *obj;
-    of_list_action_t   *list;
-    of_action_output_t *action;
-    indigo_error_t     rv;
-
-    obj = of_packet_out_new(OF_VERSION_1_3);
-    AIM_TRUE_OR_DIE(obj != NULL);
-
-    list = of_list_action_new(OF_VERSION_1_3);
-    AIM_TRUE_OR_DIE(list != NULL);
-
-    action = of_action_output_new(OF_VERSION_1_3);
-    AIM_TRUE_OR_DIE(action != NULL);
-
-    of_action_output_port_set(action, port_no);
-    of_list_append(list, action);
-    of_object_delete(action);
-    rv = of_packet_out_actions_set(obj, list);
-    AIM_ASSERT(rv == 0);
-    of_object_delete(list);
-    
     of_octets_t octets = { data, sizeof(data) };
-    if (of_packet_out_data_set(obj, &octets) < 0) {
-        AIM_DIE("Failed to set data on ARP reply");
-    }
-
-    rv = indigo_fwd_packet_out(obj);
+    indigo_error_t rv = slshared_fwd_packet_out(&octets, 0, port_no, QUEUE_ID_INVALID);
     if (rv < 0) {
         AIM_LOG_ERROR("Failed to send packet out the port: %d, reason: %s",
                       port_no, indigo_strerror(rv));
@@ -278,12 +253,10 @@ arpra_send_packet (arp_info_t *info, of_port_no_t port_no, bool vlan_tagged)
         AIM_LOG_TRACE("Succesfully sent a packet out the port: %d", port_no);
         debug_counter_inc(&pkt_counters.total_out_packets);
     }
-
-    of_packet_out_delete(obj); 
 }
 
 /*
- * icmp_packet_in_handler 
+ * icmp_packet_in_handler
  *
  * API for handling incoming packets
  */
@@ -312,7 +285,7 @@ arpra_packet_in_handler (of_packet_in_t *packet_in)
     } else {
         if (of_packet_in_match_get(packet_in, &match) < 0) {
             AIM_LOG_ERROR("ARPRA: match get failed");
-            debug_counter_inc(&pkt_counters.internal_errors);    
+            debug_counter_inc(&pkt_counters.internal_errors);
             return INDIGO_CORE_LISTENER_RESULT_PASS;
         }
         port_no = match.fields.in_port;
@@ -344,17 +317,17 @@ arpra_packet_in_handler (of_packet_in_t *packet_in)
     rv = arpra_parse_packet(&ppep, &info, vlan_tagged);
     if (rv < 0) {
         AIM_LOG_RL_ERROR(&arpra_pktin_log_limiter, os_time_monotonic(),
-                         "ARPRA: not a valid ARP packet: %s", 
+                         "ARPRA: not a valid ARP packet: %s",
                          indigo_strerror(rv));
         debug_counter_inc(&pkt_counters.internal_errors);
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
-    AIM_LOG_TRACE("Received ARP packet: op: %d spa: %{ipv4a}, tpa: %{ipv4a}", 
+    AIM_LOG_TRACE("Received ARP packet: op: %d spa: %{ipv4a}, tpa: %{ipv4a}",
                   info.operation, info.sender.ipv4, info.target.ipv4);
 
     /*
-     * Only interested in arp requests, arp replies will be passed to 
+     * Only interested in arp requests, arp replies will be passed to
      * the controller
      */
     if (info.operation != 1) {
@@ -365,23 +338,23 @@ arpra_packet_in_handler (of_packet_in_t *packet_in)
     if (!arpra_lookup(info.target.ipv4, &info.target.mac)) {
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
-   
-    AIM_LOG_TRACE("Sending ARP Reply for ip: %{ipv4a}, mac: %{mac}", 
+
+    AIM_LOG_TRACE("Sending ARP Reply for ip: %{ipv4a}, mac: %{mac}",
                   info.target.ipv4, info.target.mac.addr);
 
-    /* 
+    /*
      * Send an ARP reply to the SHA of the request
      */
     arp_info_t reply_info = info;
-    memcpy(reply_info.eth_dst.addr, info.sender.mac.addr, 
+    memcpy(reply_info.eth_dst.addr, info.sender.mac.addr,
            sizeof(reply_info.eth_dst));
-    memcpy(reply_info.eth_src.addr, info.target.mac.addr, 
+    memcpy(reply_info.eth_src.addr, info.target.mac.addr,
            sizeof(reply_info.eth_src));
     reply_info.target.ipv4 = info.sender.ipv4;
-    memcpy(reply_info.target.mac.addr, info.sender.mac.addr, 
+    memcpy(reply_info.target.mac.addr, info.sender.mac.addr,
            sizeof(reply_info.target.mac));
     reply_info.sender.ipv4 = info.target.ipv4;
-    memcpy(reply_info.sender.mac.addr, info.target.mac.addr, 
+    memcpy(reply_info.sender.mac.addr, info.target.mac.addr,
            sizeof(reply_info.sender.mac));
     reply_info.operation = 2;
 
@@ -401,15 +374,15 @@ arpra_find_cache_entry (uint32_t ipv4, of_mac_addr_t mac)
     list_head_t *cache = arp_cache_list();
     list_links_t *cur;
     LIST_FOREACH(cache, cur) {
-        arp_cache_entry_t *cache_entry = container_of(cur, links, 
+        arp_cache_entry_t *cache_entry = container_of(cur, links,
                                                       arp_cache_entry_t);
-        if (cache_entry->entry.ipv4 == ipv4 && 
-            !ARPRA_MEMCMP(cache_entry->entry.mac.addr, mac.addr, 
+        if (cache_entry->entry.ipv4 == ipv4 &&
+            !ARPRA_MEMCMP(cache_entry->entry.mac.addr, mac.addr,
                           OF_MAC_ADDR_BYTES)) {
             return cache_entry;
         }
     }
-    
+
     return NULL;
 }
 
@@ -435,15 +408,15 @@ arpra_add_cache_entry (uint32_t ipv4, of_mac_addr_t mac)
         AIM_LOG_TRACE("Incremented refcount for Arp cache entry with ip: "
                       "%{ipv4a}, mac: %{mac} to refcount: %d",
                       cache_entry->entry.ipv4, cache_entry->entry.mac.addr,
-                      cache_entry->refcount);            
+                      cache_entry->refcount);
         return INDIGO_ERROR_NONE;
     }
 
     cache_entry = (arp_cache_entry_t *) aim_zmalloc(sizeof(arp_cache_entry_t));
     cache_entry->entry.ipv4 = ipv4;
-    ARPRA_MEMCPY(cache_entry->entry.mac.addr, mac.addr, OF_MAC_ADDR_BYTES);  
+    ARPRA_MEMCPY(cache_entry->entry.mac.addr, mac.addr, OF_MAC_ADDR_BYTES);
     ++cache_entry->refcount;
-    list_push(&arp_cache, &cache_entry->links);    
+    list_push(&arp_cache, &cache_entry->links);
 
     AIM_LOG_TRACE("Added Arp cache entry with ip: %{ipv4a}, mac: %{mac}, "
                   "refcount: %d", cache_entry->entry.ipv4, cache_entry->entry.mac.addr,
@@ -463,13 +436,13 @@ arpra_delete_cache_entry (uint32_t ipv4, of_mac_addr_t mac)
     arp_cache_entry_t *cache_entry;
 
     if (!arpra_is_initialized()) return INDIGO_ERROR_INIT;
-    
+
     AIM_LOG_TRACE("Received Arp cache entry delete request for ip: %{ipv4a}, "
                   "mac: %{mac}", ipv4, mac.addr);
-   
+
     cache_entry = arpra_find_cache_entry(ipv4, mac);
     if (!cache_entry) {
-        AIM_LOG_TRACE("No such entry exist in the arp cache");  
+        AIM_LOG_TRACE("No such entry exist in the arp cache");
         return INDIGO_ERROR_NONE;
     }
 
@@ -533,7 +506,7 @@ arpra_init (void)
                            "ARP replies sent by arpra");
     debug_counter_register(&pkt_counters.internal_errors,
                            "arpra.internal_errors",
-                           "Internal errors in arpra");    
+                           "Internal errors in arpra");
 
     /*
      * Register listerner for packet_in
@@ -564,7 +537,7 @@ arpra_finish (void)
      */
     debug_counter_unregister(&pkt_counters.total_in_packets);
     debug_counter_unregister(&pkt_counters.total_out_packets);
-    debug_counter_unregister(&pkt_counters.internal_errors); 
+    debug_counter_unregister(&pkt_counters.internal_errors);
 
     /*
      * Unregister listerner for packet_in

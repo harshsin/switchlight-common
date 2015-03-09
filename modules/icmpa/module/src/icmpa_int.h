@@ -31,6 +31,7 @@
 #include <debug_counter/debug_counter.h>
 #include <BigHash/bighash.h>
 #include <uCli/ucli.h>
+#include <slshared/slshared.h>
 
 /******************************************************************************
  *
@@ -58,9 +59,6 @@
 #define ICMP_DEST_UNREACHABLE   3   /* Destination Unreachable  */
 #define ICMP_ECHO_REQUEST       8   /* Echo Request             */
 #define ICMP_TIME_EXCEEDED      11  /* Time Exceeded            */
-
-#define VLAN_VID(tci) ((tci) & 0xfff)
-#define VLAN_PCP(tci) ((tci) >> 13)
 
 extern aim_ratelimiter_t icmp_pktin_log_limiter;
 
@@ -102,8 +100,6 @@ typedef struct icmp_entry_s { /* icmp_entry */
  * ICMP: INTERNET CONTROL MESSAGE PROTOCOL: INTERNAL API DECLARATIONS
  *
  *****************************************************************************/
-
-indigo_error_t icmpa_send_packet_out (of_octets_t *octets);
 
 indigo_core_listener_result_t
 icmpa_packet_in_handler (of_packet_in_t *packet_in);

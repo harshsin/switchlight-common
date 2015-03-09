@@ -94,66 +94,6 @@ lacpa_update_controller (lacpa_port_t *port)
 }
 
 /*
- * lacpa_send_packet_out
- *
- * Send the LACPDU out the port
- */
-void
-lacpa_send_packet_out (lacpa_port_t *port, of_octets_t *octets)
-{
-    of_packet_out_t    *obj;
-    of_list_action_t   *list;
-    of_action_output_t *action;
-    of_action_set_queue_t *queue_action;
-    indigo_error_t     rv;
-
-    if (!port || !octets) return;
-
-    obj = of_packet_out_new(OF_VERSION_1_3);
-    AIM_TRUE_OR_DIE(obj != NULL);
-
-    list = of_list_action_new(OF_VERSION_1_3);
-    AIM_TRUE_OR_DIE(list != NULL);
-
-    queue_action = of_action_set_queue_new(OF_VERSION_1_3);
-    AIM_TRUE_OR_DIE(queue_action != NULL);
-
-    of_action_set_queue_queue_id_set(queue_action,
-                                     SLSHARED_CONFIG_PDU_QUEUE_PRIORITY);
-    of_list_append(list, queue_action);
-    of_object_delete(queue_action);
-
-    action = of_action_output_new(OF_VERSION_1_3);
-    AIM_TRUE_OR_DIE(action != NULL);
-
-    of_action_output_port_set(action, port->actor.port_no);
-    of_list_append(list, action);
-    of_object_delete(action);
-    rv = of_packet_out_actions_set(obj, list);
-    AIM_ASSERT(rv == 0);
-    of_object_delete(list);
-
-    if (of_packet_out_data_set(obj, octets) < 0) {
-        AIM_LOG_INTERNAL("Failed to set data on packet out");
-        of_packet_out_delete(obj);
-        return;
-    }
-
-    rv = indigo_fwd_packet_out(obj);
-    if (rv < 0) {
-        AIM_LOG_INTERNAL("Failed to send packet out the port: %d, reason: %s",
-                         port->actor.port_no, indigo_strerror(rv));
-    } else {
-        AIM_LOG_TRACE("Successfully sent packet out the port: %d",
-                      port->actor.port_no);
-        debug_counter_inc(&port->debug_info.lacp_port_out_packets);
-        debug_counter_inc(&lacpa_system.debug_info.lacp_system_out_packets);
-    }
-
-    of_packet_out_delete(obj);
-}
-
-/*
  * lacpa_receive_packet
  *
  * This api can be used to send a lacpdu directly to the lacp agent
