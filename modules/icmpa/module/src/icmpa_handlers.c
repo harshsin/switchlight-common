@@ -65,51 +65,6 @@ is_ephemeral(uint32_t port)
 }
 
 /*
- * icmp_send_packet_out
- *
- * Send the ICMP message out
- */
-indigo_error_t
-icmpa_send_packet_out (of_octets_t *octets)
-{
-    of_packet_out_t    *obj;
-    of_list_action_t   *list;
-    of_action_output_t *action;
-    indigo_error_t     rv;
-
-    if (!octets) return INDIGO_ERROR_PARAM;
-
-    obj = of_packet_out_new(OF_VERSION_1_3);
-    AIM_TRUE_OR_DIE(obj != NULL);
-
-    list = of_list_action_new(OF_VERSION_1_3);
-    AIM_TRUE_OR_DIE(list != NULL);
-
-    action = of_action_output_new(OF_VERSION_1_3);
-    AIM_TRUE_OR_DIE(action != NULL);
-
-    of_packet_out_buffer_id_set(obj, -1);
-    of_packet_out_in_port_set(obj, OF_PORT_DEST_CONTROLLER);
-    of_action_output_port_set(action, OF_PORT_DEST_USE_TABLE);
-    of_list_append(list, action);
-    of_object_delete(action);
-    rv = of_packet_out_actions_set(obj, list);
-    AIM_ASSERT(rv == 0);
-    of_object_delete(list);
-
-    rv = of_packet_out_data_set(obj, octets);
-    if (rv < 0) {
-        AIM_LOG_INTERNAL("ICMPA: Failed to set data on packet out");
-        of_packet_out_delete(obj);
-        return rv;
-    }
-
-    rv = indigo_fwd_packet_out(obj);
-    of_packet_out_delete(obj);
-    return rv;
-}
-
-/*
  * icmp_packet_in_handler
  *
  * API for handling incoming packets

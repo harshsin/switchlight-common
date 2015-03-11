@@ -35,6 +35,7 @@
 #include <OS/os_time.h>
 #include <AIM/aim_list.h>
 #include <debug_counter/debug_counter.h>
+#include <slshared/slshared.h>
 
 typedef struct arp_mapping_s { /* arp_mapping */
     of_mac_addr_t mac;
@@ -68,7 +69,7 @@ extern arpra_packet_counter_t pkt_counters;
 bool arpra_is_initialized (void);
 
 /*
- * 
+ *
  * Return a list of registered debug counters
  *
  * The list is through the 'links' field of debug_counter_t.

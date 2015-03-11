@@ -27,6 +27,7 @@
 #include <indigo/of_state_manager.h>
 #include <OFStateManager/ofstatemanager.h>
 #include <SocketManager/socketmanager.h>
+#include <slshared/slshared.h>
 
 #define CDP_SLOT_NUM            1
 

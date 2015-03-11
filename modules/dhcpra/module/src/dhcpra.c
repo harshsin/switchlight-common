@@ -29,7 +29,7 @@
 #include <OS/os.h>
 #include <SocketManager/socketmanager.h>
 #include <PPE/ppe.h>
-
+#include <slshared/slshared.h>
 
 dhcp_relay_stat_t dhcp_stat_ports[DHCPRA_CONFIG_OF_PORTS_MAX+1];
 
@@ -153,64 +153,16 @@ init_ppe_header (uint8_t *pkt, uint32_t dhcp_len, uint32_t sport, uint32_t dport
 static void
 dhcpra_send_pkt (of_octets_t *octets, of_port_no_t port_no)
 {
-    of_packet_out_t    *pkt_out;
-    of_list_action_t   *list;
-    of_action_output_t *action;
-    int                rv;
-
-     /* Always use OF_VERSION_1_3 */
-    uint32_t version  = OF_VERSION_1_3;
-    uint32_t out_port = OF_PORT_DEST_USE_TABLE; /* (0xfffffff9) OFPP_TABLE */
-    uint32_t in_port  = OF_PORT_DEST_CONTROLLER;
-
-    pkt_out = of_packet_out_new (version);
-    if(!pkt_out){
-        AIM_LOG_INTERNAL("Failed to allocate packet out");
-        return;
-    }
-    of_packet_out_buffer_id_set(pkt_out, -1);
-    of_packet_out_in_port_set(pkt_out, in_port);
-
-    action = of_action_output_new(version);
-    if(!action){
-        of_packet_out_delete(pkt_out);
-        AIM_LOG_INTERNAL("Failed to allocation action");
-        return;
-    }
-    of_action_output_port_set(action, out_port);
-
-    list = of_list_action_new(version);
-    if(!list){
-        of_packet_out_delete(pkt_out);
-        of_object_delete(action);
-        AIM_LOG_INTERNAL("Failed to allocate action list");
-        return;
-    }
-
-    of_list_append(list, action);
-    of_object_delete(action);
-
-    rv = of_packet_out_actions_set(pkt_out, list);
-    AIM_TRUE_OR_DIE(rv==OF_ERROR_NONE);
-
-    of_object_delete(list);
-
-    if ((rv = of_packet_out_data_set(pkt_out, octets)) != OF_ERROR_NONE) {
-        AIM_LOG_INTERNAL("Packet out failed to set data %d", rv);
-        of_packet_out_delete(pkt_out);
-        return;
-    }
+    indigo_error_t rv;
 
     DHCPRA_DEBUG("Port %d: Fwd pkt out in_port=%x, out_port=%x",
-                    port_no, in_port, out_port);
+                 port_no, OF_PORT_DEST_CONTROLLER, OF_PORT_DEST_USE_TABLE);
 
-    if ((rv = indigo_fwd_packet_out(pkt_out)) != INDIGO_ERROR_NONE) {
+    rv = slshared_fwd_packet_out(octets, OF_PORT_DEST_CONTROLLER,
+                                 OF_PORT_DEST_USE_TABLE, QUEUE_ID_INVALID);
+    if (rv < 0) {
         AIM_LOG_INTERNAL("Fwd pkt out failed %s", indigo_strerror(rv));
     }
-
-    /* Fwding pkt out HAS to delete obj */
-    of_packet_out_delete(pkt_out);
-
 }
 
 static uint32_t

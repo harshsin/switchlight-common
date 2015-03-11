@@ -200,6 +200,7 @@ aim_main(int argc, char* argv[])
     assert(port2->is_converged == true);
 
     lacpa_finish();
+    ind_soc_finish();
     return 0;
 }
 

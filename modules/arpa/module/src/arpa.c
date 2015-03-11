@@ -27,6 +27,7 @@
 #include <SocketManager/socketmanager.h>
 #include <debug_counter/debug_counter.h>
 #include <timer_wheel/timer_wheel.h>
+#include <slshared/slshared.h>
 #include "arpa_int.h"
 
 #include "arpa_log.h"
@@ -276,6 +277,7 @@ arpa_finish()
     indigo_core_packet_in_listener_unregister(arpa_handle_pkt);
 #endif
     bighash_table_destroy(arp_entries, NULL);
+    timer_wheel_destroy(timer_wheel);
     arpa_reply_table_finish();
     arpa_vlan_reply_table_finish();
 }
@@ -777,30 +779,15 @@ arpa_send_packet(struct arp_info *info)
         AIM_DIE("Failed to set PPE_FIELD_ARP_TPA");
     }
 
-    of_packet_out_t *obj = of_packet_out_new(OF_VERSION_1_3);
-    of_packet_out_buffer_id_set(obj, -1);
-    of_packet_out_in_port_set(obj, OF_PORT_DEST_CONTROLLER);
-
-    of_list_action_t *list = of_list_action_new(obj->version);
-    of_action_output_t *action = of_action_output_new(list->version);
-    of_action_output_port_set(action, OF_PORT_DEST_USE_TABLE);
-    of_list_append(list, action);
-    of_object_delete(action);
-    AIM_TRUE_OR_DIE(of_packet_out_actions_set(obj, list) == 0);
-    of_object_delete(list);
-
     of_octets_t octets = { data, sizeof(data) };
-    if (of_packet_out_data_set(obj, &octets) < 0) {
-        AIM_DIE("Failed to set data on ARP reply");
-    }
-
-    indigo_error_t rv = indigo_fwd_packet_out(obj);
+    indigo_error_t rv = slshared_fwd_packet_out(&octets,
+                                                OF_PORT_DEST_CONTROLLER,
+                                                OF_PORT_DEST_USE_TABLE,
+                                                QUEUE_ID_INVALID);
     if (rv < 0) {
         AIM_LOG_INTERNAL("Failed to inject ARP reply: %s", indigo_strerror(rv));
         debug_counter_inc(&pktout_failure_counter);
     }
-
-    of_packet_out_delete(obj);
 }
 
 static bool

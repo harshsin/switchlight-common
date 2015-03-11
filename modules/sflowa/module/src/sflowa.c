@@ -327,7 +327,6 @@ sflowa_packet_in_handler(of_packet_in_t *packet_in)
          * identify if this is a sflow packet
          */
         if (match.fields.metadata ^ OFP_BSN_PKTIN_FLAG_SFLOW) {
-            AIM_LOG_TRACE("Not a sflow packet-in");
             return INDIGO_CORE_LISTENER_RESULT_PASS;
         }
 
@@ -442,10 +441,6 @@ sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
                       sflow_collector_entry_t *entry)
 {
     ppe_packet_t          ppep;
-    of_packet_out_t       *obj;
-    of_list_action_t      *list;
-    of_action_set_queue_t *queue_action;
-    of_action_output_t    *action;
     indigo_error_t        rv;
     uint8_t               data[1600];
 
@@ -502,41 +497,13 @@ sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
     /*
      * Send the packet out on dataplane
      */
-    obj = of_packet_out_new(OF_VERSION_1_3);
-    AIM_TRUE_OR_DIE(obj != NULL);
-
-    list = of_list_action_new(obj->version);
-    AIM_TRUE_OR_DIE(list != NULL);
-
-    queue_action = of_action_set_queue_new(obj->version);
-    AIM_TRUE_OR_DIE(queue_action != NULL);
-
-    of_action_set_queue_queue_id_set(queue_action,
-                                     SLSHARED_CONFIG_SPAN_SFLOW_QUEUE_PRIORITY);
-    of_list_append(list, queue_action);
-    of_object_delete(queue_action);
-
-    action = of_action_output_new(list->version);
-    AIM_TRUE_OR_DIE(action != NULL);
-
-    of_packet_out_buffer_id_set(obj, -1);
-    of_packet_out_in_port_set(obj, OF_PORT_DEST_CONTROLLER);
-    of_action_output_port_set(action, OF_PORT_DEST_USE_TABLE);
-    of_list_append(list, action);
-    of_object_delete(action);
-    rv = of_packet_out_actions_set(obj, list);
-    AIM_ASSERT(rv == 0);
-    of_object_delete(list);
-
     of_octets_t octets;
     octets.data = data;
     octets.bytes = SFLOW_PKT_HEADER_SIZE+pktLen;
-    rv = of_packet_out_data_set(obj, &octets);
-    if (rv < 0) {
-        AIM_DIE("Failed to set data on Sflow packet out");
-    }
 
-    rv = indigo_fwd_packet_out(obj);
+    rv = slshared_fwd_packet_out(&octets, OF_PORT_DEST_CONTROLLER,
+                                 OF_PORT_DEST_USE_TABLE,
+                                 SLSHARED_CONFIG_SPAN_SFLOW_QUEUE_PRIORITY);
     if (rv < 0) {
         AIM_LOG_ERROR("Failed to send packet to collector: %{ipv4a}",
                       entry->key.collector_ip);
@@ -546,8 +513,6 @@ sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
         ++entry->stats.tx_packets;
         entry->stats.tx_bytes += octets.bytes;
     }
-
-    of_packet_out_delete(obj);
 }
 
 /*
