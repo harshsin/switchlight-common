@@ -21,8 +21,8 @@ include ../../../init.mk
 MODULE := sflowa_utest
 TEST_MODULE := sflowa
 DEPENDMODULES := AIM indigo loci debug_counter OS BigList host_sflow \
-    SocketManager cjson Configuration timer_wheel PPE IOF uCli
-DEPENDMODULE_HEADERS := slshared
+    SocketManager cjson Configuration timer_wheel PPE IOF uCli slshared
+
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MODULES_INIT=1
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MAIN=1
 GLOBAL_CFLAGS += -DINDIGO_LINUX_TIME
