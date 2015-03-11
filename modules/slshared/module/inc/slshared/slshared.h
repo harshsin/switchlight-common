@@ -37,51 +37,7 @@
  * @param queue_id QOS packet out queue; if set to QUEUE_ID_INVALID,
  * don't add OF_ACTION_SET_QUEUE to the action list.
  */
-static inline indigo_error_t
-slshared_fwd_packet_out(of_octets_t *octets, of_port_no_t in_port,
-                        of_port_no_t out_port, int queue_id)
-{
-    of_packet_out_t    *obj;
-    of_list_action_t   *list;
-    of_action_output_t *action;
-    indigo_error_t     rv;
-
-    AIM_ASSERT(octets != NULL, "NULL octets");
-
-    obj = of_packet_out_new(OF_VERSION_1_3);
-    AIM_TRUE_OR_DIE(obj != NULL);
-
-    list = of_list_action_new(obj->version);
-    AIM_TRUE_OR_DIE(list != NULL);
-
-    if (queue_id != QUEUE_ID_INVALID) {
-        of_action_set_queue_t *queue_action = of_action_set_queue_new(obj->version);
-        AIM_TRUE_OR_DIE(queue_action != NULL);
-
-        of_action_set_queue_queue_id_set(queue_action, queue_id);
-        of_list_append(list, queue_action);
-        of_object_delete(queue_action);
-    }
-
-    action = of_action_output_new(obj->version);
-    AIM_TRUE_OR_DIE(action != NULL);
-
-    of_packet_out_buffer_id_set(obj, -1);
-    of_packet_out_in_port_set(obj, in_port);
-    of_action_output_port_set(action, out_port);
-    of_list_append(list, action);
-    of_object_delete(action);
-    rv = of_packet_out_actions_set(obj, list);
-    AIM_ASSERT(rv == 0);
-    of_object_delete(list);
-
-    if (of_packet_out_data_set(obj, octets) < 0) {
-        AIM_DIE("Failed to set data");
-    }
-
-    rv = indigo_fwd_packet_out(obj);
-    of_packet_out_delete(obj);
-    return rv;
-}
+indigo_error_t slshared_fwd_packet_out(of_octets_t *octets, of_port_no_t in_port,
+                                       of_port_no_t out_port, int queue_id);
 
 #endif /* __SLSHARED__H__ */
