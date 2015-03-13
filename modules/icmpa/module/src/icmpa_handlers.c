@@ -191,7 +191,7 @@ icmpa_init (void)
 {
     if (icmpa_is_initialized()) return INDIGO_ERROR_NONE;
 
-    AIM_LOG_INFO("init");
+    AIM_LOG_VERBOSE("init");
 
     indigo_core_gentable_register("icmp", &icmp_ops, NULL,
                                   SLSHARED_CONFIG_MAX_VLAN+1, 256, &icmp_table);

@@ -553,7 +553,7 @@ lldpa_system_init()
     int i;
     lldpa_port_t *port;
 
-    AIM_LOG_INFO("init");
+    AIM_LOG_VERBOSE("init");
 
     lldpa_port_sys.lldpa_total_of_ports = sizeof(lldpa_port_sys.lldpa_ports) /
                                               sizeof(lldpa_port_sys.lldpa_ports[0]);
