@@ -62,7 +62,7 @@ lacpa_init (void)
 
     if (lacpa_is_initialized()) return INDIGO_ERROR_NONE;
 
-    AIM_LOG_INFO("init");
+    AIM_LOG_VERBOSE("init");
 
     ports_size = sizeof(lacpa_port_t) * (LACPA_CONFIG_OF_PORTS_MAX+1);
     aim_ratelimiter_init(&lacpa_pktin_log_limiter, 1000*1000, 5, NULL);
