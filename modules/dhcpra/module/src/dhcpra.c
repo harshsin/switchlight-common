@@ -473,24 +473,10 @@ dhcpra_handle_bootrequest(of_octets_t *pkt, int dhcp_pkt_len, uint32_t vlan_id,
 indigo_core_listener_result_t
 dhcpra_handle_pkt (of_packet_in_t *packet_in)
 {
-
     of_octets_t                data;
-    of_octets_t                ldata;
     of_port_no_t               port_no;
     of_match_t                 match;
     ppe_packet_t               ppep;
-    uint32_t                   opcode;
-    uint8_t                    buf[OUT_PKT_BUF_SIZE];
-    struct dhcp_packet         *dhcp_pkt;
-    uint32_t                   vlan_vid;
-    uint32_t                   vlan_pcp;
-    int                        dhcp_pkt_len;
-    uint32_t                   relay_agent_ip;
-    int                        port_dump_data = 0;
-    uint8_t                    relay_mac_addr[OF_MAC_ADDR_BYTES];
-
-    ldata.data  = buf;
-    ldata.bytes =  OUT_PKT_BUF_SIZE;
 
     /* Note: do not need to check for
      * packet_in reason: OF_PACKET_IN_REASON_BSN_DHCP.
@@ -523,7 +509,7 @@ dhcpra_handle_pkt (of_packet_in_t *packet_in)
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
-    if (!(dhcp_pkt = (struct dhcp_packet*)ppe_header_get(&ppep, PPE_HEADER_DHCP))) {
+    if (!ppe_header_get(&ppep, PPE_HEADER_DHCP)) {
         /*
          * Since we listen to pkt_ins
          * Not DHCP packet, simply return
@@ -533,7 +519,31 @@ dhcpra_handle_pkt (of_packet_in_t *packet_in)
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
-    if(port_no > DHCPRA_CONFIG_OF_PORTS_MAX) {
+    return dhcpra_receive_packet(&ppep, port_no);
+}
+
+/*
+ * dhcpra_receive_packet
+ *
+ * This api can be used to send a DHCP packet directly to the agent
+ */
+indigo_core_listener_result_t
+dhcpra_receive_packet (ppe_packet_t *ppep, of_port_no_t port_no)
+{
+    of_octets_t                ldata;
+    uint32_t                   opcode;
+    uint8_t                    buf[OUT_PKT_BUF_SIZE];
+    uint32_t                   vlan_vid;
+    uint32_t                   vlan_pcp;
+    int                        dhcp_pkt_len;
+    uint32_t                   relay_agent_ip;
+    int                        port_dump_data = 0;
+    uint8_t                    relay_mac_addr[OF_MAC_ADDR_BYTES];
+
+    ldata.data  = buf;
+    ldata.bytes =  OUT_PKT_BUF_SIZE;
+
+    if (port_no > DHCPRA_CONFIG_OF_PORTS_MAX) {
         AIM_LOG_RL_INTERNAL(&dhcpra_pktin_log_limiter, os_time_monotonic(),
                             "Port out of range %u", port_no);
         return INDIGO_CORE_LISTENER_RESULT_PASS;
@@ -546,20 +556,19 @@ dhcpra_handle_pkt (of_packet_in_t *packet_in)
         port_dump_data = 0;
     }
 
-    if(port_dump_data) {
+    if (port_dump_data) {
         DHCPRA_DEBUG("Port %d: Dumping packet in", port_no);
         /* ppe_packet_dump won't have a nice display in syslog */
-        dhcpra_pkt_hexdump(data.data, data.bytes);
-        ppe_packet_dump(&ppep, aim_log_pvs_get(&AIM_LOG_STRUCT));
+        dhcpra_pkt_hexdump(ppep->data, ppep->size);
     }
 
-    if (data.bytes > OUT_PKT_BUF_SIZE) {
+    if (ppep->size > OUT_PKT_BUF_SIZE) {
         AIM_LOG_RL_ERROR(&dhcpra_pktin_log_limiter, os_time_monotonic(),
-                         "DHCP Packet too big len=%l", data.bytes);
+                         "DHCP Packet too big len=%l", ppep->size);
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
-    if(!ppe_header_get(&ppep, PPE_HEADER_8021Q)) {
+    if (!ppe_header_get(ppep, PPE_HEADER_8021Q)) {
         /* Only support single tag x8100, don't support double tag x9100 */
         AIM_LOG_RL_ERROR(&dhcpra_pktin_log_limiter, os_time_monotonic(),
                          "DHCP Packet with unsupported VLAN tag");
@@ -567,8 +576,8 @@ dhcpra_handle_pkt (of_packet_in_t *packet_in)
     }
 
     /* Don't support PPE_FIELD_OUTER_8021Q_VLAN / PPE_FIELD_INNER_8021Q_VLAN */
-    ppe_field_get(&ppep, PPE_FIELD_8021Q_VLAN, &vlan_vid);
-    ppe_field_get(&ppep, PPE_FIELD_8021Q_PRI, &vlan_pcp);
+    ppe_field_get(ppep, PPE_FIELD_8021Q_VLAN, &vlan_vid);
+    ppe_field_get(ppep, PPE_FIELD_8021Q_PRI, &vlan_pcp);
 
     /* Ignore and drop packet on invalid VLANs */
     if (vlan_vid == 0 || vlan_vid == 4095) {
@@ -578,8 +587,8 @@ dhcpra_handle_pkt (of_packet_in_t *packet_in)
     }
 
     /* Copy dhcp pkt from pkt */
-    dhcp_pkt_len = ppe_header_get(&ppep, PPE_HEADER_ETHERNET) + data.bytes
-                   - ppe_header_get(&ppep, PPE_HEADER_DHCP);
+    dhcp_pkt_len = ppe_header_get(ppep, PPE_HEADER_ETHERNET) + ppep->size
+                   - ppe_header_get(ppep, PPE_HEADER_DHCP);
 
     /*
      * buf is a storage for reply packet
@@ -588,11 +597,12 @@ dhcpra_handle_pkt (of_packet_in_t *packet_in)
      * Copy only dhcp data
      */
     DHCPRA_MEMSET(buf, 0, sizeof(buf));
-    DHCPRA_MEMCPY((buf+DHCP_HEADER_OFFSET), dhcp_pkt, dhcp_pkt_len);
+    DHCPRA_MEMCPY((buf+DHCP_HEADER_OFFSET),
+                  ppe_header_get(ppep, PPE_HEADER_DHCP), dhcp_pkt_len);
 
-    ppe_field_get(&ppep, PPE_FIELD_DHCP_OPCODE, &opcode);
+    ppe_field_get(ppep, PPE_FIELD_DHCP_OPCODE, &opcode);
 
-    DHCPRA_DEBUG("port %u, dhcp opcode %u",port_no, opcode);
+    DHCPRA_DEBUG("port %u, dhcp opcode %u", port_no, opcode);
     switch (opcode) {
     case BOOTREQUEST:
         debug_counter_inc(&dhcp_stat_ports[port_no].dhcp_request);
@@ -607,8 +617,8 @@ dhcpra_handle_pkt (of_packet_in_t *packet_in)
          * relay_agent_ip: p[0] << 24 | p[1] << 16 | p[2] << 8 | p[3]
          *                [MSB]                               [LSB]
          * */
-        ppe_field_get(&ppep, PPE_FIELD_IP4_DST_ADDR, &relay_agent_ip);
-        ppe_wide_field_get(&ppep,
+        ppe_field_get(ppep, PPE_FIELD_IP4_DST_ADDR, &relay_agent_ip);
+        ppe_wide_field_get(ppep,
                            PPE_FIELD_ETHERNET_DST_MAC,
                            relay_mac_addr);
         return dhcpra_handle_bootreply(&ldata, dhcp_pkt_len,

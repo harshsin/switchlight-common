@@ -20,7 +20,13 @@
 #ifndef DHCPRA_H_
 #define DHCPRA_H_
 
-/* Init dhcp relay table and agent */ 
+#include <indigo/of_state_manager.h>
+#include <PPE/ppe.h>
+
+/* Init dhcp relay table and agent */
 int dhcpra_system_init();
+
+indigo_core_listener_result_t dhcpra_receive_packet(ppe_packet_t *ppep,
+                                                    of_port_no_t port_no);
 
 #endif /* DHCPRA_H_ */
