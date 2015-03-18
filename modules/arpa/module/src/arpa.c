@@ -524,7 +524,7 @@ arpa_lookup(uint16_t vlan_vid, uint32_t ipv4)
 /* packet-in handler */
 
 indigo_core_listener_result_t
-arpa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
+arpa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port, bool check_source)
 {
     struct arp_info info;
     indigo_error_t rv;
@@ -542,7 +542,7 @@ arpa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
                   info.operation, info.operation == 1 ? "request" : "reply",
                   info.spa, &info.sha, info.tpa, &info.tha);
 
-    if (!arpa_check_source(&info)) {
+    if (check_source && !arpa_check_source(&info)) {
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
@@ -590,7 +590,7 @@ arpa_handle_pkt(of_packet_in_t *packet_in)
     AIM_TRUE_OR_DIE(of_packet_in_match_get(packet_in, &match) == 0);
     of_packet_in_data_get(packet_in, &octets);
 
-    if ((match.fields.metadata & OFP_BSN_PKTIN_FLAG_ARP) == 0) {
+    if ((match.fields.metadata & (OFP_BSN_PKTIN_FLAG_ARP|OFP_BSN_PKTIN_FLAG_ARP_TARGET)) == 0) {
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
@@ -603,7 +603,8 @@ arpa_handle_pkt(of_packet_in_t *packet_in)
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
-    return arpa_receive_packet(&ppep, match.fields.in_port);
+    bool check_source = (match.fields.metadata & OFP_BSN_PKTIN_FLAG_ARP) != 0;
+    return arpa_receive_packet(&ppep, match.fields.in_port, check_source);
 }
 
 /*
