@@ -32,6 +32,7 @@ indigo_error_t arpa_init();
 void arpa_finish();
 
 indigo_core_listener_result_t arpa_receive_packet(ppe_packet_t *ppep,
-                                                  of_port_no_t in_port);
+                                                  of_port_no_t in_port,
+                                                  bool check_source);
 
 #endif /* __LLDPA_H__ */
