@@ -109,7 +109,7 @@ struct arp_entry {
 #define TEMPLATE_ENTRY_FIELD hash_entry
 #include <BigHash/bighash_template.h>
 
-static indigo_core_listener_result_t arpa_handle_pkt(of_packet_in_t *packet_in);
+indigo_core_listener_result_t arpa_handle_pkt(of_packet_in_t *packet_in);
 static indigo_error_t arpa_parse_packet(ppe_packet_t *ppep, struct arp_info *info);
 static void arpa_send_packet(struct arp_info *info);
 static bool arpa_check_source(struct arp_info *info);
@@ -577,7 +577,7 @@ arpa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port, bool check_source)
 
 /* packet-in listener */
 
-static indigo_core_listener_result_t
+indigo_core_listener_result_t
 arpa_handle_pkt(of_packet_in_t *packet_in)
 {
     of_match_t match;

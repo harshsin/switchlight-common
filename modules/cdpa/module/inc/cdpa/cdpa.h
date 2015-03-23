@@ -20,7 +20,7 @@
 #ifndef __CDPA_H__
 #define __CDPA_H__
 
-#include <indigo/indigo.h>
+#include <indigo/of_state_manager.h>
 
 /****************************
  **** CDPA external APIs ****
@@ -28,5 +28,7 @@
 
 indigo_error_t cdpa_init();
 void cdpa_finish();
+indigo_core_listener_result_t cdpa_receive_packet(of_octets_t *data,
+                                                  of_port_no_t port_no);
 
 #endif /* __CDPA_H__ */
