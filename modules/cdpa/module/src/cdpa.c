@@ -434,44 +434,15 @@ cdpa_update_rx_timeout(cdpa_port_t *port)
 }
 
 /*
- * cdpa_handle_pkt
- *
- * API for handling incoming port packets
+ * This api can be used to send a cdp packet directly to the agent
  */
 indigo_core_listener_result_t
-cdpa_handle_pkt(of_packet_in_t *packet_in)
+cdpa_receive_packet(of_octets_t *data, of_port_no_t port_no)
 {
-    cdpa_port_t                *port = NULL;
-    of_octets_t                data;
-    of_port_no_t               port_no;
-    of_match_t                 match;
-    indigo_core_listener_result_t ret = INDIGO_CORE_LISTENER_RESULT_PASS;
-
-    if (!packet_in) {
-        return ret;
-    }
-
-    /* Data is the ether pkt */
-    of_packet_in_data_get(packet_in, &data);
-    if (!data.data) {
-        return ret;
-    }
-
-    if (packet_in->version <= OF_VERSION_1_1) {
-        of_packet_in_in_port_get(packet_in, &port_no);
-        AIM_LOG_TRACE("port %u pkt in version %d", port_no, packet_in->version);
-    } else {
-        if (of_packet_in_match_get(packet_in, &match) < 0) {
-            AIM_LOG_INTERNAL("match get failed");
-            return ret;
-        }
-        port_no = match.fields.in_port;
-        AIM_LOG_TRACE("Port %u", port_no);
-    }
-
-    port = cdpa_find_port(port_no);
+    cdpa_port_t *port = cdpa_find_port(port_no);
     if (!port) {
-        return ret;
+        AIM_LOG_INTERNAL("CDPA port out of range %u", port_no);
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
     port->rx_pkt_in_cnt++;
@@ -482,14 +453,52 @@ cdpa_handle_pkt(of_packet_in_t *packet_in)
      * 3. If not, it's automatically PASSED to the controller
      *    as a packet-in
      */
-    if (cdpa_rx_pkt_is_expected(port, &data)) {
-        ret = INDIGO_CORE_LISTENER_RESULT_DROP;
-        cdpa_update_rx_timeout(port);
-        /* Only count valid cdp pkt_in's */
-        debug_counter_inc(&cdpa_system.debug_info.cdp_total_in_packets);
+    if (!cdpa_rx_pkt_is_expected(port, data)) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
-    return ret;
+    cdpa_update_rx_timeout(port);
+    /* Only count valid cdp pkt_in's */
+    debug_counter_inc(&cdpa_system.debug_info.cdp_total_in_packets);
+
+    return INDIGO_CORE_LISTENER_RESULT_DROP;
+}
+
+/*
+ * cdpa_handle_pkt
+ *
+ * API for handling incoming port packets
+ */
+indigo_core_listener_result_t
+cdpa_handle_pkt(of_packet_in_t *packet_in)
+{
+    of_octets_t                data;
+    of_port_no_t               port_no;
+    of_match_t                 match;
+
+    if (!packet_in) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    /* Data is the ether pkt */
+    of_packet_in_data_get(packet_in, &data);
+    if (!data.data) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    if (packet_in->version <= OF_VERSION_1_1) {
+        of_packet_in_in_port_get(packet_in, &port_no);
+        AIM_LOG_TRACE("port %u pkt in version %d", port_no, packet_in->version);
+    } else {
+        if (of_packet_in_match_get(packet_in, &match) < 0) {
+            AIM_LOG_INTERNAL("match get failed");
+            return INDIGO_CORE_LISTENER_RESULT_PASS;
+        }
+        port_no = match.fields.in_port;
+        AIM_LOG_TRACE("Port %u", port_no);
+    }
+
+    return cdpa_receive_packet(&data, port_no);
 }
 
 /*
@@ -572,7 +581,9 @@ cdpa_init(void)
     AIM_LOG_TRACE("init");
 
     indigo_core_message_listener_register(cdpa_handle_msg);
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     indigo_core_packet_in_listener_register(cdpa_handle_pkt);
+#endif
 
     CDPA_MEMSET(cdpa_system.ports, 0,
                 sizeof(cdpa_port_t) * (CDPA_CONFIG_OF_PORTS_MAX+1));
@@ -599,7 +610,9 @@ cdpa_finish()
     cdpa_port_t *port;
 
     indigo_core_message_listener_unregister(cdpa_handle_msg);
+#if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     indigo_core_packet_in_listener_unregister(cdpa_handle_pkt);
+#endif
 
     for (i=0; i < CDPA_CONFIG_OF_PORTS_MAX; i++) {
         port = cdpa_find_port(i);
