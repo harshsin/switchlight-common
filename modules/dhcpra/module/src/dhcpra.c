@@ -348,8 +348,8 @@ dhcpra_handle_bootrequest(of_octets_t *pkt, int dhcp_pkt_len, uint32_t vlan_id,
     }
 
     if(!(dc = dhcpr_get_dhcpr_entry_from_vlan_table(vlan_id))){
-        AIM_LOG_RL_WARN(&dhcpra_pktin_log_limiter, os_time_monotonic(),
-                        "Unsupported DHCP vlan_vid=%d on port=%d", vlan_id, port_no);
+        AIM_LOG_RL_TRACE(&dhcpra_pktin_log_limiter, os_time_monotonic(),
+                         "Unsupported DHCP vlan_vid=%d on port=%d", vlan_id, port_no);
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
