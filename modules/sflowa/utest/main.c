@@ -38,6 +38,7 @@ static const of_mac_addr_t zero_mac = { {0x00, 0x00, 0x00, 0x00, 0x00, 0x00} };
 static const sflow_collector_entry_t collector_entry_1 = {
     .key.collector_ip = 0xc0a86401, //192.168.100.1
     .value.vlan_id = 7,
+    .value.vlan_pcp = 4,
     .value.agent_mac = { .addr = {0x55, 0x16, 0xc7, 0x01, 0x02, 0x03} },
     .value.agent_ip = 0xc0a80101, //192.168.1.1
     .value.agent_udp_sport = 50000,
@@ -48,6 +49,7 @@ static const sflow_collector_entry_t collector_entry_1 = {
 static sflow_collector_entry_t collector_entry_2 = {
     .key.collector_ip = 0x0a0a0505, //10.10.5.5
     .value.vlan_id = 2,
+    .value.vlan_pcp = 4,
     .value.agent_mac = { .addr = {0x55, 0x16, 0xc7, 0x01, 0x02, 0x03} },
     .value.agent_ip = 0x0a0a6401, //10.10.100.1
     .value.agent_udp_sport = 45000,
@@ -306,13 +308,20 @@ make_key_collector(uint32_t dst_ip)
 }
 
 static of_list_bsn_tlv_t *
-make_value(uint16_t vlan, of_mac_addr_t src_mac, uint32_t src_ip, uint16_t sport,
-           of_mac_addr_t dst_mac, uint16_t dport, uint32_t sub_agent_id)
+make_value(uint16_t vlan, uint8_t vlan_pcp, of_mac_addr_t src_mac,
+           uint32_t src_ip, uint16_t sport, of_mac_addr_t dst_mac,
+           uint16_t dport, uint32_t sub_agent_id)
 {
     of_list_bsn_tlv_t *list = of_list_bsn_tlv_new(OF_VERSION_1_3);
     {
         of_bsn_tlv_vlan_vid_t *tlv = of_bsn_tlv_vlan_vid_new(OF_VERSION_1_3);
         of_bsn_tlv_vlan_vid_value_set(tlv, vlan);
+        of_list_append(list, tlv);
+        of_object_delete(tlv);
+    }
+    {
+        of_bsn_tlv_vlan_pcp_t *tlv = of_bsn_tlv_vlan_pcp_new(OF_VERSION_1_3);
+        of_bsn_tlv_vlan_pcp_value_set(tlv, vlan_pcp);
         of_list_append(list, tlv);
         of_object_delete(tlv);
     }
@@ -367,6 +376,7 @@ test_sflow_collector_table(void)
      */
     key = make_key_collector(collector_entry_1.key.collector_ip);
     value = make_value(collector_entry_1.value.vlan_id,
+                       collector_entry_1.value.vlan_pcp,
                        collector_entry_1.value.agent_mac,
                        collector_entry_1.value.agent_ip,
                        collector_entry_1.value.agent_udp_sport,
@@ -389,6 +399,7 @@ test_sflow_collector_table(void)
 
     key = make_key_collector(collector_entry_2.key.collector_ip);
     value = make_value(collector_entry_2.value.vlan_id,
+                       collector_entry_2.value.vlan_pcp,
                        collector_entry_2.value.agent_mac,
                        collector_entry_2.value.agent_ip,
                        collector_entry_2.value.agent_udp_sport,
@@ -411,6 +422,7 @@ test_sflow_collector_table(void)
     collector_entry_2.value.vlan_id = 15;
     collector_entry_2.value.agent_ip = 0x0a0a6464; //10.10.100.100
     value = make_value(collector_entry_2.value.vlan_id,
+                       collector_entry_2.value.vlan_pcp,
                        collector_entry_2.value.agent_mac,
                        collector_entry_2.value.agent_ip,
                        collector_entry_2.value.agent_udp_sport,
@@ -711,7 +723,7 @@ test_sampled_packet_in(void)
 
     /* Add bt collector_table entry */
     key = make_key_collector(0x7F000001); //127.0.0.1
-    value = make_value(0, zero_mac, 0xc0a80101, 0, zero_mac,
+    value = make_value(0, 0, zero_mac, 0xc0a80101, 0, zero_mac,
                        SFL_DEFAULT_COLLECTOR_PORT, 10);
 
     AIM_ASSERT((rv = ops_collector->add(table_priv_collector, key, value,
@@ -724,6 +736,7 @@ test_sampled_packet_in(void)
     /* Add bcf collector_table entry */
     key = make_key_collector(collector_entry_1.key.collector_ip);
     value = make_value(collector_entry_1.value.vlan_id,
+                       collector_entry_1.value.vlan_pcp,
                        collector_entry_1.value.agent_mac,
                        collector_entry_1.value.agent_ip,
                        collector_entry_1.value.agent_udp_sport,

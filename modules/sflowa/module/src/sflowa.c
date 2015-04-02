@@ -472,7 +472,7 @@ sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
                        entry->value.collector_mac.addr);
 
     ppe_field_set(&ppep, PPE_FIELD_8021Q_VLAN, VLAN_VID(entry->value.vlan_id));
-    ppe_field_set(&ppep, PPE_FIELD_8021Q_PRI, VLAN_PCP(entry->value.vlan_id));
+    ppe_field_set(&ppep, PPE_FIELD_8021Q_PRI, entry->value.vlan_pcp);
 
     /*
      * Build the IP header, ip_proto = UDP
@@ -973,6 +973,21 @@ sflow_collector_parse_value(of_list_bsn_tlv_t *tlvs,
         return INDIGO_ERROR_PARAM;
     }
 
+    /* Vlan pcp */
+    if (tlv.object_id == OF_BSN_TLV_VLAN_PCP) {
+        of_bsn_tlv_vlan_pcp_value_get(&tlv, &value->vlan_pcp);
+
+        if (of_list_bsn_tlv_next(tlvs, &tlv) < 0) {
+            AIM_LOG_ERROR("unexpected end of value list");
+            return INDIGO_ERROR_PARAM;
+        }
+    } else {
+        /*FIXME: Default to zero incase tlv is missing
+          This is to avoid incompatibility with the controller.
+          Remove when controller starts to push vlan_pcp */
+        value->vlan_pcp = 0;
+    }
+
     /* Agent mac */
     if (tlv.object_id == OF_BSN_TLV_ETH_SRC) {
         of_bsn_tlv_eth_src_value_get(&tlv, &value->agent_mac);
@@ -1103,10 +1118,11 @@ sflow_collector_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
     list_push(&sflow_collectors, &entry->links);
 
     AIM_LOG_TRACE("Add collector table entry, collector_ip: %{ipv4a} -> vlan_id:"
-                  " %u, agent_mac: %{mac}, agent_ip: %{ipv4a}, agent_udp_sport:"
-                  " %u, collector_mac: %{mac}, collector_udp_dport: %u, "
-                  "sub_agent_id: %u", entry->key.collector_ip,
-                  entry->value.vlan_id, entry->value.agent_mac.addr,
+                  " %u, vlan_pcp: %u, agent_mac: %{mac}, agent_ip: %{ipv4a}, "
+                  "agent_udp_sport: %u, collector_mac: %{mac}, "
+                  "collector_udp_dport: %u, sub_agent_id: %u",
+                  entry->key.collector_ip,  entry->value.vlan_id,
+                  entry->value.vlan_pcp, entry->value.agent_mac.addr,
                   entry->value.agent_ip, entry->value.agent_udp_sport,
                   entry->value.collector_mac.addr,
                   entry->value.collector_udp_dport, entry->value.sub_agent_id);
@@ -1135,21 +1151,22 @@ sflow_collector_modify(void *table_priv, void *entry_priv,
     }
 
     AIM_LOG_TRACE("Modify collector table entry, old collector_ip: %{ipv4a} ->"
-                  " vlan_id:%u, agent_mac: %{mac}, agent_ip: %{ipv4a}, "
-                  "agent_udp_sport: %u, collector_mac: %{mac}, "
+                  " vlan_id: %u, vlan_pcp: %u, agent_mac: %{mac}, agent_ip: "
+                  "%{ipv4a}, agent_udp_sport: %u, collector_mac: %{mac}, "
                   "collector_udp_dport: %u, sub_agent_id: %u",
                   entry->key.collector_ip, entry->value.vlan_id,
-                  entry->value.agent_mac.addr, entry->value.agent_ip,
-                  entry->value.agent_udp_sport, entry->value.collector_mac.addr,
+                  entry->value.vlan_pcp, entry->value.agent_mac.addr,
+                  entry->value.agent_ip, entry->value.agent_udp_sport,
+                  entry->value.collector_mac.addr,
                   entry->value.collector_udp_dport, entry->value.sub_agent_id);
 
-    AIM_LOG_TRACE("New, collector_ip: %{ipv4a} -> vlan_id: %u, agent_mac: "
-                  "%{mac}, agent_ip: %{ipv4a}, agent_udp_sport: %u, "
-                  "collector_mac: %{mac}, collector_udp_dport: %u, "
+    AIM_LOG_TRACE("New, collector_ip: %{ipv4a} -> vlan_id: %u, vlan_pcp: %u, "
+                  "agent_mac: %{mac}, agent_ip: %{ipv4a}, agent_udp_sport: %u,"
+                  " collector_mac: %{mac}, collector_udp_dport: %u, "
                   "sub_agent_id: %u", entry->key.collector_ip, value.vlan_id,
-                  value.agent_mac.addr, value.agent_ip, value.agent_udp_sport,
-                  value.collector_mac.addr, value.collector_udp_dport,
-                  value.sub_agent_id);
+                  value.vlan_pcp, value.agent_mac.addr, value.agent_ip,
+                  value.agent_udp_sport, value.collector_mac.addr,
+                  value.collector_udp_dport, value.sub_agent_id);
 
     entry->value = value;
 
@@ -1167,11 +1184,12 @@ sflow_collector_delete(void *table_priv, void *entry_priv,
 {
     sflow_collector_entry_t *entry = entry_priv;
 
-    AIM_LOG_TRACE("Delete collector table entry, collector_ip: %{ipv4a} -> vlan_id:"
-                  " %u, agent_mac: %{mac}, agent_ip: %{ipv4a}, agent_udp_sport:"
-                  " %u, collector_mac: %{mac}, collector_udp_dport: %u, "
-                  "sub_agent_id: %u", entry->key.collector_ip,
-                  entry->value.vlan_id, entry->value.agent_mac.addr,
+    AIM_LOG_TRACE("Delete collector table entry, collector_ip: %{ipv4a} -> "
+                  "vlan_id: %u, vlan_pcp: %u, agent_mac: %{mac}, agent_ip: "
+                  "%{ipv4a}, agent_udp_sport: %u, collector_mac: %{mac}, "
+                  "collector_udp_dport: %u, sub_agent_id: %u",
+                  entry->key.collector_ip, entry->value.vlan_id,
+                  entry->value.vlan_pcp, entry->value.agent_mac.addr,
                   entry->value.agent_ip, entry->value.agent_udp_sport,
                   entry->value.collector_mac.addr,
                   entry->value.collector_udp_dport, entry->value.sub_agent_id);
