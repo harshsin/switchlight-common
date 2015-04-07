@@ -976,16 +976,15 @@ sflow_collector_parse_value(of_list_bsn_tlv_t *tlvs,
     /* Vlan pcp */
     if (tlv.object_id == OF_BSN_TLV_VLAN_PCP) {
         of_bsn_tlv_vlan_pcp_value_get(&tlv, &value->vlan_pcp);
-
-        if (of_list_bsn_tlv_next(tlvs, &tlv) < 0) {
-            AIM_LOG_ERROR("unexpected end of value list");
-            return INDIGO_ERROR_PARAM;
-        }
     } else {
-        /*FIXME: Default to zero incase tlv is missing
-          This is to avoid incompatibility with the controller.
-          Remove when controller starts to push vlan_pcp */
-        value->vlan_pcp = 0;
+        AIM_LOG_ERROR("expected vlan_pcp value TLV, instead got %s",
+                      of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
+    }
+
+    if (of_list_bsn_tlv_next(tlvs, &tlv) < 0) {
+        AIM_LOG_ERROR("unexpected end of value list");
+        return INDIGO_ERROR_PARAM;
     }
 
     /* Agent mac */
