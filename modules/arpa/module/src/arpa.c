@@ -97,10 +97,15 @@ struct arp_entry {
     /*
      * When will the next timer expire?
      *
-     * Updated along with stats.active_time when an ARP packet
+     * Updated along with start_time when an ARP packet
      * hits this entry and timeouts are configured.
      */
     indigo_time_t deadline;
+
+    /*
+     * Time we started waiting for a timeout
+     */
+    indigo_time_t start_time;
 };
 
 #define TEMPLATE_NAME arp_entries_hashtable
@@ -409,7 +414,7 @@ arp_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs, of_list_bsn_tlv_t *value_
     entry = aim_zmalloc(sizeof(*entry));
     entry->key = key;
     entry->value = value;
-    entry->stats.active_time = INDIGO_CURRENT_TIME;
+    entry->stats.active_time = entry->start_time = INDIGO_CURRENT_TIME;
     entry->timer_state = ARP_TIMER_STATE_NONE;
 
     if (entry->value.unicast_query_timeout > 0) {
@@ -439,7 +444,7 @@ arp_modify(void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key_tlvs, of_l
     }
 
     entry->value = value;
-    entry->stats.active_time = INDIGO_CURRENT_TIME;
+    entry->start_time = INDIGO_CURRENT_TIME;
 
     if (entry->value.unicast_query_timeout > 0) {
         arpa_set_timer_state(entry, ARP_TIMER_STATE_UNICAST_QUERY);
@@ -808,7 +813,7 @@ arpa_check_source(struct arp_info *info)
         return false;
     }
 
-    entry->stats.active_time = INDIGO_CURRENT_TIME;
+    entry->stats.active_time = entry->start_time = INDIGO_CURRENT_TIME;
 
     if (entry->timer_state != ARP_TIMER_STATE_NONE) {
         arpa_set_timer_state(entry, ARP_TIMER_STATE_UNICAST_QUERY);
@@ -854,13 +859,13 @@ arpa_set_timer_state(struct arp_entry *entry, enum arp_timer_state state)
         entry->deadline = 0;
         break;
     case ARP_TIMER_STATE_UNICAST_QUERY:
-        entry->deadline = entry->stats.active_time + entry->value.unicast_query_timeout;
+        entry->deadline = entry->start_time + entry->value.unicast_query_timeout;
         break;
     case ARP_TIMER_STATE_BROADCAST_QUERY:
-        entry->deadline = entry->stats.active_time + entry->value.broadcast_query_timeout;
+        entry->deadline = entry->start_time + entry->value.broadcast_query_timeout;
         break;
     case ARP_TIMER_STATE_IDLE_TIMEOUT:
-        entry->deadline = entry->stats.active_time + entry->value.idle_timeout;
+        entry->deadline = entry->start_time + entry->value.idle_timeout;
         break;
     }
 
@@ -895,8 +900,8 @@ arpa_timer(void *cookie)
         } else if (entry->timer_state == ARP_TIMER_STATE_IDLE_TIMEOUT) {
             arpa_send_idle_notification(entry);
             idle_notifications++;
-            entry->deadline = now + entry->value.idle_timeout;
-            timer_wheel_insert(timer_wheel, &entry->timer_entry, entry->deadline);
+            entry->start_time = now;
+            arpa_set_timer_state(entry, ARP_TIMER_STATE_UNICAST_QUERY);
             debug_counter_inc(&idle_notification_counter);
         }
     }
