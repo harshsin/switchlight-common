@@ -900,8 +900,8 @@ arpa_timer(void *cookie)
         } else if (entry->timer_state == ARP_TIMER_STATE_IDLE_TIMEOUT) {
             arpa_send_idle_notification(entry);
             idle_notifications++;
-            entry->deadline = now + entry->value.idle_timeout;
-            timer_wheel_insert(timer_wheel, &entry->timer_entry, entry->deadline);
+            entry->start_time = now;
+            arpa_set_timer_state(entry, ARP_TIMER_STATE_UNICAST_QUERY);
             debug_counter_inc(&idle_notification_counter);
         }
     }
