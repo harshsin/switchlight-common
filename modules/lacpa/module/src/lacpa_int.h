@@ -148,6 +148,7 @@ typedef struct lacpa_port_debug_s { /* lacpa_port_debug */
     debug_counter_t  lacp_port_in_packets;
     debug_counter_t  lacp_port_out_packets;
     debug_counter_t  lacp_convergence_notif;
+    bool             debug_counters_registered;
     char             lacp_pktin_counter_name_buf[DEBUG_COUNTER_NAME_SIZE];
     char             lacp_pktout_counter_name_buf[DEBUG_COUNTER_NAME_SIZE];
     char             lacp_convergence_counter_name_buf[DEBUG_COUNTER_NAME_SIZE];

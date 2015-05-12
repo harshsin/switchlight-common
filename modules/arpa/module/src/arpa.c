@@ -264,7 +264,7 @@ arpa_init()
         "ARP request for an unknown target IP");
 
     debug_counter_register(
-        &arp_reply_hit_counter, "arpa.arp_vlan_reply_hit",
+        &arp_vlan_reply_hit_counter, "arpa.arp_vlan_reply_hit",
         "ARP request for an entry in the arp_vlan_reply table");
 
     arpa_reply_table_init();
