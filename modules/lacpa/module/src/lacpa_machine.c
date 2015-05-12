@@ -435,30 +435,38 @@ lacpa_init_port (lacpa_info_t *info, bool lacp_enabled)
 
     if (lacp_enabled) {
         event = LACPA_EVENT_ENABLED;
-        snprintf(port->debug_info.lacp_pktin_counter_name_buf,
-                 DEBUG_COUNTER_NAME_SIZE,
-                 "lacpa.port:%d.rx.lacp_port_in_packets", info->port_no);
-        snprintf(port->debug_info.lacp_pktout_counter_name_buf,
-                 DEBUG_COUNTER_NAME_SIZE,
-                 "lacpa.port:%d.tx.lacp_port_out_packets", info->port_no);
-        snprintf(port->debug_info.lacp_convergence_counter_name_buf,
-                 DEBUG_COUNTER_NAME_SIZE,
-                 "lacpa.port:%d.lacp_convergence_notif", info->port_no);
-        debug_counter_register(&port->debug_info.lacp_port_in_packets,
-                               port->debug_info.lacp_pktin_counter_name_buf,
-                               "Lacp packets recv'd on this port");
-        debug_counter_register(&port->debug_info.lacp_port_out_packets,
-                               port->debug_info.lacp_pktout_counter_name_buf,
-                               "Lacp packets sent on this port");
-        debug_counter_register(&port->debug_info.lacp_convergence_notif,
-                               port->debug_info.lacp_convergence_counter_name_buf,
-                               "Convergence notifications sent to the "
-                               "controller for this port");
+
+        if (!port->debug_info.debug_counters_registered) {
+            snprintf(port->debug_info.lacp_pktin_counter_name_buf,
+                    DEBUG_COUNTER_NAME_SIZE,
+                    "lacpa.port:%d.rx.lacp_port_in_packets", info->port_no);
+            snprintf(port->debug_info.lacp_pktout_counter_name_buf,
+                    DEBUG_COUNTER_NAME_SIZE,
+                    "lacpa.port:%d.tx.lacp_port_out_packets", info->port_no);
+            snprintf(port->debug_info.lacp_convergence_counter_name_buf,
+                    DEBUG_COUNTER_NAME_SIZE,
+                    "lacpa.port:%d.lacp_convergence_notif", info->port_no);
+            debug_counter_register(&port->debug_info.lacp_port_in_packets,
+                                port->debug_info.lacp_pktin_counter_name_buf,
+                                "Lacp packets recv'd on this port");
+            debug_counter_register(&port->debug_info.lacp_port_out_packets,
+                                port->debug_info.lacp_pktout_counter_name_buf,
+                                "Lacp packets sent on this port");
+            debug_counter_register(&port->debug_info.lacp_convergence_notif,
+                                port->debug_info.lacp_convergence_counter_name_buf,
+                                "Convergence notifications sent to the "
+                                "controller for this port");
+            port->debug_info.debug_counters_registered = true;
+        }
     } else {
         event = LACPA_EVENT_DISABLED;
-        debug_counter_unregister(&port->debug_info.lacp_port_in_packets);
-        debug_counter_unregister(&port->debug_info.lacp_port_out_packets);
-        debug_counter_unregister(&port->debug_info.lacp_convergence_notif);
+
+        if (port->debug_info.debug_counters_registered) {
+            debug_counter_unregister(&port->debug_info.lacp_port_in_packets);
+            debug_counter_unregister(&port->debug_info.lacp_port_out_packets);
+            debug_counter_unregister(&port->debug_info.lacp_convergence_notif);
+            port->debug_info.debug_counters_registered = false;
+        }
     }
 
     port->churn_detection_running = false;
