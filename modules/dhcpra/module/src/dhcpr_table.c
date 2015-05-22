@@ -25,6 +25,8 @@
 #include <murmur/murmur.h>
 #include <AIM/aim_list.h> /* for container_of */
 
+#include <arpa/inet.h>
+
 #define INVALID_IP 0
 
 static indigo_core_gentable_t *dhcpr_table;
@@ -59,9 +61,9 @@ static char*
 dhcpr_inet_ntoa (uint32_t in)
 {
     static char ret[18];
-    register uint8_t *p = (uint8_t *)&in;
+    uint8_t *p = (uint8_t *)&in;
     aim_snprintf(ret, sizeof(ret),
-        "%d.%d.%d.%d", p[3], p[2], p[1], p[0]);
+        "%d.%d.%d.%d", p[0], p[1], p[2], p[3]);
     return ret;
 }
 
@@ -251,11 +253,11 @@ dhcpr_table_parse_value(of_list_bsn_tlv_t *value, uint32_t *vr_ip, of_mac_addr_t
     }
 
     DHCPR_TABLE_DEBUG("dhc_relay entry value:");
-    DHCPR_TABLE_DEBUG("virtual router ip %s", dhcpr_inet_ntoa(*vr_ip));
+    DHCPR_TABLE_DEBUG("virtual router ip %s", dhcpr_inet_ntoa(htonl(*vr_ip)));
     DHCPR_TABLE_DEBUG("Mac address %x:%x:%x:%x:%x:%x",
                         vr_mac->addr[0], vr_mac->addr[1], vr_mac->addr[2],
                         vr_mac->addr[3], vr_mac->addr[4], vr_mac->addr[5]);
-    DHCPR_TABLE_DEBUG("Dhcp server ip %s", dhcpr_inet_ntoa(*dhcp_ser_ip));
+    DHCPR_TABLE_DEBUG("Dhcp server ip %s", dhcpr_inet_ntoa(htonl(*dhcp_ser_ip)));
     DHCPR_TABLE_DEBUG("CIRCUIT_ID: len=%d packet=%{data}",
                            temp_cid.bytes, temp_cid.data, temp_cid.bytes);
 
