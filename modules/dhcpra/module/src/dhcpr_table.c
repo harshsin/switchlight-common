@@ -39,14 +39,14 @@ static int dhcpr_vlan_entry_count;
 /*
  * Define key for dhcpr_vrouter_ip_table
  * 1st value is vrouter_ip
- * 2nd value is vrouter_mac
+ * 2nd value is vrouter_vrf
  *
  * Use attribute 'packed', so that we can use murmur / memcmp directly
  * Otherwise, must initialize padding
  */
 typedef struct {
-    uint32_t      vrouter_ip;
-    of_mac_addr_t vrouter_mac;
+    uint32_t vrouter_ip;
+    uint32_t vrf;
 } __attribute__((packed)) vrouter_key_t;
 
 
@@ -125,7 +125,7 @@ find_hash_entry_by_virtual_router_key(bighash_table_t *table,
     for (e = bighash_first(table, hash_vrouter_key(key)); e; e = bighash_next(e)) {
         dhc_relay_t *te = container_of(e, vrouter_hash_entry, dhc_relay_t);
         vr_entry_key.vrouter_ip = te->vrouter_ip;
-        vr_entry_key.vrouter_mac = te->vrouter_mac;
+        vr_entry_key.vrf = te->vrf;
         if (is_vrouter_key_equal(&vr_entry_key, key)) {
             return te;
         }
@@ -172,8 +172,9 @@ dhcpr_table_parse_key(of_list_bsn_tlv_t *key, uint16_t *vlan)
  * Return error (<0) will never allocate any memory
  * */
 static indigo_error_t
-dhcpr_table_parse_value(of_list_bsn_tlv_t *value, uint32_t *vr_ip, of_mac_addr_t *vr_mac,
-                                uint32_t *dhcp_ser_ip, of_octets_t *cid)
+dhcpr_table_parse_value(of_list_bsn_tlv_t *value, uint32_t *vrf,
+                        uint32_t *vr_ip, of_mac_addr_t *vr_mac,
+                        uint32_t *dhcp_ser_ip, of_octets_t *cid)
 {
     of_object_t tlv;
     of_octets_t   temp_cid;
@@ -181,9 +182,22 @@ dhcpr_table_parse_value(of_list_bsn_tlv_t *value, uint32_t *vr_ip, of_mac_addr_t
     temp_cid.bytes = 0;
     temp_cid.data  = NULL;
 
-    /* Gateway - Virtual router IP */
+    /* 1. VRF */
     if (of_list_bsn_tlv_first(value, &tlv) < 0) {
         AIM_LOG_ERROR("empty value list, expect gateway router ip");
+        return INDIGO_ERROR_PARAM;
+    }
+
+    if (tlv.object_id == OF_BSN_TLV_VRF) {
+        of_bsn_tlv_vrf_value_get(&tlv, vrf);
+    } else {
+        AIM_LOG_ERROR("expected VRF, instead got %s", of_object_id_str[tlv.object_id]);
+        return INDIGO_ERROR_PARAM;
+    }
+
+    /* 2. Virtual Router IP */
+    if (of_list_bsn_tlv_next(value, &tlv) < 0) {
+        AIM_LOG_ERROR("unexpected end of value list, expect IPv4 addr");
         return INDIGO_ERROR_PARAM;
     }
 
@@ -199,7 +213,7 @@ dhcpr_table_parse_value(of_list_bsn_tlv_t *value, uint32_t *vr_ip, of_mac_addr_t
         return INDIGO_ERROR_PARAM;
     }
 
-    /* 2. Virtual Router Mac */
+    /* 3. Virtual Router Mac */
     if (of_list_bsn_tlv_next(value, &tlv) < 0) {
         AIM_LOG_ERROR("unexpected end of value list, expect MAC");
         return INDIGO_ERROR_PARAM;
@@ -212,7 +226,7 @@ dhcpr_table_parse_value(of_list_bsn_tlv_t *value, uint32_t *vr_ip, of_mac_addr_t
         return INDIGO_ERROR_PARAM;
     }
 
-    /* 3. DHCP Server IP */
+    /* 4. DHCP Server IP */
     if (of_list_bsn_tlv_next(value, &tlv) < 0) {
         AIM_LOG_ERROR("unexpected end of value list, expect DHCP ip");
         return INDIGO_ERROR_PARAM;
@@ -230,7 +244,7 @@ dhcpr_table_parse_value(of_list_bsn_tlv_t *value, uint32_t *vr_ip, of_mac_addr_t
         return INDIGO_ERROR_PARAM;
     }
 
-    /* 4. Circuit ID if any */
+    /* 5. Circuit ID if any */
     if (of_list_bsn_tlv_next(value, &tlv) < 0) {
 
         /* End of tlv list */
@@ -284,7 +298,7 @@ dhcpr_add_entry_to_internal_tables(dhc_relay_t *entry)
      * New vlan entry: new virtual_router_ip
      */
     vr_entry_key.vrouter_ip = entry->vrouter_ip;
-    vr_entry_key.vrouter_mac = entry->vrouter_mac;
+    vr_entry_key.vrf = entry->vrf;
     if (find_hash_entry_by_virtual_router_key(&dhcpr_vrouter_ip_table, &vr_entry_key)) {
         AIM_LOG_ERROR("Virtual Router entry exists for vlan=%u", entry->internal_vlan_id);
         return INDIGO_ERROR_EXISTS;
@@ -304,6 +318,7 @@ dhcpr_table_add(void *table_priv, of_list_bsn_tlv_t *key, of_list_bsn_tlv_t *val
 {
     indigo_error_t rv;
     uint16_t       vlan;
+    uint32_t       vrf;
     uint32_t       vr_ip;
     of_mac_addr_t  vr_mac;
     uint32_t       dhcp_server_ip;
@@ -315,7 +330,7 @@ dhcpr_table_add(void *table_priv, of_list_bsn_tlv_t *key, of_list_bsn_tlv_t *val
         return rv;
     }
 
-    rv = dhcpr_table_parse_value(value, &vr_ip, &vr_mac, &dhcp_server_ip, &circuit_id);
+    rv = dhcpr_table_parse_value(value, &vrf, &vr_ip, &vr_mac, &dhcp_server_ip, &circuit_id);
     if (rv < 0) {
         return rv;
     }
@@ -326,6 +341,7 @@ dhcpr_table_add(void *table_priv, of_list_bsn_tlv_t *key, of_list_bsn_tlv_t *val
     entry->internal_vlan_id = vlan;
 
     /* Set value */
+    entry->vrf        = vrf;
     entry->vrouter_ip = vr_ip;
     entry->vrouter_mac = vr_mac;
     entry->dhcp_server_ip = dhcp_server_ip;
@@ -349,6 +365,7 @@ static indigo_error_t
 dhcpr_table_modify(void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key, of_list_bsn_tlv_t *value)
 {
     indigo_error_t rv;
+    uint32_t       vrf;
     uint32_t       vr_ip;
     of_mac_addr_t  vr_mac;
     uint32_t       dhcp_server_ip;
@@ -359,7 +376,7 @@ dhcpr_table_modify(void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key, o
     vrouter_key_t  vr_new_key;
     vrouter_key_t  vr_entry_key;
 
-    rv = dhcpr_table_parse_value(value, &vr_ip, &vr_mac, &dhcp_server_ip, &circuit_id);
+    rv = dhcpr_table_parse_value(value, &vrf, &vr_ip, &vr_mac, &dhcp_server_ip, &circuit_id);
     if (rv < 0) {
         return rv;
     }
@@ -367,7 +384,7 @@ dhcpr_table_modify(void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key, o
 
     /* Legality check - make sure hash is not corrupted */
     vr_entry_key.vrouter_ip = entry->vrouter_ip;
-    vr_entry_key.vrouter_mac = entry->vrouter_mac;
+    vr_entry_key.vrf = entry->vrf;
     de = find_hash_entry_by_virtual_router_key(&dhcpr_vrouter_ip_table, &vr_entry_key);
     AIM_TRUE_OR_DIE(de && de == entry, "table_modify");
 
@@ -394,13 +411,14 @@ dhcpr_table_modify(void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key, o
 
     /* 2. Update gateway hash table if the key is changed */
     vr_new_key.vrouter_ip = vr_ip;
-    vr_new_key.vrouter_mac = vr_mac;
+    vr_new_key.vrf = vrf;
     if (!is_vrouter_key_equal(&vr_entry_key, &vr_new_key)) {
         bighash_remove(&dhcpr_vrouter_ip_table, &entry->vrouter_hash_entry);
         bighash_insert(&dhcpr_vrouter_ip_table, &entry->vrouter_hash_entry, hash_vrouter_key(&vr_new_key));
     }
 
     /* 3. and 4. Update vr_mac and server_ip */
+    entry->vrf = vrf;
     entry->vrouter_ip = vr_ip;
     entry->vrouter_mac = vr_mac;
     entry->dhcp_server_ip = dhcp_server_ip;
@@ -417,7 +435,7 @@ dhcpr_table_delete(void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key)
 
     /* Legality check */
     vr_entry_key.vrouter_ip = entry->vrouter_ip;
-    vr_entry_key.vrouter_mac = entry->vrouter_mac;
+    vr_entry_key.vrf = entry->vrf;
     de = find_hash_entry_by_virtual_router_key(&dhcpr_vrouter_ip_table, &vr_entry_key);
     AIM_TRUE_OR_DIE(de && de == entry, "table_delete");
     bighash_remove(&dhcpr_vrouter_ip_table, &entry->vrouter_hash_entry);
@@ -445,18 +463,18 @@ static const indigo_core_gentable_ops_t dhcpr_table_ops = {
 
 /* Set vlan to INVALID if can't find */
 void
-dhcpr_virtual_router_key_to_vlan(uint32_t *vlan, uint32_t vr_ip, uint8_t *vr_mac)
+dhcpr_virtual_router_key_to_vlan(uint32_t *vlan, uint32_t vr_ip, uint32_t vrf)
 {
     dhc_relay_t *de = NULL;
     vrouter_key_t key;
 
     *vlan = INVALID_VLAN;
     key.vrouter_ip = vr_ip;
-    memcpy(key.vrouter_mac.addr, vr_mac, OF_MAC_ADDR_BYTES);
+    key.vrf = vrf;
     de = find_hash_entry_by_virtual_router_key(&dhcpr_vrouter_ip_table, &key);
-    if (de)
+    if (de) {
         *vlan = de->internal_vlan_id;
-
+    }
 }
 
 /* Return value might be NULL, caller must check */

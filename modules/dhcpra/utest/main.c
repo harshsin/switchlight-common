@@ -37,6 +37,7 @@
 #include "dhcp.h"
 #include "dhcpra_int.h"
 #include "dhcpr_table.h"
+#include "dhcpr_vrf.h"
 
 extern int dhcpra_system_init();
 extern indigo_core_listener_result_t dhcpra_handle_pkt (of_packet_in_t *packet_in);
@@ -142,7 +143,11 @@ dhcpra_cir_id_to_vlan(uint32_t *vlan, uint8_t *cir_id, int cir_id_len)
 }
 #else /* USE_COMPLEX_DHCPR_TABLE */
 static const indigo_core_gentable_ops_t *ops;
+static const indigo_core_gentable_ops_t *vrf_ops;
+
 static void *table_priv;
+static void *vrf_table_priv;
+
 void
 indigo_core_gentable_register(
     const of_table_name_t name,
@@ -155,6 +160,11 @@ indigo_core_gentable_register(
     if (!strcmp(name, "dhcp_relay")) {
         ops = _ops;
         table_priv = _table_priv; //NULL
+    }
+
+    if (!strcmp(name, "dhcp_vrf")) {
+        vrf_ops = _ops;
+        vrf_table_priv = _table_priv; //NULL
     }
 
     *gentable = (void *)1; //FAKE no use
@@ -191,10 +201,16 @@ make_key (uint16_t vlan_vid)
 }
 
 static of_list_bsn_tlv_t *
-make_value (uint32_t vr_ip, of_mac_addr_t mac,
+make_value (uint32_t vrf, uint32_t vr_ip, of_mac_addr_t mac,
             uint32_t dhcp_ser_ip, of_octets_t *cid)
 {
     of_list_bsn_tlv_t *list = of_list_bsn_tlv_new(OF_VERSION_1_3);
+    {
+        of_bsn_tlv_vrf_t *tlv = of_bsn_tlv_vrf_new(OF_VERSION_1_3);
+        of_bsn_tlv_vrf_value_set(tlv, vrf);
+        of_list_append(list, tlv);
+        of_object_delete(tlv);
+    }
     {
         of_bsn_tlv_ipv4_t *tlv = of_bsn_tlv_ipv4_new(OF_VERSION_1_3);
         of_bsn_tlv_ipv4_value_set(tlv, vr_ip);
@@ -225,7 +241,42 @@ make_value (uint32_t vr_ip, of_mac_addr_t mac,
     return list;
 }
 
-int fill_all_vlan_dhcpr_table_test()
+static of_list_bsn_tlv_t *
+make_vrf_key (uint16_t vlan_vid, of_mac_addr_t mac)
+{
+    of_list_bsn_tlv_t *list = of_list_bsn_tlv_new(OF_VERSION_1_3);
+
+    {
+        of_bsn_tlv_vlan_vid_t *tlv = of_bsn_tlv_vlan_vid_new(OF_VERSION_1_3);
+        of_bsn_tlv_vlan_vid_value_set(tlv, vlan_vid);
+        of_list_append(list, tlv);
+        of_object_delete(tlv);
+    }
+    {
+        of_bsn_tlv_mac_t *tlv = of_bsn_tlv_mac_new(OF_VERSION_1_3);
+        of_bsn_tlv_mac_value_set(tlv, mac);
+        of_list_append(list, tlv);
+        of_object_delete(tlv);
+    }
+
+    return list;
+}
+
+static of_list_bsn_tlv_t *
+make_vrf_value (uint32_t vrf)
+{
+    of_list_bsn_tlv_t *list = of_list_bsn_tlv_new(OF_VERSION_1_3);
+    {
+        of_bsn_tlv_vrf_t *tlv = of_bsn_tlv_vrf_new(OF_VERSION_1_3);
+        of_bsn_tlv_vrf_value_set(tlv, vrf);
+        of_list_append(list, tlv);
+        of_object_delete(tlv);
+    }
+
+    return list;
+}
+
+int test_0_fill_all_vlan_dhcpr_table_test()
 {
     indigo_error_t rv;
     of_list_bsn_tlv_t *key, *value;
@@ -235,6 +286,7 @@ int fill_all_vlan_dhcpr_table_test()
     int k;
     int vlan_no;
     int vr_ip_no;
+    uint32_t vrf = 1;
 
     uint32_t      virtualRouterIP = 1;
     of_mac_addr_t mac = { .addr = {0x55, 0x16, 0xc7, 0x01, 0x02, 0x03} };
@@ -263,7 +315,7 @@ int fill_all_vlan_dhcpr_table_test()
         cir_id.data  = (uint8_t*)&cir_value[k];
 
         key = make_key(k);
-        value = make_value((virtualRouterIP+k),
+        value = make_value(vrf, (virtualRouterIP+k),
                            mac,
                            (dhcpServerIP+k),
                            &cir_id);
@@ -278,7 +330,7 @@ int fill_all_vlan_dhcpr_table_test()
     printf("Range k=%u - %u\n", num_of_vlan/2, num_of_vlan);
     for (k = num_of_vlan/2; k<= num_of_vlan+extra_vlan ; k++) {
         key = make_key(k);
-        value = make_value((virtualRouterIP+k),
+        value = make_value(vrf, (virtualRouterIP+k),
                            mac,
                            (dhcpServerIP+k),
                            NULL);
@@ -302,7 +354,7 @@ int fill_all_vlan_dhcpr_table_test()
         dhc_relay = dhcpr_get_dhcpr_entry_from_vlan_table(k);
         AIM_TRUE_OR_DIE(dhc_relay);
         key = make_key(k);
-        value = make_value((virtualRouterIP+k),
+        value = make_value(vrf, (virtualRouterIP+k),
                            mac,
                            (dhcpServerIP+k),
                            NULL);
@@ -320,7 +372,7 @@ int fill_all_vlan_dhcpr_table_test()
         dhc_relay = dhcpr_get_dhcpr_entry_from_vlan_table(k);
         AIM_TRUE_OR_DIE(dhc_relay);
         key = make_key(k);
-        value = make_value((virtualRouterIP+k+num_of_vlan),
+        value = make_value(vrf, (virtualRouterIP+k+num_of_vlan),
                            mac,
                            (dhcpServerIP+k),
                            NULL);
@@ -342,7 +394,7 @@ int fill_all_vlan_dhcpr_table_test()
         cir_id.bytes = sizeof(cir_value[k]);
         cir_id.data  = (uint8_t*)&cir_value[k];
         key = make_key(k);
-        value = make_value((virtualRouterIP+k),
+        value = make_value(vrf, (virtualRouterIP+k),
                            mac,
                            (dhcpServerIP+k),
                            &cir_id);
@@ -363,7 +415,7 @@ int fill_all_vlan_dhcpr_table_test()
         cir_id.bytes = sizeof(cir_value[k]);
         cir_id.data  = (uint8_t*)&cir_value[k];
         key = make_key(k);
-        value = make_value((virtualRouterIP+k+num_of_vlan),
+        value = make_value(vrf, (virtualRouterIP+k+num_of_vlan),
                            mac,
                            (dhcpServerIP+k),
                            &cir_id);
@@ -395,62 +447,87 @@ int fill_all_vlan_dhcpr_table_test()
     return 1;
 }
 
-void add_entry_to_dhcpr_table()
+void test_1_add_entry_to_dhcpr_table()
 {
     indigo_error_t rv;
     int i;
-    of_list_bsn_tlv_t *key, *value;
+    of_list_bsn_tlv_t *key, *value, *vrf_key, *vrf_value;
     void              *entry_priv;
 
     //Test
     dhc_relay_t       *dc;
     uint32_t          vlan;
+    uint32_t          vrf = 1;
     uint32_t          vr_ip = dummy_dhcp_opt_info.vrouter_ip+1;
     //Only add Vlan1 for now
     for (i=1; i<2; i++) {
         key = make_key(i);
-        value = make_value(vr_ip,
+        value = make_value(vrf, vr_ip,
                 dummy_dhcp_opt_info.vrouter_mac,
                 dummy_dhcp_opt_info.dhcp_server_ip,
                 &dummy_cir_id2);
 
         //Test Add
+        //Add to DHCP table
         if((rv = ops->add(table_priv, key, value, &entry_priv)) != INDIGO_ERROR_NONE) {
             printf("Error Add table rv=%u", rv);
             exit(1);
-        } else {
-            printf("\nVlan %d Added to dhcp table\n", i);
-
-            /* Test 1: dhcp conf array */
-            if (! (dc = dhcpr_get_dhcpr_entry_from_vlan_table(i))) {
-                printf("Error get_dhcp_conf Vlan %d\n", i);
-            }
-
-            /* Test 2: cir -> vlan */
-            vlan = 1;
-            AIM_TRUE_OR_DIE(!dhcpr_circuit_id_vlan_check(vlan, dummy_cir_id2.data,
-                                                         dummy_cir_id2.bytes ));
-
-            /* Test 3: routerip -> vlan */
-            dhcpr_virtual_router_key_to_vlan(&vlan, vr_ip, dummy_dhcp_opt_info.vrouter_mac.addr);
-            printf("router_ip_to_vlan = %u, vr_ip = %s\n",
-                        vlan, inet_ntoa(*(struct in_addr *) &vr_ip));
-            AIM_TRUE_OR_DIE(vlan==1);
-
-            printf("DHCP CONF TABLE ok\n");
         }
+        printf("\nVlan %d Added to DHCP table\n", i);
+
+        //Add to DHCP VRF table
+        vrf_key = make_vrf_key(i, dummy_dhcp_opt_info.vrouter_mac);
+        vrf_value = make_vrf_value(vrf);
+        if((rv = vrf_ops->add(vrf_table_priv, vrf_key, vrf_value, &entry_priv)) != INDIGO_ERROR_NONE) {
+            printf("Error Add DHCP VRF table rv=%u", rv);
+            exit(1);
+        }
+        printf("\nVlan %d Added to DHCP VRF table\n", i);
+        dhcpr_vrf_table_print(&aim_pvs_stdout);
+
+        /* Test 1: dhcp conf array */
+        if (! (dc = dhcpr_get_dhcpr_entry_from_vlan_table(i))) {
+            printf("Error get_dhcp_conf Vlan %d\n", i);
+        }
+
+        /* Test 2: cir -> vlan */
+        vlan = 1;
+        AIM_TRUE_OR_DIE(!dhcpr_circuit_id_vlan_check(vlan, dummy_cir_id2.data,
+                                                     dummy_cir_id2.bytes ));
+
+        /* Test 3: routerip -> vlan */
+        uint32_t ret_vrf = 0;
+        if (dhcpr_vrf_find(&ret_vrf, i, dummy_dhcp_opt_info.vrouter_mac.addr) < 0) {
+            printf("Error find vrf for vlan=%d, mac=%02x:%02x:%02x:%02x:%02x:%02x\n",
+                   i,
+                   dummy_dhcp_opt_info.vrouter_mac.addr[0],
+                   dummy_dhcp_opt_info.vrouter_mac.addr[1],
+                   dummy_dhcp_opt_info.vrouter_mac.addr[2],
+                   dummy_dhcp_opt_info.vrouter_mac.addr[3],
+                   dummy_dhcp_opt_info.vrouter_mac.addr[4],
+                   dummy_dhcp_opt_info.vrouter_mac.addr[5]);
+        }
+        AIM_TRUE_OR_DIE(ret_vrf == vrf);
+
+        dhcpr_virtual_router_key_to_vlan(&vlan, vr_ip, ret_vrf);
+        printf("router_ip_to_vlan = %u, vr_ip = %s\n",
+                    vlan, inet_ntoa(*(struct in_addr *) &vr_ip));
+        AIM_TRUE_OR_DIE(vlan==1);
+
+        printf("DHCP CONF TABLE ok\n");
+
 
     }
 }
 
-void mod_entry_to_dhcpr_table()
+void test_1_mod_entry_to_dhcpr_table()
 {
 
     of_list_bsn_tlv_t *key, *value;
     dhc_relay_t       *dhc_relay;
     uint32_t          vlan_id = 1;
     uint32_t          vlan_ret = 0;
-
+    uint32_t          vrf = 1;
     printf("\nVlan %d Modify to dhcp table\n", vlan_id);
 
     if (! (dhc_relay = dhcpr_get_dhcpr_entry_from_vlan_table(vlan_id))) {
@@ -458,16 +535,18 @@ void mod_entry_to_dhcpr_table()
     }
 
     key = make_key(vlan_id);
-    value = make_value(dummy_dhcp_opt_info.vrouter_ip,
+    value = make_value(vrf, dummy_dhcp_opt_info.vrouter_ip,
                 dummy_dhcp_opt_info.vrouter_mac,
                 dummy_dhcp_opt_info.dhcp_server_ip,
                 &dummy_dhcp_opt_info.opt_id.circuit_id);
 
     ops->modify(table_priv, dhc_relay, key, value);
+
     /* Test 3: routerip -> vlan
      * Invalid_vlan, no need to check against circuit
+     * Because vrf is 2
      */
-    dhcpr_virtual_router_key_to_vlan(&vlan_ret, dummy_dhcp_opt_info.vrouter_ip+1, dummy_dhcp_opt_info.vrouter_mac.addr);
+    dhcpr_virtual_router_key_to_vlan(&vlan_ret, dummy_dhcp_opt_info.vrouter_ip+1, vrf+1);
     printf("router_ip_to_vlan = %d\n", vlan_ret);
     AIM_TRUE_OR_DIE(vlan_ret==INVALID_VLAN);
 
@@ -477,12 +556,18 @@ void mod_entry_to_dhcpr_table()
     AIM_TRUE_OR_DIE(!dhcpr_circuit_id_vlan_check(vlan_ret, dummy_dhcp_opt_info.opt_id.circuit_id.data,
                                                  dummy_dhcp_opt_info.opt_id.circuit_id.bytes ));
 
-   /* Test 5: routerip -> vlan */
-   dhcpr_virtual_router_key_to_vlan(&vlan_ret, dummy_dhcp_opt_info.vrouter_ip, dummy_dhcp_opt_info.vrouter_mac.addr);
-   printf("router_ip_to_vlan = %d\n", vlan_ret);
-   AIM_TRUE_OR_DIE(vlan_ret==vlan_id);
+    /* Test 5: routerip -> vlan */
+    uint32_t ret_vrf;
+    if (dhcpr_vrf_find(&ret_vrf, vlan_id, dummy_dhcp_opt_info.vrouter_mac.addr) < 0) {
+        printf("Error find vrf from DHCP vrf\n");
+    }
+    AIM_TRUE_OR_DIE(ret_vrf == vrf);
 
-   printf("\nVlan %d Modify to dhcp table change virtual routerIP and circuit \n", vlan_id);
+    dhcpr_virtual_router_key_to_vlan(&vlan_ret, dummy_dhcp_opt_info.vrouter_ip, ret_vrf );
+    printf("router_ip_to_vlan = %d\n", vlan_ret);
+    AIM_TRUE_OR_DIE(vlan_ret==vlan_id);
+
+    printf("\nVlan %d Modify to dhcp table change virtual routerIP and circuit \n", vlan_id);
 }
 
 void del_entry_to_dhcpr_table()
@@ -507,7 +592,8 @@ void del_entry_to_dhcpr_table()
     /* Test 3: routerip -> vlan
      * invalid vlan, no need to check circuit
      */
-    dhcpr_virtual_router_key_to_vlan(&vlan_ret, dummy_dhcp_opt_info.vrouter_ip, dummy_dhcp_opt_info.vrouter_mac.addr);
+    int vrf = 1;
+    dhcpr_virtual_router_key_to_vlan(&vlan_ret, dummy_dhcp_opt_info.vrouter_ip, vrf);
     printf("router_ip_to_vlan = %d\n", vlan_ret);
     AIM_TRUE_OR_DIE(vlan_ret==INVALID_VLAN);
 
@@ -916,11 +1002,11 @@ int aim_main(int argc, char* argv[])
     dhcpra_system_init();
 
     printf("\n*********\n0. PRE-TEST TABLE\n********\n");
-    test_pass[0] = fill_all_vlan_dhcpr_table_test();
+    test_pass[0] = test_0_fill_all_vlan_dhcpr_table_test();
 
     printf("\n*********\nI. TEST PASS AFTER ADD and MOD\n********\n");
-    add_entry_to_dhcpr_table();
-    mod_entry_to_dhcpr_table();
+    test_1_add_entry_to_dhcpr_table();
+    test_1_mod_entry_to_dhcpr_table();
 
     //Port 1: Correct setup, packet process
     //Driver will take care of sending L2_SRC_MISSED to controller

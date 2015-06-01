@@ -1,6 +1,6 @@
 /****************************************************************
  *
- *        Copyright 2014, Big Switch Networks, Inc.
+ *        Copyright 2015, Big Switch Networks, Inc.
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -17,18 +17,21 @@
  *
  ****************************************************************/
 
-#ifndef DHCPR_TABLE_H_
-#define DHCPR_TABLE_H_
+#ifndef DHCPR_VRF_H_
+#define DHCPR_VRF_H_
 
 #include <indigo/error.h>
 
-indigo_error_t dhcpr_table_init();
-void dhcpr_table_finish();
-dhc_relay_t* dhcpr_get_dhcpr_entry_from_vlan_table(uint32_t vlan);
-int dhcpr_circuit_id_vlan_check(const uint32_t vlan, uint8_t *cir_id, int cir_id_len);
-void dhcpr_virtual_router_key_to_vlan(uint32_t *vlan, uint32_t vr_ip, uint32_t vrf);
+indigo_error_t dhcpr_vrf_init();
+void dhcpr_vrf_finish();
 
-int dhcpr_table_get_vlan_entry_count();
-int dhcpr_table_get_virtual_router_ip_entry_count();
+ /*
+  * Get vrf from vlan and mac values
+  * ret: 0; if successful
+  */
+int dhcpr_vrf_find(uint32_t *vrf, uint32_t vlan, uint8_t *mac_addr);
 
-#endif /* DHCPR_TABLE_H_ */
+/* Print dhcp vrf table */
+void dhcpr_vrf_table_print(aim_pvs_t *apvs);
+
+#endif /* DHCPR_VRF_H_ */

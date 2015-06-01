@@ -23,6 +23,7 @@
 #include "dhcp.h"
 #include "dhcpra_int.h"
 #include "dhcpr_table.h"
+#include "dhcpr_vrf.h"
 #include "dhcrelay.h"
 
 #include <indigo/of_state_manager.h>
@@ -195,6 +196,7 @@ static indigo_core_listener_result_t
 dhcpra_handle_bootreply(of_octets_t *pkt, int dhcp_pkt_len,
                         uint32_t relay_agent_ip,
                         uint8_t *relay_mac_addr,
+                        uint32_t original_vlan,
                         uint32_t vlan_pcp,
                         of_port_no_t port_no,
                         int port_dump_data)
@@ -205,6 +207,7 @@ dhcpra_handle_bootreply(of_octets_t *pkt, int dhcp_pkt_len,
     uint8_t            host_mac_address[OF_MAC_ADDR_BYTES];
     uint32_t           dhcp_pkt_new_len;
     uint32_t           vlan_id  = INVALID_VLAN;
+    uint32_t           vrf;
     dhc_relay_t        *dc   = NULL;
     struct dhcp_packet *dhcp_pkt;
 
@@ -235,10 +238,29 @@ dhcpra_handle_bootreply(of_octets_t *pkt, int dhcp_pkt_len,
         DHCPRA_MEMSET (host_mac_address, 0xff, sizeof(host_mac_address));
     }
 
+    /* Find vrf */
+    if (dhcpr_vrf_find(&vrf, original_vlan, relay_mac_addr) < 0) {
+        /*
+         * Can't find vlan using relay_agent_ip. This dhcp pkt is out of date, drop it
+         * This might happen when controller removed a configuration from relay agent
+         * before server is aware of configuration changed
+         * */
+        int network_ip_addr = htonl(relay_agent_ip);
+        AIM_LOG_RL_ERROR(&dhcpra_pktin_log_limiter, os_time_monotonic(),
+                        "Fail to lookup vrf from ori_vlan=%d on port=%d, relayIP=%d.%d.%d.%d, relayMac=%02x:%02x:%02x:%02x:%02x:%02x",
+                        original_vlan, port_no,
+                        ((uint8_t*)&network_ip_addr)[0],
+                        ((uint8_t*)&network_ip_addr)[1],
+                        ((uint8_t*)&network_ip_addr)[2],
+                        ((uint8_t*)&network_ip_addr)[3],
+                        relay_mac_addr[0], relay_mac_addr[1], relay_mac_addr[2],
+                        relay_mac_addr[3], relay_mac_addr[4], relay_mac_addr[5]);
+        return INDIGO_CORE_LISTENER_RESULT_DROP;
+    }
     /* This vlan_id should exist */
     dhcpr_virtual_router_key_to_vlan(&vlan_id,
                                      relay_agent_ip,
-                                     relay_mac_addr);
+                                     vrf);
     if (vlan_id == INVALID_VLAN) {
         /*
          * Can't find vlan using relay_agent_ip. This dhcp pkt is out of date, drop it
@@ -626,7 +648,7 @@ dhcpra_receive_packet (ppe_packet_t *ppep, of_port_no_t port_no)
                            relay_mac_addr);
         return dhcpra_handle_bootreply(&ldata, dhcp_pkt_len,
                                        relay_agent_ip, relay_mac_addr,
-                                       vlan_pcp, port_no, port_dump_data);
+                                       vlan_vid, vlan_pcp, port_no, port_dump_data);
     default:
         AIM_LOG_RL_ERROR(&dhcpra_pktin_log_limiter, os_time_monotonic(),
                          "Unsupported opcode=%d", opcode);
@@ -733,6 +755,9 @@ dhcpra_system_init()
 
     /* dhcp_relay table init */
     dhcpr_table_init();
+
+    /* dhcp vrf table init */
+    dhcpr_vrf_init();
 
     aim_ratelimiter_init(&dhcpra_pktin_log_limiter, 1000*1000, 5, NULL);
 
