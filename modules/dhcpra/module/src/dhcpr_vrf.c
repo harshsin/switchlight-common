@@ -202,34 +202,6 @@ dhcpr_vrf_parse_value(of_list_bsn_tlv_t *tlvs, uint32_t *vrf)
     return INDIGO_ERROR_NONE;
 }
 
-/*
- * Allocate 1 hash entry
- * If return error, caller doesn't need to free any memory
- */
-static indigo_error_t
-dhcpr_vrf_add_entry(dhcp_vrf_t *entry)
-{
-    dhcp_vrf_key_t key;
-
-    /*
-     * Vlan and virtualRtouerIP is a mapping 1:1
-     * New vlan entry: new virtual_router_ip
-     */
-    key.vlan = entry->internal_vlan;
-    key.mac  = entry->vrouter_mac;
-    if (find_hash_entry_by_dhcp_vrf_key(&dhcpr_vrf_table, &key)) {
-        AIM_LOG_ERROR("Virtual Router entry exists for VLAN=%u MAC=%02x:%02x:%02x:%02x:%02x:%02x",
-                      entry->internal_vlan,
-                      entry->vrouter_mac.addr[0], entry->vrouter_mac.addr[1], entry->vrouter_mac.addr[2],
-                      entry->vrouter_mac.addr[3], entry->vrouter_mac.addr[4], entry->vrouter_mac.addr[5]);
-        return INDIGO_ERROR_EXISTS;
-    }
-
-    bighash_insert(&dhcpr_vrf_table, &entry->hash_entry, hash_key(&key));
-
-    return INDIGO_ERROR_NONE;
-}
-
 static indigo_error_t
 dhcpr_vrf_add(void *table_priv, of_list_bsn_tlv_t *key, of_list_bsn_tlv_t *value, void **entry_priv)
 {
@@ -238,6 +210,7 @@ dhcpr_vrf_add(void *table_priv, of_list_bsn_tlv_t *key, of_list_bsn_tlv_t *value
     uint32_t       vrf;
     of_mac_addr_t  mac;
     dhcp_vrf_t *entry = NULL;
+    dhcp_vrf_key_t dhcp_vrf_key;
 
     rv = dhcpr_vrf_parse_key(key, &vlan, &mac);
     if (rv < 0) {
@@ -258,14 +231,13 @@ dhcpr_vrf_add(void *table_priv, of_list_bsn_tlv_t *key, of_list_bsn_tlv_t *value
     /* Set value */
     entry->vrf = vrf;
 
-    rv = dhcpr_vrf_add_entry(entry);
-    if (rv == INDIGO_ERROR_NONE) {
-        *entry_priv = entry;
-    } else {
-        /* Free entry and all internal data */
-        aim_free(entry);
-    }
-    return rv;
+    /* Insert to dhcp vrf table */
+    dhcp_vrf_key.vlan = entry->internal_vlan;
+    dhcp_vrf_key.mac  = entry->vrouter_mac;
+    bighash_insert(&dhcpr_vrf_table, &entry->hash_entry, hash_key(&dhcp_vrf_key));
+    *entry_priv = entry;
+
+    return INDIGO_ERROR_NONE;
 }
 
 static indigo_error_t
@@ -335,10 +307,9 @@ dhcpr_vrf_table_print(aim_pvs_t *apvs)
 
     aim_printf(apvs, "VLAN\tMAC\tVRF\n");
     DHCP_VRF_TABLE_ITERATE(iter, entry) {
-        aim_printf(apvs, "%u\t%02x:%02x:%02x:%02x:%02x:%02x\t%u\n",
+        aim_printf(apvs, "%u\t%{mac}\t%u\n",
                    entry->internal_vlan,
-                   entry->vrouter_mac.addr[0],entry->vrouter_mac.addr[1],entry->vrouter_mac.addr[2],
-                   entry->vrouter_mac.addr[3],entry->vrouter_mac.addr[4],entry->vrouter_mac.addr[5],
+                   entry->vrouter_mac.addr,
                    entry->vrf);
     }
 }

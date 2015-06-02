@@ -245,16 +245,12 @@ dhcpra_handle_bootreply(of_octets_t *pkt, int dhcp_pkt_len,
          * This might happen when controller removed a configuration from relay agent
          * before server is aware of configuration changed
          * */
-        int network_ip_addr = htonl(relay_agent_ip);
+        uint32_t network_ip_addr = htonl(relay_agent_ip);
         AIM_LOG_RL_ERROR(&dhcpra_pktin_log_limiter, os_time_monotonic(),
-                        "Fail to lookup vrf from ori_vlan=%d on port=%d, relayIP=%d.%d.%d.%d, relayMac=%02x:%02x:%02x:%02x:%02x:%02x",
+                        "Fail to lookup vrf from ori_vlan=%d on port=%d, relayIP=%{ipv4a}, relayMac=%{mac}",
                         original_vlan, port_no,
-                        ((uint8_t*)&network_ip_addr)[0],
-                        ((uint8_t*)&network_ip_addr)[1],
-                        ((uint8_t*)&network_ip_addr)[2],
-                        ((uint8_t*)&network_ip_addr)[3],
-                        relay_mac_addr[0], relay_mac_addr[1], relay_mac_addr[2],
-                        relay_mac_addr[3], relay_mac_addr[4], relay_mac_addr[5]);
+                        network_ip_addr,
+                        relay_mac_addr);
         return INDIGO_CORE_LISTENER_RESULT_DROP;
     }
     /* This vlan_id should exist */
