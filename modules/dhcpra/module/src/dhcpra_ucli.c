@@ -77,6 +77,7 @@ dhcpra_show_dhcp_relay__(ucli_context_t* uc, uint32_t vlan_id)
 
     if (de) {
         ucli_printf(uc, "%d\t", vlan_id);
+        ucli_printf(uc, "%u\t", de->vrf);
         ip.s_addr   = htonl(de->vrouter_ip);
         ucli_printf(uc, "%s\t", inet_ntoa(ip));
         p = de->vrouter_mac.addr;
@@ -99,7 +100,7 @@ dhcpra_ucli_ucli__show_dhcpr_table__(ucli_context_t* uc)
                       "$args#[Vlan_id]");
 
     ucli_printf(uc, "START DHCP CONFIG INFO\n");
-    ucli_printf(uc, "VLAN_ID\tROUTER_IP\tROUTER_MAC\tDHCP_SERVER_IP\tCIRCUIT_DATA\n");
+    ucli_printf(uc, "VLAN_ID\tVRF\tROUTER_IP\tROUTER_MAC\tDHCP_SERVER_IP\tCIRCUIT_DATA\n");
     if (uc->pargs->count == 1) {
         UCLI_ARGPARSE_OR_RETURN(uc, "i", &vlan_id);
         dhcpra_show_dhcp_relay__(uc, vlan_id);
