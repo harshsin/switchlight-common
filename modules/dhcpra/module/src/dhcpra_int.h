@@ -48,6 +48,7 @@ typedef struct {
     bighash_entry_t vrouter_hash_entry;
     bighash_entry_t circuit_hash_entry;
     uint32_t      internal_vlan_id;
+    uint32_t      vrf;
     uint32_t      vrouter_ip;
     uint32_t      dhcp_server_ip;
     of_mac_addr_t vrouter_mac;
