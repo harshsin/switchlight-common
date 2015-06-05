@@ -439,6 +439,10 @@ cdpa_update_rx_timeout(cdpa_port_t *port)
 indigo_core_listener_result_t
 cdpa_receive_packet(of_octets_t *data, of_port_no_t port_no)
 {
+    if (port_no == OF_PORT_DEST_CONTROLLER) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
     cdpa_port_t *port = cdpa_find_port(port_no);
     if (!port) {
         AIM_LOG_INTERNAL("CDPA port out of range %u", port_no);

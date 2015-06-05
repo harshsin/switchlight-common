@@ -564,6 +564,10 @@ dhcpra_receive_packet (ppe_packet_t *ppep, of_port_no_t port_no)
     ldata.data  = buf;
     ldata.bytes =  OUT_PKT_BUF_SIZE;
 
+    if (port_no == OF_PORT_DEST_CONTROLLER) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
     if (port_no > DHCPRA_CONFIG_OF_PORTS_MAX) {
         AIM_LOG_RL_INTERNAL(&dhcpra_pktin_log_limiter, os_time_monotonic(),
                             "Port out of range %u", port_no);
