@@ -104,6 +104,10 @@ lacpa_receive_packet (ppe_packet_t *ppep, of_port_no_t port_no)
     lacpa_port_t *port;
     lacpa_pdu_t  pdu;
 
+    if (port_no == OF_PORT_DEST_CONTROLLER) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
     AIM_LOG_TRACE("LACPDU Received on port: %d", port_no);
     debug_counter_inc(&lacpa_system.debug_info.lacp_system_in_packets);
 

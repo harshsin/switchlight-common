@@ -213,6 +213,10 @@ sflowa_sampling_rate_handler_unregister(sflowa_sampling_rate_handler_f fn)
 indigo_core_listener_result_t
 sflowa_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
 {
+    if (in_port == OF_PORT_DEST_CONTROLLER) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
     AIM_LOG_TRACE("Sampled packet_in received for in_port: %u", in_port);
 
     if (in_port > SFLOWA_CONFIG_OF_PORTS_MAX) {
