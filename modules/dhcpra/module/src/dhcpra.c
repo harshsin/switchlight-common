@@ -346,7 +346,8 @@ dhcpra_handle_bootreply(of_octets_t *pkt, int dhcp_pkt_len,
  * Circuit_id is only optional
  * */
 static indigo_core_listener_result_t
-dhcpra_handle_bootrequest(of_octets_t *pkt, int dhcp_pkt_len, uint32_t vlan_id,
+dhcpra_handle_bootrequest(of_octets_t *pkt, int dhcp_pkt_len, uint32_t ori_src_ip,
+                          uint32_t vlan_id,
                           uint32_t vlan_pcp, of_port_no_t port_no,
                           int port_dump_data)
 {
@@ -371,6 +372,18 @@ dhcpra_handle_bootrequest(of_octets_t *pkt, int dhcp_pkt_len, uint32_t vlan_id,
     if(!(dc = dhcpr_get_dhcpr_entry_from_vlan_table(vlan_id))){
         AIM_LOG_RL_TRACE(&dhcpra_pktin_log_limiter, os_time_monotonic(),
                          "Unsupported DHCP vlan_vid=%d on port=%d", vlan_id, port_no);
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    if (ori_src_ip == get_virtual_router_ip(dc)) {
+        /*
+         * Handle the case: IVS forwards dhcp relay pkt to the leaf
+         * and CIDR miss causes pkt to CPU, to dhcp relay agent
+         * which needs to pass pkt to the controller
+         */
+        AIM_LOG_RL_TRACE(&dhcpra_pktin_log_limiter, os_time_monotonic(),
+                         "Pass: DHCP src_ip=%{ipv4a}, vlan_vid=%d on port=%d",
+                         ori_src_ip, vlan_id, port_no);
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
@@ -558,6 +571,7 @@ dhcpra_receive_packet (ppe_packet_t *ppep, of_port_no_t port_no)
     uint32_t                   vlan_pcp;
     int                        dhcp_pkt_len;
     uint32_t                   relay_agent_ip;
+    uint32_t                   ori_src_ip;
     int                        port_dump_data = 0;
     uint8_t                    relay_mac_addr[OF_MAC_ADDR_BYTES];
 
@@ -630,8 +644,11 @@ dhcpra_receive_packet (ppe_packet_t *ppep, of_port_no_t port_no)
     DHCPRA_DEBUG("port %u, dhcp opcode %u", port_no, opcode);
     switch (opcode) {
     case BOOTREQUEST:
+        ppe_field_get(ppep, PPE_FIELD_IP4_SRC_ADDR, &ori_src_ip);
         debug_counter_inc(&dhcp_stat_ports[port_no].dhcp_request);
-        return dhcpra_handle_bootrequest(&ldata, dhcp_pkt_len, vlan_vid, vlan_pcp,
+
+        return dhcpra_handle_bootrequest(&ldata, dhcp_pkt_len, ori_src_ip,
+                                         vlan_vid, vlan_pcp,
                                          port_no, port_dump_data);
     case BOOTREPLY:
         debug_counter_inc(&dhcp_stat_ports[port_no].dhcp_reply);
