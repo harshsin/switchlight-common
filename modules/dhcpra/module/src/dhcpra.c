@@ -493,7 +493,11 @@ dhcpra_handle_bootrequest(of_octets_t *pkt, int dhcp_pkt_len, uint32_t ori_src_i
     debug_counter_inc(&dhcp_stat_ports[port_no].dhcp_request_relay);
     dhcpra_send_pkt (&data_tx, port_no);
 
-    return INDIGO_CORE_LISTENER_RESULT_DROP;
+    /*
+     * Controller team requests to forward dhcp request packets to the controller
+     * so that it would learn end-point's hostname from dhcp packets
+     */
+    return INDIGO_CORE_LISTENER_RESULT_PASS;
 }
 
 /*
