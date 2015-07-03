@@ -1010,7 +1010,7 @@ int aim_main(int argc, char* argv[])
 
     //Port 1: Correct setup, packet process
     //Driver will take care of sending L2_SRC_MISSED to controller
-    test_discovery_pkt_in(1, INDIGO_CORE_LISTENER_RESULT_PASS);
+    test_discovery_pkt_in(1, INDIGO_CORE_LISTENER_RESULT_DROP);
     test_offer_pkt_in(1);
 
     printf("\n\nSUMMARY:\nDISCOV:\t%s\n", dhcp_pkt_matched[0] ? "PASSED" : "FAILED");
