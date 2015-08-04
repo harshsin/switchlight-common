@@ -10,13 +10,6 @@
 #include "igmpa_int.h"
 
 
-/* tracks expected value tlv type */
-typedef enum {
-    TIMEOUT_UNKNOWN,
-    TIMEOUT_INTERVAL,
-    TIMEOUT_IDLE,
-} timeout_t;
-
 typedef struct timeout_key_s {
     char name[IGMP_NAME_LEN];
 } timeout_key_t;
@@ -27,7 +20,6 @@ typedef struct timeout_value_s {
 
 /* timeout gentable entry */
 typedef struct timeout_entry_s {
-    timeout_t timeout_type;
     timeout_key_t key;
     timeout_value_t value;
 } timeout_entry_t;

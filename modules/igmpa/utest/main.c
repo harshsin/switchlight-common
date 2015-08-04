@@ -180,14 +180,6 @@ indigo_core_packet_in_listener_unregister(indigo_core_packet_in_listener_f fn)
 
 
 static of_object_t *
-make_idle_timeout_tlv(uint32_t val)
-{
-    of_bsn_tlv_idle_timeout_t *tlv = of_bsn_tlv_idle_timeout_new(OF_VERSION_1_4);
-    of_bsn_tlv_idle_timeout_value_set(tlv, val);
-    return tlv;
-}
-
-static of_object_t *
 make_interval_tlv(uint32_t val)
 {
     of_bsn_tlv_interval_t *tlv = of_bsn_tlv_interval_new(OF_VERSION_1_4);
@@ -543,8 +535,8 @@ int aim_main(int argc, char* argv[])
     rtx_key = MAKE_NAME("report_tx");
 
     /* configure timeouts so this unit test does not take forever */
-    gqe_value = make_idle_timeout_tlv(2000);
-    re_value = make_idle_timeout_tlv(2000);
+    gqe_value = make_interval_tlv(2000);
+    re_value = make_interval_tlv(2000);
     gqtx_value = make_interval_tlv(1000);
     rtx_value = make_interval_tlv(1000);
 

@@ -7,7 +7,7 @@
 /*
  * Implements "igmp_timeout" gentable.
  * key: name
- * value: interval for tx, idle_timeout for expectation
+ * value: interval
  */
 
 
@@ -120,8 +120,7 @@ timeout_parse_key(of_list_bsn_tlv_t *tlvs, timeout_key_t *key)
 }
 
 static indigo_error_t
-timeout_parse_value(timeout_t timeout, 
-                    of_list_bsn_tlv_t *tlvs, 
+timeout_parse_value(of_list_bsn_tlv_t *tlvs, 
                     timeout_value_t *value)
 {
     of_object_t tlv;
@@ -132,27 +131,12 @@ timeout_parse_value(timeout_t timeout,
         return INDIGO_ERROR_PARAM;
     }
 
-    switch (timeout) {
-    case TIMEOUT_INTERVAL:
-        if (tlv.object_id == OF_BSN_TLV_INTERVAL) {
-            of_bsn_tlv_interval_value_get(&tlv, &value->timeout);
-        } else {
-            AIM_LOG_ERROR("%s: expected interval value TLV, instead got %s",
-                          __FUNCTION__, of_class_name(&tlv));
-            return INDIGO_ERROR_PARAM;
-        }
-        break;
-    case TIMEOUT_IDLE:
-        if (tlv.object_id == OF_BSN_TLV_IDLE_TIMEOUT) {
-            of_bsn_tlv_idle_timeout_value_get(&tlv, &value->timeout);
-        } else {
-            AIM_LOG_ERROR("%s: expected idle timeout value TLV, instead got %s",
-                          __FUNCTION__, of_class_name(&tlv));
-            return INDIGO_ERROR_PARAM;
-        }
-        break;
-    default:
-        AIM_DIE("got unknown timeout type %d", timeout);
+    if (tlv.object_id == OF_BSN_TLV_INTERVAL) {
+        of_bsn_tlv_interval_value_get(&tlv, &value->timeout);
+    } else {
+        AIM_LOG_ERROR("%s: expected interval value TLV, instead got %s",
+                      __FUNCTION__, of_class_name(&tlv));
+        return INDIGO_ERROR_PARAM;
     }
 
     if (of_list_bsn_tlv_next(tlvs, &tlv) == 0) {
@@ -171,7 +155,6 @@ timeout_add(void *table_priv,
             void **entry_priv)
 {
     indigo_error_t rv;
-    timeout_t timeout_type;
     timeout_key_t key;
     timeout_value_t value;
     timeout_entry_t *entry;
@@ -183,16 +166,7 @@ timeout_add(void *table_priv,
         return rv;
     }
 
-    if (strstr(key.name, "_expect") != NULL) {
-        timeout_type = TIMEOUT_IDLE;
-    } else if (strstr(key.name, "_tx") != NULL) {
-        timeout_type = TIMEOUT_INTERVAL;
-    } else {
-        AIM_LOG_ERROR("unknown timeout type for %s", key.name);
-        return INDIGO_ERROR_PARAM;
-    }
-
-    rv = timeout_parse_value(timeout_type, value_tlvs, &value);
+    rv = timeout_parse_value(value_tlvs, &value);
     if (rv < 0) {
         debug_counter_inc(&timeout_add_failure);
         return rv;
@@ -201,7 +175,6 @@ timeout_add(void *table_priv,
     entry = aim_zmalloc(sizeof(*entry));
     entry->key = key;
     entry->value = value;
-    entry->timeout_type = timeout_type;
 
     update_timeout(key.name, entry->value.timeout);
 
@@ -221,7 +194,7 @@ timeout_modify(void *table_priv,
     timeout_value_t value;
     timeout_entry_t *entry = entry_priv;
 
-    rv = timeout_parse_value(entry->timeout_type, value_tlvs, &value);
+    rv = timeout_parse_value(value_tlvs, &value);
     if (rv < 0) {
         debug_counter_inc(&timeout_modify_failure);
         return rv;
