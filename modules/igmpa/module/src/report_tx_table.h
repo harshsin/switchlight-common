@@ -34,9 +34,9 @@ typedef struct report_tx_entry_s {
 } report_tx_entry_t;
 
 
-void report_tx_stats_show(aim_pvs_t *pvs);
-void report_tx_table_init(void);
-void report_tx_table_finish(void);
+void igmpa_report_tx_stats_show(aim_pvs_t *pvs);
+void igmpa_report_tx_table_init(void);
+void igmpa_report_tx_table_finish(void);
 
 
 #endif /* __REPORT_TX_TABLE_H__ */

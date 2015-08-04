@@ -29,12 +29,12 @@ typedef struct gq_expect_entry_s {
 } gq_expect_entry_t;
 
 
-gq_expect_entry_t *gq_expect_lookup(char name[], uint16_t vlan_vid);
-void gq_expect_reschedule(gq_expect_entry_t *gq_expect_entry,
-                          uint64_t new_deadline);
-void gq_expect_stats_show(aim_pvs_t *pvs);
-void gq_expect_table_init(void);
-void gq_expect_table_finish(void);
+gq_expect_entry_t *igmpa_gq_expect_lookup(char name[], uint16_t vlan_vid);
+void igmpa_gq_expect_reschedule(gq_expect_entry_t *gq_expect_entry,
+                                uint64_t new_deadline);
+void igmpa_gq_expect_stats_show(aim_pvs_t *pvs);
+void igmpa_gq_expect_table_init(void);
+void igmpa_gq_expect_table_finish(void);
 
 
 #endif /* __GQ_EXPECT_TABLE_H__ */

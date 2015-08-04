@@ -35,7 +35,7 @@ static bighash_table_t *ht_report_expect;
 #include <BigHash/bighash_template.h>
 
 /* timer wheel for sending report idle notifications */
-timer_wheel_t *tw_report_expect;
+static timer_wheel_t *tw_report_expect;
 
 
 /* debug counters */
@@ -117,12 +117,12 @@ report_expect_timer(void *cookie)
         report_expect_send_idle_notif(entry);
         notifs++;
         timer_wheel_insert(tw_report_expect, &entry->timer_entry,
-                           now + report_expect_timeout);
+                           now + igmpa_report_expect_timeout);
         debug_counter_inc(&report_idle_notif);
     }
 
     /* reregister sooner if more expired entries */
-    if ((timer = timer_wheel_peek(tw_report_expect, now))) {
+    if (timer_wheel_peek(tw_report_expect, now)) {
         ind_soc_timer_event_register(report_expect_timer, NULL, 100);
     } else {
         ind_soc_timer_event_register(report_expect_timer, NULL, 1000);
@@ -130,8 +130,9 @@ report_expect_timer(void *cookie)
 }
 
 
-void report_expect_reschedule(report_expect_entry_t *report_expect_entry,
-                              uint64_t new_deadline)
+void
+igmpa_report_expect_reschedule(report_expect_entry_t *report_expect_entry,
+                               uint64_t new_deadline)
 {
     timer_wheel_remove(tw_report_expect, &report_expect_entry->timer_entry);
     timer_wheel_insert(tw_report_expect, &report_expect_entry->timer_entry,
@@ -154,7 +155,7 @@ report_expect_parse_key(of_list_bsn_tlv_t *tlvs, report_expect_key_t *key)
     }
 
     if (tlv.object_id == OF_BSN_TLV_NAME) {
-        indigo_error_t rv = parse_name_tlv(&tlv, key->name);
+        indigo_error_t rv = igmpa_parse_name_tlv(&tlv, key->name);
         if (rv != INDIGO_ERROR_NONE) {
             return rv;
         }
@@ -248,7 +249,7 @@ report_expect_add(void *table_priv,
     report_expect_hashtable_insert(ht_report_expect, entry);
 
     timer_wheel_insert(tw_report_expect, &entry->timer_entry, 
-                       INDIGO_CURRENT_TIME + report_expect_timeout);
+                       INDIGO_CURRENT_TIME + igmpa_report_expect_timeout);
 
     *entry_priv = entry;
     debug_counter_inc(&report_expect_add_success);
@@ -328,7 +329,7 @@ static const indigo_core_gentable_ops_t report_expect_ops = {
 
 
 report_expect_entry_t *
-report_expect_lookup(char name[], uint16_t vlan_vid, uint32_t ipv4)
+igmpa_report_expect_lookup(char name[], uint16_t vlan_vid, uint32_t ipv4)
 {
     report_expect_key_t key;
     memset(&key, 0, sizeof(key));
@@ -340,7 +341,7 @@ report_expect_lookup(char name[], uint16_t vlan_vid, uint32_t ipv4)
 
 
 void
-report_expect_stats_show(aim_pvs_t *pvs)
+igmpa_report_expect_stats_show(aim_pvs_t *pvs)
 {
     aim_printf(pvs, "report_expect_add  %"PRIu64"\n",
                debug_counter_get(&report_expect_add_success));
@@ -358,7 +359,7 @@ report_expect_stats_show(aim_pvs_t *pvs)
 
 
 void
-report_expect_table_init(void)
+igmpa_report_expect_table_init(void)
 {
     indigo_error_t rv;
 
@@ -396,7 +397,7 @@ report_expect_table_init(void)
 }
 
 void
-report_expect_table_finish(void)
+igmpa_report_expect_table_finish(void)
 {
     indigo_core_gentable_unregister(report_expect_gentable);
     ind_soc_timer_event_unregister(report_expect_timer, NULL);

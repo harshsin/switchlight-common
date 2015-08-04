@@ -30,12 +30,12 @@ typedef struct report_expect_entry_s {
 
 
 report_expect_entry_t *
-report_expect_lookup(char name[], uint16_t vlan_vid, uint32_t ipv4);
-void report_expect_reschedule(report_expect_entry_t *report_expect_entry,
-                              uint64_t new_deadline);
-void report_expect_stats_show(aim_pvs_t *pvs);
-void report_expect_table_init(void);
-void report_expect_table_finish(void);
+igmpa_report_expect_lookup(char name[], uint16_t vlan_vid, uint32_t ipv4);
+void igmpa_report_expect_reschedule(report_expect_entry_t *report_expect_entry,
+                                    uint64_t new_deadline);
+void igmpa_report_expect_stats_show(aim_pvs_t *pvs);
+void igmpa_report_expect_table_init(void);
+void igmpa_report_expect_table_finish(void);
 
 
 #endif /* __REPORT_EXPECT_TABLE_H__ */

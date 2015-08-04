@@ -35,7 +35,7 @@ static bighash_table_t *ht_gq_expect;
 #include <BigHash/bighash_template.h>
 
 /* timer wheel for sending general query idle notifications */
-timer_wheel_t *tw_gq_expect;
+static timer_wheel_t *tw_gq_expect;
 
 
 /* debug counters */
@@ -112,12 +112,12 @@ gq_expect_timer(void *cookie)
         gq_expect_send_idle_notif(entry);
         notifs++;
         timer_wheel_insert(tw_gq_expect, &entry->timer_entry,
-                           now + gq_expect_timeout);
+                           now + igmpa_gq_expect_timeout);
         debug_counter_inc(&gq_idle_notif);
     }
 
     /* reregister sooner if more expired entries */
-    if ((timer = timer_wheel_peek(tw_gq_expect, now))) {
+    if (timer_wheel_peek(tw_gq_expect, now)) {
         ind_soc_timer_event_register(gq_expect_timer, NULL, 100);
     } else {
         ind_soc_timer_event_register(gq_expect_timer, NULL, 1000);
@@ -125,8 +125,8 @@ gq_expect_timer(void *cookie)
 }
 
 
-void gq_expect_reschedule(gq_expect_entry_t *gq_expect_entry,
-                          uint64_t new_deadline)
+void igmpa_gq_expect_reschedule(gq_expect_entry_t *gq_expect_entry,
+                                uint64_t new_deadline)
 {
     timer_wheel_remove(tw_gq_expect, &gq_expect_entry->timer_entry);
     timer_wheel_insert(tw_gq_expect, &gq_expect_entry->timer_entry,
@@ -149,7 +149,7 @@ gq_expect_parse_key(of_list_bsn_tlv_t *tlvs, gq_expect_key_t *key)
     }
 
     if (tlv.object_id == OF_BSN_TLV_NAME) {
-        indigo_error_t rv = parse_name_tlv(&tlv, key->name);
+        indigo_error_t rv = igmpa_parse_name_tlv(&tlv, key->name);
         if (rv != INDIGO_ERROR_NONE) {
             return rv;
         }
@@ -225,7 +225,7 @@ gq_expect_add(void *table_priv,
     gq_expect_hashtable_insert(ht_gq_expect, entry);
 
     timer_wheel_insert(tw_gq_expect, &entry->timer_entry, 
-                       INDIGO_CURRENT_TIME + gq_expect_timeout);
+                       INDIGO_CURRENT_TIME + igmpa_gq_expect_timeout);
 
     *entry_priv = entry;
     debug_counter_inc(&gq_expect_add_success);
@@ -305,7 +305,7 @@ static const indigo_core_gentable_ops_t gq_expect_ops = {
 
 
 gq_expect_entry_t *
-gq_expect_lookup(char name[], uint16_t vlan_vid)
+igmpa_gq_expect_lookup(char name[], uint16_t vlan_vid)
 {
     gq_expect_key_t key;
     memset(&key, 0, sizeof(key));
@@ -316,7 +316,7 @@ gq_expect_lookup(char name[], uint16_t vlan_vid)
 
 
 void
-gq_expect_stats_show(aim_pvs_t *pvs)
+igmpa_gq_expect_stats_show(aim_pvs_t *pvs)
 {
     aim_printf(pvs, "gq_expect_add  %"PRIu64"\n",
                debug_counter_get(&gq_expect_add_success));
@@ -334,7 +334,7 @@ gq_expect_stats_show(aim_pvs_t *pvs)
 
 
 void
-gq_expect_table_init(void)
+igmpa_gq_expect_table_init(void)
 {
     indigo_error_t rv;
 
@@ -372,7 +372,7 @@ gq_expect_table_init(void)
 }
 
 void
-gq_expect_table_finish(void)
+igmpa_gq_expect_table_finish(void)
 {
     indigo_core_gentable_unregister(gq_expect_gentable);
     ind_soc_timer_event_unregister(gq_expect_timer, NULL);

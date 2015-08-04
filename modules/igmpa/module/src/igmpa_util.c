@@ -12,7 +12,7 @@
 
 
 indigo_error_t 
-parse_name_tlv(of_object_t *tlv, char *dst_name)
+igmpa_parse_name_tlv(of_object_t *tlv, char *dst_name)
 {
     of_octets_t name;
     of_bsn_tlv_name_value_get(tlv, &name);
@@ -41,7 +41,7 @@ parse_name_tlv(of_object_t *tlv, char *dst_name)
  * stolen from ppe_util.c 
  */
 uint16_t
-sum16(uint8_t* data, int len)
+igmpa_sum16(uint8_t* data, int len)
 {
     uint32_t sum = 0;
     uint16_t* sdata = (uint16_t*)data;

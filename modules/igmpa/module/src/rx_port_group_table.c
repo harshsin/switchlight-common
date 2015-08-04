@@ -85,7 +85,7 @@ rx_port_group_parse_value(of_list_bsn_tlv_t *tlvs,
     }
 
     if (tlv.object_id == OF_BSN_TLV_NAME) {
-        indigo_error_t rv = parse_name_tlv(&tlv, value->name);
+        indigo_error_t rv = igmpa_parse_name_tlv(&tlv, value->name);
         if (rv != INDIGO_ERROR_NONE) {
             return rv;
         }
@@ -195,7 +195,7 @@ static const indigo_core_gentable_ops_t rx_port_group_ops = {
 
 
 rx_port_group_entry_t *
-rx_port_group_lookup(of_port_no_t port_no)
+igmpa_rx_port_group_lookup(of_port_no_t port_no)
 {
     rx_port_group_key_t key = { .port_no = port_no };
     return rx_port_group_hashtable_first(ht_rx_port_group, &key);
@@ -203,7 +203,7 @@ rx_port_group_lookup(of_port_no_t port_no)
 
 
 void
-rx_port_group_stats_show(aim_pvs_t *pvs)
+igmpa_rx_port_group_stats_show(aim_pvs_t *pvs)
 {
     aim_printf(pvs, "rx_port_group_add  %"PRIu64"\n",
                debug_counter_get(&rx_port_group_add_success));
@@ -219,7 +219,7 @@ rx_port_group_stats_show(aim_pvs_t *pvs)
 
 
 void
-rx_port_group_table_init(void)
+igmpa_rx_port_group_table_init(void)
 {
     ht_rx_port_group = bighash_table_create(1024);
     indigo_core_gentable_register("igmp_rx_port_group",
@@ -244,7 +244,7 @@ rx_port_group_table_init(void)
 }
 
 void
-rx_port_group_table_finish(void)
+igmpa_rx_port_group_table_finish(void)
 {
     indigo_core_gentable_unregister(rx_port_group_gentable);
     bighash_table_destroy(ht_rx_port_group, NULL);

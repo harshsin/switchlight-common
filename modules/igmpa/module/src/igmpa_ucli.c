@@ -11,6 +11,7 @@
 #include <uCli/ucli_argparse.h>
 #include <uCli/ucli_handler_macros.h>
 
+#include <indigo/indigo.h>
 #include "igmpa_int.h"
 
 

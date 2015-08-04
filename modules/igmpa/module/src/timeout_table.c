@@ -33,10 +33,10 @@ static debug_counter_t timeout_delete_success;
 #define GQ_TX_TIMEOUT_DEFAULT (125*1000)
 #define REPORT_TX_TIMEOUT_DEFAULT (125*1000)
 
-uint32_t gq_expect_timeout = GQ_EXPECT_TIMEOUT_DEFAULT;
-uint32_t report_expect_timeout = REPORT_EXPECT_TIMEOUT_DEFAULT;
-uint32_t gq_tx_timeout = GQ_TX_TIMEOUT_DEFAULT;
-uint32_t report_tx_timeout = REPORT_TX_TIMEOUT_DEFAULT;
+uint32_t igmpa_gq_expect_timeout = GQ_EXPECT_TIMEOUT_DEFAULT;
+uint32_t igmpa_report_expect_timeout = REPORT_EXPECT_TIMEOUT_DEFAULT;
+uint32_t igmpa_gq_tx_timeout = GQ_TX_TIMEOUT_DEFAULT;
+uint32_t igmpa_report_tx_timeout = REPORT_TX_TIMEOUT_DEFAULT;
 
 
 
@@ -65,16 +65,16 @@ static void
 update_timeout(char *name, uint32_t timeout_val)
 {
     if (!strncmp(name, "general_query_expectation", IGMP_NAME_LEN)) {
-        gq_expect_timeout = timeout_val? timeout_val : 
+        igmpa_gq_expect_timeout = timeout_val? timeout_val : 
             GQ_EXPECT_TIMEOUT_DEFAULT;
     } else if (!strncmp(name, "report_expectation", IGMP_NAME_LEN)) {
-        report_expect_timeout = timeout_val? timeout_val : 
+        igmpa_report_expect_timeout = timeout_val? timeout_val : 
             REPORT_EXPECT_TIMEOUT_DEFAULT;
     } else if (!strncmp(name, "general_query_tx", IGMP_NAME_LEN)) {
-        gq_tx_timeout = timeout_val? timeout_val : 
+        igmpa_gq_tx_timeout = timeout_val? timeout_val : 
             GQ_TX_TIMEOUT_DEFAULT;
     } else if (!strncmp(name, "report_tx", IGMP_NAME_LEN)) {
-        report_tx_timeout = timeout_val? timeout_val : 
+        igmpa_report_tx_timeout = timeout_val? timeout_val : 
             REPORT_TX_TIMEOUT_DEFAULT;
     } else {
         AIM_DIE("unhandled timeout %s", name);
@@ -94,7 +94,7 @@ timeout_parse_key(of_list_bsn_tlv_t *tlvs, timeout_key_t *key)
 
     if (tlv.object_id == OF_BSN_TLV_NAME) {
         indigo_error_t rv;
-        rv = parse_name_tlv(&tlv, key->name);
+        rv = igmpa_parse_name_tlv(&tlv, key->name);
         if (rv != INDIGO_ERROR_NONE) {
             return rv;
         }
@@ -270,7 +270,7 @@ static const indigo_core_gentable_ops_t timeout_ops = {
 
 
 void
-timeout_stats_show(aim_pvs_t *pvs)
+igmpa_timeout_stats_show(aim_pvs_t *pvs)
 {
     aim_printf(pvs, "timeout_add  %"PRIu64"\n",
                debug_counter_get(&timeout_add_success));
@@ -286,7 +286,7 @@ timeout_stats_show(aim_pvs_t *pvs)
 
 
 void
-timeout_table_init(void)
+igmpa_timeout_table_init(void)
 {
     indigo_core_gentable_register("igmp_timeout",
                                   &timeout_ops, NULL,
@@ -310,7 +310,7 @@ timeout_table_init(void)
 }
 
 void
-timeout_table_finish(void)
+igmpa_timeout_table_finish(void)
 {
     indigo_core_gentable_unregister(timeout_gentable);
 }

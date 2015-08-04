@@ -33,15 +33,15 @@ typedef struct timeout_entry_s {
 } timeout_entry_t;
 
 
-extern uint32_t gq_expect_timeout;
-extern uint32_t report_expect_timeout;
-extern uint32_t gq_tx_timeout;
-extern uint32_t report_tx_timeout;
+extern uint32_t igmpa_gq_expect_timeout;
+extern uint32_t igmpa_report_expect_timeout;
+extern uint32_t igmpa_gq_tx_timeout;
+extern uint32_t igmpa_report_tx_timeout;
 
 
-void timeout_stats_show(aim_pvs_t *pvs);
-void timeout_table_init(void);
-void timeout_table_finish(void);
+void igmpa_timeout_stats_show(aim_pvs_t *pvs);
+void igmpa_timeout_table_init(void);
+void igmpa_timeout_table_finish(void);
 
 
 #endif /* __TIMEOUT_TABLE_H__ */

@@ -27,10 +27,10 @@ typedef struct rx_port_group_entry_s {
 } rx_port_group_entry_t;
 
 
-rx_port_group_entry_t *rx_port_group_lookup(of_port_no_t port_no);
-void rx_port_group_stats_show(aim_pvs_t *pvs);
-void rx_port_group_table_init(void);
-void rx_port_group_table_finish(void);
+rx_port_group_entry_t *igmpa_rx_port_group_lookup(of_port_no_t port_no);
+void igmpa_rx_port_group_stats_show(aim_pvs_t *pvs);
+void igmpa_rx_port_group_table_init(void);
+void igmpa_rx_port_group_table_finish(void);
 
 
 #endif /* __RX_PORT_GROUP_TABLE_H__ */

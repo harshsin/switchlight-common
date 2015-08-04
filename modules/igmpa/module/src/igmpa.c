@@ -67,13 +67,13 @@ handle_general_query(ppe_packet_t *ppep,
     gq_expect_entry_t *gq_entry;
 
     /* get rx port group name */
-    rpg_entry = rx_port_group_lookup(port_no);
+    rpg_entry = igmpa_rx_port_group_lookup(port_no);
     if (rpg_entry == NULL) {
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
     /* get general query expectation */
-    gq_entry = gq_expect_lookup(rpg_entry->value.name, vlan_vid);
+    gq_entry = igmpa_gq_expect_lookup(rpg_entry->value.name, vlan_vid);
     if (gq_entry) {
         uint64_t now = INDIGO_CURRENT_TIME;
         /* expected packet: reset timer, do not send to controller */
@@ -81,7 +81,7 @@ handle_general_query(ppe_packet_t *ppep,
         gq_entry->rx_packets++;
         /* reschedule timer */
         AIM_LOG_INFO("reschedule gq timer");
-        gq_expect_reschedule(gq_entry, now + gq_expect_timeout);
+        igmpa_gq_expect_reschedule(gq_entry, now + igmpa_gq_expect_timeout);
         return INDIGO_CORE_LISTENER_RESULT_DROP;
     } else {
         /* not found, send to controller */
@@ -100,13 +100,14 @@ handle_report(ppe_packet_t *ppep,
     ppe_field_get(ppep, PPE_FIELD_IGMP_GROUP_ADDRESS, &ipv4);
 
     /* get rx port group name */
-    rpg_entry = rx_port_group_lookup(port_no);
+    rpg_entry = igmpa_rx_port_group_lookup(port_no);
     if (rpg_entry == NULL) {
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
     /* get report expectation */
-    report_entry = report_expect_lookup(rpg_entry->value.name, vlan_vid, ipv4);
+    report_entry = igmpa_report_expect_lookup(rpg_entry->value.name,
+                                              vlan_vid, ipv4);
     if (report_entry) {
         uint64_t now = INDIGO_CURRENT_TIME;
         /* expected packet: reset timer, do not send to controller */
@@ -114,7 +115,8 @@ handle_report(ppe_packet_t *ppep,
         report_entry->rx_packets++;
         /* reschedule timer */
         AIM_LOG_INFO("reschedule report timer");
-        report_expect_reschedule(report_entry, now + report_expect_timeout);
+        igmpa_report_expect_reschedule(report_entry,
+                                       now + igmpa_report_expect_timeout);
         return INDIGO_CORE_LISTENER_RESULT_DROP;
     } else {
         /* not found, send to controller */
@@ -125,7 +127,7 @@ handle_report(ppe_packet_t *ppep,
 }
 
 /* top-level packet_in handler */
-indigo_core_listener_result_t
+static indigo_core_listener_result_t
 handle_pktin(of_packet_in_t *packet_in)
 {
     indigo_core_listener_result_t rc;
@@ -198,7 +200,7 @@ handle_pktin(of_packet_in_t *packet_in)
 
     /* checksum entire payload */
     payload = ppe_header_get(&ppep, PPE_HEADER_IGMP);
-    checksum = sum16(payload, l4_len);
+    checksum = igmpa_sum16(payload, l4_len);
     if (checksum != 0xffff) {
         AIM_LOG_RL_ERROR(&igmpa_pktin_log_limiter, os_time_monotonic(),
                          "Packet_in parsing failed: bad checksum");
@@ -261,13 +263,13 @@ igmpa_stats_show(aim_pvs_t *pvs)
     aim_printf(pvs, "unknown_rx  %"PRIu64"\n",
                debug_counter_get(&unknown_rx_count));
 
-    timeout_stats_show(pvs);
-    rx_port_group_stats_show(pvs);
-    tx_port_group_stats_show(pvs);
-    report_expect_stats_show(pvs);
-    report_tx_stats_show(pvs);
-    gq_expect_stats_show(pvs);
-    gq_tx_stats_show(pvs);
+    igmpa_timeout_stats_show(pvs);
+    igmpa_rx_port_group_stats_show(pvs);
+    igmpa_tx_port_group_stats_show(pvs);
+    igmpa_report_expect_stats_show(pvs);
+    igmpa_report_tx_stats_show(pvs);
+    igmpa_gq_expect_stats_show(pvs);
+    igmpa_gq_tx_stats_show(pvs);
 }
 
 
@@ -276,13 +278,13 @@ igmpa_init(void)
 {
     aim_ratelimiter_init(&igmpa_pktin_log_limiter, 1000*1000, 5, NULL);
 
-    timeout_table_init();
-    rx_port_group_table_init();
-    tx_port_group_table_init();
-    report_expect_table_init();
-    report_tx_table_init();
-    gq_expect_table_init();
-    gq_tx_table_init();
+    igmpa_timeout_table_init();
+    igmpa_rx_port_group_table_init();
+    igmpa_tx_port_group_table_init();
+    igmpa_report_expect_table_init();
+    igmpa_report_tx_table_init();
+    igmpa_gq_expect_table_init();
+    igmpa_gq_tx_table_init();
 
     indigo_core_packet_in_listener_register(handle_pktin);
 
@@ -313,12 +315,12 @@ igmpa_finish(void)
 {
     indigo_core_packet_in_listener_unregister(handle_pktin);
 
-    gq_tx_table_finish();
-    gq_expect_table_finish();
-    report_tx_table_finish();
-    report_expect_table_finish();
-    tx_port_group_table_finish();
-    rx_port_group_table_finish();
-    timeout_table_finish();
+    igmpa_gq_tx_table_finish();
+    igmpa_gq_expect_table_finish();
+    igmpa_report_tx_table_finish();
+    igmpa_report_expect_table_finish();
+    igmpa_tx_port_group_table_finish();
+    igmpa_rx_port_group_table_finish();
+    igmpa_timeout_table_finish();
 }
 

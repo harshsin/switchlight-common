@@ -27,7 +27,7 @@
 
 
 /* timer wheel for sending reports to mrouters */
-timer_wheel_t *tw_report_tx;
+static timer_wheel_t *tw_report_tx;
 
 
 /* debug counters */
@@ -104,7 +104,8 @@ report_tx_send_packet(report_tx_entry_t *entry)
     }
 
     /* compute and set IGMP checksum */
-    igmp_checksum = sum16(ppe_header_get(&ppep, PPE_HEADER_IGMP), igmp_len);
+    igmp_checksum = igmpa_sum16(ppe_header_get(&ppep, PPE_HEADER_IGMP),
+                                igmp_len);
     if (ppe_field_set(&ppep, PPE_FIELD_IGMP_CHECKSUM, 
                       (0xffff - igmp_checksum)) < 0) {
         AIM_DIE("failed to set PPE_FIELD_IGMP_CHECKSUM");
@@ -152,11 +153,11 @@ report_tx_timer(void *cookie)
         report_tx_send_packet(entry);
         reports++;
         timer_wheel_insert(tw_report_tx, &entry->timer_entry,
-                           now + report_tx_timeout);
+                           now + igmpa_report_tx_timeout);
     }
 
     /* reregister sooner if more expired entries */
-    if ((timer = timer_wheel_peek(tw_report_tx, now))) {
+    if (timer_wheel_peek(tw_report_tx, now)) {
         ind_soc_timer_event_register(report_tx_timer, NULL, 100);
     } else {
         ind_soc_timer_event_register(report_tx_timer, NULL, 1000);
@@ -185,7 +186,7 @@ report_tx_parse_key(of_list_bsn_tlv_t *tlvs, report_tx_key_t *key)
         of_bsn_tlv_reference_table_id_get(&tlv, &table_id);
         of_bsn_tlv_reference_key_bind(&tlv, &refkey);
 
-        key->port_no = tx_port_group_lookup(table_id, &refkey);
+        key->port_no = igmpa_tx_port_group_lookup(table_id, &refkey);
         if (key->port_no == OF_PORT_DEST_NONE) {
             AIM_LOG_ERROR("%s: could not find tx port group",
                           __FUNCTION__);
@@ -330,7 +331,7 @@ report_tx_add(void *table_priv,
 
     report_tx_send_packet(entry);
     timer_wheel_insert(tw_report_tx, &entry->timer_entry, 
-                       INDIGO_CURRENT_TIME + report_tx_timeout);
+                       INDIGO_CURRENT_TIME + igmpa_report_tx_timeout);
 
     *entry_priv = entry;
     debug_counter_inc(&report_tx_add_success);
@@ -359,7 +360,7 @@ report_tx_modify(void *table_priv,
     timer_wheel_remove(tw_report_tx, &entry->timer_entry);
     report_tx_send_packet(entry);
     timer_wheel_insert(tw_report_tx, &entry->timer_entry, 
-                       INDIGO_CURRENT_TIME + report_tx_timeout);
+                       INDIGO_CURRENT_TIME + igmpa_report_tx_timeout);
 
     debug_counter_inc(&report_tx_modify_success);
 
@@ -416,7 +417,7 @@ static const indigo_core_gentable_ops_t report_tx_ops = {
 
 
 void
-report_tx_stats_show(aim_pvs_t *pvs)
+igmpa_report_tx_stats_show(aim_pvs_t *pvs)
 {
     aim_printf(pvs, "report_tx_add  %"PRIu64"\n",
                debug_counter_get(&report_tx_add_success));
@@ -436,7 +437,7 @@ report_tx_stats_show(aim_pvs_t *pvs)
 
 
 void
-report_tx_table_init(void)
+igmpa_report_tx_table_init(void)
 {
     indigo_error_t rv;
 
@@ -474,7 +475,7 @@ report_tx_table_init(void)
 }
 
 void
-report_tx_table_finish(void)
+igmpa_report_tx_table_finish(void)
 {
     indigo_core_gentable_unregister(report_tx_gentable);
 

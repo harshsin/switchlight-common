@@ -27,7 +27,7 @@
 
 
 /* timer wheel for sending general queries to hosts */
-timer_wheel_t *tw_gq_tx;
+static timer_wheel_t *tw_gq_tx;
 
 
 /* debug counters */
@@ -96,7 +96,8 @@ gq_tx_send_packet(gq_tx_entry_t *entry)
     }
 
     /* compute and set IGMP checksum */
-    igmp_checksum = sum16(ppe_header_get(&ppep, PPE_HEADER_IGMP), igmp_len);
+    igmp_checksum = igmpa_sum16(ppe_header_get(&ppep, PPE_HEADER_IGMP),
+                                igmp_len);
     if (ppe_field_set(&ppep, PPE_FIELD_IGMP_CHECKSUM, 
                       (0xffff - igmp_checksum)) < 0) {
         AIM_DIE("failed to set PPE_FIELD_IGMP_CHECKSUM");
@@ -143,11 +144,11 @@ gq_tx_timer(void *cookie)
         gq_tx_send_packet(entry);
         gqs++;
         timer_wheel_insert(tw_gq_tx, &entry->timer_entry,
-                           now + gq_tx_timeout);
+                           now + igmpa_gq_tx_timeout);
     }
 
     /* reregister sooner if more expired entries */
-    if ((timer = timer_wheel_peek(tw_gq_tx, now))) {
+    if (timer_wheel_peek(tw_gq_tx, now)) {
         ind_soc_timer_event_register(gq_tx_timer, NULL, 100);
     } else {
         ind_soc_timer_event_register(gq_tx_timer, NULL, 1000);
@@ -176,7 +177,7 @@ gq_tx_parse_key(of_list_bsn_tlv_t *tlvs, gq_tx_key_t *key)
         of_bsn_tlv_reference_table_id_get(&tlv, &table_id);
         of_bsn_tlv_reference_key_bind(&tlv, &refkey);
 
-        key->port_no = tx_port_group_lookup(table_id, &refkey);
+        key->port_no = igmpa_tx_port_group_lookup(table_id, &refkey);
         if (key->port_no == OF_PORT_DEST_NONE) {
             AIM_LOG_ERROR("%s: could not find tx port group",
                           __FUNCTION__);
@@ -303,7 +304,7 @@ gq_tx_add(void *table_priv,
 
     gq_tx_send_packet(entry);
     timer_wheel_insert(tw_gq_tx, &entry->timer_entry, 
-                       INDIGO_CURRENT_TIME + gq_tx_timeout);
+                       INDIGO_CURRENT_TIME + igmpa_gq_tx_timeout);
 
     *entry_priv = entry;
     debug_counter_inc(&gq_tx_add_success);
@@ -332,7 +333,7 @@ gq_tx_modify(void *table_priv,
     timer_wheel_remove(tw_gq_tx, &entry->timer_entry);
     gq_tx_send_packet(entry);
     timer_wheel_insert(tw_gq_tx, &entry->timer_entry, 
-                       INDIGO_CURRENT_TIME + gq_tx_timeout);
+                       INDIGO_CURRENT_TIME + igmpa_gq_tx_timeout);
 
     debug_counter_inc(&gq_tx_modify_success);
 
@@ -389,7 +390,7 @@ static const indigo_core_gentable_ops_t gq_tx_ops = {
 
 
 void
-gq_tx_stats_show(aim_pvs_t *pvs)
+igmpa_gq_tx_stats_show(aim_pvs_t *pvs)
 {
     aim_printf(pvs, "gq_tx_add  %"PRIu64"\n",
                debug_counter_get(&gq_tx_add_success));
@@ -409,7 +410,7 @@ gq_tx_stats_show(aim_pvs_t *pvs)
 
 
 void
-gq_tx_table_init(void)
+igmpa_gq_tx_table_init(void)
 {
     indigo_error_t rv;
 
@@ -447,7 +448,7 @@ gq_tx_table_init(void)
 }
 
 void
-gq_tx_table_finish(void)
+igmpa_gq_tx_table_finish(void)
 {
     indigo_core_gentable_unregister(gq_tx_gentable);
 
