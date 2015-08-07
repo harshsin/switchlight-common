@@ -30,7 +30,7 @@ igmpa_parse_name_tlv(of_object_t *tlv, char *dst_name)
         return INDIGO_ERROR_PARAM;
     }
 
-    memcpy(dst_name, name.data, name.bytes);
+    IGMPA_MEMCPY(dst_name, name.data, name.bytes);
     dst_name[name.bytes] = 0;
     return INDIGO_ERROR_NONE;
 }

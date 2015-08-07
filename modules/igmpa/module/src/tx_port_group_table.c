@@ -21,7 +21,7 @@
 #include "tx_port_group_table.h"
 
 
-/* hash table supporting lookup by reference */
+/* hash table supporting lookup by name */
 static bighash_table_t *ht_tx_port_group;
 
 #define TEMPLATE_NAME tx_port_group_hashtable
@@ -116,7 +116,7 @@ tx_port_group_add(void *table_priv,
     tx_port_group_value_t value;
     tx_port_group_entry_t *entry;
 
-    memset(key.name, 0, sizeof(key.name));
+    IGMPA_MEMSET(key.name, 0, sizeof(key.name));
     rv = tx_port_group_parse_key(key_tlvs, &key);
     if (rv < 0) {
         debug_counter_inc(&tx_port_group_add_failure);
@@ -194,8 +194,8 @@ static const indigo_core_gentable_ops_t tx_port_group_ops = {
 };
 
 
-of_port_no_t
-igmpa_tx_port_group_lookup(uint16_t table_id, of_object_t *key)
+tx_port_group_entry_t *
+igmpa_tx_port_group_lookup_by_ref(uint16_t table_id, of_object_t *key)
 {
     tx_port_group_entry_t *entry;
 
@@ -203,16 +203,20 @@ igmpa_tx_port_group_lookup(uint16_t table_id, of_object_t *key)
         AIM_LOG_ERROR("table id %d does not match tx port group gentable %d",
                       table_id,
                       indigo_core_gentable_id(tx_port_group_gentable));
-        return OF_PORT_DEST_NONE;
+        return NULL;
     }
 
     entry = indigo_core_gentable_lookup(tx_port_group_gentable, key);
-    if (entry) {
-        return entry->value.port_no;
-    } else {
-        AIM_LOG_ERROR("tx port group lookup failed");
-        return OF_PORT_DEST_NONE;
-    }
+    return entry;
+}
+
+
+tx_port_group_entry_t *
+igmpa_tx_port_group_lookup_by_name(char *name)
+{
+    tx_port_group_key_t key;
+    IGMPA_MEMCPY(key.name, name, IGMP_NAME_LEN);
+    return tx_port_group_hashtable_first(ht_tx_port_group, &key);
 }
 
 

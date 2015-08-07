@@ -121,7 +121,7 @@ rx_port_group_add(void *table_priv,
         return rv;
     }
 
-    memset(value.name, 0, sizeof(value.name));
+    IGMPA_MEMSET(value.name, 0, sizeof(value.name));
     rv = rx_port_group_parse_value(value_tlvs, &value);
     if (rv < 0) {
         debug_counter_inc(&rx_port_group_add_failure);
@@ -149,7 +149,7 @@ rx_port_group_modify(void *table_priv,
     rx_port_group_value_t value;
     rx_port_group_entry_t *entry = entry_priv;
 
-    memset(value.name, 0, sizeof(value.name));
+    IGMPA_MEMSET(value.name, 0, sizeof(value.name));
     rv = rx_port_group_parse_value(value_tlvs, &value);
     if (rv < 0) {
         debug_counter_inc(&rx_port_group_modify_failure);

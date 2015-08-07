@@ -27,7 +27,10 @@ typedef struct tx_port_group_entry_s {
 } tx_port_group_entry_t;
 
 
-of_port_no_t igmpa_tx_port_group_lookup(uint16_t table_id, of_object_t *key);
+tx_port_group_entry_t *
+igmpa_tx_port_group_lookup_by_ref(uint16_t table_id, of_object_t *key);
+tx_port_group_entry_t *
+igmpa_tx_port_group_lookup_by_name(char *name);
 void igmpa_tx_port_group_stats_show(aim_pvs_t *pvs);
 void igmpa_tx_port_group_table_init(void);
 void igmpa_tx_port_group_table_finish(void);

@@ -231,7 +231,7 @@ report_expect_add(void *table_priv,
     report_expect_key_t key;
     report_expect_entry_t *entry;
 
-    memset(&key, 0, sizeof(key));
+    IGMPA_MEMSET(&key, 0, sizeof(key));
     rv = report_expect_parse_key(key_tlvs, &key);
     if (rv < 0) {
         debug_counter_inc(&report_expect_add_failure);
@@ -332,8 +332,8 @@ report_expect_entry_t *
 igmpa_report_expect_lookup(char name[], uint16_t vlan_vid, uint32_t ipv4)
 {
     report_expect_key_t key;
-    memset(&key, 0, sizeof(key));
-    memcpy(key.name, name, sizeof(key.name));
+    IGMPA_MEMSET(&key, 0, sizeof(key));
+    IGMPA_MEMCPY(key.name, name, sizeof(key.name));
     key.vlan_vid = vlan_vid;
     key.ipv4 = ipv4;
     return report_expect_hashtable_first(ht_report_expect, &key);

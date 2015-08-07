@@ -52,10 +52,11 @@ report_tx_send_packet(report_tx_entry_t *entry)
     uint32_t igmp_checksum;
 
     /* FIXME send v1 or v2 report? */
-    AIM_LOG_INFO("send report, port %u, vlan_vid %u, ipv4 %{ipv4a}",
-                 entry->key.port_no, entry->key.vlan_vid, entry->key.ipv4);
+    AIM_LOG_INFO("send report, port group %s, vlan_vid %u, ipv4 %{ipv4a}",
+                 entry->key.tx_port_group_name, entry->key.vlan_vid,
+                 entry->key.ipv4);
 
-    memset(pkt_bytes, 0, sizeof(pkt_bytes));
+    IGMPA_MEMSET(pkt_bytes, 0, sizeof(pkt_bytes));
 
     /* build and send report */
     ppe_packet_init(&ppep, pkt_bytes, pkt_len);
@@ -120,11 +121,19 @@ report_tx_send_packet(report_tx_entry_t *entry)
     /* send packet */
     of_octets_t octets = { pkt_bytes, sizeof(pkt_bytes) };
     indigo_error_t rv;
-    rv = slshared_fwd_packet_out(&octets, OF_PORT_DEST_CONTROLLER,
-                                 entry->key.port_no, QUEUE_ID_INVALID);
-    if (rv != INDIGO_ERROR_NONE) {
-        AIM_LOG_INTERNAL("Failed to send IGMP report: %s",
-                         indigo_strerror(rv));
+    tx_port_group_entry_t *tpg_entry;
+
+    tpg_entry = igmpa_tx_port_group_lookup_by_name(entry->key.tx_port_group_name);
+    if (tpg_entry) {
+        rv = slshared_fwd_packet_out(&octets, OF_PORT_DEST_CONTROLLER,
+                                     tpg_entry->value.port_no,
+                                     QUEUE_ID_INVALID);
+        if (rv != INDIGO_ERROR_NONE) {
+            AIM_LOG_INTERNAL("Failed to send IGMP report: %s",
+                             indigo_strerror(rv));
+            debug_counter_inc(&report_tx_failure);
+        }
+    } else {
         debug_counter_inc(&report_tx_failure);
     }
 
@@ -182,12 +191,16 @@ report_tx_parse_key(of_list_bsn_tlv_t *tlvs, report_tx_key_t *key)
     if (tlv.object_id == OF_BSN_TLV_REFERENCE) {
         uint16_t table_id;
         of_object_t refkey;
+        tx_port_group_entry_t *tpg_entry;
 
         of_bsn_tlv_reference_table_id_get(&tlv, &table_id);
         of_bsn_tlv_reference_key_bind(&tlv, &refkey);
 
-        key->port_no = igmpa_tx_port_group_lookup(table_id, &refkey);
-        if (key->port_no == OF_PORT_DEST_NONE) {
+        tpg_entry = igmpa_tx_port_group_lookup_by_ref(table_id, &refkey);
+        if (tpg_entry) {
+            IGMPA_MEMCPY(key->tx_port_group_name,
+                         tpg_entry->key.name, IGMP_NAME_LEN);
+        } else {
             AIM_LOG_ERROR("%s: could not find tx port group",
                           __FUNCTION__);
             return INDIGO_ERROR_PARAM;
@@ -312,7 +325,7 @@ report_tx_add(void *table_priv,
     report_tx_value_t value;
     report_tx_entry_t *entry;
 
-    memset(&key, 0, sizeof(key));
+    IGMPA_MEMSET(&key, 0, sizeof(key));
     rv = report_tx_parse_key(key_tlvs, &key);
     if (rv < 0) {
         debug_counter_inc(&report_tx_add_failure);

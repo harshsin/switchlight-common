@@ -159,7 +159,7 @@ timeout_add(void *table_priv,
     timeout_value_t value;
     timeout_entry_t *entry;
 
-    memset(key.name, 0, sizeof(key.name));
+    IGMPA_MEMSET(key.name, 0, sizeof(key.name));
     rv = timeout_parse_key(key_tlvs, &key);
     if (rv < 0) {
         debug_counter_inc(&timeout_add_failure);

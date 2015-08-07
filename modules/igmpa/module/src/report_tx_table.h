@@ -12,7 +12,7 @@
 
 
 typedef struct report_tx_key_s {
-    of_port_no_t port_no;  /* name resolved to port */
+    char tx_port_group_name[IGMP_NAME_LEN];
     uint16_t vlan_vid;
     uint32_t ipv4;
 } report_tx_key_t;

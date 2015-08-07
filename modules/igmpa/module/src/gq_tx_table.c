@@ -51,10 +51,10 @@ gq_tx_send_packet(gq_tx_entry_t *entry)
         { 0x01, 0x00, 0x5e, 0x00, 0x00, 0x01 };
     uint32_t igmp_checksum;
 
-    AIM_LOG_INFO("send general query, port %u, vlan_vid %u",
-                 entry->key.port_no, entry->key.vlan_vid);
+    AIM_LOG_INFO("send general query, port group %s, vlan_vid %u",
+                 entry->key.tx_port_group_name, entry->key.vlan_vid);
 
-    memset(pkt_bytes, 0, sizeof(pkt_bytes));
+    IGMPA_MEMSET(pkt_bytes, 0, sizeof(pkt_bytes));
 
     /* build and send general query */
     ppe_packet_init(&ppep, pkt_bytes, pkt_len);
@@ -112,11 +112,19 @@ gq_tx_send_packet(gq_tx_entry_t *entry)
     /* send packet */
     of_octets_t octets = { pkt_bytes, sizeof(pkt_bytes) };
     indigo_error_t rv;
-    rv = slshared_fwd_packet_out(&octets, OF_PORT_DEST_CONTROLLER,
-                                 entry->key.port_no, QUEUE_ID_INVALID);
-    if (rv != INDIGO_ERROR_NONE) {
-        AIM_LOG_INTERNAL("Failed to send IGMP general query: %s",
-                         indigo_strerror(rv));
+    tx_port_group_entry_t *tpg_entry;
+
+    tpg_entry = igmpa_tx_port_group_lookup_by_name(entry->key.tx_port_group_name);
+    if (tpg_entry) {
+        rv = slshared_fwd_packet_out(&octets, OF_PORT_DEST_CONTROLLER,
+                                     tpg_entry->value.port_no,
+                                     QUEUE_ID_INVALID);
+        if (rv != INDIGO_ERROR_NONE) {
+            AIM_LOG_INTERNAL("Failed to send IGMP general query: %s",
+                             indigo_strerror(rv));
+            debug_counter_inc(&gq_tx_failure);
+        }
+    } else {
         debug_counter_inc(&gq_tx_failure);
     }
 
@@ -173,12 +181,15 @@ gq_tx_parse_key(of_list_bsn_tlv_t *tlvs, gq_tx_key_t *key)
     if (tlv.object_id == OF_BSN_TLV_REFERENCE) {
         uint16_t table_id;
         of_object_t refkey;
+        tx_port_group_entry_t *tpg_entry;
 
         of_bsn_tlv_reference_table_id_get(&tlv, &table_id);
         of_bsn_tlv_reference_key_bind(&tlv, &refkey);
-
-        key->port_no = igmpa_tx_port_group_lookup(table_id, &refkey);
-        if (key->port_no == OF_PORT_DEST_NONE) {
+        tpg_entry = igmpa_tx_port_group_lookup_by_ref(table_id, &refkey);
+        if (tpg_entry) {
+            IGMPA_MEMCPY(key->tx_port_group_name,
+                         tpg_entry->key.name, IGMP_NAME_LEN);
+        } else {
             AIM_LOG_ERROR("%s: could not find tx port group",
                           __FUNCTION__);
             return INDIGO_ERROR_PARAM;
@@ -285,7 +296,7 @@ gq_tx_add(void *table_priv,
     gq_tx_value_t value;
     gq_tx_entry_t *entry;
 
-    memset(&key, 0, sizeof(key));
+    IGMPA_MEMSET(&key, 0, sizeof(key));
     rv = gq_tx_parse_key(key_tlvs, &key);
     if (rv < 0) {
         debug_counter_inc(&gq_tx_add_failure);
@@ -402,7 +413,7 @@ igmpa_gq_tx_stats_show(aim_pvs_t *pvs)
                debug_counter_get(&gq_tx_modify_failure));
     aim_printf(pvs, "gq_tx_delete  %"PRIu64"\n",
                debug_counter_get(&gq_tx_delete_success));
-    aim_printf(pvs, "gq_tx  %"PRIu64"\n",
+    aim_printf(pvs, "gq_tx_count  %"PRIu64"\n",
                debug_counter_get(&gq_tx_count));
     aim_printf(pvs, "gq_tx_failure  %"PRIu64"\n",
                debug_counter_get(&gq_tx_failure));

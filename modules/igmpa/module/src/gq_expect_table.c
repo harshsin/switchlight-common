@@ -207,7 +207,7 @@ gq_expect_add(void *table_priv,
     gq_expect_key_t key;
     gq_expect_entry_t *entry;
 
-    memset(&key, 0, sizeof(key));
+    IGMPA_MEMSET(&key, 0, sizeof(key));
     rv = gq_expect_parse_key(key_tlvs, &key);
     if (rv < 0) {
         debug_counter_inc(&gq_expect_add_failure);
@@ -308,8 +308,8 @@ gq_expect_entry_t *
 igmpa_gq_expect_lookup(char name[], uint16_t vlan_vid)
 {
     gq_expect_key_t key;
-    memset(&key, 0, sizeof(key));
-    memcpy(key.name, name, sizeof(key.name));
+    IGMPA_MEMSET(&key, 0, sizeof(key));
+    IGMPA_MEMCPY(key.name, name, sizeof(key.name));
     key.vlan_vid = vlan_vid;
     return gq_expect_hashtable_first(ht_gq_expect, &key);
 }
