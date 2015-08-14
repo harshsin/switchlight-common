@@ -62,8 +62,8 @@ gq_expect_send_idle_notif(gq_expect_entry_t *entry)
     of_object_t *notif = of_bsn_generic_async_new(version);
     of_list_bsn_tlv_t *list = of_list_bsn_tlv_new(version);
 
-    AIM_LOG_INFO("send gq idle notif, rx port group %s vlan %u",
-                 entry->key.name, entry->key.vlan_vid);
+    AIM_LOG_VERBOSE("send gq idle notif, rx port group %s vlan %u",
+                    entry->key.name, entry->key.vlan_vid);
 
     of_bsn_generic_async_name_set(notif, "igmp_query_idle");
     {

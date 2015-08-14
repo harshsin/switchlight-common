@@ -80,7 +80,7 @@ handle_general_query(ppe_packet_t *ppep,
         gq_entry->time_last_hit = now;
         gq_entry->rx_packets++;
         /* reschedule timer */
-        AIM_LOG_INFO("reschedule gq timer");
+        AIM_LOG_TRACE("reschedule gq timer");
         igmpa_gq_expect_reschedule(gq_entry, now + igmpa_gq_expect_timeout);
         return INDIGO_CORE_LISTENER_RESULT_DROP;
     } else {
@@ -114,7 +114,7 @@ handle_report(ppe_packet_t *ppep,
         report_entry->time_last_hit = now;
         report_entry->rx_packets++;
         /* reschedule timer */
-        AIM_LOG_INFO("reschedule report timer");
+        AIM_LOG_TRACE("reschedule report timer");
         igmpa_report_expect_reschedule(report_entry,
                                        now + igmpa_report_expect_timeout);
         return INDIGO_CORE_LISTENER_RESULT_DROP;

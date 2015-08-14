@@ -43,101 +43,42 @@ static debug_counter_t report_tx_failure;
 static void
 report_tx_send_packet(report_tx_entry_t *entry)
 {
-    ppe_packet_t ppep;
-    const int igmp_len = 8;
-    const int pkt_len = 14 + 4 + 20 + igmp_len;
-    uint8_t pkt_bytes[pkt_len];
-    uint8_t dst_mac[OF_MAC_ADDR_BYTES] =
-        { 0x01, 0x00, 0x5e, 0x00, 0x00, 0x00 };  /* L2 multicast MAC */
-    uint32_t igmp_checksum;
+    tx_port_group_entry_t *tpg_entry =
+        igmpa_tx_port_group_lookup_by_name(entry->key.tx_port_group_name);
+
+    if (!tpg_entry) {
+        debug_counter_inc(&report_tx_failure);
+        return;
+    }
+
+    uint8_t dst_mac[OF_MAC_ADDR_BYTES] = {
+        0x01, 0x00, 0x5e,
+        (entry->key.ipv4 & 0x7f0000) >> 16,
+        (entry->key.ipv4 & 0xff00) >> 8,
+        (entry->key.ipv4 & 0xff),
+    };
+
+    igmpa_pkt_params_t params = {
+        .eth_src = entry->value.eth_src.addr,
+        .eth_dst = dst_mac,
+        .vlan_vid = entry->value.vlan_vid_tx,
+        .ipv4_src = entry->value.ipv4_src,
+        .ipv4_dst = entry->key.ipv4,
+        .igmp_type = PPE_IGMP_TYPE_V2_REPORT,
+        .igmp_group_addr = entry->key.ipv4,
+        .output_port_no = tpg_entry->value.port_no,
+    };
 
     /* FIXME send v1 or v2 report? */
-    AIM_LOG_INFO("send report, port group %s, vlan_vid %u, ipv4 %{ipv4a}",
-                 entry->key.tx_port_group_name, entry->key.vlan_vid,
-                 entry->key.ipv4);
+    AIM_LOG_VERBOSE("send report, port group %s, vlan_vid %u, ipv4 %{ipv4a}",
+                    entry->key.tx_port_group_name, entry->key.vlan_vid,
+                    entry->key.ipv4);
 
-    IGMPA_MEMSET(pkt_bytes, 0, sizeof(pkt_bytes));
-
-    /* build and send report */
-    ppe_packet_init(&ppep, pkt_bytes, pkt_len);
-    /* set ethertypes before parsing */
-    /* FIXME use ppe_packet_format_set? */
-    pkt_bytes[12] = 0x81;
-    pkt_bytes[13] = 0x00;
-    pkt_bytes[16] = 0x08;
-    pkt_bytes[17] = 0x00;
-    if (ppe_parse(&ppep) < 0) {
-        AIM_DIE("ppe_parse failed sending IGMP report");
-    }
-
-    /* ethernet */
-    if (ppe_wide_field_set(&ppep, PPE_FIELD_ETHERNET_SRC_MAC, 
-                           entry->value.eth_src.addr) < 0) {
-        AIM_DIE("failed to set PPE_FIELD_ETHERNET_SRC_MAC");
-    }
-    /* build dst mac from multicast address */
-    dst_mac[3] = (entry->key.ipv4 & 0x7f0000) >> 16;
-    dst_mac[4] = (entry->key.ipv4 & 0xff00) >> 8;
-    dst_mac[5] = (entry->key.ipv4 & 0xff);
-    if (ppe_wide_field_set(&ppep, PPE_FIELD_ETHERNET_DST_MAC, dst_mac) < 0) {
-        AIM_DIE("failed to set PPE_FIELD_ETHERNET_DST_MAC");
-    }
-
-    /* tag */
-    if (ppe_field_set(&ppep, PPE_FIELD_8021Q_VLAN,
-                      entry->value.vlan_vid_tx) < 0) {
-        AIM_DIE("failed to set PPE_FIELD_8021Q_VLAN");
-    }
-
-    /* ipv4 */
-    /* FIXME add router alert? */
-    if (ppe_build_ipv4_header(&ppep, entry->value.ipv4_src, entry->key.ipv4,
-                              28, 2 /* IGMP */, 1 /* TTL */) < 0) {
-        AIM_DIE("failed to build ipv4 header");
-    }
-    /* igmp */
-    if (ppe_field_set(&ppep, PPE_FIELD_IGMP_TYPE, PPE_IGMP_TYPE_V2_REPORT) < 0) {
-        AIM_DIE("failed to set PPE_FIELD_IGMP_TYPE");
-    }
-    if (ppe_field_set(&ppep, PPE_FIELD_IGMP_GROUP_ADDRESS,
-                      entry->key.ipv4) < 0) {
-        AIM_DIE("failed to set PPE_FIELD_IGMP_GROUP_ADDRESS");
-    }
-
-    /* compute and set IGMP checksum */
-    igmp_checksum = igmpa_sum16(ppe_header_get(&ppep, PPE_HEADER_IGMP),
-                                igmp_len);
-    if (ppe_field_set(&ppep, PPE_FIELD_IGMP_CHECKSUM, 
-                      (0xffff - igmp_checksum)) < 0) {
-        AIM_DIE("failed to set PPE_FIELD_IGMP_CHECKSUM");
-    }
-
-    if (ppe_packet_update(&ppep) < 0) {
-        AIM_DIE("ppe_packet_update failed for IGMP report");
-    }
-
-    AIM_LOG_INFO("pkt len %u bytes\n%{idata}", pkt_len, pkt_bytes, pkt_len);
-
-    /* send packet */
-    of_octets_t octets = { pkt_bytes, sizeof(pkt_bytes) };
-    indigo_error_t rv;
-    tx_port_group_entry_t *tpg_entry;
-
-    tpg_entry = igmpa_tx_port_group_lookup_by_name(entry->key.tx_port_group_name);
-    if (tpg_entry) {
-        rv = slshared_fwd_packet_out(&octets, OF_PORT_DEST_CONTROLLER,
-                                     tpg_entry->value.port_no,
-                                     QUEUE_ID_INVALID);
-        if (rv != INDIGO_ERROR_NONE) {
-            AIM_LOG_INTERNAL("Failed to send IGMP report: %s",
-                             indigo_strerror(rv));
-            debug_counter_inc(&report_tx_failure);
-        }
-    } else {
+    if (igmpa_send_igmp_packet(&params)) {
         debug_counter_inc(&report_tx_failure);
+    } else {
+        debug_counter_inc(&report_tx_count);
     }
-
-    debug_counter_inc(&report_tx_count);
 }
 
 

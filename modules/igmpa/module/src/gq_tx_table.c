@@ -43,92 +43,36 @@ static debug_counter_t gq_tx_failure;
 static void
 gq_tx_send_packet(gq_tx_entry_t *entry)
 {
-    ppe_packet_t ppep;
-    const int igmp_len = 8;
-    const int pkt_len = 14 + 4 + 20 + igmp_len;
-    uint8_t pkt_bytes[pkt_len];
+    tx_port_group_entry_t *tpg_entry =
+        igmpa_tx_port_group_lookup_by_name(entry->key.tx_port_group_name);
+
+    if (!tpg_entry) {
+        debug_counter_inc(&gq_tx_failure);
+        return;
+    }
+
     uint8_t dst_mac[OF_MAC_ADDR_BYTES] =  /* L2 multicast MAC for 224.0.0.1 */
         { 0x01, 0x00, 0x5e, 0x00, 0x00, 0x01 };
-    uint32_t igmp_checksum;
 
-    AIM_LOG_INFO("send general query, port group %s, vlan_vid %u",
-                 entry->key.tx_port_group_name, entry->key.vlan_vid);
+    igmpa_pkt_params_t params = {
+        .eth_src = entry->value.eth_src.addr,
+        .eth_dst = dst_mac,
+        .vlan_vid = entry->value.vlan_vid_tx,
+        .ipv4_src = entry->value.ipv4_src,
+        .ipv4_dst = 0xe0000001, /* 224.0.0.1 */
+        .igmp_type = PPE_IGMP_TYPE_QUERY,
+        .igmp_group_addr = 0,  /* field is cleared */
+        .output_port_no = tpg_entry->value.port_no,
+    };
 
-    IGMPA_MEMSET(pkt_bytes, 0, sizeof(pkt_bytes));
+    AIM_LOG_VERBOSE("send general query, port group %s, vlan_vid %u",
+                    entry->key.tx_port_group_name, entry->key.vlan_vid);
 
-    /* build and send general query */
-    ppe_packet_init(&ppep, pkt_bytes, pkt_len);
-    /* set ethertypes before parsing */
-    /* FIXME use ppe_packet_format_set? */
-    pkt_bytes[12] = 0x81;
-    pkt_bytes[13] = 0x00;
-    pkt_bytes[16] = 0x08;
-    pkt_bytes[17] = 0x00;
-    if (ppe_parse(&ppep) < 0) {
-        AIM_DIE("ppe_parse failed sending IGMP general query");
-    }
-
-    /* ethernet */
-    if (ppe_wide_field_set(&ppep, PPE_FIELD_ETHERNET_SRC_MAC, 
-                           entry->value.eth_src.addr) < 0) {
-        AIM_DIE("failed to set PPE_FIELD_ETHERNET_SRC_MAC");
-    }
-    if (ppe_wide_field_set(&ppep, PPE_FIELD_ETHERNET_DST_MAC, dst_mac) < 0) {
-        AIM_DIE("failed to set PPE_FIELD_ETHERNET_DST_MAC");
-    }
-
-    /* tag */
-    if (ppe_field_set(&ppep, PPE_FIELD_8021Q_VLAN,
-                      entry->value.vlan_vid_tx) < 0) {
-        AIM_DIE("failed to set PPE_FIELD_8021Q_VLAN");
-    }
-
-    /* ipv4 */
-    /* FIXME add router alert? */
-    if (ppe_build_ipv4_header(&ppep, entry->value.ipv4_src, 
-                              0xe0000001, /* 224.0.0.1 */
-                              28, 2 /* IGMP */, 1 /* TTL */) < 0) {
-        AIM_DIE("failed to build ipv4 header");
-    }
-    /* igmp */
-    if (ppe_field_set(&ppep, PPE_FIELD_IGMP_TYPE, PPE_IGMP_TYPE_QUERY) < 0) {
-        AIM_DIE("failed to set PPE_FIELD_IGMP_TYPE");
-    }
-
-    /* compute and set IGMP checksum */
-    igmp_checksum = igmpa_sum16(ppe_header_get(&ppep, PPE_HEADER_IGMP),
-                                igmp_len);
-    if (ppe_field_set(&ppep, PPE_FIELD_IGMP_CHECKSUM, 
-                      (0xffff - igmp_checksum)) < 0) {
-        AIM_DIE("failed to set PPE_FIELD_IGMP_CHECKSUM");
-    }
-
-    if (ppe_packet_update(&ppep) < 0) {
-        AIM_DIE("ppe_packet_update failed for IGMP general query");
-    }
-
-    AIM_LOG_INFO("pkt len %u bytes\n%{idata}", pkt_len, pkt_bytes, pkt_len);
-
-    /* send packet */
-    of_octets_t octets = { pkt_bytes, sizeof(pkt_bytes) };
-    indigo_error_t rv;
-    tx_port_group_entry_t *tpg_entry;
-
-    tpg_entry = igmpa_tx_port_group_lookup_by_name(entry->key.tx_port_group_name);
-    if (tpg_entry) {
-        rv = slshared_fwd_packet_out(&octets, OF_PORT_DEST_CONTROLLER,
-                                     tpg_entry->value.port_no,
-                                     QUEUE_ID_INVALID);
-        if (rv != INDIGO_ERROR_NONE) {
-            AIM_LOG_INTERNAL("Failed to send IGMP general query: %s",
-                             indigo_strerror(rv));
-            debug_counter_inc(&gq_tx_failure);
-        }
-    } else {
+    if (igmpa_send_igmp_packet(&params)) {
         debug_counter_inc(&gq_tx_failure);
+    } else {
+        debug_counter_inc(&gq_tx_count);
     }
-
-    debug_counter_inc(&gq_tx_count);
 }
 
 
