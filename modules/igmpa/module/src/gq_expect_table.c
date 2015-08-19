@@ -341,6 +341,7 @@ igmpa_gq_expect_table_init(void)
     ht_gq_expect = bighash_table_create(1024);
 
     /* from mrouter: 1k entries, 255s timeout for expectations */
+    /* bucket size is (256*1000)ms / 1024 entries ~= 256 */
     tw_gq_expect = timer_wheel_create(1024, 256, INDIGO_CURRENT_TIME);
 
     rv = ind_soc_timer_event_register(gq_expect_timer, NULL, 1000);

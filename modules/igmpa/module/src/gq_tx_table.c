@@ -370,7 +370,8 @@ igmpa_gq_tx_table_init(void)
     indigo_error_t rv;
 
     /* to host: 16k entries, 125s for tx */
-    tw_gq_tx = timer_wheel_create(16*1024, 128, INDIGO_CURRENT_TIME);
+    /* bucket size is (125*1000)ms / (16*1024)entries ~= 8 */
+    tw_gq_tx = timer_wheel_create(16*1024, 8, INDIGO_CURRENT_TIME);
 
     rv = ind_soc_timer_event_register(gq_tx_timer, NULL, 1000);
     AIM_ASSERT(rv == INDIGO_ERROR_NONE,
@@ -379,7 +380,7 @@ igmpa_gq_tx_table_init(void)
 
     indigo_core_gentable_register("igmp_general_query_tx",
                                   &gq_tx_ops, NULL,
-                                  8*1024, 1024, &gq_tx_gentable);
+                                  16*1024, 1024, &gq_tx_gentable);
 
     debug_counter_register(&gq_tx_add_success,
                            "igmpa.gq_tx_add",

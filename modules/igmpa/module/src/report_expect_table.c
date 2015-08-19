@@ -366,7 +366,8 @@ igmpa_report_expect_table_init(void)
     ht_report_expect = bighash_table_create(1024);
 
     /* from host: 16k entries, 255s timeout for expectations */
-    tw_report_expect = timer_wheel_create(16*1024, 256, INDIGO_CURRENT_TIME);
+    /* bucket_size is (255*1000)ms / (16*1024) entries ~= 16 */
+    tw_report_expect = timer_wheel_create(16*1024, 16, INDIGO_CURRENT_TIME);
 
     rv = ind_soc_timer_event_register(report_expect_timer, NULL, 1000);
     AIM_ASSERT(rv == INDIGO_ERROR_NONE,
@@ -375,7 +376,7 @@ igmpa_report_expect_table_init(void)
 
     indigo_core_gentable_register("igmp_report_expectation",
                                   &report_expect_ops, NULL,
-                                  8*1024, 1024, &report_expect_gentable);
+                                  16*1024, 1024, &report_expect_gentable);
 
     debug_counter_register(&report_expect_add_success,
                            "igmpa.report_expect_add",

@@ -396,6 +396,7 @@ igmpa_report_tx_table_init(void)
     indigo_error_t rv;
 
     /* to mrouter: 1k entries, 125s for tx */
+    /* bucket size is (125*1000)ms / 1024 entries ~= 128 */
     tw_report_tx = timer_wheel_create(1024, 128, INDIGO_CURRENT_TIME);
 
     rv = ind_soc_timer_event_register(report_tx_timer, NULL, 1000);
