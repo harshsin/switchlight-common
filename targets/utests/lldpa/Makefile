@@ -22,7 +22,7 @@ MODULE := lldpa_utest
 TEST_MODULE := lldpa
 DEPENDMODULES := PPE IOF AIM loci OFStateManager SocketManager indigo cjson BigList BigHash \
 		 murmur OFConnectionManager Configuration debug_counter timer_wheel minimatch \
-		 OS BigRing slshared
+		 OS BigRing slshared slot_allocator
 
 #indig
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MODULES_INIT=1
