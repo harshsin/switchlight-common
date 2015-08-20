@@ -22,7 +22,7 @@ MODULE := lacpa_utest
 TEST_MODULE := lacpa
 DEPENDMODULES := AIM PPE IOF loci indigo SocketManager cjson Configuration \
 	BigList BigHash OFStateManager murmur OFConnectionManager OS uCli debug_counter timer_wheel \
-	minimatch BigRing slshared
+	minimatch BigRing slshared slot_allocator
 
 GLOBAL_CFLAGS += -DINDIGO_LINUX_LOGGING
 GLOBAL_CFLAGS += -DINDIGO_LINUX_TIME
@@ -32,4 +32,4 @@ GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MODULES_INIT=1
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MAIN=1
 include $(BUILDER)/build-unit-test.mk
 
-GLOBAL_LINK_LIBS += -lm -lncurses -rdynamic
+GLOBAL_LINK_LIBS += -lm -rdynamic
