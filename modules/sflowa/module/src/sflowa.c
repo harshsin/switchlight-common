@@ -389,6 +389,22 @@ sflow_get_send_mode(sflow_collector_entry_t *entry)
     return SFLOW_SEND_MODE_DATAPLANE;
 }
 
+static char ipv6_str[40];
+static char *
+ipv6_to_str(const of_ipv6_t ipv6)
+{
+    sprintf(ipv6_str, "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+            (int)ipv6.addr[0], (int)ipv6.addr[1],
+            (int)ipv6.addr[2], (int)ipv6.addr[3],
+            (int)ipv6.addr[4], (int)ipv6.addr[5],
+            (int)ipv6.addr[6], (int)ipv6.addr[7],
+            (int)ipv6.addr[8], (int)ipv6.addr[9],
+            (int)ipv6.addr[10], (int)ipv6.addr[11],
+            (int)ipv6.addr[12], (int)ipv6.addr[13],
+            (int)ipv6.addr[14], (int)ipv6.addr[15]);
+    return ipv6_str;
+}
+
 /*
  * sflow_timer
  *
@@ -1072,6 +1088,19 @@ sflow_collector_parse_value(of_list_bsn_tlv_t *tlvs,
         return INDIGO_ERROR_PARAM;
     }
 
+    /* FIXME: For now check if ipv6-tlv is present, Remove later */
+    if (of_list_bsn_tlv_next(tlvs, &tlv) == 0) {
+
+        /* Switch management ipv6 address */
+        if (tlv.object_id == OF_BSN_TLV_IPV6) {
+            of_bsn_tlv_ipv6_value_get(&tlv, &value->mgmt_ipv6_addr);
+        } else {
+            AIM_LOG_ERROR("expected ipv6 value TLV, instead got %s",
+                          of_class_name(&tlv));
+            return INDIGO_ERROR_PARAM;
+        }
+    }
+
     if (of_list_bsn_tlv_next(tlvs, &tlv) == 0) {
         AIM_LOG_ERROR("expected end of value list, instead got %s",
                       of_class_name(&tlv));
@@ -1123,12 +1152,13 @@ sflow_collector_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
     AIM_LOG_TRACE("Add collector table entry, collector_ip: %{ipv4a} -> vlan_id:"
                   " %u, vlan_pcp: %u, agent_mac: %{mac}, src_ip: %{ipv4a}, "
                   "agent_udp_sport: %u, collector_mac: %{mac}, "
-                  "collector_udp_dport: %u, sub_agent_id: %u",
+                  "collector_udp_dport: %u, sub_agent_id: %u, mgmt_ipv6_addr: %s",
                   entry->key.collector_ip,  entry->value.vlan_id,
                   entry->value.vlan_pcp, entry->value.agent_mac.addr,
                   entry->value.src_ip, entry->value.agent_udp_sport,
                   entry->value.collector_mac.addr,
-                  entry->value.collector_udp_dport, entry->value.sub_agent_id);
+                  entry->value.collector_udp_dport, entry->value.sub_agent_id,
+                  ipv6_to_str(entry->value.mgmt_ipv6_addr));
 
     *entry_priv = entry;
 
@@ -1156,20 +1186,23 @@ sflow_collector_modify(void *table_priv, void *entry_priv,
     AIM_LOG_TRACE("Modify collector table entry, old collector_ip: %{ipv4a} ->"
                   " vlan_id: %u, vlan_pcp: %u, agent_mac: %{mac}, src_ip: "
                   "%{ipv4a}, agent_udp_sport: %u, collector_mac: %{mac}, "
-                  "collector_udp_dport: %u, sub_agent_id: %u",
+                  "collector_udp_dport: %u, sub_agent_id: %u, mgmt_ipv6_addr: %s",
                   entry->key.collector_ip, entry->value.vlan_id,
                   entry->value.vlan_pcp, entry->value.agent_mac.addr,
                   entry->value.src_ip, entry->value.agent_udp_sport,
                   entry->value.collector_mac.addr,
-                  entry->value.collector_udp_dport, entry->value.sub_agent_id);
+                  entry->value.collector_udp_dport, entry->value.sub_agent_id,
+                  ipv6_to_str(entry->value.mgmt_ipv6_addr));
 
     AIM_LOG_TRACE("New, collector_ip: %{ipv4a} -> vlan_id: %u, vlan_pcp: %u, "
                   "agent_mac: %{mac}, src_ip: %{ipv4a}, agent_udp_sport: %u,"
                   " collector_mac: %{mac}, collector_udp_dport: %u, "
-                  "sub_agent_id: %u", entry->key.collector_ip, value.vlan_id,
+                  "sub_agent_id: %u, mgmt_ipv6_addr: %s",
+                  entry->key.collector_ip, value.vlan_id,
                   value.vlan_pcp, value.agent_mac.addr, value.src_ip,
                   value.agent_udp_sport, value.collector_mac.addr,
-                  value.collector_udp_dport, value.sub_agent_id);
+                  value.collector_udp_dport, value.sub_agent_id,
+                  ipv6_to_str(value.mgmt_ipv6_addr));
 
     entry->value = value;
 
@@ -1190,12 +1223,13 @@ sflow_collector_delete(void *table_priv, void *entry_priv,
     AIM_LOG_TRACE("Delete collector table entry, collector_ip: %{ipv4a} -> "
                   "vlan_id: %u, vlan_pcp: %u, agent_mac: %{mac}, src_ip: "
                   "%{ipv4a}, agent_udp_sport: %u, collector_mac: %{mac}, "
-                  "collector_udp_dport: %u, sub_agent_id: %u",
+                  "collector_udp_dport: %u, sub_agent_id: %u, mgmt_ipv6_addr: %s",
                   entry->key.collector_ip, entry->value.vlan_id,
                   entry->value.vlan_pcp, entry->value.agent_mac.addr,
                   entry->value.src_ip, entry->value.agent_udp_sport,
                   entry->value.collector_mac.addr,
-                  entry->value.collector_udp_dport, entry->value.sub_agent_id);
+                  entry->value.collector_udp_dport, entry->value.sub_agent_id,
+                  ipv6_to_str(entry->value.mgmt_ipv6_addr));
 
     /*
      * Delete this entry from the list

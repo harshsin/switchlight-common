@@ -69,6 +69,7 @@ typedef struct sflow_collector_entry_value_s { /* sflow_collector_entry_value */
     of_mac_addr_t collector_mac;
     uint16_t collector_udp_dport;
     uint32_t sub_agent_id;
+    of_ipv6_t mgmt_ipv6_addr;
 } sflow_collector_entry_value_t;
 
 typedef struct sflow_collector_entry_stats_s { /* sflow_collector_entry_stats */
