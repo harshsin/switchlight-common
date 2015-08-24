@@ -64,7 +64,7 @@ typedef struct sflow_collector_entry_value_s { /* sflow_collector_entry_value */
     uint16_t vlan_id;
     uint8_t vlan_pcp;
     of_mac_addr_t agent_mac;
-    of_ipv4_t agent_ip;
+    of_ipv4_t src_ip;
     uint16_t agent_udp_sport;
     of_mac_addr_t collector_mac;
     uint16_t collector_udp_dport;

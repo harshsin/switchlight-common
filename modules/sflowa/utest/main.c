@@ -40,7 +40,7 @@ static const sflow_collector_entry_t collector_entry_1 = {
     .value.vlan_id = 7,
     .value.vlan_pcp = 4,
     .value.agent_mac = { .addr = {0x55, 0x16, 0xc7, 0x01, 0x02, 0x03} },
-    .value.agent_ip = 0xc0a80101, //192.168.1.1
+    .value.src_ip = 0xc0a80101, //192.168.1.1
     .value.agent_udp_sport = 50000,
     .value.collector_mac = { .addr = {0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f} },
     .value.collector_udp_dport = SFL_DEFAULT_COLLECTOR_PORT,
@@ -51,7 +51,7 @@ static sflow_collector_entry_t collector_entry_2 = {
     .value.vlan_id = 2,
     .value.vlan_pcp = 4,
     .value.agent_mac = { .addr = {0x55, 0x16, 0xc7, 0x01, 0x02, 0x03} },
-    .value.agent_ip = 0x0a0a6401, //10.10.100.1
+    .value.src_ip = 0x0a0a6401, //10.10.100.1
     .value.agent_udp_sport = 45000,
     .value.collector_mac = { .addr = {0xca, 0xfe, 0xc0, 0xff, 0xee, 0x00} },
     .value.collector_udp_dport = SFL_DEFAULT_COLLECTOR_PORT,
@@ -378,7 +378,7 @@ test_sflow_collector_table(void)
     value = make_value(collector_entry_1.value.vlan_id,
                        collector_entry_1.value.vlan_pcp,
                        collector_entry_1.value.agent_mac,
-                       collector_entry_1.value.agent_ip,
+                       collector_entry_1.value.src_ip,
                        collector_entry_1.value.agent_udp_sport,
                        collector_entry_1.value.collector_mac,
                        collector_entry_1.value.collector_udp_dport,
@@ -401,7 +401,7 @@ test_sflow_collector_table(void)
     value = make_value(collector_entry_2.value.vlan_id,
                        collector_entry_2.value.vlan_pcp,
                        collector_entry_2.value.agent_mac,
-                       collector_entry_2.value.agent_ip,
+                       collector_entry_2.value.src_ip,
                        collector_entry_2.value.agent_udp_sport,
                        collector_entry_2.value.collector_mac,
                        collector_entry_2.value.collector_udp_dport,
@@ -420,11 +420,11 @@ test_sflow_collector_table(void)
      * Test modify
      */
     collector_entry_2.value.vlan_id = 15;
-    collector_entry_2.value.agent_ip = 0x0a0a6464; //10.10.100.100
+    collector_entry_2.value.src_ip = 0x0a0a6464; //10.10.100.100
     value = make_value(collector_entry_2.value.vlan_id,
                        collector_entry_2.value.vlan_pcp,
                        collector_entry_2.value.agent_mac,
-                       collector_entry_2.value.agent_ip,
+                       collector_entry_2.value.src_ip,
                        collector_entry_2.value.agent_udp_sport,
                        collector_entry_2.value.collector_mac,
                        collector_entry_2.value.collector_udp_dport,
@@ -738,7 +738,7 @@ test_sampled_packet_in(void)
     value = make_value(collector_entry_1.value.vlan_id,
                        collector_entry_1.value.vlan_pcp,
                        collector_entry_1.value.agent_mac,
-                       collector_entry_1.value.agent_ip,
+                       collector_entry_1.value.src_ip,
                        collector_entry_1.value.agent_udp_sport,
                        collector_entry_1.value.collector_mac,
                        collector_entry_1.value.collector_udp_dport,
