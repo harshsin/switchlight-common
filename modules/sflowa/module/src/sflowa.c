@@ -457,27 +457,22 @@ sflow_error(void *magic, SFLAgent *agent, char *msg)
  * send it out on dataplane
  */
 static void
-sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
+sflow_send_packet_out(of_octets_t *octets,
                       sflow_collector_entry_t *entry)
 {
     ppe_packet_t          ppep;
     indigo_error_t        rv;
-    uint8_t               data[1600];
 
-    AIM_ASSERT(sizeof(data) > SFLOW_PKT_HEADER_SIZE+pktLen, "Buffer overflow");
-    SFLOWA_MEMSET(data, 0, sizeof(data));
-    SFLOWA_MEMCPY(data+SFLOW_PKT_HEADER_SIZE, pkt, pktLen);
-
-    ppe_packet_init(&ppep, data, SFLOW_PKT_HEADER_SIZE+pktLen);
+    ppe_packet_init(&ppep, octets->data, octets->bytes);
 
     /*
      * Set ethertype as 802.1Q and type as IPv4
      * Parse to recognize tagged Ethernet packet.
      */
-    data[12] = SLSHARED_CONFIG_ETHERTYPE_DOT1Q >> 8;
-    data[13] = SLSHARED_CONFIG_ETHERTYPE_DOT1Q & 0xFF;
-    data[16] = PPE_ETHERTYPE_IP4 >> 8;
-    data[17] = PPE_ETHERTYPE_IP4 & 0xFF;
+    octets->data[12] = SLSHARED_CONFIG_ETHERTYPE_DOT1Q >> 8;
+    octets->data[13] = SLSHARED_CONFIG_ETHERTYPE_DOT1Q & 0xFF;
+    octets->data[16] = PPE_ETHERTYPE_IP4 >> 8;
+    octets->data[17] = PPE_ETHERTYPE_IP4 & 0xFF;
     if (ppe_parse(&ppep) < 0) {
         AIM_DIE("Packet_out parsing failed after IPv4 header");
         return;
@@ -500,8 +495,7 @@ sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
     AIM_LOG_TRACE("Build IP header with src_ip: %{ipv4a}, dest_ip: %{ipv4a}",
                   entry->value.src_ip, entry->key.collector_ip);
     ppe_build_ipv4_header(&ppep, entry->value.src_ip, entry->key.collector_ip,
-                          pktLen+SLSHARED_CONFIG_IPV4_HEADER_SIZE+
-                          SLSHARED_CONFIG_UDP_HEADER_SIZE,
+                          octets->bytes-SLSHARED_CONFIG_DOT1Q_HEADER_SIZE,
                           PPE_IP_PROTOCOL_UDP, 128);
 
     /*
@@ -509,19 +503,15 @@ sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
      */
     AIM_LOG_TRACE("Build UDP header with sport: %u, dport: %u, length: %u",
                   entry->value.agent_udp_sport, entry->value.collector_udp_dport,
-                  pktLen+SLSHARED_CONFIG_UDP_HEADER_SIZE);
+                  octets->bytes-SLSHARED_CONFIG_DOT1Q_HEADER_SIZE-SLSHARED_CONFIG_IPV4_HEADER_SIZE);
     ppe_build_udp_header(&ppep, entry->value.agent_udp_sport,
                          entry->value.collector_udp_dport,
-                         pktLen+SLSHARED_CONFIG_UDP_HEADER_SIZE);
+                         octets->bytes-SLSHARED_CONFIG_DOT1Q_HEADER_SIZE-SLSHARED_CONFIG_IPV4_HEADER_SIZE);
 
     /*
      * Send the packet out on dataplane
      */
-    of_octets_t octets;
-    octets.data = data;
-    octets.bytes = SFLOW_PKT_HEADER_SIZE+pktLen;
-
-    rv = slshared_fwd_packet_out(&octets, OF_PORT_DEST_CONTROLLER,
+    rv = slshared_fwd_packet_out(octets, OF_PORT_DEST_CONTROLLER,
                                  OF_PORT_DEST_USE_TABLE,
                                  SLSHARED_CONFIG_SPAN_SFLOW_QUEUE_PRIORITY);
     if (rv < 0) {
@@ -529,9 +519,9 @@ sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
                       entry->key.collector_ip);
     } else {
         AIM_LOG_TRACE("Successfully sent %u bytes to collector: %{ipv4a}",
-                      octets.bytes, entry->key.collector_ip);
+                      octets->bytes, entry->key.collector_ip);
         ++entry->stats.tx_packets;
-        entry->stats.tx_bytes += octets.bytes;
+        entry->stats.tx_bytes += octets->bytes;
     }
 }
 
@@ -559,17 +549,26 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
         /*
          * Change the agent ip and sub_agent_id in the sflow datagram
          * from dummy to actual.
-         * Agent ip starts at byte 8 and sub agent id at byte 12.
+         *
+         * Since the dummy agent_ip is a ipv4 address, for bcf
+         * we would need to move the packet since agent_ip is a
+         * V6 address. Also we would need to change the agent ip version.
+         * Agent ip starts at byte 8 and sub agent id at byte 12 or 24
+         * depending on agent ip type(V4/V6).
          */
         uint32_t sub_agent_id = htonl(entry->value.sub_agent_id);
-        uint32_t agent_ip = htonl(entry->value.src_ip);
-        memcpy(pkt+8, &agent_ip, sizeof(entry->value.src_ip));
-        memcpy(pkt+12, &sub_agent_id, sizeof(sub_agent_id));
 
         debug_counter_inc(&sflow_counters.packet_out);
 
         switch(sflow_get_send_mode(entry)) {
         case SFLOW_SEND_MODE_MGMT: {
+
+            AIM_LOG_TRACE("Using src ip address: %{ipv4a} as agent ip",
+                          entry->value.src_ip);
+
+            uint32_t agent_ip = htonl(entry->value.src_ip);
+            SFLOWA_MEMCPY(pkt+8, &agent_ip, sizeof(entry->value.src_ip));
+            SFLOWA_MEMCPY(pkt+12, &sub_agent_id, sizeof(sub_agent_id));
 
             struct sockaddr_in sa;
             sa.sin_port = htons(entry->value.collector_udp_dport);
@@ -606,7 +605,40 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
         }
 
         case SFLOW_SEND_MODE_DATAPLANE: {
-            sflow_send_packet_out(pkt, pktLen, entry);
+            uint8_t data[1600];
+            of_octets_t octets;
+            octets.data = data;
+            octets.bytes = SFLOW_PKT_HEADER_SIZE+pktLen+12;
+
+            AIM_ASSERT(sizeof(data) > octets.bytes, "Buffer overflow");
+            SFLOWA_MEMSET(data, 0, sizeof(data));
+
+            /* FIXME: Remove checks after controller starts to push mgmt ipv6 address */
+            if (memcmp(&entry->value.mgmt_ipv6_addr, &of_ipv6_all_zeros,
+                sizeof(of_ipv6_t))) {
+                AIM_LOG_TRACE("Using mgmt ipv6 address: %s as agent ip",
+                              ipv6_to_str(entry->value.mgmt_ipv6_addr));
+
+                uint32_t agent_ip_version = htonl(SFLADDRESSTYPE_IP_V6);
+                uint32_t sflow_version = htonl(SFLDATAGRAM_VERSION5);
+
+                uint8_t *ptr = data+SFLOW_PKT_HEADER_SIZE;
+                SFLOWA_MEMCPY(ptr, &sflow_version, sizeof(sflow_version));
+                SFLOWA_MEMCPY(ptr+4, &agent_ip_version, sizeof(agent_ip_version));
+                SFLOWA_MEMCPY(ptr+8, &entry->value.mgmt_ipv6_addr, sizeof(of_ipv6_t));
+                SFLOWA_MEMCPY(ptr+24, &sub_agent_id, sizeof(sub_agent_id));
+                SFLOWA_MEMCPY(ptr+28, pkt+16, pktLen-16);
+            } else {
+                AIM_LOG_TRACE("Using src ip address: %{ipv4a} as agent ip",
+                              entry->value.src_ip);
+
+                octets.bytes -= 12;
+                uint32_t agent_ip = htonl(entry->value.src_ip);
+                SFLOWA_MEMCPY(pkt+8, &agent_ip, sizeof(entry->value.src_ip));
+                SFLOWA_MEMCPY(pkt+12, &sub_agent_id, sizeof(sub_agent_id));
+                SFLOWA_MEMCPY(data+SFLOW_PKT_HEADER_SIZE, pkt, pktLen);
+            }
+            sflow_send_packet_out(&octets, entry);
             break;
         }
 
@@ -1088,7 +1120,7 @@ sflow_collector_parse_value(of_list_bsn_tlv_t *tlvs,
         return INDIGO_ERROR_PARAM;
     }
 
-    /* FIXME: For now check if ipv6-tlv is present, Remove later */
+    /* Optional for now, so check if ipv6-tlv is present */
     if (of_list_bsn_tlv_next(tlvs, &tlv) == 0) {
 
         /* Switch management ipv6 address */

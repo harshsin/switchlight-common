@@ -34,12 +34,6 @@ static uint32_t current_sampling_rate;
 static ind_soc_config_t soc_cfg;
 
 static const of_mac_addr_t zero_mac = { {0x00, 0x00, 0x00, 0x00, 0x00, 0x00} };
-/*static const of_ipv6_t of_ipv6_all_zeros = {
-    {
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0
-    }
-};*/
 
 static const sflow_collector_entry_t collector_entry_1 = {
     .key.collector_ip = 0xc0a86401, //192.168.100.1
@@ -78,6 +72,8 @@ uint8_t expected[172] = {0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x01, 0xc0, 0
                          0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a,
                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x60, 0x00, 0x00, 0x00, 0x01,
                          0x00, 0x00, 0x00, 0x52, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x4e};
+
+uint8_t expected_ipv6[184] = {0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x02, 0xfe, 0x80, 0xc0, 0x01, 0x37, 0xff, 0xfe, 0x6c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 static int fd;
 static int port_desc_count = 0;
@@ -171,21 +167,21 @@ indigo_fwd_packet_out(of_packet_out_t *of_packet_out)
 
     printf("Send a packet with %u bytes out\n", of_octets.bytes);
 
-    if (!memcmp(&of_octets.data[74], &flow_sample, 4)) {
+    if (!memcmp(&of_octets.data[86], &flow_sample, 4)) {
         printf("Flow Sample received\n");
-        AIM_ASSERT(of_octets.bytes == 218, "mismatch in flow sample length, "
-                   "expected 218, got (%u)", of_octets.bytes);
-        AIM_ASSERT(!memcmp(&of_octets.data[46], expected, 172),
+        AIM_ASSERT(of_octets.bytes == 230, "mismatch in flow sample length, "
+                   "expected 230, got (%u)", of_octets.bytes);
+        AIM_ASSERT(!memcmp(&of_octets.data[46], expected_ipv6, 184),
                    "mismatch in flow sample recv'd");
-    } else if (!memcmp(&of_octets.data[74], &counter_sample, 4)) {
+    } else if (!memcmp(&of_octets.data[86], &counter_sample, 4)) {
         printf("Counter Sample received\n");
         if (cs_count == 0) {
-            AIM_ASSERT(of_octets.bytes == 190, "mismatch in counter sample "
-                       "length, expected 190, got (%u)", of_octets.bytes);
+            AIM_ASSERT(of_octets.bytes == 202, "mismatch in counter sample "
+                       "length, expected 202, got (%u)", of_octets.bytes);
             cs_count++;
         } else if (cs_count == 1) {
-            AIM_ASSERT(of_octets.bytes == 306, "mismatch in counter sample "
-                       "length, expected 306, got (%u)", of_octets.bytes);
+            AIM_ASSERT(of_octets.bytes == 318, "mismatch in counter sample "
+                       "length, expected 318, got (%u)", of_octets.bytes);
         }
     }
 
@@ -713,6 +709,8 @@ test_sampled_packet_in(void)
     of_octets_t octets;
 
     memcpy(&expected[92], sample, PACKET_BUF_SIZE);
+    memcpy(&expected_ipv6[24], &expected[12], 80);
+    memcpy(&expected_ipv6[104], sample, PACKET_BUF_SIZE);
 
     sflowa_sampling_rate_handler_register(handler);
 
