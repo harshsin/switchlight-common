@@ -59,6 +59,38 @@
 #define SFLOW_DUPLEX_FULL 1
 #define SFLOW_DUPLEX_HALF 2
 
+/*
+ * SFLOW datagram header
+0                           32
+ ---------------------------
+|datagram version(=5)       |
+ ---------------------------
+|agent_ip version(V4=1/V6=2)|
+ ---------------------------
+|agent_ip                   | <- V4 \
+ ---------------------------         \
+|                           |         \
+ ---------------------------           V6
+|                           |         /
+ ---------------------------         /
+|                           |       /
+ ---------------------------
+|sub_agent_id               |
+ ---------------------------
+|sequence number            |
+ ---------------------------
+|uptime                     |
+ ---------------------------
+|num_records                |
+ ---------------------------
+*/
+#define SFLOW_AGENT_IP_TYPE_OFFSET    4
+#define SFLOW_AGENT_IP_OFFSET         8
+#define SFLOW_SUB_AGENT_ID_V4_OFFSET  12
+#define SFLOW_SEQUENCE_NUM_V4_OFFSET  16
+#define SFLOW_SUB_AGENT_ID_V6_OFFSET  24
+#define SFLOW_SEQUENCE_NUM_V6_OFFSET  28
+
 static const of_mac_addr_t zero_mac = { {0x00, 0x00, 0x00, 0x00, 0x00, 0x00} };
 
 static indigo_core_gentable_t *sflow_collector_table;
@@ -526,6 +558,24 @@ sflow_send_packet_out(of_octets_t *octets,
 }
 
 /*
+ * push_net32
+ *
+ * push integer in the buffer in network byte order
+ */
+static void
+push_net32(uint8_t *buf, uint32_t value)
+{
+    value = htonl(value);
+    SFLOWA_MEMCPY(buf, &value, sizeof(uint32_t));
+}
+
+static void
+push_128(uint8_t *buf, uint8_t *value)
+{
+    SFLOWA_MEMCPY(buf, value, 16);
+}
+
+/*
  * sflow_send_packet
  *
  * Callback to send a sflow datagram out to the collectors
@@ -556,8 +606,6 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
          * Agent ip starts at byte 8 and sub agent id at byte 12 or 24
          * depending on agent ip type(V4/V6).
          */
-        uint32_t sub_agent_id = htonl(entry->value.sub_agent_id);
-
         debug_counter_inc(&sflow_counters.packet_out);
 
         switch(sflow_get_send_mode(entry)) {
@@ -566,9 +614,8 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
             AIM_LOG_TRACE("Using src ip address: %{ipv4a} as agent ip",
                           entry->value.src_ip);
 
-            uint32_t agent_ip = htonl(entry->value.src_ip);
-            SFLOWA_MEMCPY(pkt+8, &agent_ip, sizeof(entry->value.src_ip));
-            SFLOWA_MEMCPY(pkt+12, &sub_agent_id, sizeof(sub_agent_id));
+            push_net32(pkt+SFLOW_AGENT_IP_OFFSET, entry->value.src_ip);
+            push_net32(pkt+SFLOW_SUB_AGENT_ID_V4_OFFSET, entry->value.sub_agent_id);
 
             struct sockaddr_in sa;
             sa.sin_port = htons(entry->value.collector_udp_dport);
@@ -619,23 +666,27 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
                 AIM_LOG_TRACE("Using mgmt ipv6 address: %s as agent ip",
                               ipv6_to_str(entry->value.mgmt_ipv6_addr));
 
-                uint32_t agent_ip_version = htonl(SFLADDRESSTYPE_IP_V6);
-                uint32_t sflow_version = htonl(SFLDATAGRAM_VERSION5);
-
                 uint8_t *ptr = data+SFLOW_PKT_HEADER_SIZE;
-                SFLOWA_MEMCPY(ptr, &sflow_version, sizeof(sflow_version));
-                SFLOWA_MEMCPY(ptr+4, &agent_ip_version, sizeof(agent_ip_version));
-                SFLOWA_MEMCPY(ptr+8, &entry->value.mgmt_ipv6_addr, sizeof(of_ipv6_t));
-                SFLOWA_MEMCPY(ptr+24, &sub_agent_id, sizeof(sub_agent_id));
-                SFLOWA_MEMCPY(ptr+28, pkt+16, pktLen-16);
+                push_net32(ptr, SFLDATAGRAM_VERSION5);
+                push_net32(ptr+SFLOW_AGENT_IP_TYPE_OFFSET, SFLADDRESSTYPE_IP_V6);
+                push_128(ptr+SFLOW_AGENT_IP_OFFSET, entry->value.mgmt_ipv6_addr.addr);
+                push_net32(ptr+SFLOW_SUB_AGENT_ID_V6_OFFSET, entry->value.sub_agent_id);
+
+                /*
+                 * Copy the rest of the sflow packet constructed
+                 * by the hsflow-agent starting from sequence_num field.
+                 */
+                SFLOWA_MEMCPY(ptr+SFLOW_SEQUENCE_NUM_V6_OFFSET,
+                              pkt+SFLOW_SEQUENCE_NUM_V4_OFFSET,
+                              pktLen-SFLOW_SEQUENCE_NUM_V4_OFFSET);
             } else {
                 AIM_LOG_TRACE("Using src ip address: %{ipv4a} as agent ip",
                               entry->value.src_ip);
 
                 octets.bytes -= 12;
-                uint32_t agent_ip = htonl(entry->value.src_ip);
-                SFLOWA_MEMCPY(pkt+8, &agent_ip, sizeof(entry->value.src_ip));
-                SFLOWA_MEMCPY(pkt+12, &sub_agent_id, sizeof(sub_agent_id));
+                push_net32(pkt+SFLOW_AGENT_IP_OFFSET, entry->value.src_ip);
+                push_net32(pkt+SFLOW_SUB_AGENT_ID_V4_OFFSET, entry->value.sub_agent_id);
+
                 SFLOWA_MEMCPY(data+SFLOW_PKT_HEADER_SIZE, pkt, pktLen);
             }
             sflow_send_packet_out(&octets, entry);
