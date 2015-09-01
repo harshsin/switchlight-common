@@ -59,6 +59,38 @@
 #define SFLOW_DUPLEX_FULL 1
 #define SFLOW_DUPLEX_HALF 2
 
+/*
+ * SFLOW datagram header
+0                           32
+ ---------------------------
+|datagram version(=5)       |
+ ---------------------------
+|agent_ip version(V4=1/V6=2)|
+ ---------------------------
+|agent_ip                   | <- V4 \
+ ---------------------------         \
+|                           |         \
+ ---------------------------           V6
+|                           |         /
+ ---------------------------         /
+|                           |       /
+ ---------------------------
+|sub_agent_id               |
+ ---------------------------
+|sequence number            |
+ ---------------------------
+|uptime                     |
+ ---------------------------
+|num_records                |
+ ---------------------------
+*/
+#define SFLOW_AGENT_IP_TYPE_OFFSET    4
+#define SFLOW_AGENT_IP_OFFSET         8
+#define SFLOW_SUB_AGENT_ID_V4_OFFSET  12
+#define SFLOW_SEQUENCE_NUM_V4_OFFSET  16
+#define SFLOW_SUB_AGENT_ID_V6_OFFSET  24
+#define SFLOW_SEQUENCE_NUM_V6_OFFSET  28
+
 static const of_mac_addr_t zero_mac = { {0x00, 0x00, 0x00, 0x00, 0x00, 0x00} };
 
 static indigo_core_gentable_t *sflow_collector_table;
@@ -389,6 +421,22 @@ sflow_get_send_mode(sflow_collector_entry_t *entry)
     return SFLOW_SEND_MODE_DATAPLANE;
 }
 
+static char ipv6_str[40];
+static char *
+ipv6_to_str(const of_ipv6_t ipv6)
+{
+    sprintf(ipv6_str, "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+            (int)ipv6.addr[0], (int)ipv6.addr[1],
+            (int)ipv6.addr[2], (int)ipv6.addr[3],
+            (int)ipv6.addr[4], (int)ipv6.addr[5],
+            (int)ipv6.addr[6], (int)ipv6.addr[7],
+            (int)ipv6.addr[8], (int)ipv6.addr[9],
+            (int)ipv6.addr[10], (int)ipv6.addr[11],
+            (int)ipv6.addr[12], (int)ipv6.addr[13],
+            (int)ipv6.addr[14], (int)ipv6.addr[15]);
+    return ipv6_str;
+}
+
 /*
  * sflow_timer
  *
@@ -441,27 +489,22 @@ sflow_error(void *magic, SFLAgent *agent, char *msg)
  * send it out on dataplane
  */
 static void
-sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
+sflow_send_packet_out(of_octets_t *octets,
                       sflow_collector_entry_t *entry)
 {
     ppe_packet_t          ppep;
     indigo_error_t        rv;
-    uint8_t               data[1600];
 
-    AIM_ASSERT(sizeof(data) > SFLOW_PKT_HEADER_SIZE+pktLen, "Buffer overflow");
-    SFLOWA_MEMSET(data, 0, sizeof(data));
-    SFLOWA_MEMCPY(data+SFLOW_PKT_HEADER_SIZE, pkt, pktLen);
-
-    ppe_packet_init(&ppep, data, SFLOW_PKT_HEADER_SIZE+pktLen);
+    ppe_packet_init(&ppep, octets->data, octets->bytes);
 
     /*
      * Set ethertype as 802.1Q and type as IPv4
      * Parse to recognize tagged Ethernet packet.
      */
-    data[12] = SLSHARED_CONFIG_ETHERTYPE_DOT1Q >> 8;
-    data[13] = SLSHARED_CONFIG_ETHERTYPE_DOT1Q & 0xFF;
-    data[16] = PPE_ETHERTYPE_IP4 >> 8;
-    data[17] = PPE_ETHERTYPE_IP4 & 0xFF;
+    octets->data[12] = SLSHARED_CONFIG_ETHERTYPE_DOT1Q >> 8;
+    octets->data[13] = SLSHARED_CONFIG_ETHERTYPE_DOT1Q & 0xFF;
+    octets->data[16] = PPE_ETHERTYPE_IP4 >> 8;
+    octets->data[17] = PPE_ETHERTYPE_IP4 & 0xFF;
     if (ppe_parse(&ppep) < 0) {
         AIM_DIE("Packet_out parsing failed after IPv4 header");
         return;
@@ -482,10 +525,9 @@ sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
      * Build the IP header, ip_proto = UDP
      */
     AIM_LOG_TRACE("Build IP header with src_ip: %{ipv4a}, dest_ip: %{ipv4a}",
-                  entry->value.agent_ip, entry->key.collector_ip);
-    ppe_build_ipv4_header(&ppep, entry->value.agent_ip, entry->key.collector_ip,
-                          pktLen+SLSHARED_CONFIG_IPV4_HEADER_SIZE+
-                          SLSHARED_CONFIG_UDP_HEADER_SIZE,
+                  entry->value.src_ip, entry->key.collector_ip);
+    ppe_build_ipv4_header(&ppep, entry->value.src_ip, entry->key.collector_ip,
+                          octets->bytes-SLSHARED_CONFIG_DOT1Q_HEADER_SIZE,
                           PPE_IP_PROTOCOL_UDP, 128);
 
     /*
@@ -493,19 +535,15 @@ sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
      */
     AIM_LOG_TRACE("Build UDP header with sport: %u, dport: %u, length: %u",
                   entry->value.agent_udp_sport, entry->value.collector_udp_dport,
-                  pktLen+SLSHARED_CONFIG_UDP_HEADER_SIZE);
+                  octets->bytes-SLSHARED_CONFIG_DOT1Q_HEADER_SIZE-SLSHARED_CONFIG_IPV4_HEADER_SIZE);
     ppe_build_udp_header(&ppep, entry->value.agent_udp_sport,
                          entry->value.collector_udp_dport,
-                         pktLen+SLSHARED_CONFIG_UDP_HEADER_SIZE);
+                         octets->bytes-SLSHARED_CONFIG_DOT1Q_HEADER_SIZE-SLSHARED_CONFIG_IPV4_HEADER_SIZE);
 
     /*
      * Send the packet out on dataplane
      */
-    of_octets_t octets;
-    octets.data = data;
-    octets.bytes = SFLOW_PKT_HEADER_SIZE+pktLen;
-
-    rv = slshared_fwd_packet_out(&octets, OF_PORT_DEST_CONTROLLER,
+    rv = slshared_fwd_packet_out(octets, OF_PORT_DEST_CONTROLLER,
                                  OF_PORT_DEST_USE_TABLE,
                                  SLSHARED_CONFIG_SPAN_SFLOW_QUEUE_PRIORITY);
     if (rv < 0) {
@@ -513,10 +551,28 @@ sflow_send_packet_out(uint8_t *pkt, uint32_t pktLen,
                       entry->key.collector_ip);
     } else {
         AIM_LOG_TRACE("Successfully sent %u bytes to collector: %{ipv4a}",
-                      octets.bytes, entry->key.collector_ip);
+                      octets->bytes, entry->key.collector_ip);
         ++entry->stats.tx_packets;
-        entry->stats.tx_bytes += octets.bytes;
+        entry->stats.tx_bytes += octets->bytes;
     }
+}
+
+/*
+ * push_net32
+ *
+ * push integer in the buffer in network byte order
+ */
+static void
+push_net32(uint8_t *buf, uint32_t value)
+{
+    value = htonl(value);
+    SFLOWA_MEMCPY(buf, &value, sizeof(uint32_t));
+}
+
+static void
+push_128(uint8_t *buf, uint8_t *value)
+{
+    SFLOWA_MEMCPY(buf, value, 16);
 }
 
 /*
@@ -543,17 +599,23 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
         /*
          * Change the agent ip and sub_agent_id in the sflow datagram
          * from dummy to actual.
-         * Agent ip starts at byte 8 and sub agent id at byte 12.
+         *
+         * Since the dummy agent_ip is a ipv4 address, for bcf
+         * we would need to move the packet since agent_ip is a
+         * V6 address. Also we would need to change the agent ip version.
+         * Agent ip starts at byte 8 and sub agent id at byte 12 or 24
+         * depending on agent ip type(V4/V6).
          */
-        uint32_t sub_agent_id = htonl(entry->value.sub_agent_id);
-        uint32_t agent_ip = htonl(entry->value.agent_ip);
-        memcpy(pkt+8, &agent_ip, sizeof(entry->value.agent_ip));
-        memcpy(pkt+12, &sub_agent_id, sizeof(sub_agent_id));
-
         debug_counter_inc(&sflow_counters.packet_out);
 
         switch(sflow_get_send_mode(entry)) {
         case SFLOW_SEND_MODE_MGMT: {
+
+            AIM_LOG_TRACE("Using src ip address: %{ipv4a} as agent ip",
+                          entry->value.src_ip);
+
+            push_net32(pkt+SFLOW_AGENT_IP_OFFSET, entry->value.src_ip);
+            push_net32(pkt+SFLOW_SUB_AGENT_ID_V4_OFFSET, entry->value.sub_agent_id);
 
             struct sockaddr_in sa;
             sa.sin_port = htons(entry->value.collector_udp_dport);
@@ -590,7 +652,44 @@ sflow_send_packet(void *magic, SFLAgent *agent, SFLReceiver *receiver,
         }
 
         case SFLOW_SEND_MODE_DATAPLANE: {
-            sflow_send_packet_out(pkt, pktLen, entry);
+            uint8_t data[1600];
+            of_octets_t octets;
+            octets.data = data;
+            octets.bytes = SFLOW_PKT_HEADER_SIZE+pktLen+12;
+
+            AIM_ASSERT(sizeof(data) > octets.bytes, "Buffer overflow");
+            SFLOWA_MEMSET(data, 0, sizeof(data));
+
+            /* FIXME: Remove checks after controller starts to push mgmt ipv6 address */
+            if (memcmp(&entry->value.mgmt_ipv6_addr, &of_ipv6_all_zeros,
+                sizeof(of_ipv6_t))) {
+                AIM_LOG_TRACE("Using mgmt ipv6 address: %s as agent ip",
+                              ipv6_to_str(entry->value.mgmt_ipv6_addr));
+
+                uint8_t *ptr = data+SFLOW_PKT_HEADER_SIZE;
+                push_net32(ptr, SFLDATAGRAM_VERSION5);
+                push_net32(ptr+SFLOW_AGENT_IP_TYPE_OFFSET, SFLADDRESSTYPE_IP_V6);
+                push_128(ptr+SFLOW_AGENT_IP_OFFSET, entry->value.mgmt_ipv6_addr.addr);
+                push_net32(ptr+SFLOW_SUB_AGENT_ID_V6_OFFSET, entry->value.sub_agent_id);
+
+                /*
+                 * Copy the rest of the sflow packet constructed
+                 * by the hsflow-agent starting from sequence_num field.
+                 */
+                SFLOWA_MEMCPY(ptr+SFLOW_SEQUENCE_NUM_V6_OFFSET,
+                              pkt+SFLOW_SEQUENCE_NUM_V4_OFFSET,
+                              pktLen-SFLOW_SEQUENCE_NUM_V4_OFFSET);
+            } else {
+                AIM_LOG_TRACE("Using src ip address: %{ipv4a} as agent ip",
+                              entry->value.src_ip);
+
+                octets.bytes -= 12;
+                push_net32(pkt+SFLOW_AGENT_IP_OFFSET, entry->value.src_ip);
+                push_net32(pkt+SFLOW_SUB_AGENT_ID_V4_OFFSET, entry->value.sub_agent_id);
+
+                SFLOWA_MEMCPY(data+SFLOW_PKT_HEADER_SIZE, pkt, pktLen);
+            }
+            sflow_send_packet_out(&octets, entry);
             break;
         }
 
@@ -1005,9 +1104,9 @@ sflow_collector_parse_value(of_list_bsn_tlv_t *tlvs,
         return INDIGO_ERROR_PARAM;
     }
 
-    /* Agent ip */
+    /* Src ip */
     if (tlv.object_id == OF_BSN_TLV_IPV4_SRC) {
-        of_bsn_tlv_ipv4_src_value_get(&tlv, &value->agent_ip);
+        of_bsn_tlv_ipv4_src_value_get(&tlv, &value->src_ip);
     } else {
         AIM_LOG_ERROR("expected ipv4_src value TLV, instead got %s",
                       of_class_name(&tlv));
@@ -1072,6 +1171,19 @@ sflow_collector_parse_value(of_list_bsn_tlv_t *tlvs,
         return INDIGO_ERROR_PARAM;
     }
 
+    /* Optional for now, so check if ipv6-tlv is present */
+    if (of_list_bsn_tlv_next(tlvs, &tlv) == 0) {
+
+        /* Switch management ipv6 address */
+        if (tlv.object_id == OF_BSN_TLV_IPV6) {
+            of_bsn_tlv_ipv6_value_get(&tlv, &value->mgmt_ipv6_addr);
+        } else {
+            AIM_LOG_ERROR("expected ipv6 value TLV, instead got %s",
+                          of_class_name(&tlv));
+            return INDIGO_ERROR_PARAM;
+        }
+    }
+
     if (of_list_bsn_tlv_next(tlvs, &tlv) == 0) {
         AIM_LOG_ERROR("expected end of value list, instead got %s",
                       of_class_name(&tlv));
@@ -1121,14 +1233,15 @@ sflow_collector_add(void *table_priv, of_list_bsn_tlv_t *key_tlvs,
     list_push(&sflow_collectors, &entry->links);
 
     AIM_LOG_TRACE("Add collector table entry, collector_ip: %{ipv4a} -> vlan_id:"
-                  " %u, vlan_pcp: %u, agent_mac: %{mac}, agent_ip: %{ipv4a}, "
+                  " %u, vlan_pcp: %u, agent_mac: %{mac}, src_ip: %{ipv4a}, "
                   "agent_udp_sport: %u, collector_mac: %{mac}, "
-                  "collector_udp_dport: %u, sub_agent_id: %u",
+                  "collector_udp_dport: %u, sub_agent_id: %u, mgmt_ipv6_addr: %s",
                   entry->key.collector_ip,  entry->value.vlan_id,
                   entry->value.vlan_pcp, entry->value.agent_mac.addr,
-                  entry->value.agent_ip, entry->value.agent_udp_sport,
+                  entry->value.src_ip, entry->value.agent_udp_sport,
                   entry->value.collector_mac.addr,
-                  entry->value.collector_udp_dport, entry->value.sub_agent_id);
+                  entry->value.collector_udp_dport, entry->value.sub_agent_id,
+                  ipv6_to_str(entry->value.mgmt_ipv6_addr));
 
     *entry_priv = entry;
 
@@ -1154,22 +1267,25 @@ sflow_collector_modify(void *table_priv, void *entry_priv,
     }
 
     AIM_LOG_TRACE("Modify collector table entry, old collector_ip: %{ipv4a} ->"
-                  " vlan_id: %u, vlan_pcp: %u, agent_mac: %{mac}, agent_ip: "
+                  " vlan_id: %u, vlan_pcp: %u, agent_mac: %{mac}, src_ip: "
                   "%{ipv4a}, agent_udp_sport: %u, collector_mac: %{mac}, "
-                  "collector_udp_dport: %u, sub_agent_id: %u",
+                  "collector_udp_dport: %u, sub_agent_id: %u, mgmt_ipv6_addr: %s",
                   entry->key.collector_ip, entry->value.vlan_id,
                   entry->value.vlan_pcp, entry->value.agent_mac.addr,
-                  entry->value.agent_ip, entry->value.agent_udp_sport,
+                  entry->value.src_ip, entry->value.agent_udp_sport,
                   entry->value.collector_mac.addr,
-                  entry->value.collector_udp_dport, entry->value.sub_agent_id);
+                  entry->value.collector_udp_dport, entry->value.sub_agent_id,
+                  ipv6_to_str(entry->value.mgmt_ipv6_addr));
 
     AIM_LOG_TRACE("New, collector_ip: %{ipv4a} -> vlan_id: %u, vlan_pcp: %u, "
-                  "agent_mac: %{mac}, agent_ip: %{ipv4a}, agent_udp_sport: %u,"
+                  "agent_mac: %{mac}, src_ip: %{ipv4a}, agent_udp_sport: %u,"
                   " collector_mac: %{mac}, collector_udp_dport: %u, "
-                  "sub_agent_id: %u", entry->key.collector_ip, value.vlan_id,
-                  value.vlan_pcp, value.agent_mac.addr, value.agent_ip,
+                  "sub_agent_id: %u, mgmt_ipv6_addr: %s",
+                  entry->key.collector_ip, value.vlan_id,
+                  value.vlan_pcp, value.agent_mac.addr, value.src_ip,
                   value.agent_udp_sport, value.collector_mac.addr,
-                  value.collector_udp_dport, value.sub_agent_id);
+                  value.collector_udp_dport, value.sub_agent_id,
+                  ipv6_to_str(value.mgmt_ipv6_addr));
 
     entry->value = value;
 
@@ -1188,14 +1304,15 @@ sflow_collector_delete(void *table_priv, void *entry_priv,
     sflow_collector_entry_t *entry = entry_priv;
 
     AIM_LOG_TRACE("Delete collector table entry, collector_ip: %{ipv4a} -> "
-                  "vlan_id: %u, vlan_pcp: %u, agent_mac: %{mac}, agent_ip: "
+                  "vlan_id: %u, vlan_pcp: %u, agent_mac: %{mac}, src_ip: "
                   "%{ipv4a}, agent_udp_sport: %u, collector_mac: %{mac}, "
-                  "collector_udp_dport: %u, sub_agent_id: %u",
+                  "collector_udp_dport: %u, sub_agent_id: %u, mgmt_ipv6_addr: %s",
                   entry->key.collector_ip, entry->value.vlan_id,
                   entry->value.vlan_pcp, entry->value.agent_mac.addr,
-                  entry->value.agent_ip, entry->value.agent_udp_sport,
+                  entry->value.src_ip, entry->value.agent_udp_sport,
                   entry->value.collector_mac.addr,
-                  entry->value.collector_udp_dport, entry->value.sub_agent_id);
+                  entry->value.collector_udp_dport, entry->value.sub_agent_id,
+                  ipv6_to_str(entry->value.mgmt_ipv6_addr));
 
     /*
      * Delete this entry from the list

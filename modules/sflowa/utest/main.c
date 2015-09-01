@@ -40,22 +40,24 @@ static const sflow_collector_entry_t collector_entry_1 = {
     .value.vlan_id = 7,
     .value.vlan_pcp = 4,
     .value.agent_mac = { .addr = {0x55, 0x16, 0xc7, 0x01, 0x02, 0x03} },
-    .value.agent_ip = 0xc0a80101, //192.168.1.1
+    .value.src_ip = 0xc0a80101, //192.168.1.1
     .value.agent_udp_sport = 50000,
     .value.collector_mac = { .addr = {0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f} },
     .value.collector_udp_dport = SFL_DEFAULT_COLLECTOR_PORT,
     .value.sub_agent_id = 10,
+    .value.mgmt_ipv6_addr = { .addr = {0xfe, 0x80, 0xc0, 0x01, 0x37, 0xff, 0xfe, 0x6c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00} },
 };
 static sflow_collector_entry_t collector_entry_2 = {
     .key.collector_ip = 0x0a0a0505, //10.10.5.5
     .value.vlan_id = 2,
     .value.vlan_pcp = 4,
     .value.agent_mac = { .addr = {0x55, 0x16, 0xc7, 0x01, 0x02, 0x03} },
-    .value.agent_ip = 0x0a0a6401, //10.10.100.1
+    .value.src_ip = 0x0a0a6401, //10.10.100.1
     .value.agent_udp_sport = 45000,
     .value.collector_mac = { .addr = {0xca, 0xfe, 0xc0, 0xff, 0xee, 0x00} },
     .value.collector_udp_dport = SFL_DEFAULT_COLLECTOR_PORT,
     .value.sub_agent_id = 2,
+    .value.mgmt_ipv6_addr = { .addr = {0xfe, 0x80, 0xc0, 0x01, 0x37, 0xff, 0xfe, 0x6c, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00} },
 };
 
 #define PACKET_BUF_SIZE 78
@@ -70,6 +72,8 @@ uint8_t expected[172] = {0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x01, 0xc0, 0
                          0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a,
                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x60, 0x00, 0x00, 0x00, 0x01,
                          0x00, 0x00, 0x00, 0x52, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x4e};
+
+uint8_t expected_ipv6[184] = {0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x02, 0xfe, 0x80, 0xc0, 0x01, 0x37, 0xff, 0xfe, 0x6c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 static int fd;
 static int port_desc_count = 0;
@@ -163,21 +167,21 @@ indigo_fwd_packet_out(of_packet_out_t *of_packet_out)
 
     printf("Send a packet with %u bytes out\n", of_octets.bytes);
 
-    if (!memcmp(&of_octets.data[74], &flow_sample, 4)) {
+    if (!memcmp(&of_octets.data[86], &flow_sample, 4)) {
         printf("Flow Sample received\n");
-        AIM_ASSERT(of_octets.bytes == 218, "mismatch in flow sample length, "
-                   "expected 218, got (%u)", of_octets.bytes);
-        AIM_ASSERT(!memcmp(&of_octets.data[46], expected, 172),
+        AIM_ASSERT(of_octets.bytes == 230, "mismatch in flow sample length, "
+                   "expected 230, got (%u)", of_octets.bytes);
+        AIM_ASSERT(!memcmp(&of_octets.data[46], expected_ipv6, 184),
                    "mismatch in flow sample recv'd");
-    } else if (!memcmp(&of_octets.data[74], &counter_sample, 4)) {
+    } else if (!memcmp(&of_octets.data[86], &counter_sample, 4)) {
         printf("Counter Sample received\n");
         if (cs_count == 0) {
-            AIM_ASSERT(of_octets.bytes == 190, "mismatch in counter sample "
-                       "length, expected 190, got (%u)", of_octets.bytes);
+            AIM_ASSERT(of_octets.bytes == 202, "mismatch in counter sample "
+                       "length, expected 202, got (%u)", of_octets.bytes);
             cs_count++;
         } else if (cs_count == 1) {
-            AIM_ASSERT(of_octets.bytes == 306, "mismatch in counter sample "
-                       "length, expected 306, got (%u)", of_octets.bytes);
+            AIM_ASSERT(of_octets.bytes == 318, "mismatch in counter sample "
+                       "length, expected 318, got (%u)", of_octets.bytes);
         }
     }
 
@@ -310,7 +314,7 @@ make_key_collector(uint32_t dst_ip)
 static of_list_bsn_tlv_t *
 make_value(uint16_t vlan, uint8_t vlan_pcp, of_mac_addr_t src_mac,
            uint32_t src_ip, uint16_t sport, of_mac_addr_t dst_mac,
-           uint16_t dport, uint32_t sub_agent_id)
+           uint16_t dport, uint32_t sub_agent_id, of_ipv6_t ipv6_addr)
 {
     of_list_bsn_tlv_t *list = of_list_bsn_tlv_new(OF_VERSION_1_3);
     {
@@ -361,6 +365,14 @@ make_value(uint16_t vlan, uint8_t vlan_pcp, of_mac_addr_t src_mac,
         of_list_append(list, tlv);
         of_object_delete(tlv);
     }
+
+    if (memcmp(&ipv6_addr, &of_ipv6_all_zeros, sizeof(of_ipv6_t))) {
+        of_bsn_tlv_ipv6_t *tlv = of_bsn_tlv_ipv6_new(OF_VERSION_1_3);
+        of_bsn_tlv_ipv6_value_set(tlv, ipv6_addr);
+        of_list_append(list, tlv);
+        of_object_delete(tlv);
+    }
+
     return list;
 }
 
@@ -378,11 +390,12 @@ test_sflow_collector_table(void)
     value = make_value(collector_entry_1.value.vlan_id,
                        collector_entry_1.value.vlan_pcp,
                        collector_entry_1.value.agent_mac,
-                       collector_entry_1.value.agent_ip,
+                       collector_entry_1.value.src_ip,
                        collector_entry_1.value.agent_udp_sport,
                        collector_entry_1.value.collector_mac,
                        collector_entry_1.value.collector_udp_dport,
-                       collector_entry_1.value.sub_agent_id);
+                       collector_entry_1.value.sub_agent_id,
+                       collector_entry_1.value.mgmt_ipv6_addr);
 
     AIM_ASSERT((rv = ops_collector->add(table_priv_collector, key, value,
                &entry_priv_1)) == INDIGO_ERROR_NONE,
@@ -401,11 +414,12 @@ test_sflow_collector_table(void)
     value = make_value(collector_entry_2.value.vlan_id,
                        collector_entry_2.value.vlan_pcp,
                        collector_entry_2.value.agent_mac,
-                       collector_entry_2.value.agent_ip,
+                       collector_entry_2.value.src_ip,
                        collector_entry_2.value.agent_udp_sport,
                        collector_entry_2.value.collector_mac,
                        collector_entry_2.value.collector_udp_dport,
-                       collector_entry_2.value.sub_agent_id);
+                       collector_entry_2.value.sub_agent_id,
+                       collector_entry_2.value.mgmt_ipv6_addr);
 
     AIM_ASSERT((rv = ops_collector->add(table_priv_collector, key, value,
                &entry_priv_2)) == INDIGO_ERROR_NONE,
@@ -420,15 +434,16 @@ test_sflow_collector_table(void)
      * Test modify
      */
     collector_entry_2.value.vlan_id = 15;
-    collector_entry_2.value.agent_ip = 0x0a0a6464; //10.10.100.100
+    collector_entry_2.value.src_ip = 0x0a0a6464; //10.10.100.100
     value = make_value(collector_entry_2.value.vlan_id,
                        collector_entry_2.value.vlan_pcp,
                        collector_entry_2.value.agent_mac,
-                       collector_entry_2.value.agent_ip,
+                       collector_entry_2.value.src_ip,
                        collector_entry_2.value.agent_udp_sport,
                        collector_entry_2.value.collector_mac,
                        collector_entry_2.value.collector_udp_dport,
-                       collector_entry_2.value.sub_agent_id);
+                       collector_entry_2.value.sub_agent_id,
+                       collector_entry_2.value.mgmt_ipv6_addr);
     AIM_ASSERT((rv = ops_collector->modify(table_priv_sampler, entry_priv_2, key,
                value)) == INDIGO_ERROR_NONE,
                "Error in collector table modify: %s\n", indigo_strerror(rv));
@@ -694,6 +709,8 @@ test_sampled_packet_in(void)
     of_octets_t octets;
 
     memcpy(&expected[92], sample, PACKET_BUF_SIZE);
+    memcpy(&expected_ipv6[24], &expected[12], 80);
+    memcpy(&expected_ipv6[104], sample, PACKET_BUF_SIZE);
 
     sflowa_sampling_rate_handler_register(handler);
 
@@ -724,7 +741,7 @@ test_sampled_packet_in(void)
     /* Add bt collector_table entry */
     key = make_key_collector(0x7F000001); //127.0.0.1
     value = make_value(0, 0, zero_mac, 0xc0a80101, 0, zero_mac,
-                       SFL_DEFAULT_COLLECTOR_PORT, 10);
+                       SFL_DEFAULT_COLLECTOR_PORT, 10, of_ipv6_all_zeros);
 
     AIM_ASSERT((rv = ops_collector->add(table_priv_collector, key, value,
                &collector_entry_priv_1)) == INDIGO_ERROR_NONE,
@@ -738,11 +755,12 @@ test_sampled_packet_in(void)
     value = make_value(collector_entry_1.value.vlan_id,
                        collector_entry_1.value.vlan_pcp,
                        collector_entry_1.value.agent_mac,
-                       collector_entry_1.value.agent_ip,
+                       collector_entry_1.value.src_ip,
                        collector_entry_1.value.agent_udp_sport,
                        collector_entry_1.value.collector_mac,
                        collector_entry_1.value.collector_udp_dport,
-                       collector_entry_1.value.sub_agent_id);
+                       collector_entry_1.value.sub_agent_id,
+                       collector_entry_1.value.mgmt_ipv6_addr);
 
     AIM_ASSERT((rv = ops_collector->add(table_priv_collector, key, value,
                &collector_entry_priv_2)) == INDIGO_ERROR_NONE,
