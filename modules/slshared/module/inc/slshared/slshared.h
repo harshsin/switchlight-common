@@ -25,6 +25,11 @@
 
 #define QUEUE_ID_INVALID -1
 
+#define VLAN_PCP_OFFSET    13
+#define VLAN_PCP_MASK      0x7
+#define VLAN_VID_MASK      0xFFF
+#define VLAN_TCI(vid, pcp) ( (((pcp) & VLAN_PCP_MASK) << VLAN_PCP_OFFSET) | ((vid) & VLAN_VID_MASK) )
+#define STRIP_OFPVID_PRESENT(tci) VLAN_VID(tci)
 #define VLAN_VID(tci) ((tci) & 0xfff)
 #define VLAN_PCP(tci) ((tci) >> 13)
 
