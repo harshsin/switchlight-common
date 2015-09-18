@@ -146,6 +146,10 @@ handle_pktin(of_packet_in_t *packet_in)
 
     debug_counter_inc(&pktin_count);
 
+    if (packet_in->version <= OF_VERSION_1_1) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
     AIM_TRUE_OR_DIE(of_packet_in_match_get(packet_in, &match) == 0);
     port_no = match.fields.in_port;
 #if 0
