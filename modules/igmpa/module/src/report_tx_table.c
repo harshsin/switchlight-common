@@ -77,6 +77,7 @@ report_tx_send_packet(report_tx_entry_t *entry)
     if (igmpa_send_igmp_packet(&params)) {
         debug_counter_inc(&report_tx_failure);
     } else {
+        entry->tx_packets++;
         debug_counter_inc(&report_tx_count);
     }
 }
@@ -352,12 +353,12 @@ report_tx_get_stats(void *table_priv,
         of_bsn_tlv_idle_time_value_set(&tlv, idle_time);
     }
 
-    /* rx_packets */
+    /* tx_packets */
     {
-        of_bsn_tlv_rx_packets_t tlv;
-        of_bsn_tlv_rx_packets_init(&tlv, stats->version, -1, 1);
+        of_bsn_tlv_tx_packets_t tlv;
+        of_bsn_tlv_tx_packets_init(&tlv, stats->version, -1, 1);
         of_list_bsn_tlv_append_bind(stats, &tlv);
-        of_bsn_tlv_rx_packets_value_set(&tlv, entry->tx_packets);
+        of_bsn_tlv_tx_packets_value_set(&tlv, entry->tx_packets);
     }    
 }
 
