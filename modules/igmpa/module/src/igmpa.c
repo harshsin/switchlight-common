@@ -71,6 +71,10 @@ DEBUG_COUNTER(pim_rx_count, "igmpa.pim_rx",
               "PIM packet received");
 DEBUG_COUNTER(pim_too_short, "igmpa.pim_too_short",
               "PIM too short, forward to controller");
+DEBUG_COUNTER(pim_bad_version, "igmpa.pim_bad_version",
+              "PIM version mismatch, forward to controller");
+DEBUG_COUNTER(pim_bad_dstip, "igmpa.pim_bad_dstip",
+              "PIM bad destination ip, forward to controller");
 DEBUG_COUNTER(pim_bad_checksum, "igmpa.pim_bad_checksum",
               "PIM bad checksum, forward to controller");
 
@@ -271,12 +275,14 @@ handle_pim_pkt(ppe_packet_t *ppep,
     ppe_field_get(ppep, PPE_FIELD_PIM_VERSION, &msg_ver);
     if (msg_ver != 2) {
         /* we only support version 2 */
+        debug_counter_inc(&pim_bad_version);
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
     /* ip-dst for pim hello must be to all-routers */
     ppe_field_get(ppep, PPE_FIELD_IP4_DST_ADDR, &ipv4_dst);
     if (ipv4_dst != all_routers) {
+        debug_counter_inc(&pim_bad_dstip);
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
@@ -365,6 +371,37 @@ handle_pktin(of_packet_in_t *packet_in)
 #endif /* SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER */
 
 
+/* clear debug counters */
+void
+igmpa_stats_clear(void)
+{
+    debug_counter_reset(&pktin_count);
+    debug_counter_reset(&pktin_parse_failure);
+    debug_counter_reset(&igmp_rx_count);
+    debug_counter_reset(&igmp_too_short);
+    debug_counter_reset(&igmp_bad_checksum);
+    debug_counter_reset(&gq_rx_count);
+    debug_counter_reset(&gsq_rx_count);
+    debug_counter_reset(&report_rx_count);
+    debug_counter_reset(&leave_rx_count);
+    debug_counter_reset(&unknown_igmp_rx_count);
+    debug_counter_reset(&pim_rx_count);
+    debug_counter_reset(&pim_too_short);
+    debug_counter_reset(&pim_bad_version);
+    debug_counter_reset(&pim_bad_dstip);
+    debug_counter_reset(&pim_bad_checksum);
+
+    igmpa_timeout_stats_clear();
+    igmpa_rx_port_group_stats_clear();
+    igmpa_tx_port_group_stats_clear();
+    igmpa_report_expect_stats_clear();
+    igmpa_report_tx_stats_clear();
+    igmpa_gq_expect_stats_clear();
+    igmpa_gq_tx_stats_clear();
+    igmpa_pim_expect_stats_clear();
+}
+
+
 /* print debug counters */
 void
 igmpa_stats_show(aim_pvs_t *pvs)
@@ -394,6 +431,10 @@ igmpa_stats_show(aim_pvs_t *pvs)
                debug_counter_get(&pim_rx_count));
     aim_printf(pvs, "pim_too_short  %"PRIu64"\n",
                debug_counter_get(&pim_too_short));
+    aim_printf(pvs, "pim_bad_version  %"PRIu64"\n",
+               debug_counter_get(&pim_bad_version));
+    aim_printf(pvs, "pim_bad_dstip  %"PRIu64"\n",
+               debug_counter_get(&pim_bad_dstip));
     aim_printf(pvs, "pim_bad_checksum  %"PRIu64"\n",
                debug_counter_get(&pim_bad_checksum));
 

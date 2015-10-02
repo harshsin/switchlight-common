@@ -88,6 +88,7 @@ gq_expect_send_idle_notif(gq_expect_entry_t *entry)
 
     /* send notification to controller */
     indigo_cxn_send_async_message(notif);
+    debug_counter_inc(&gq_idle_notif);
 }
 
 
@@ -113,7 +114,6 @@ gq_expect_timer(void *cookie)
         notifs++;
         timer_wheel_insert(tw_gq_expect, &entry->timer_entry,
                            now + igmpa_gq_expect_timeout);
-        debug_counter_inc(&gq_idle_notif);
     }
 
     /* reregister sooner if more expired entries */
@@ -312,6 +312,18 @@ igmpa_gq_expect_lookup(char name[], uint16_t vlan_vid)
     IGMPA_MEMCPY(key.name, name, sizeof(key.name));
     key.vlan_vid = vlan_vid;
     return gq_expect_hashtable_first(ht_gq_expect, &key);
+}
+
+
+void
+igmpa_gq_expect_stats_clear(void)
+{
+    debug_counter_reset(&gq_expect_add_success);
+    debug_counter_reset(&gq_expect_add_failure);
+    debug_counter_reset(&gq_expect_modify_success);
+    debug_counter_reset(&gq_expect_modify_failure);
+    debug_counter_reset(&gq_expect_delete_success);
+    debug_counter_reset(&gq_idle_notif);
 }
 
 

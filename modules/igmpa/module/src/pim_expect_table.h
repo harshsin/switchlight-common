@@ -32,6 +32,7 @@ typedef struct pim_expect_entry_s {
 pim_expect_entry_t *igmpa_pim_expect_lookup(char name[], uint16_t vlan_vid);
 void igmpa_pim_expect_reschedule(pim_expect_entry_t *pim_expect_entry,
                                  uint64_t new_deadline);
+void igmpa_pim_expect_stats_clear(void);
 void igmpa_pim_expect_stats_show(aim_pvs_t *pvs);
 void igmpa_pim_expect_table_init(void);
 void igmpa_pim_expect_table_finish(void);

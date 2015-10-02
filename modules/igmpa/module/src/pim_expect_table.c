@@ -94,6 +94,7 @@ pim_expect_send_idle_notif(pim_expect_entry_t *entry)
 
     /* send notification to controller */
     indigo_cxn_send_async_message(notif);
+    debug_counter_inc(&pim_idle_notif);
 }
 
 
@@ -119,7 +120,6 @@ pim_expect_timer(void *cookie)
         notifs++;
         timer_wheel_insert(tw_pim_expect, &entry->timer_entry,
                            now + igmpa_pim_expect_timeout);
-        debug_counter_inc(&pim_idle_notif);
     }
 
     /* reregister sooner if more expired entries */
@@ -318,6 +318,18 @@ igmpa_pim_expect_lookup(char name[], uint16_t vlan_vid)
     IGMPA_MEMCPY(key.name, name, sizeof(key.name));
     key.vlan_vid = vlan_vid;
     return pim_expect_hashtable_first(ht_pim_expect, &key);
+}
+
+
+void
+igmpa_pim_expect_stats_clear(void)
+{
+    debug_counter_reset(&pim_expect_add_success);
+    debug_counter_reset(&pim_expect_add_failure);
+    debug_counter_reset(&pim_expect_modify_success);
+    debug_counter_reset(&pim_expect_modify_failure);
+    debug_counter_reset(&pim_expect_delete_success);
+    debug_counter_reset(&pim_idle_notif);
 }
 
 

@@ -33,6 +33,7 @@ typedef struct igmpa_pkt_params_s {
 } igmpa_pkt_params_t;
 int igmpa_send_igmp_packet(igmpa_pkt_params_t *params);
 
+void igmpa_stats_clear(void);
 void igmpa_stats_show(aim_pvs_t *pvs);
 
 #endif /* __IGMPA_INT_H__ */

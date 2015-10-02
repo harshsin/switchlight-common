@@ -32,6 +32,7 @@ extern uint32_t igmpa_report_tx_timeout;
 extern uint32_t igmpa_pim_expect_timeout;
 
 
+void igmpa_timeout_stats_clear(void);
 void igmpa_timeout_stats_show(aim_pvs_t *pvs);
 void igmpa_timeout_table_init(void);
 void igmpa_timeout_table_finish(void);

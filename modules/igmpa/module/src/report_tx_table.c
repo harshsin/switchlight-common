@@ -372,6 +372,19 @@ static const indigo_core_gentable_ops_t report_tx_ops = {
 
 
 void
+igmpa_report_tx_stats_clear(void)
+{
+    debug_counter_reset(&report_tx_add_success);
+    debug_counter_reset(&report_tx_add_failure);
+    debug_counter_reset(&report_tx_modify_success);
+    debug_counter_reset(&report_tx_modify_failure);
+    debug_counter_reset(&report_tx_delete_success);
+    debug_counter_reset(&report_tx_count);
+    debug_counter_reset(&report_tx_failure);
+}
+
+
+void
 igmpa_report_tx_stats_show(aim_pvs_t *pvs)
 {
     aim_printf(pvs, "report_tx_add  %"PRIu64"\n",

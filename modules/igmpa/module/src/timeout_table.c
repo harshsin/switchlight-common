@@ -249,6 +249,17 @@ static const indigo_core_gentable_ops_t timeout_ops = {
 
 
 void
+igmpa_timeout_stats_clear(void)
+{
+    debug_counter_reset(&timeout_add_success);
+    debug_counter_reset(&timeout_add_failure);
+    debug_counter_reset(&timeout_modify_success);
+    debug_counter_reset(&timeout_modify_failure);
+    debug_counter_reset(&timeout_delete_success);
+}
+
+
+void
 igmpa_timeout_stats_show(aim_pvs_t *pvs)
 {
     aim_printf(pvs, "timeout_add  %"PRIu64"\n",

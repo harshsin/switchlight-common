@@ -33,6 +33,7 @@ typedef struct gq_tx_entry_s {
 } gq_tx_entry_t;
 
 
+void igmpa_gq_tx_stats_clear(void);
 void igmpa_gq_tx_stats_show(aim_pvs_t *pvs);
 void igmpa_gq_tx_table_init(void);
 void igmpa_gq_tx_table_finish(void);

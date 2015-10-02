@@ -221,6 +221,17 @@ igmpa_tx_port_group_lookup_by_name(char *name)
 
 
 void
+igmpa_tx_port_group_stats_clear(void)
+{
+    debug_counter_reset(&tx_port_group_add_success);
+    debug_counter_reset(&tx_port_group_add_failure);
+    debug_counter_reset(&tx_port_group_modify_success);
+    debug_counter_reset(&tx_port_group_modify_failure);
+    debug_counter_reset(&tx_port_group_delete_success);
+}
+
+
+void
 igmpa_tx_port_group_stats_show(aim_pvs_t *pvs)
 {
     aim_printf(pvs, "tx_port_group_add  %"PRIu64"\n",
