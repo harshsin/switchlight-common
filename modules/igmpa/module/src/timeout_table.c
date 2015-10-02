@@ -32,12 +32,13 @@ static debug_counter_t timeout_delete_success;
 #define REPORT_EXPECT_TIMEOUT_DEFAULT (255*1000)
 #define GQ_TX_TIMEOUT_DEFAULT (125*1000)
 #define REPORT_TX_TIMEOUT_DEFAULT (125*1000)
+#define PIM_EXPECT_TIMEOUT_DEFAULT (60*1000)
 
 uint32_t igmpa_gq_expect_timeout = GQ_EXPECT_TIMEOUT_DEFAULT;
 uint32_t igmpa_report_expect_timeout = REPORT_EXPECT_TIMEOUT_DEFAULT;
 uint32_t igmpa_gq_tx_timeout = GQ_TX_TIMEOUT_DEFAULT;
 uint32_t igmpa_report_tx_timeout = REPORT_TX_TIMEOUT_DEFAULT;
-
+uint32_t igmpa_pim_expect_timeout = PIM_EXPECT_TIMEOUT_DEFAULT;
 
 
 /* crappy code to verify name is valid */
@@ -53,6 +54,8 @@ validate_name(char *name)
     } else if (!strncmp(name, "general_query_tx", IGMP_NAME_LEN)) {
         rv = INDIGO_ERROR_NONE;
     } else if (!strncmp(name, "report_tx", IGMP_NAME_LEN)) {
+        rv = INDIGO_ERROR_NONE;
+    } else if (!strncmp(name, "pim_expectation", IGMP_NAME_LEN)) {
         rv = INDIGO_ERROR_NONE;
     }
 
@@ -76,6 +79,9 @@ update_timeout(char *name, uint32_t timeout_val)
     } else if (!strncmp(name, "report_tx", IGMP_NAME_LEN)) {
         igmpa_report_tx_timeout = timeout_val? timeout_val : 
             REPORT_TX_TIMEOUT_DEFAULT;
+    } else if (!strncmp(name, "pim_expectation", IGMP_NAME_LEN)) {
+        igmpa_pim_expect_timeout = timeout_val? timeout_val : 
+            PIM_EXPECT_TIMEOUT_DEFAULT;
     } else {
         AIM_DIE("unhandled timeout %s", name);
     }

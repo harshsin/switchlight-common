@@ -27,6 +27,10 @@
 indigo_error_t igmpa_init(void);
 void igmpa_finish(void);
 
+/* sends a IGMP or PIM packet directly to the IGMP agent */
+indigo_core_listener_result_t
+igmpa_receive_pkt(ppe_packet_t *ppep, of_port_no_t in_port);
+
 void igmpa_stats_show(aim_pvs_t *pvs);
 
 #endif /* __IGMPA_H__ */
