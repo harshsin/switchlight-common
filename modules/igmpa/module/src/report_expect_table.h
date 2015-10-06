@@ -33,6 +33,7 @@ report_expect_entry_t *
 igmpa_report_expect_lookup(char name[], uint16_t vlan_vid, uint32_t ipv4);
 void igmpa_report_expect_reschedule(report_expect_entry_t *report_expect_entry,
                                     uint64_t new_deadline);
+void igmpa_report_expect_stats_clear(void);
 void igmpa_report_expect_stats_show(aim_pvs_t *pvs);
 void igmpa_report_expect_table_init(void);
 void igmpa_report_expect_table_finish(void);

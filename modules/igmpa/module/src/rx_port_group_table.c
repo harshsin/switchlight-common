@@ -203,6 +203,17 @@ igmpa_rx_port_group_lookup(of_port_no_t port_no)
 
 
 void
+igmpa_rx_port_group_stats_clear(void)
+{
+    debug_counter_reset(&rx_port_group_add_success);
+    debug_counter_reset(&rx_port_group_add_failure);
+    debug_counter_reset(&rx_port_group_modify_success);
+    debug_counter_reset(&rx_port_group_modify_failure);
+    debug_counter_reset(&rx_port_group_delete_success);
+}
+
+
+void
 igmpa_rx_port_group_stats_show(aim_pvs_t *pvs)
 {
     aim_printf(pvs, "rx_port_group_add  %"PRIu64"\n",

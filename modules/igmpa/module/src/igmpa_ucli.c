@@ -16,6 +16,18 @@
 
 
 static ucli_status_t
+igmpa_ucli_ucli__clear__(ucli_context_t* uc)
+{
+    UCLI_COMMAND_INFO(uc,
+                      "clear", 0,
+                      "$summary#Clear igmp agent counters.");
+
+    igmpa_stats_clear();
+
+    return UCLI_STATUS_OK;
+}
+
+static ucli_status_t
 igmpa_ucli_ucli__counters__(ucli_context_t* uc)
 {
     UCLI_COMMAND_INFO(uc,
@@ -43,6 +55,7 @@ igmpa_ucli_ucli__config__(ucli_context_t* uc)
  *****************************************************************************/
 static ucli_command_handler_f igmpa_ucli_ucli_handlers__[] = 
 {
+    igmpa_ucli_ucli__clear__,
     igmpa_ucli_ucli__counters__,
     igmpa_ucli_ucli__config__,
     NULL
