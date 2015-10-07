@@ -139,8 +139,9 @@ pdua_disable_tx_rx(pdua_port_t *port)
 {
     indigo_error_t rv;
 
-    if (!port)
+    if (!port) {
         return;
+    }
 
     if (port->tx_pkt.interval_ms) {
         if((rv = pdua_port_disable(pdu_periodic_tx, &port->tx_pkt, port))
@@ -165,8 +166,9 @@ pdu_timeout_rx(void *cookie)
     pdua_port_t *port = (pdua_port_t*) cookie;
     of_bsn_pdu_rx_timeout_t *timeout_msg = NULL;
 
-    if (!port)
+    if (!port) {
         return;
+    }
 
     if (indigo_cxn_get_async_version(&version) != INDIGO_ERROR_NONE) {
         AIM_LOG_ERROR("No controller connected");
