@@ -29,8 +29,8 @@
  **** PDUA external APIs ****
  ****************************/
 
-int pdua_system_init();
-void pdua_system_finish();
+int pdua_system_init(void);
+void pdua_system_finish(void);
 indigo_core_listener_result_t pdua_receive_packet(of_octets_t *data,
                                                   of_port_no_t port_no);
 

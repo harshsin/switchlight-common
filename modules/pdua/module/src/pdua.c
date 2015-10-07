@@ -39,7 +39,7 @@ static indigo_error_t  pdua_pkt_data_set(pdua_pkt_t *lpkt, of_octets_t *data);
 static void pdua_pkt_data_free (pdua_pkt_t *lpkt);
 static indigo_error_t pdua_port_disable(ind_soc_timer_callback_f cb, pdua_pkt_t *pkt, pdua_port_t *port);
 static indigo_error_t pdua_port_enable(ind_soc_timer_callback_f cb, pdua_pkt_t *pkt, pdua_port_t *port,
-                                        of_octets_t *data, uint32_t interval_ms);
+                                       of_octets_t *data, uint32_t interval_ms);
 static void  pdua_disable_tx_rx(pdua_port_t *pdua);
 static void pdu_timeout_rx(void *cookie);
 static void pdu_periodic_tx(void *cookie);
@@ -64,11 +64,6 @@ pdua_find_port(of_port_no_t port_no)
     return ret;
 }
 
-static void
-pdua_data_display (char *str) {
-    PDUA_DEBUG("%s", str);
-}
-
 /*
  * data.data must be NULL
  * Ret 0 for success
@@ -76,16 +71,18 @@ pdua_data_display (char *str) {
 static indigo_error_t
 pdua_pkt_data_set(pdua_pkt_t *lpkt, of_octets_t *data)
 {
-    if(!lpkt || !data)
+    if(!lpkt || !data) {
         return INDIGO_ERROR_PARAM;
+    }
 
     if (lpkt->data.data) {
         return INDIGO_ERROR_PARAM;
     }
 
     lpkt->data.data = PDUA_MALLOC(data->bytes);
-    if (!lpkt->data.data)
+    if (!lpkt->data.data) {
         return INDIGO_ERROR_RESOURCE;
+    }
 
     lpkt->data.bytes = data->bytes;
     PDUA_MEMCPY(lpkt->data.data, data->data, data->bytes);
@@ -120,7 +117,7 @@ pdua_port_disable(ind_soc_timer_callback_f cb, pdua_pkt_t *pkt, pdua_port_t *por
 
 static indigo_error_t
 pdua_port_enable(ind_soc_timer_callback_f cb, pdua_pkt_t *pkt, pdua_port_t *port,
-                  of_octets_t *data, uint32_t interval_ms)
+                 of_octets_t *data, uint32_t interval_ms)
 {
     indigo_error_t rv;
 
@@ -456,7 +453,7 @@ pdua_rx_pkt_is_expected(pdua_port_t *port, of_octets_t *data)
 }
 
 /*
- * Caller must ensure lldap != NULL
+ * Caller must ensure pdua != NULL
  * Reset timeout
  * */
 static inline void
@@ -490,7 +487,7 @@ pdua_receive_packet(of_octets_t *data, of_port_no_t port_no)
     port->rx_pkt_in_cnt++;
     if (pdua_dump_data == PDUA_DUMP_ENABLE_ALL_PORTS ||
         pdua_dump_data == port_no) {
-        pdua_data_hexdump(data->data, data->bytes, pdua_data_display);
+        PDUA_DEBUG("PDUA_DATA_HEXDUMP:\n%{data}\n", data->data, data->bytes);
     }
 
     /* At this step we will process the PDU packet
@@ -547,7 +544,7 @@ pdua_handle_pkt (of_packet_in_t *packet_in)
 
 
 /************************
- * LLDAP INIT and FINISH
+ * PDUA INIT and FINISH
  ************************/
 
 /* Return 0: success */
@@ -560,7 +557,7 @@ pdua_system_init()
     AIM_LOG_VERBOSE("init");
 
     pdua_port_sys.pdua_total_of_ports = sizeof(pdua_port_sys.pdua_ports) /
-                                              sizeof(pdua_port_sys.pdua_ports[0]);
+                                        sizeof(pdua_port_sys.pdua_ports[0]);
     for (i=0; i < pdua_port_sys.pdua_total_of_ports; i++) {
         port = pdua_find_port(i);
         if (port)

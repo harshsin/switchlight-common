@@ -75,48 +75,5 @@ enum {
     PDUA_DUMP_DISABLE_ALL_PORTS = -2,
     PDUA_DUMP_ENABLE_ALL_PORTS  = -1
 };
-/**
- * Dump data buffer from cxn_data_hexdump
- * Must define PDUA_TRACE before use
- */
-#define HEX_LEN 80
-#define PER_LINE 16
-static inline void
-pdua_data_hexdump(unsigned char *buf, int bytes, void (*display_fn)(char *))
-{
-    int idx;
-    char display[HEX_LEN];
-    int disp_offset = 0;
-    int buf_offset = 0;
-
-    display_fn("PDUA_DATA_HEXDUMP");
-
-    while (bytes > 0) {
-        disp_offset = 0;
-        for (idx = 0; (idx < PER_LINE) && (idx < bytes); idx++) {
-            disp_offset += sprintf(&display[disp_offset],
-                                   "%02x", buf[buf_offset + idx]);
-        }
-
-        for (idx = bytes; idx < PER_LINE; ++idx) {
-            disp_offset += sprintf(&display[disp_offset], "  ");
-        }
-        disp_offset += sprintf(&display[disp_offset], " :");
-
-        for (idx = 0; (idx < PER_LINE) && (idx < bytes); idx++) {
-            if (buf[idx] < 32) {
-                disp_offset += sprintf(&display[disp_offset], ".");
-            } else {
-                disp_offset += sprintf(&display[disp_offset], "%c",
-                                       buf[buf_offset + idx]);
-            }
-        }
-
-        display_fn(display);
-
-        bytes -= PER_LINE;
-        buf_offset += PER_LINE;
-    }
-}
 
 #endif /* __PDUA_INT_H__ */
