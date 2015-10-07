@@ -39,11 +39,11 @@ pdua_ucli_ucli__show_pdua_counters__(ucli_context_t* uc)
     ucli_printf(uc, "TOTAL PDUA PORT NUMBER : %u\n",
                 pdua_port_sys.pdua_total_of_ports);
     ucli_printf(uc, "TOTAL PACKETS RECV    : %" PRId64 "\n",
-                pdua_port_sys.total_pkt_in_cnt);
+                debug_counter_get(&pdua_port_sys.debug_info.total_pkt_in_cnt));
     ucli_printf(uc, "TOTAL PACKETS EXPECTED    : %" PRId64 "\n",
-                pdua_port_sys.total_pkt_exp_cnt);
+                debug_counter_get(&pdua_port_sys.debug_info.total_pkt_exp_cnt));
     ucli_printf(uc, "TOTAL MESSAGES RECV    : %" PRId64 "\n",
-                pdua_port_sys.total_msg_in_cnt);
+                debug_counter_get(&pdua_port_sys.debug_info.total_msg_in_cnt));
 
     return UCLI_STATUS_OK;
 }
@@ -55,9 +55,9 @@ pdua_ucli_ucli__clear_pdua_counters__(ucli_context_t* uc)
                       "clr_sys_cnts", 0,
                       "$summary#Clear the pdua system packet counters.");
 
-    pdua_port_sys.total_pkt_in_cnt  = 0;
-    pdua_port_sys.total_pkt_exp_cnt = 0;
-    pdua_port_sys.total_msg_in_cnt  = 0;
+    debug_counter_reset(&pdua_port_sys.debug_info.total_pkt_in_cnt);
+    debug_counter_reset(&pdua_port_sys.debug_info.total_pkt_exp_cnt);
+    debug_counter_reset(&pdua_port_sys.debug_info.total_msg_in_cnt);
 
     return UCLI_STATUS_OK;
 }

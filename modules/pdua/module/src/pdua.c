@@ -387,7 +387,7 @@ pdua_handle_msg (indigo_cxn_id_t cxn_id, of_object_t *msg)
         }
 
         /* Count msg in */
-        pdua_port_sys.total_msg_in_cnt++;
+        debug_counter_inc(&pdua_port_sys.debug_info.total_msg_in_cnt);
         rx_request_handle(cxn_id, msg);
         ret = INDIGO_CORE_LISTENER_RESULT_DROP;
         break;
@@ -400,7 +400,7 @@ pdua_handle_msg (indigo_cxn_id_t cxn_id, of_object_t *msg)
         }
 
         /* Count msg in */
-        pdua_port_sys.total_msg_in_cnt++;
+        debug_counter_inc(&pdua_port_sys.debug_info.total_msg_in_cnt);
         tx_request_handle(cxn_id, msg);
         ret = INDIGO_CORE_LISTENER_RESULT_DROP;
         break;
@@ -501,7 +501,7 @@ pdua_receive_packet(of_octets_t *data, of_port_no_t port_no)
     }
 
     pdua_update_rx_timeout(port);
-    pdua_port_sys.total_pkt_exp_cnt++;
+    debug_counter_inc(&pdua_port_sys.debug_info.total_pkt_exp_cnt);
     return INDIGO_CORE_LISTENER_RESULT_DROP;
 }
 
@@ -525,7 +525,7 @@ pdua_handle_pkt (of_packet_in_t *packet_in)
     }
 
     /* Only count pkt_in with valid data */
-    pdua_port_sys.total_pkt_in_cnt++;
+    debug_counter_inc(&pdua_port_sys.debug_info.total_pkt_in_cnt);
 
     if (packet_in->version <= OF_VERSION_1_1) {
         of_packet_in_in_port_get(packet_in, &port_no);
@@ -547,9 +547,31 @@ pdua_handle_pkt (of_packet_in_t *packet_in)
  * PDUA INIT and FINISH
  ************************/
 
+static inline void
+pdua_register_system_counters(void)
+{
+    debug_counter_register(&pdua_port_sys.debug_info.total_pkt_in_cnt,
+                           "pdua.total_pkt_in_cnt",
+                           "Packet-ins recv'd by pdua");
+    debug_counter_register(&pdua_port_sys.debug_info.total_msg_in_cnt,
+                           "pdua.total_msg_in_cnt",
+                           "OF messages recv'd by pdua");
+    debug_counter_register(&pdua_port_sys.debug_info.total_pkt_exp_cnt,
+                           "pdua.total_pkt_exp_cnt",
+                           "Expected packets recv'd by pdua");
+}
+
+static inline void
+pdua_unregister_system_counters(void)
+{
+    debug_counter_unregister(&pdua_port_sys.debug_info.total_pkt_in_cnt);
+    debug_counter_unregister(&pdua_port_sys.debug_info.total_msg_in_cnt);
+    debug_counter_unregister(&pdua_port_sys.debug_info.total_pkt_exp_cnt);
+}
+
 /* Return 0: success */
 int
-pdua_system_init()
+pdua_system_init(void)
 {
     int i;
     pdua_port_t *port;
@@ -571,11 +593,13 @@ pdua_system_init()
     indigo_core_packet_in_listener_register(pdua_handle_pkt);
 #endif
 
+    pdua_register_system_counters();
+
     return 0;
 }
 
 void
-pdua_system_finish()
+pdua_system_finish(void)
 {
     int i;
     pdua_port_t *port;
@@ -592,4 +616,6 @@ pdua_system_finish()
         else
             AIM_LOG_INTERNAL("Port %d not existing", i);
     }
+
+    pdua_unregister_system_counters();
 }

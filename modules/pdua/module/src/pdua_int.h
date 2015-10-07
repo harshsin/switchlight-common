@@ -30,6 +30,7 @@
 #include <loci/loci_base.h>
 #include <OFStateManager/ofstatemanager.h>
 #include <SocketManager/socketmanager.h>
+#include <debug_counter/debug_counter.h>
 
 typedef struct pdua_pkt_s {
     /* interval_ms == 0: disable */
@@ -57,13 +58,17 @@ typedef struct pdua_port_s {
 
 } pdua_port_t;
 
+typedef struct pdua_debug_s {
+    debug_counter_t     total_pkt_in_cnt;
+    debug_counter_t     total_msg_in_cnt;
+    debug_counter_t     total_pkt_exp_cnt;
+} pdua_debug_t;
+
 typedef struct pdua_system_s {
     uint32_t      pdua_total_of_ports;
 
     /* Internal statistic for listener interfaces*/
-    uint64_t      total_pkt_in_cnt;
-    uint64_t      total_msg_in_cnt;
-    uint64_t      total_pkt_exp_cnt;
+    pdua_debug_t  debug_info;
     pdua_port_t   pdua_ports[PDUA_CONFIG_OF_PORTS_MAX+1];
 } pdua_system_t;
 
