@@ -76,9 +76,4 @@ indigo_core_listener_result_t pdua_handle_msg (indigo_cxn_id_t cxn_id, of_object
 indigo_core_listener_result_t pdua_handle_pkt (of_packet_in_t *packet_in);
 pdua_port_t *pdua_find_port(of_port_no_t port_no);
 
-enum {
-    PDUA_DUMP_DISABLE_ALL_PORTS = -2,
-    PDUA_DUMP_ENABLE_ALL_PORTS  = -1
-};
-
 #endif /* __PDUA_INT_H__ */

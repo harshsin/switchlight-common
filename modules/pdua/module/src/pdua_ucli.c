@@ -26,7 +26,8 @@
 
 #include "pdua_int.h"
 extern pdua_system_t pdua_port_sys;
-extern int           pdua_dump_data;
+extern of_port_no_t  pdua_dump_port;
+extern bool          pdua_dump_all_ports_enabled;
 uint32_t dummy_test_data[] = {0xdeafbeef, 0x12345678, 0xdeafbeef};
 
 static ucli_status_t
@@ -223,19 +224,21 @@ pdua_ucli_ucli__set_pkt_hexdump__(ucli_context_t* uc)
     if (uc->pargs->count == 1) {
         UCLI_ARGPARSE_OR_RETURN(uc, "i", &port);
         ucli_printf(uc, "Enable pkt_data_dump for port %d\n", port);
-        pdua_dump_data = port;
+        pdua_dump_port = port;
+        pdua_dump_all_ports_enabled = false;
         
     } else {
+        pdua_dump_port = -1;
         ucli_printf(uc, "Toggle pkt_data_dump switch\n");
-        if (pdua_dump_data == PDUA_DUMP_DISABLE_ALL_PORTS) {
+        if (!pdua_dump_all_ports_enabled) {
             ucli_printf(uc, "Enable pkt_data_dump for all ports - test data hexdump\n");
-            pdua_dump_data = PDUA_DUMP_ENABLE_ALL_PORTS;
+            pdua_dump_all_ports_enabled = true;
             ucli_printf(uc, "hex_dump:\n%{data}\n",
                             (uint8_t *)dummy_test_data,
                             sizeof(dummy_test_data));
         } else {
             ucli_printf(uc, "Disable pkt_data_dump for all ports\n");
-            pdua_dump_data = PDUA_DUMP_DISABLE_ALL_PORTS;
+            pdua_dump_all_ports_enabled = false;
         }
     }
     return UCLI_STATUS_OK;

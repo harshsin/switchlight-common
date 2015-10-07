@@ -49,9 +49,9 @@ static void tx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *rx_req);
 static void pdu_periodic_tx(void *cookie);
 static void pdu_timeout_rx(void *cookie);
 
-
 pdua_system_t pdua_port_sys;
-int           pdua_dump_data = PDUA_DUMP_DISABLE_ALL_PORTS;
+of_port_no_t  pdua_dump_port = -1;
+bool          pdua_dump_all_ports_enabled = false;
 
 pdua_port_t*
 pdua_find_port(of_port_no_t port_no)
@@ -485,8 +485,7 @@ pdua_receive_packet(of_octets_t *data, of_port_no_t port_no)
     }
 
     port->rx_pkt_in_cnt++;
-    if (pdua_dump_data == PDUA_DUMP_ENABLE_ALL_PORTS ||
-        pdua_dump_data == port_no) {
+    if (pdua_dump_all_ports_enabled || pdua_dump_port == port_no) {
         PDUA_DEBUG("PDUA_DATA_HEXDUMP:\n%{data}\n", data->data, data->bytes);
     }
 
