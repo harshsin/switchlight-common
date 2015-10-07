@@ -36,6 +36,8 @@
 #include <loci/loci_obj_dump.h>
 #include <PPE/ppe_types.h>
 
+#define PDU_SLOT_NUM 2
+
 extern indigo_core_listener_result_t pdua_handle_msg (indigo_cxn_id_t cxn_id, of_object_t *msg);
 extern indigo_core_listener_result_t pdua_handle_pkt (of_packet_in_t *packet_in);
 extern int pdua_dump_data;
@@ -118,6 +120,7 @@ test_tx_request(int port_no)
     AIM_TRUE_OR_DIE(obj);
     of_bsn_pdu_tx_request_port_no_set(obj,port_no);
     of_bsn_pdu_tx_request_tx_interval_ms_set(obj,interval);
+    of_bsn_pdu_tx_request_slot_num_set(obj,PDU_SLOT_NUM);
 
     if(of_bsn_pdu_tx_request_data_set(obj, &data) < 0) {
         AIM_TRUE_OR_DIE(obj);
@@ -152,6 +155,7 @@ test_rx_request(int port_no)
     AIM_TRUE_OR_DIE(obj);
     of_bsn_pdu_rx_request_port_no_set(obj,port_no);
     of_bsn_pdu_rx_request_timeout_ms_set(obj,interval);
+    of_bsn_pdu_rx_request_slot_num_set(obj,PDU_SLOT_NUM);
 
     if(of_bsn_pdu_rx_request_data_set(obj, &data) < 0) {
         AIM_TRUE_OR_DIE(obj);
@@ -195,10 +199,11 @@ test_pkt_in(int port_no, char *is_matched)
 
     if (rv == INDIGO_CORE_LISTENER_RESULT_PASS) {
         printf("\nError: NOT LLDP packet-in\n");
-    } else if (rv == INDIGO_CORE_LISTENER_RESULT_DROP)
+    } else if (rv == INDIGO_CORE_LISTENER_RESULT_DROP) {
         printf("\nIS LLDP packet-in\n");
-    else
+    } else {
         printf("\nError: Unsupport packet-in\n");
+    }
 
     of_packet_in_delete(obj);
     return rv;
@@ -233,10 +238,11 @@ test_pkt_in_mismatched(int port_no)
 
     if (rv == INDIGO_CORE_LISTENER_RESULT_PASS) {
         printf("\nError: NOT LLDP packet-in\n");
-    } else if (rv == INDIGO_CORE_LISTENER_RESULT_DROP)
+    } else if (rv == INDIGO_CORE_LISTENER_RESULT_DROP) {
         printf("\nIS LLDP packet-in\n");
-    else
+    } else {
         printf("\nError: Unsupport packet-in\n");
+    }
 
     of_packet_in_delete(obj);
     return rv;
