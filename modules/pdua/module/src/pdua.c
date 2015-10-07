@@ -31,7 +31,7 @@
 #include <pdua/pdua.h>
 #include "pdua_int.h"
 
-#define ARP_SLOT_NUM  0
+#define PDU_SLOT_NUM  2
 
 #define PDUA_DEBUG(fmt, ...)                       \
             AIM_LOG_TRACE(fmt, ##__VA_ARGS__)
@@ -183,7 +183,7 @@ pdu_timeout_rx(void *cookie)
     of_bsn_pdu_rx_timeout_port_no_set (timeout_msg, port->port_no);
 
     /* Set slot number */
-    of_bsn_pdu_rx_timeout_slot_num_set (timeout_msg, ARP_SLOT_NUM);
+    of_bsn_pdu_rx_timeout_slot_num_set (timeout_msg, PDU_SLOT_NUM);
 
     PDUA_DEBUG("Send rx timeout async msg");
     /* Send to controller, don't delete when send to controller */
@@ -278,7 +278,7 @@ rx_reply_to_ctrl:
     of_bsn_pdu_rx_reply_xid_set     (rx_reply, xid);
     of_bsn_pdu_rx_reply_port_no_set (rx_reply, port_no);
     of_bsn_pdu_rx_reply_status_set  (rx_reply, status_failed);
-    of_bsn_pdu_rx_reply_slot_num_set(rx_reply, ARP_SLOT_NUM);
+    of_bsn_pdu_rx_reply_slot_num_set(rx_reply, PDU_SLOT_NUM);
 
     PDUA_DEBUG("Port %u: sends a RX_reply to ctrl, status %s, version %u",
                 port_no, status_failed? "Failed" : "Success", rx_req->version);
@@ -359,7 +359,7 @@ tx_reply_to_ctrl:
     of_bsn_pdu_tx_reply_xid_set     (tx_reply, xid);
     of_bsn_pdu_tx_reply_port_no_set (tx_reply, port_no);
     of_bsn_pdu_tx_reply_status_set  (tx_reply, status_failed);
-    of_bsn_pdu_tx_reply_slot_num_set(tx_reply, ARP_SLOT_NUM);
+    of_bsn_pdu_tx_reply_slot_num_set(tx_reply, PDU_SLOT_NUM);
 
     PDUA_DEBUG("Port %u: sends  a TX_reply to ctrl, status %s, version %u",
                 port_no, status_failed? "Failed" : "Success", tx_req->version);
@@ -381,7 +381,7 @@ pdua_handle_msg (indigo_cxn_id_t cxn_id, of_object_t *msg)
     switch (msg->object_id) {
     case OF_BSN_PDU_RX_REQUEST:
         of_bsn_pdu_rx_request_slot_num_get(msg, &slot_num);
-        if (slot_num != ARP_SLOT_NUM) {
+        if (slot_num != PDU_SLOT_NUM) {
             PDUA_DEBUG("Received rx request with slot_num: %u", slot_num);
             return ret;
         }
@@ -394,7 +394,7 @@ pdua_handle_msg (indigo_cxn_id_t cxn_id, of_object_t *msg)
 
     case OF_BSN_PDU_TX_REQUEST:
         of_bsn_pdu_tx_request_slot_num_get(msg, &slot_num);
-        if (slot_num != ARP_SLOT_NUM) {
+        if (slot_num != PDU_SLOT_NUM) {
             PDUA_DEBUG("Received tx request with slot_num: %u", slot_num);
             return ret;
         }
