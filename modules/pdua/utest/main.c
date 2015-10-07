@@ -45,46 +45,6 @@ uint8_t Lldppdu_Tx[] = {10,11,12,13,250,251,252,253};
 uint8_t Lldppdu_Rx[] = {1,2,3,4,5,6,1,2,3,4,5,6,0x88,0xcc,0xd,0xe,0xa,0xf,0xb,0xe,0xe,0xf};
 static ind_soc_config_t soc_cfg;
 
-#ifndef HEXDUMP_COLS
-#define HEXDUMP_COLS 8
-#endif
-
-void hexdump(void *mem, unsigned int len)
-{
-    unsigned int i, j;
-
-    for(i = 0; i < len + ((len % HEXDUMP_COLS) ? (HEXDUMP_COLS - len % HEXDUMP_COLS) : 0); i++) {
-        /* print offset */
-        if(i % HEXDUMP_COLS == 0) {
-            printf("0x%06x: ", i);
-        }
-
-        /* print hex data */
-        if(i < len) {
-            printf("%02x ", 0xFF & ((char*)mem)[i]);
-        }
-        else { /* end of block, just aligning for ASCII dump */
-            printf("   ");
-        }
-        
-        /* print ASCII dump */
-        if(i % HEXDUMP_COLS == (HEXDUMP_COLS - 1)) {
-            for(j = i - (HEXDUMP_COLS - 1); j <= i; j++) {
-                if(j >= len) { /* end of block, not really printing */
-                    putchar(' ');
-                }
-                else if(isprint(((char*)mem)[j])) { /* printable char */
-                    putchar(0xFF & ((char*)mem)[j]);
-                }
-                else {/* other char */
-                    putchar('.');
-                }
-            }
-            putchar('\n');
-        }
-    }
-}
-
 void indigo_cxn_send_controller_message (indigo_cxn_id_t cxn_id, of_object_t *obj)
 {
     printf("\nSend REPLY msg to controller\n");
@@ -110,7 +70,7 @@ indigo_error_t indigo_fwd_packet_out (of_packet_out_t *pkt)
     of_object_dump((loci_writer_f)aim_printf, &aim_pvs_stdout, pkt);
 
     of_packet_out_data_get(pkt, &data);
-    hexdump(data.data, data.bytes);
+    aim_printf(&aim_pvs_stdout, "%{data}", data.data, data.bytes);
 
     //Don't consume obj
     return INDIGO_ERROR_NONE;
@@ -152,7 +112,7 @@ test_tx_request(int port_no)
     data.bytes = sizeof(Lldppdu_Tx);
 
     printf("TX_REQUEST bytes = %d\n", data.bytes);
-    hexdump(data.data, data.bytes);
+    aim_printf(&aim_pvs_stdout, "%{data}", data.data, data.bytes);
 
     obj = of_bsn_pdu_tx_request_new(OF_VERSION_1_3);
     AIM_TRUE_OR_DIE(obj);
@@ -186,7 +146,7 @@ test_rx_request(int port_no)
     data.bytes = sizeof(Lldppdu_Rx);
 
     printf("Rx_request bytes = %d\n", data.bytes);
-    hexdump(data.data, data.bytes);
+    aim_printf(&aim_pvs_stdout, "%{data}", data.data, data.bytes);
 
     obj = of_bsn_pdu_rx_request_new(OF_VERSION_1_3);
     AIM_TRUE_OR_DIE(obj);
@@ -219,7 +179,7 @@ test_pkt_in(int port_no, char *is_matched)
     /* Timeout due to re-register the timer */
     printf("\n\nTEST 3: PKT_IN on port:%d\nExpect: 1 PKT_IN, 1 TIMEOUT, and %s\n", port_no, is_matched);
     printf("pkt_in bytes = %d\n", data.bytes);
-    hexdump(data.data, data.bytes);
+    aim_printf(&aim_pvs_stdout, "%{data}", data.data, data.bytes);
 
     obj = of_packet_in_new(OF_VERSION_1_0);
     AIM_TRUE_OR_DIE(obj);
@@ -257,7 +217,7 @@ test_pkt_in_mismatched(int port_no)
     /* Timeout due to re-register the timer */
     printf("\n\nTEST 4: PKT_IN on port:%d\nExpect: 1 PKT_IN, 1 TIMEOUT, and MIS-MATCHED\n", port_no);
     printf("pkt_in bytes = %d\n", data.bytes);
-    hexdump(data.data, data.bytes);
+    aim_printf(&aim_pvs_stdout, "%{data}", data.data, data.bytes);
 
     obj = of_packet_in_new(OF_VERSION_1_0);
     AIM_TRUE_OR_DIE(obj);
