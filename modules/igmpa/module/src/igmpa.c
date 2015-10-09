@@ -28,6 +28,7 @@
 #include <indigo/of_state_manager.h>
 #include <PPE/ppe.h>
 #include <debug_counter/debug_counter.h>
+#include <slshared/slshared_config.h>
 
 #include "timeout_table.h"
 #include "rx_port_group_table.h"
