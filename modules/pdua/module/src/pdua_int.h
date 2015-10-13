@@ -34,28 +34,27 @@
 
 typedef struct pdua_pkt_s {
     /* interval_ms == 0: disable */
-    uint32_t              interval_ms;
-    of_octets_t           data;
+    uint32_t        interval_ms;
+    of_octets_t     data;
 } pdua_pkt_t;
 
 typedef struct pdua_port_s {
-    of_port_no_t  port_no;
-    pdua_pkt_t    rx_pkt;
-    pdua_pkt_t    tx_pkt;
+    of_port_no_t    port_no;
+    pdua_pkt_t      rx_pkt;
+    pdua_pkt_t      tx_pkt;
 
     /* Internal Port Statistics */
-    uint64_t      rx_pkt_in_cnt;
-    uint64_t      rx_pkt_mismatched_no_data;
-    uint64_t      rx_pkt_mismatched_len;
-    uint64_t      rx_pkt_mismatched_data;
-    uint64_t      rx_pkt_matched;
-    uint64_t      tx_pkt_out_cnt;
-    uint64_t      timeout_pkt_cnt;
-    uint64_t      tx_req_cnt;
-    uint64_t      rx_req_cnt;
+    uint64_t        rx_pkt_in_cnt;
+    uint64_t        rx_pkt_mismatched_no_data;
+    uint64_t        rx_pkt_mismatched_len;
+    uint64_t        rx_pkt_mismatched_data;
+    uint64_t        rx_pkt_matched;
+    uint64_t        tx_pkt_out_cnt;
+    uint64_t        timeout_pkt_cnt;
+    uint64_t        tx_req_cnt;
+    uint64_t        rx_req_cnt;
 
     /* Slot_Num Statistics if supported */
-
 } pdua_port_t;
 
 typedef struct pdua_debug_s {
@@ -65,15 +64,22 @@ typedef struct pdua_debug_s {
 } pdua_debug_t;
 
 typedef struct pdua_system_s {
-    uint32_t      pdua_total_of_ports;
+    uint32_t        pdua_total_of_ports;
 
     /* Internal statistic for listener interfaces*/
-    pdua_debug_t  debug_info;
-    pdua_port_t   pdua_ports[PDUA_CONFIG_OF_PORTS_MAX+1];
+    pdua_debug_t    debug_info;
+    pdua_port_t     pdua_ports[PDUA_CONFIG_OF_PORTS_MAX+1];
 } pdua_system_t;
 
-indigo_core_listener_result_t pdua_handle_msg (indigo_cxn_id_t cxn_id, of_object_t *msg);
-indigo_core_listener_result_t pdua_handle_pkt (of_packet_in_t *packet_in);
+indigo_core_listener_result_t pdua_handle_msg(indigo_cxn_id_t cxn_id,
+                                              of_object_t *msg);
+
+indigo_core_listener_result_t pdua_handle_pkt(of_packet_in_t *packet_in);
+
 pdua_port_t *pdua_find_port(of_port_no_t port_no);
+
+extern pdua_system_t pdua_port_sys;
+extern of_port_no_t pdua_dump_port;
+extern bool pdua_dump_all_ports_enabled;
 
 #endif /* __PDUA_INT_H__ */

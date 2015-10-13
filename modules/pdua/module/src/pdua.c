@@ -35,12 +35,18 @@
 
 #define PDUA_DEBUG(fmt, ...)                       \
             AIM_LOG_TRACE(fmt, ##__VA_ARGS__)
-static indigo_error_t  pdua_pkt_data_set(pdua_pkt_t *lpkt, of_octets_t *data);
-static void pdua_pkt_data_free (pdua_pkt_t *lpkt);
-static indigo_error_t pdua_port_disable(ind_soc_timer_callback_f cb, pdua_pkt_t *pkt, pdua_port_t *port);
-static indigo_error_t pdua_port_enable(ind_soc_timer_callback_f cb, pdua_pkt_t *pkt, pdua_port_t *port,
+
+static indigo_error_t pdua_pkt_data_set(pdua_pkt_t *lpkt, of_octets_t *data);
+static void pdua_pkt_data_free(pdua_pkt_t *lpkt);
+
+static indigo_error_t pdua_port_disable(ind_soc_timer_callback_f cb,
+                                        pdua_pkt_t *pkt, pdua_port_t *port);
+
+static indigo_error_t pdua_port_enable(ind_soc_timer_callback_f cb,
+                                       pdua_pkt_t *pkt, pdua_port_t *port,
                                        of_octets_t *data, uint32_t interval_ms);
-static void  pdua_disable_tx_rx(pdua_port_t *pdua);
+
+static void pdua_disable_tx_rx(pdua_port_t *pdua);
 static void pdu_timeout_rx(void *cookie);
 static void pdu_periodic_tx(void *cookie);
 static void rx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *rx_req);
@@ -50,10 +56,10 @@ static void pdu_periodic_tx(void *cookie);
 static void pdu_timeout_rx(void *cookie);
 
 pdua_system_t pdua_port_sys;
-of_port_no_t  pdua_dump_port = -1;
-bool          pdua_dump_all_ports_enabled = false;
+of_port_no_t pdua_dump_port = -1;
+bool pdua_dump_all_ports_enabled = false;
 
-pdua_port_t*
+pdua_port_t *
 pdua_find_port(of_port_no_t port_no)
 {
     pdua_port_t *ret = NULL;
@@ -66,12 +72,11 @@ pdua_find_port(of_port_no_t port_no)
 
 /*
  * data.data must be NULL
- * Ret 0 for success
- * */
+ */
 static indigo_error_t
 pdua_pkt_data_set(pdua_pkt_t *lpkt, of_octets_t *data)
 {
-    if(!lpkt || !data) {
+    if (!lpkt || !data) {
         return INDIGO_ERROR_PARAM;
     }
 
@@ -92,43 +97,54 @@ pdua_pkt_data_set(pdua_pkt_t *lpkt, of_octets_t *data)
 
 /* free data and reset bytes */
 static void
-pdua_pkt_data_free (pdua_pkt_t *lpkt)
+pdua_pkt_data_free(pdua_pkt_t *lpkt)
 {
     if (lpkt) {
         if (lpkt->data.data) {
             PDUA_FREE(lpkt->data.data);
-            lpkt->data.data  = NULL;
+            lpkt->data.data = NULL;
             lpkt->data.bytes = 0;
         }
     }
 }
 
 static indigo_error_t
-pdua_port_disable(ind_soc_timer_callback_f cb, pdua_pkt_t *pkt, pdua_port_t *port)
+pdua_port_disable(ind_soc_timer_callback_f cb, pdua_pkt_t *pkt,
+                  pdua_port_t *port)
 {
     indigo_error_t rv;
 
-    if ((rv = ind_soc_timer_event_unregister(cb, port)) == INDIGO_ERROR_NONE) {
+    rv = ind_soc_timer_event_unregister(cb, port);
+    if (rv == INDIGO_ERROR_NONE) {
         pkt->interval_ms = 0;
         pdua_pkt_data_free(pkt);
+    } else {
+        AIM_LOG_ERROR("%s: failed to unregister timer: %s",
+                      __FUNCTION__, indigo_strerror(rv));
     }
     return rv;
 }
 
 static indigo_error_t
-pdua_port_enable(ind_soc_timer_callback_f cb, pdua_pkt_t *pkt, pdua_port_t *port,
-                 of_octets_t *data, uint32_t interval_ms)
+pdua_port_enable(ind_soc_timer_callback_f cb, pdua_pkt_t *pkt,
+                 pdua_port_t *port, of_octets_t *data, uint32_t interval_ms)
 {
     indigo_error_t rv;
 
-    if ((rv = pdua_pkt_data_set(pkt, data)) == INDIGO_ERROR_NONE) {
-        if ((rv = ind_soc_timer_event_register_with_priority(cb, port, interval_ms,
-                                                             IND_SOC_HIGH_PRIORITY))
-                == INDIGO_ERROR_NONE) {
+    rv = pdua_pkt_data_set(pkt, data);
+    if (rv == INDIGO_ERROR_NONE) {
+        rv = ind_soc_timer_event_register_with_priority(cb, port, interval_ms,
+                                                        IND_SOC_HIGH_PRIORITY);
+        if (rv == INDIGO_ERROR_NONE) {
             pkt->interval_ms = interval_ms;
         } else {
+            AIM_LOG_ERROR("%s: failed to register timer: %s",
+                          __FUNCTION__, indigo_strerror(rv));
             pdua_pkt_data_free(pkt);
         }
+    } else {
+        AIM_LOG_ERROR("%s: failed to set pkt data: %s",
+                      __FUNCTION__, indigo_strerror(rv));
     }
     return rv;
 }
@@ -144,26 +160,27 @@ pdua_disable_tx_rx(pdua_port_t *port)
     }
 
     if (port->tx_pkt.interval_ms) {
-        if((rv = pdua_port_disable(pdu_periodic_tx, &port->tx_pkt, port))
-               != INDIGO_ERROR_NONE) {
-            AIM_LOG_ERROR("Port tx %u failed to disable %s\n", port->port_no, indigo_strerror(rv));
+        rv = pdua_port_disable(pdu_periodic_tx, &port->tx_pkt, port);
+        if (rv != INDIGO_ERROR_NONE) {
+            AIM_LOG_ERROR("%s: failed to disable port %u tx: %s",
+                          __FUNCTION__, port->port_no, indigo_strerror(rv));
         }
     }
 
     if (port->rx_pkt.interval_ms) {
-        if((rv = pdua_port_disable(pdu_timeout_rx, &port->rx_pkt, port))
-               != INDIGO_ERROR_NONE) {
-            AIM_LOG_ERROR("Port rx %u failed to disable %s\n", port->port_no, indigo_strerror(rv));
+        rv = pdua_port_disable(pdu_timeout_rx, &port->rx_pkt, port);
+        if (rv != INDIGO_ERROR_NONE) {
+            AIM_LOG_ERROR("%s: failed to disable port %u rx: %s",
+                          __FUNCTION__, port->port_no, indigo_strerror(rv));
         }
     }
-
 }
 
 static void
 pdu_timeout_rx(void *cookie)
 {
     uint32_t version;
-    pdua_port_t *port = (pdua_port_t*) cookie;
+    pdua_port_t *port = (pdua_port_t *)cookie;
     of_bsn_pdu_rx_timeout_t *timeout_msg = NULL;
 
     if (!port) {
@@ -171,23 +188,23 @@ pdu_timeout_rx(void *cookie)
     }
 
     if (indigo_cxn_get_async_version(&version) != INDIGO_ERROR_NONE) {
-        AIM_LOG_ERROR("No controller connected");
+        AIM_LOG_ERROR("%s: no controller connected", __FUNCTION__);
         return;
     }
 
     timeout_msg = of_bsn_pdu_rx_timeout_new(version);
-    if(!timeout_msg){
-        AIM_LOG_INTERNAL("Failed to allocate timeout msg");
+    if (!timeout_msg){
+        AIM_LOG_INTERNAL("%s: failed to allocate timeout msg", __FUNCTION__);
         return;
     }
 
     /* Set port number */
-    of_bsn_pdu_rx_timeout_port_no_set (timeout_msg, port->port_no);
+    of_bsn_pdu_rx_timeout_port_no_set(timeout_msg, port->port_no);
 
     /* Set slot number */
-    of_bsn_pdu_rx_timeout_slot_num_set (timeout_msg, PDU_SLOT_NUM);
+    of_bsn_pdu_rx_timeout_slot_num_set(timeout_msg, PDU_SLOT_NUM);
 
-    PDUA_DEBUG("Send rx timeout async msg");
+    PDUA_DEBUG("%s: sending rx timeout async msg", __FUNCTION__);
     /* Send to controller, don't delete when send to controller */
     indigo_cxn_send_async_message(timeout_msg);
 
@@ -197,19 +214,20 @@ pdu_timeout_rx(void *cookie)
 static void
 pdu_periodic_tx(void *cookie)
 {
-    pdua_port_t *port = (pdua_port_t*) cookie;
+    pdua_port_t *port = (pdua_port_t *)cookie;
     indigo_error_t rv;
 
-    if(!port) {
+    if (!port) {
        return;
     }
 
-    PDUA_DEBUG("Port %u: Fwd tx pkt out", port->port_no);
+    PDUA_DEBUG("%s: fwd tx pkt out on port %u", __FUNCTION__, port->port_no);
 
     rv = slshared_fwd_packet_out(&port->tx_pkt.data, 0, port->port_no,
                                  SLSHARED_CONFIG_PDU_QUEUE_PRIORITY);
     if (rv < 0) {
-        AIM_LOG_INTERNAL("Fwd pkt out failed %s", indigo_strerror(rv));
+        AIM_LOG_INTERNAL("%s: failed to fwd tx pkt out on port %u: %s",
+                         __FUNCTION__, port->port_no, indigo_strerror(rv));
     } else {
         port->tx_pkt_out_cnt++;
     }
@@ -222,39 +240,42 @@ rx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *rx_req)
     indigo_error_t rv;
 
     /* rx_req info */
-    uint32_t     xid;
+    uint32_t xid;
     of_port_no_t port_no;
-    uint32_t     timeout_ms;
-    of_octets_t  data;
-
+    uint32_t timeout_ms;
+    of_octets_t data;
     of_bsn_pdu_rx_reply_t *rx_reply = NULL;
-    uint32_t              status_failed = 0;
+    uint32_t status_failed = 0;
 
     /* Get rx req info */
-    of_bsn_pdu_rx_request_xid_get       (rx_req, &xid);
+    of_bsn_pdu_rx_request_xid_get(rx_req, &xid);
     of_bsn_pdu_rx_request_timeout_ms_get(rx_req, &timeout_ms);
-    of_bsn_pdu_rx_request_data_get      (rx_req, &data);
-    of_bsn_pdu_rx_request_port_no_get   (rx_req, &port_no);
+    of_bsn_pdu_rx_request_data_get(rx_req, &data);
+    of_bsn_pdu_rx_request_port_no_get(rx_req, &port_no);
 
     if (timeout_ms && !data.data) {
         status_failed = 1;
-        AIM_LOG_ERROR("Req_Rx Port %u, inconsistent info", port_no);
+        AIM_LOG_ERROR("%s: Req_Rx Port %u, inconsistent info",
+                      __FUNCTION__, port_no);
         goto rx_reply_to_ctrl;
     }
 
-    if (!(port = pdua_find_port(port_no))) {
+    port = pdua_find_port(port_no);
+    if (port == NULL) {
         status_failed = 1;
-        AIM_LOG_ERROR("Port %u doesn't exist", port_no);
+        AIM_LOG_ERROR("%s: Port %u doesn't exist", __FUNCTION__, port_no);
         goto rx_reply_to_ctrl;
     }
 
     port->rx_req_cnt++;
 
-    /* 1. Unreg timer, delete the current rx_pkt */
-    if(port->rx_pkt.interval_ms) {
-        if ((rv = pdua_port_disable(pdu_timeout_rx, &port->rx_pkt, port)) != INDIGO_ERROR_NONE) {
+    /* 1. Clean up old rx_pkt configuration */
+    if (port->rx_pkt.interval_ms) {
+        rv = pdua_port_disable(pdu_timeout_rx, &port->rx_pkt, port);
+        if (rv != INDIGO_ERROR_NONE) {
             status_failed = 1;
-            AIM_LOG_ERROR("Port rx %u failed to disable %s", port->port_no, indigo_strerror(rv));
+            AIM_LOG_ERROR("%s: Port rx %u failed to disable %s",
+                          __FUNCTION__, port->port_no, indigo_strerror(rv));
             goto rx_reply_to_ctrl;
         }
     }
@@ -262,31 +283,33 @@ rx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *rx_req)
     AIM_TRUE_OR_DIE(!port->rx_pkt.interval_ms && !port->rx_pkt.data.data);
 
     /* 2. Set up new rx_pkt, timer */
-    if(timeout_ms) {
-        if ((rv = pdua_port_enable(pdu_timeout_rx, &port->rx_pkt, port,
-                                   &data, timeout_ms)) != INDIGO_ERROR_NONE) {
+    if (timeout_ms) {
+        rv = pdua_port_enable(pdu_timeout_rx, &port->rx_pkt, port, &data,
+                              timeout_ms);
+        if (rv != INDIGO_ERROR_NONE) {
             status_failed = 1;
-            AIM_LOG_ERROR("Port rx %u failed to enable %s", port->port_no, indigo_strerror(rv));
+            AIM_LOG_ERROR("%s: Port rx %u failed to enable %s",
+                          __FUNCTION__, port->port_no, indigo_strerror(rv));
         }
     }
 
 rx_reply_to_ctrl:
     /* 3. Setup reply */
     rx_reply = of_bsn_pdu_rx_reply_new(rx_req->version);
-    if(!rx_reply){
-        AIM_LOG_INTERNAL("Failed to allocate rx_reply");
+    if (!rx_reply) {
+        AIM_LOG_INTERNAL("%s: failed to allocate rx_reply", __FUNCTION__);
         return;
     }
-    of_bsn_pdu_rx_reply_xid_set     (rx_reply, xid);
-    of_bsn_pdu_rx_reply_port_no_set (rx_reply, port_no);
-    of_bsn_pdu_rx_reply_status_set  (rx_reply, status_failed);
+    of_bsn_pdu_rx_reply_xid_set(rx_reply, xid);
+    of_bsn_pdu_rx_reply_port_no_set(rx_reply, port_no);
+    of_bsn_pdu_rx_reply_status_set(rx_reply, status_failed);
     of_bsn_pdu_rx_reply_slot_num_set(rx_reply, PDU_SLOT_NUM);
 
-    PDUA_DEBUG("Port %u: sends a RX_reply to ctrl, status %s, version %u",
-                port_no, status_failed? "Failed" : "Success", rx_req->version);
+    PDUA_DEBUG("%s: Port %u: sends a RX_reply to ctrl, status %s, version %u",
+               __FUNCTION__, port_no, status_failed? "Failed" : "Success",
+               rx_req->version);
     /* 4. Send to controller, don't delete obj */
     indigo_cxn_send_controller_message(cxn_id, rx_reply);
-
 }
 
 
@@ -298,40 +321,44 @@ tx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *tx_req)
     indigo_error_t rv;
 
     /* tx_req info */
-    uint32_t     xid;
+    uint32_t xid;
     of_port_no_t port_no;
-    uint32_t     tx_interval_ms;
-    of_octets_t  data;
+    uint32_t tx_interval_ms;
+    of_octets_t data;
 
     /* tx_reply info */
     of_bsn_pdu_tx_reply_t *tx_reply = NULL;
-    uint32_t              status_failed = 0;
+    uint32_t status_failed = 0;
 
     /* Get tx req info */
-    of_bsn_pdu_tx_request_xid_get           (tx_req, &xid);
+    of_bsn_pdu_tx_request_xid_get(tx_req, &xid);
     of_bsn_pdu_tx_request_tx_interval_ms_get(tx_req, &tx_interval_ms);
-    of_bsn_pdu_tx_request_data_get          (tx_req, &data);
-    of_bsn_pdu_tx_request_port_no_get       (tx_req, &port_no);
+    of_bsn_pdu_tx_request_data_get(tx_req, &data);
+    of_bsn_pdu_tx_request_port_no_get(tx_req, &port_no);
 
     if (tx_interval_ms && !data.data) {
         status_failed = 1;
-        AIM_LOG_ERROR("Req_Tx Port %u, Inconsistent info", port_no);
+        AIM_LOG_ERROR("%s: Req_Tx Port %u, Inconsistent info",
+                      __FUNCTION__, port_no);
         goto tx_reply_to_ctrl;
     }
 
-    if (!(port = pdua_find_port(port_no))) {
+    port = pdua_find_port(port_no);
+    if (port == NULL) {
         status_failed = 1;
-        AIM_LOG_ERROR("Port %u doesn't exist", port_no);
+        AIM_LOG_ERROR("%s: Port %u doesn't exist", __FUNCTION__, port_no);
         goto tx_reply_to_ctrl;
     }
 
     port->tx_req_cnt++;
 
-    /* 1. unreg old timer, delete old data */
+    /* 1. Clean up old tx_pkt configuration */
     if (port->tx_pkt.interval_ms) {
-        if ((rv = pdua_port_disable(pdu_periodic_tx, &port->tx_pkt, port)) != INDIGO_ERROR_NONE) {
+        rv = pdua_port_disable(pdu_periodic_tx, &port->tx_pkt, port);
+        if (rv != INDIGO_ERROR_NONE) {
             status_failed = 1;
-            AIM_LOG_ERROR("Port tx %u failed to disable %s", port->port_no, indigo_strerror(rv));
+            AIM_LOG_ERROR("%s: Port tx %u failed to disable %s",
+                          __FUNCTION__, port->port_no, indigo_strerror(rv));
             goto tx_reply_to_ctrl;
         }
     }
@@ -339,52 +366,57 @@ tx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *tx_req)
     AIM_TRUE_OR_DIE(!port->tx_pkt.interval_ms && !port->tx_pkt.data.data);
 
     /* 2. Set up new tx_pkt, alarm */
-    if(tx_interval_ms) {
-        if ((rv = pdua_port_enable(pdu_periodic_tx, &port->tx_pkt, port,
-                                   &data, tx_interval_ms)) == INDIGO_ERROR_NONE) {
+    if (tx_interval_ms) {
+        rv = pdua_port_enable(pdu_periodic_tx, &port->tx_pkt, port, &data,
+                              tx_interval_ms);
+        if (rv == INDIGO_ERROR_NONE) {
             /* Successfully enable, send one out immediately */
             pdu_periodic_tx(port);
         } else {
             status_failed = 1;
-            AIM_LOG_ERROR("Port tx %u failed to enable %s", port->port_no, indigo_strerror(rv));
+            AIM_LOG_ERROR("%s: Port tx %u failed to enable %s",
+                          __FUNCTION__, port->port_no, indigo_strerror(rv));
         }
     }
 
 tx_reply_to_ctrl:
     /* 3. Setup reply  */
     tx_reply = of_bsn_pdu_tx_reply_new(tx_req->version);
-    if(!tx_reply){
-        AIM_LOG_INTERNAL("Failed to allocate tx reply");
+    if (!tx_reply) {
+        AIM_LOG_INTERNAL("%s: failed to allocate tx reply", __FUNCTION__);
         return;
     }
 
-    of_bsn_pdu_tx_reply_xid_set     (tx_reply, xid);
-    of_bsn_pdu_tx_reply_port_no_set (tx_reply, port_no);
-    of_bsn_pdu_tx_reply_status_set  (tx_reply, status_failed);
+    of_bsn_pdu_tx_reply_xid_set(tx_reply, xid);
+    of_bsn_pdu_tx_reply_port_no_set(tx_reply, port_no);
+    of_bsn_pdu_tx_reply_status_set(tx_reply, status_failed);
     of_bsn_pdu_tx_reply_slot_num_set(tx_reply, PDU_SLOT_NUM);
 
-    PDUA_DEBUG("Port %u: sends  a TX_reply to ctrl, status %s, version %u",
-                port_no, status_failed? "Failed" : "Success", tx_req->version);
+    PDUA_DEBUG("%s: Port %u: sends  a TX_reply to ctrl, status %s, version %u",
+               __FUNCTION__, port_no, status_failed? "Failed" : "Success",
+               tx_req->version);
     /* 4. Send to controller, don't delete obj */
     indigo_cxn_send_controller_message(cxn_id, tx_reply);
-
 }
 
 /* Register to listen to CTRL msg */
 indigo_core_listener_result_t
-pdua_handle_msg (indigo_cxn_id_t cxn_id, of_object_t *msg)
+pdua_handle_msg(indigo_cxn_id_t cxn_id, of_object_t *msg)
 {
     indigo_core_listener_result_t ret = INDIGO_CORE_LISTENER_RESULT_PASS;
     uint8_t slot_num;
 
-    if(!msg)
+    if(!msg) {
         return ret;
+    }
 
     switch (msg->object_id) {
+
     case OF_BSN_PDU_RX_REQUEST:
         of_bsn_pdu_rx_request_slot_num_get(msg, &slot_num);
         if (slot_num != PDU_SLOT_NUM) {
-            PDUA_DEBUG("Received rx request with slot_num: %u", slot_num);
+            PDUA_DEBUG("%s: Received rx request with slot_num: %u",
+                       __FUNCTION__, slot_num);
             return ret;
         }
 
@@ -397,7 +429,8 @@ pdua_handle_msg (indigo_cxn_id_t cxn_id, of_object_t *msg)
     case OF_BSN_PDU_TX_REQUEST:
         of_bsn_pdu_tx_request_slot_num_get(msg, &slot_num);
         if (slot_num != PDU_SLOT_NUM) {
-            PDUA_DEBUG("Received tx request with slot_num: %u", slot_num);
+            PDUA_DEBUG("%s: Received tx request with slot_num: %u",
+                       __FUNCTION__, slot_num);
             return ret;
         }
 
@@ -415,7 +448,6 @@ pdua_handle_msg (indigo_cxn_id_t cxn_id, of_object_t *msg)
 }
 
 
-
 /*****************
  * HANDLE PKT IN *
  *****************/
@@ -423,31 +455,33 @@ pdua_handle_msg (indigo_cxn_id_t cxn_id, of_object_t *msg)
 /*
  * Caller must ensure port != NULL, data != NULL
  * return 1 if pkt is expected
- * */
-static inline int
+ */
+static int
 pdua_rx_pkt_is_expected(pdua_port_t *port, of_octets_t *data)
 {
     int ret = 0;
 
     if (!port->rx_pkt.data.data) {
-        PDUA_DEBUG("Port %u: MISMATCHED RX no data", port->port_no);
+        PDUA_DEBUG("%s: Port %u: MISMATCHED RX no data",
+                   __FUNCTION__, port->port_no);
         port->rx_pkt_mismatched_no_data++;
         return ret;
     }
 
     if (port->rx_pkt.data.bytes != data->bytes) {
-        PDUA_DEBUG("Port %u: MISMATCHED len exp=%u, rcv=%u",
-                    port->port_no, port->rx_pkt.data.bytes, data->bytes);
+        PDUA_DEBUG("%s: Port %u: MISMATCHED len exp=%u, rcv=%u",
+                   __FUNCTION__, port->port_no, port->rx_pkt.data.bytes,
+                   data->bytes);
         port->rx_pkt_mismatched_len++;
         return ret;
     }
 
     if (memcmp(port->rx_pkt.data.data, data->data, data->bytes) == 0) {
-        PDUA_DEBUG("Port %u: MATCHED\n", port->port_no);
+        PDUA_DEBUG("%s: Port %u: MATCHED", __FUNCTION__, port->port_no);
         ret = 1;
         port->rx_pkt_matched++;
     } else {
-        PDUA_DEBUG("Port %u: MISMATCHED data\n", port->port_no);
+        PDUA_DEBUG("%s: Port %u: MISMATCHED data", __FUNCTION__, port->port_no);
         port->rx_pkt_mismatched_data++;
     }
 
@@ -457,16 +491,19 @@ pdua_rx_pkt_is_expected(pdua_port_t *port, of_octets_t *data)
 /*
  * Caller must ensure pdua != NULL
  * Reset timeout
- * */
-static inline void
+ */
+static void
 pdua_update_rx_timeout(pdua_port_t *port)
 {
     indigo_error_t rv;
-    PDUA_DEBUG("Using reset timer");
-    if ((rv = ind_soc_timer_event_register_with_priority(pdu_timeout_rx, port, port->rx_pkt.interval_ms,
-                                                         IND_SOC_HIGH_PRIORITY)) !=
-            INDIGO_ERROR_NONE) {
-        AIM_LOG_ERROR("Port %u failed to register %s",port->port_no, indigo_strerror(rv));
+    PDUA_DEBUG("%s: Using reset timer", __FUNCTION__);
+
+    rv = ind_soc_timer_event_register_with_priority(pdu_timeout_rx, port,
+                                                    port->rx_pkt.interval_ms,
+                                                    IND_SOC_HIGH_PRIORITY);
+    if (rv != INDIGO_ERROR_NONE) {
+        AIM_LOG_ERROR("%s: Port %u failed to register %s",
+                      __FUNCTION__, port->port_no, indigo_strerror(rv));
     }
 }
 
@@ -482,13 +519,15 @@ pdua_receive_packet(of_octets_t *data, of_port_no_t port_no)
 
     pdua_port_t *port = pdua_find_port(port_no);
     if (!port) {
-        AIM_LOG_INTERNAL("PDUA port out of range %u", port_no);
+        AIM_LOG_INTERNAL("%s: PDUA port out of range %u",
+                         __FUNCTION__, port_no);
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
     port->rx_pkt_in_cnt++;
     if (pdua_dump_all_ports_enabled || pdua_dump_port == port_no) {
-        PDUA_DEBUG("PDUA_DATA_HEXDUMP:\n%{data}\n", data->data, data->bytes);
+        PDUA_DEBUG("%s: PDUA_DATA_HEXDUMP:\n%{data}\n",
+                   __FUNCTION__, data->data, data->bytes);
     }
 
     /* At this step we will process the PDU packet
@@ -508,11 +547,11 @@ pdua_receive_packet(of_octets_t *data, of_port_no_t port_no)
 
 /* Register to listen to PACKETIN msg */
 indigo_core_listener_result_t
-pdua_handle_pkt (of_packet_in_t *packet_in)
+pdua_handle_pkt(of_packet_in_t *packet_in)
 {
-    of_octets_t                data;
-    of_port_no_t               port_no;
-    of_match_t                 match;
+    of_octets_t data;
+    of_port_no_t port_no;
+    of_match_t match;
 
     if (!packet_in) {
         return INDIGO_CORE_LISTENER_RESULT_PASS;
@@ -530,14 +569,15 @@ pdua_handle_pkt (of_packet_in_t *packet_in)
 
     if (packet_in->version <= OF_VERSION_1_1) {
         of_packet_in_in_port_get(packet_in, &port_no);
-        PDUA_DEBUG("port %u pkt in version %d", port_no, packet_in->version);
+        PDUA_DEBUG("%s: port %u pkt in version %d",
+                   __FUNCTION__, port_no, packet_in->version);
     } else {
         if (of_packet_in_match_get(packet_in, &match) < 0) {
-            AIM_LOG_INTERNAL("match get failed");
+            AIM_LOG_INTERNAL("%s: match get failed", __FUNCTION__);
             return INDIGO_CORE_LISTENER_RESULT_PASS;
         }
         port_no = match.fields.in_port;
-        PDUA_DEBUG("Port %u", port_no);
+        PDUA_DEBUG("%s: Port %u", __FUNCTION__, port_no);
     }
 
     return pdua_receive_packet(&data, port_no);
@@ -548,7 +588,7 @@ pdua_handle_pkt (of_packet_in_t *packet_in)
  * PDUA INIT and FINISH
  ************************/
 
-static inline void
+static void
 pdua_register_system_counters(void)
 {
     debug_counter_register(&pdua_port_sys.debug_info.total_pkt_in_cnt,
@@ -562,7 +602,7 @@ pdua_register_system_counters(void)
                            "Expected packets recv'd by pdua");
 }
 
-static inline void
+static void
 pdua_unregister_system_counters(void)
 {
     debug_counter_unregister(&pdua_port_sys.debug_info.total_pkt_in_cnt);
@@ -579,14 +619,14 @@ pdua_system_init(void)
 
     AIM_LOG_VERBOSE("init");
 
-    pdua_port_sys.pdua_total_of_ports = sizeof(pdua_port_sys.pdua_ports) /
-                                        sizeof(pdua_port_sys.pdua_ports[0]);
-    for (i=0; i < pdua_port_sys.pdua_total_of_ports; i++) {
+    pdua_port_sys.pdua_total_of_ports = AIM_ARRAYSIZE(pdua_port_sys.pdua_ports);
+    for (i = 0; i < pdua_port_sys.pdua_total_of_ports; i++) {
         port = pdua_find_port(i);
-        if (port)
+        if (port) {
             port->port_no = i;
-        else
-            AIM_LOG_INTERNAL("Port %d not existing", i);
+        } else {
+            AIM_LOG_INTERNAL("%s: Port %d not existing", __FUNCTION__, i);
+        }
     }
 
     indigo_core_message_listener_register(pdua_handle_msg);
@@ -612,10 +652,11 @@ pdua_system_finish(void)
 
     for (i=0; i < pdua_port_sys.pdua_total_of_ports; i++) {
         port = pdua_find_port(i);
-        if (port)
+        if (port) {
             pdua_disable_tx_rx(port);
-        else
-            AIM_LOG_INTERNAL("Port %d not existing", i);
+        } else {
+            AIM_LOG_INTERNAL("%s: Port %d not existing", __FUNCTION__, i);
+        }
     }
 
     pdua_unregister_system_counters();

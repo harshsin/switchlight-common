@@ -25,9 +25,6 @@
 #include <uCli/ucli_handler_macros.h>
 
 #include "pdua_int.h"
-extern pdua_system_t pdua_port_sys;
-extern of_port_no_t  pdua_dump_port;
-extern bool          pdua_dump_all_ports_enabled;
 uint32_t dummy_test_data[] = {0xdeafbeef, 0x12345678, 0xdeafbeef};
 
 static ucli_status_t
@@ -39,11 +36,11 @@ pdua_ucli_ucli__show_pdua_counters__(ucli_context_t* uc)
 
     ucli_printf(uc, "TOTAL PDUA PORT NUMBER : %u\n",
                 pdua_port_sys.pdua_total_of_ports);
-    ucli_printf(uc, "TOTAL PACKETS RECV    : %" PRId64 "\n",
+    ucli_printf(uc, "TOTAL PACKETS RECV    : %" PRIu64 "\n",
                 debug_counter_get(&pdua_port_sys.debug_info.total_pkt_in_cnt));
-    ucli_printf(uc, "TOTAL PACKETS EXPECTED    : %" PRId64 "\n",
+    ucli_printf(uc, "TOTAL PACKETS EXPECTED    : %" PRIu64 "\n",
                 debug_counter_get(&pdua_port_sys.debug_info.total_pkt_exp_cnt));
-    ucli_printf(uc, "TOTAL MESSAGES RECV    : %" PRId64 "\n",
+    ucli_printf(uc, "TOTAL MESSAGES RECV    : %" PRIu64 "\n",
                 debug_counter_get(&pdua_port_sys.debug_info.total_msg_in_cnt));
 
     return UCLI_STATUS_OK;
@@ -66,21 +63,22 @@ pdua_ucli_ucli__clear_pdua_counters__(ucli_context_t* uc)
 static void
 pdua_show_portcounters__(ucli_context_t* uc, uint32_t port_no)
 {
-    pdua_port_t  *port = NULL;
+    pdua_port_t *port = NULL;
 
     /*
      * Find any port corresponding to the info received
      */
     port = pdua_find_port(port_no);
-    if (!port) return;
+    if (!port) {
+        return;
+    }
  
-    ucli_printf(uc, "%d\t%d\t%d\t%"PRId64"\t%"PRId64"\t%"PRId64"\t%"PRId64"\t%"PRId64"\t%"PRId64"\t%"PRId64"\t%"PRId64"\t%"PRId64"\n" , 
+    ucli_printf(uc, "%u\t%u\t%u\t%"PRIu64"\t%"PRIu64"\t%"PRIu64"\t%"PRIu64"\t%"PRIu64"\t%"PRIu64"\t%"PRIu64"\t%"PRIu64"\t%"PRIu64"\n" , 
                 port->port_no, port->rx_pkt.interval_ms, port->tx_pkt.interval_ms,
                 port->rx_pkt_in_cnt, port->tx_pkt_out_cnt, port->timeout_pkt_cnt,
                 port->rx_pkt_mismatched_no_data, port->rx_pkt_mismatched_len,
                 port->rx_pkt_mismatched_data, port->rx_pkt_matched,
                 port->tx_req_cnt, port->rx_req_cnt);
-
 }
 
 static ucli_status_t
@@ -123,16 +121,18 @@ pdua_ucli_ucli__show_pdua_portcounters__(ucli_context_t* uc)
 static void
 pdua_clear_portcounters__(ucli_context_t* uc, uint32_t port_no)
 {
-    pdua_port_t  *port = NULL;
+    pdua_port_t *port = NULL;
 
     /*
      * Find any port corresponding to the info received
      */
     port = pdua_find_port(port_no);
-    if (!port) return;
+    if (!port) {
+        return;
+    }
  
-    port->rx_pkt_in_cnt   = 0;
-    port->tx_pkt_out_cnt  = 0;
+    port->rx_pkt_in_cnt = 0;
+    port->tx_pkt_out_cnt = 0;
     port->timeout_pkt_cnt = 0;
     port->rx_pkt_mismatched_no_data = 0;
     port->rx_pkt_mismatched_len = 0;
@@ -166,13 +166,15 @@ pdua_ucli_ucli__clear_pdua_portcounters__(ucli_context_t* uc)
 static void
 pdua_show_portdata__(ucli_context_t* uc, uint32_t port_no)
 {
-    pdua_port_t  *port = NULL;
+    pdua_port_t *port = NULL;
 
     /*
      * Find any port corresponding to the info received
      */
     port = pdua_find_port(port_no);
-    if (!port) return;
+    if (!port) {
+        return;
+    }
 
     ucli_printf(uc, "PORT:%d\n", port_no);
 
@@ -207,7 +209,7 @@ pdua_ucli_ucli__show_pdua_portdata__(ucli_context_t* uc)
             pdua_show_portdata__(uc, port);
         }
     }
-     ucli_printf(uc, "**************END DUMPING DATA PORT INFO************\n");
+    ucli_printf(uc, "**************END DUMPING DATA PORT INFO************\n");
     return UCLI_STATUS_OK;
 }
 
