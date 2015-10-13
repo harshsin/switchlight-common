@@ -216,32 +216,32 @@ pdua_ucli_ucli__show_pdua_portdata__(ucli_context_t* uc)
 static ucli_status_t
 pdua_ucli_ucli__set_pkt_hexdump__(ucli_context_t* uc)
 {
-    uint32_t port = 0;
+    int choice;
+    uint32_t port_no = 0;
+    pdua_port_t *port = NULL;
 
     UCLI_COMMAND_INFO(uc,
-                      "port_dump", -1,
-                      "$summary#Set pkt_data hexdump (used with trace)"
-                      "$args#[Port]");
+                      "port_dump", 2,
+                      "$summary#Enable or disable pkt_data hexdump"
+                      "$args#<Port> <on|off|status>");
 
-    if (uc->pargs->count == 1) {
-        UCLI_ARGPARSE_OR_RETURN(uc, "i", &port);
-        ucli_printf(uc, "Enable pkt_data_dump for port %d\n", port);
-        pdua_dump_port = port;
-        pdua_dump_all_ports_enabled = false;
-        
+    UCLI_ARGPARSE_OR_RETURN(uc, "i{choice}",
+                            &port_no,
+                            &choice, "option", 3, "off", "on", "status");
+
+    port = pdua_find_port(port_no);
+
+    if (!port) {
+        ucli_printf(uc, "Port %u is not found\n", port_no);
+        return UCLI_STATUS_OK;
+    }
+
+    if (choice == 2) {
+        ucli_printf(uc, "Port %u: dump is %s.\n",
+                        port_no,
+                        port->dump_enabled ? "on" : "off");
     } else {
-        pdua_dump_port = -1;
-        ucli_printf(uc, "Toggle pkt_data_dump switch\n");
-        if (!pdua_dump_all_ports_enabled) {
-            ucli_printf(uc, "Enable pkt_data_dump for all ports - test data hexdump\n");
-            pdua_dump_all_ports_enabled = true;
-            ucli_printf(uc, "hex_dump:\n%{data}\n",
-                            (uint8_t *)dummy_test_data,
-                            sizeof(dummy_test_data));
-        } else {
-            ucli_printf(uc, "Disable pkt_data_dump for all ports\n");
-            pdua_dump_all_ports_enabled = false;
-        }
+        port->dump_enabled = choice;
     }
     return UCLI_STATUS_OK;
 }

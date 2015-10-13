@@ -55,6 +55,8 @@ typedef struct pdua_port_s {
     uint64_t        rx_req_cnt;
 
     /* Slot_Num Statistics if supported */
+
+    bool            dump_enabled;
 } pdua_port_t;
 
 typedef struct pdua_debug_s {
@@ -79,7 +81,5 @@ indigo_core_listener_result_t pdua_handle_pkt(of_packet_in_t *packet_in);
 pdua_port_t *pdua_find_port(of_port_no_t port_no);
 
 extern pdua_system_t pdua_port_sys;
-extern of_port_no_t pdua_dump_port;
-extern bool pdua_dump_all_ports_enabled;
 
 #endif /* __PDUA_INT_H__ */

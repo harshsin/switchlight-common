@@ -56,8 +56,6 @@ static void pdu_periodic_tx(void *cookie);
 static void pdu_timeout_rx(void *cookie);
 
 pdua_system_t pdua_port_sys;
-of_port_no_t pdua_dump_port = -1;
-bool pdua_dump_all_ports_enabled = false;
 
 pdua_port_t *
 pdua_find_port(of_port_no_t port_no)
@@ -525,7 +523,7 @@ pdua_receive_packet(of_octets_t *data, of_port_no_t port_no)
     }
 
     port->rx_pkt_in_cnt++;
-    if (pdua_dump_all_ports_enabled || pdua_dump_port == port_no) {
+    if (port->dump_enabled) {
         PDUA_DEBUG("%s: PDUA_DATA_HEXDUMP:\n%{data}\n",
                    __FUNCTION__, data->data, data->bytes);
     }
@@ -624,6 +622,7 @@ pdua_system_init(void)
         port = pdua_find_port(i);
         if (port) {
             port->port_no = i;
+            port->dump_enabled = false;
         } else {
             AIM_LOG_INTERNAL("%s: Port %d not existing", __FUNCTION__, i);
         }
@@ -650,7 +649,7 @@ pdua_system_finish(void)
     indigo_core_packet_in_listener_unregister(pdua_handle_pkt);
 #endif
 
-    for (i=0; i < pdua_port_sys.pdua_total_of_ports; i++) {
+    for (i = 0; i < pdua_port_sys.pdua_total_of_ports; i++) {
         port = pdua_find_port(i);
         if (port) {
             pdua_disable_tx_rx(port);
