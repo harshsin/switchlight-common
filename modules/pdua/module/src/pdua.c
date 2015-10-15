@@ -661,3 +661,35 @@ pdua_system_finish(void)
 
     pdua_unregister_system_counters();
 }
+
+indigo_error_t
+pdua_port_dump_enable_set(of_port_no_t port_no, bool enabled)
+{
+    pdua_port_t *port;
+
+    port = pdua_find_port(port_no);
+    if (port != NULL) {
+        port->dump_enabled = enabled;
+    } else {
+        AIM_LOG_ERROR("%s: Port %u not found", __FUNCTION__, port_no);
+        return INDIGO_ERROR_NOT_FOUND;
+    }
+
+    return INDIGO_ERROR_NONE;
+}
+
+indigo_error_t
+pdua_port_dump_enable_get(of_port_no_t port_no, bool *enabled)
+{
+    pdua_port_t *port;
+
+    port = pdua_find_port(port_no);
+    if (port != NULL) {
+        *enabled = port->dump_enabled;
+    } else {
+        AIM_LOG_ERROR("%s: Port %u not found", __FUNCTION__, port_no);
+        return INDIGO_ERROR_NOT_FOUND;
+    }
+
+    return INDIGO_ERROR_NONE;
+}

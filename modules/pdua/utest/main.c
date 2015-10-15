@@ -40,7 +40,6 @@
 
 extern indigo_core_listener_result_t pdua_handle_msg (indigo_cxn_id_t cxn_id, of_object_t *msg);
 extern indigo_core_listener_result_t pdua_handle_pkt (of_packet_in_t *packet_in);
-extern int pdua_dump_data;
 /* Dummy packet */
 uint8_t Lldppdu_Tx[] = {10,11,12,13,250,251,252,253};
 /* LLDP type packet */
@@ -262,8 +261,8 @@ int aim_main(int argc, char* argv[])
 
     ind_soc_init(&soc_cfg);
     
-    pdua_dump_data = 1;
     pdua_system_init();
+    pdua_port_dump_enable_set(port_test_no, 1);
 
     test_tx_request(port_test_no);
     test_rx_request(port_test_no);

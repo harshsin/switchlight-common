@@ -33,5 +33,6 @@ int pdua_system_init(void);
 void pdua_system_finish(void);
 indigo_core_listener_result_t pdua_receive_packet(of_octets_t *data,
                                                   of_port_no_t port_no);
-
+indigo_error_t pdua_port_dump_enable_set(of_port_no_t port_no, bool enabled);
+indigo_error_t pdua_port_dump_enable_get(of_port_no_t port_no, bool *enabled);
 #endif /* __PDUA_H__ */
