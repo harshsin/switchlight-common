@@ -16,9 +16,10 @@ icmpa_BASEDIR := $(BASEDIR)icmpa
 igmpa_BASEDIR := $(BASEDIR)igmpa
 lacpa_BASEDIR := $(BASEDIR)lacpa
 lldpa_BASEDIR := $(BASEDIR)lldpa
+pdua_BASEDIR := $(BASEDIR)pdua
 router_ip_table_BASEDIR := $(BASEDIR)router_ip_table
 sflowa_BASEDIR := $(BASEDIR)sflowa
 slshared_BASEDIR := $(BASEDIR)slshared
 
 
-ALL_MODULES := $(ALL_MODULES) arpa arpra cdpa dhcpra host_sflow icmpa igmpa lacpa lldpa router_ip_table sflowa slshared
+ALL_MODULES := $(ALL_MODULES) arpa arpra cdpa dhcpra host_sflow icmpa igmpa lacpa lldpa pdua router_ip_table sflowa slshared
