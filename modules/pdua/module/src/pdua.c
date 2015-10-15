@@ -253,7 +253,7 @@ rx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *rx_req)
 
     if (timeout_ms && !data.data) {
         status_failed = 1;
-        AIM_LOG_ERROR("%s: Req_Rx Port %u, inconsistent info",
+        AIM_LOG_ERROR("%s: Req_Rx Port %u, timeout_ms is set with no pkt data",
                       __FUNCTION__, port_no);
         goto rx_reply_to_ctrl;
     }
@@ -267,7 +267,7 @@ rx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *rx_req)
 
     port->rx_req_cnt++;
 
-    /* 1. Clean up old rx_pkt configuration */
+    /* 1. Clean up old rx_pkt configuration if it exists */
     if (port->rx_pkt.interval_ms) {
         rv = pdua_port_disable(pdu_timeout_rx, &port->rx_pkt, port);
         if (rv != INDIGO_ERROR_NONE) {
@@ -303,7 +303,7 @@ rx_reply_to_ctrl:
     of_bsn_pdu_rx_reply_status_set(rx_reply, status_failed);
     of_bsn_pdu_rx_reply_slot_num_set(rx_reply, PDU_SLOT_NUM);
 
-    PDUA_DEBUG("%s: Port %u: sends a RX_reply to ctrl, status %s, version %u",
+    PDUA_DEBUG("%s: Port %u: sending a RX_reply to ctrl, status %s, version %u",
                __FUNCTION__, port_no, status_failed? "Failed" : "Success",
                rx_req->version);
     /* 4. Send to controller, don't delete obj */
@@ -336,7 +336,8 @@ tx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *tx_req)
 
     if (tx_interval_ms && !data.data) {
         status_failed = 1;
-        AIM_LOG_ERROR("%s: Req_Tx Port %u, Inconsistent info",
+        AIM_LOG_ERROR("%s: Req_Tx Port %u, "
+                      "tx_interval_ms is set with no pkt data",
                       __FUNCTION__, port_no);
         goto tx_reply_to_ctrl;
     }
@@ -350,7 +351,7 @@ tx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *tx_req)
 
     port->tx_req_cnt++;
 
-    /* 1. Clean up old tx_pkt configuration */
+    /* 1. Clean up old tx_pkt configuration if it exists */
     if (port->tx_pkt.interval_ms) {
         rv = pdua_port_disable(pdu_periodic_tx, &port->tx_pkt, port);
         if (rv != INDIGO_ERROR_NONE) {
@@ -390,7 +391,7 @@ tx_reply_to_ctrl:
     of_bsn_pdu_tx_reply_status_set(tx_reply, status_failed);
     of_bsn_pdu_tx_reply_slot_num_set(tx_reply, PDU_SLOT_NUM);
 
-    PDUA_DEBUG("%s: Port %u: sends  a TX_reply to ctrl, status %s, version %u",
+    PDUA_DEBUG("%s: Port %u: sending a TX_reply to ctrl, status %s, version %u",
                __FUNCTION__, port_no, status_failed? "Failed" : "Success",
                tx_req->version);
     /* 4. Send to controller, don't delete obj */
@@ -413,7 +414,7 @@ pdua_handle_msg(indigo_cxn_id_t cxn_id, of_object_t *msg)
     case OF_BSN_PDU_RX_REQUEST:
         of_bsn_pdu_rx_request_slot_num_get(msg, &slot_num);
         if (slot_num != PDU_SLOT_NUM) {
-            PDUA_DEBUG("%s: Received rx request with slot_num: %u",
+            PDUA_DEBUG("%s: Received rx request with slot_num: %u, ignoring",
                        __FUNCTION__, slot_num);
             return ret;
         }
@@ -427,7 +428,7 @@ pdua_handle_msg(indigo_cxn_id_t cxn_id, of_object_t *msg)
     case OF_BSN_PDU_TX_REQUEST:
         of_bsn_pdu_tx_request_slot_num_get(msg, &slot_num);
         if (slot_num != PDU_SLOT_NUM) {
-            PDUA_DEBUG("%s: Received tx request with slot_num: %u",
+            PDUA_DEBUG("%s: Received tx request with slot_num: %u, ignoring",
                        __FUNCTION__, slot_num);
             return ret;
         }
