@@ -43,11 +43,21 @@ cdefs: &cdefs
     doc: "Maximum number of OF ports."
     default: SLSHARED_CONFIG_OF_PORT_MAX
 
+pdua_packet_state: &packet_states
+- UNKNOWN
+- HIT
+- MISS
+
 definitions:
   cdefs:
     PDUA_CONFIG_HEADER:
       defs: *cdefs
       basename: pdua_config
+
+  enum: &enum
+    pdua_packet_state:
+      members: *packet_states
+      desc: "Packet state of a port"
 
   portingmacro:
     PDUA:
@@ -60,3 +70,7 @@ definitions:
         - vsnprintf
         - snprintf
         - strlen
+
+  xenum:
+    PDUA_ENUMERATION_ENTRY:
+      members: *enum

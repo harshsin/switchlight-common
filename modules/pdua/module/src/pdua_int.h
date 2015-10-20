@@ -25,6 +25,7 @@
 #ifndef __PDUA_INT_H__
 #define __PDUA_INT_H__
 
+#include <pdua/pdua.h>
 #include <pdua/pdua_config.h>
 
 #include <loci/loci_base.h>
@@ -39,24 +40,25 @@ typedef struct pdua_pkt_s {
 } pdua_pkt_t;
 
 typedef struct pdua_port_s {
-    of_port_no_t    port_no;
-    pdua_pkt_t      rx_pkt;
-    pdua_pkt_t      tx_pkt;
+    of_port_no_t            port_no;
+    pdua_pkt_t              rx_pkt;
+    pdua_pkt_t              tx_pkt;
 
     /* Internal Port Statistics */
-    uint64_t        rx_pkt_in_cnt;
-    uint64_t        rx_pkt_mismatched_no_data;
-    uint64_t        rx_pkt_mismatched_len;
-    uint64_t        rx_pkt_mismatched_data;
-    uint64_t        rx_pkt_matched;
-    uint64_t        tx_pkt_out_cnt;
-    uint64_t        timeout_pkt_cnt;
-    uint64_t        tx_req_cnt;
-    uint64_t        rx_req_cnt;
+    uint64_t                rx_pkt_in_cnt;
+    uint64_t                rx_pkt_mismatched_no_data;
+    uint64_t                rx_pkt_mismatched_len;
+    uint64_t                rx_pkt_mismatched_data;
+    uint64_t                rx_pkt_matched;
+    uint64_t                tx_pkt_out_cnt;
+    uint64_t                timeout_pkt_cnt;
+    uint64_t                tx_req_cnt;
+    uint64_t                rx_req_cnt;
 
     /* Slot_Num Statistics if supported */
 
-    bool            dump_enabled;
+    bool                    dump_enabled;
+    pdua_packet_state_t     pkt_state;
 } pdua_port_t;
 
 typedef struct pdua_debug_s {
