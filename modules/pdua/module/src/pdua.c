@@ -61,6 +61,25 @@ static biglist_t *pkt_event_listener_list;
 
 pdua_system_t pdua_port_sys;
 
+static void
+pkt_state_change_handle(pdua_port_t *port, pdua_packet_state_t new_pkt_state)
+{
+    biglist_t *ble;
+    pdua_pkt_event_listener_callback_f fn;
+
+    if (port->pkt_state != new_pkt_state) {
+        PDUA_DEBUG("%s: port %u pkt state change: "
+                   "%{pdua_packet_state} -> %{pdua_packet_state}",
+                   __FUNCTION__, port->port_no, port->pkt_state, new_pkt_state);
+        BIGLIST_FOREACH_DATA(ble, pkt_event_listener_list,
+                             pdua_pkt_event_listener_callback_f,
+                             fn) {
+            fn(port->port_no, new_pkt_state);
+        }
+    }
+    port->pkt_state = new_pkt_state;
+}
+
 pdua_port_t *
 pdua_find_port(of_port_no_t port_no)
 {
@@ -181,8 +200,6 @@ pdua_disable_tx_rx(pdua_port_t *port)
 static void
 pdu_timeout_rx(void *cookie)
 {
-    biglist_t *ble;
-    pdua_pkt_event_listener_callback_f fn;
     uint32_t version;
     pdua_port_t *port = (pdua_port_t *)cookie;
     of_bsn_pdu_rx_timeout_t *timeout_msg = NULL;
@@ -191,20 +208,8 @@ pdu_timeout_rx(void *cookie)
         return;
     }
 
-    /*
-     * It is a packet MISS if we reach this point.
-     * Call packet event listeners if there is a transition.
-     */
-    if (port->pkt_state != PDUA_PACKET_STATE_MISS) {
-        PDUA_DEBUG("%s: pkt state changes to MISS on port %u",
-                   __FUNCTION__, port->port_no);
-        BIGLIST_FOREACH_DATA(ble, pkt_event_listener_list,
-                             pdua_pkt_event_listener_callback_f,
-                             fn) {
-            fn(port->port_no, PDUA_PACKET_STATE_MISS);
-        }
-    }
-    port->pkt_state = PDUA_PACKET_STATE_MISS;
+    /* It is a packet MISS if we reach this point */
+    pkt_state_change_handle(port, PDUA_PACKET_STATE_MISS);
 
     if (indigo_cxn_get_async_version(&version) != INDIGO_ERROR_NONE) {
         AIM_LOG_ERROR("%s: no controller connected", __FUNCTION__);
@@ -257,8 +262,6 @@ rx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *rx_req)
 {
     pdua_port_t *port = NULL;
     indigo_error_t rv;
-    biglist_t *ble;
-    pdua_pkt_event_listener_callback_f fn;
 
     /* rx_req info */
     uint32_t xid;
@@ -300,17 +303,8 @@ rx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *rx_req)
             goto rx_reply_to_ctrl;
         }
 
-        /* Reset packet state and notify listeners if there's a change */
-        if (port->pkt_state != PDUA_PACKET_STATE_UNKNOWN) {
-            PDUA_DEBUG("%s: pkt state resets to UNKNOWN on port %u",
-                       __FUNCTION__, port->port_no);
-            BIGLIST_FOREACH_DATA(ble, pkt_event_listener_list,
-                                 pdua_pkt_event_listener_callback_f,
-                                 fn) {
-                fn(port->port_no, PDUA_PACKET_STATE_UNKNOWN);
-            }
-        }
-        port->pkt_state = PDUA_PACKET_STATE_UNKNOWN;
+        /* Reset packet state */
+        pkt_state_change_handle(port, PDUA_PACKET_STATE_UNKNOWN);
     }
 
     AIM_TRUE_OR_DIE(!port->rx_pkt.interval_ms && !port->rx_pkt.data.data);
@@ -547,9 +541,6 @@ pdua_update_rx_timeout(pdua_port_t *port)
 indigo_core_listener_result_t
 pdua_receive_packet(of_octets_t *data, of_port_no_t port_no)
 {
-    biglist_t *ble;
-    pdua_pkt_event_listener_callback_f fn;
-
     if (port_no == OF_PORT_DEST_CONTROLLER) {
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
@@ -577,20 +568,8 @@ pdua_receive_packet(of_octets_t *data, of_port_no_t port_no)
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
-    /*
-     * It is a packet HIT if we reach this point.
-     * Call packet event listeners if there is a transition.
-     */
-    if (port->pkt_state != PDUA_PACKET_STATE_HIT) {
-        PDUA_DEBUG("%s: pkt state changes to HIT on port %u",
-                   __FUNCTION__, port_no);
-        BIGLIST_FOREACH_DATA(ble, pkt_event_listener_list,
-                             pdua_pkt_event_listener_callback_f,
-                             fn) {
-            fn(port_no, PDUA_PACKET_STATE_HIT);
-        }
-    }
-    port->pkt_state = PDUA_PACKET_STATE_HIT;
+    /* It is a packet HIT if we reach this point */
+    pkt_state_change_handle(port, PDUA_PACKET_STATE_HIT);
 
     pdua_update_rx_timeout(port);
     debug_counter_inc(&pdua_port_sys.debug_info.total_pkt_exp_cnt);
@@ -752,8 +731,8 @@ indigo_error_t
 pdua_pkt_event_listener_register(pdua_pkt_event_listener_callback_f fn)
 {
     if (biglist_find(pkt_event_listener_list, fn)) {
-            AIM_LOG_ERROR("%s: listener is already registered", __FUNCTION__);
-            return INDIGO_ERROR_EXISTS;
+        AIM_LOG_ERROR("%s: listener is already registered", __FUNCTION__);
+        return INDIGO_ERROR_EXISTS;
     }
 
     pkt_event_listener_list = biglist_append(pkt_event_listener_list, fn);
@@ -764,18 +743,4 @@ void
 pdua_pkt_event_listener_unregister(pdua_pkt_event_listener_callback_f fn)
 {
     pkt_event_listener_list = biglist_remove(pkt_event_listener_list, fn);
-}
-
-bool
-pdua_port_is_rx_registered(of_port_no_t port_no)
-{
-    pdua_port_t *port;
-
-    port = pdua_find_port(port_no);
-    if (port == NULL) {
-        AIM_LOG_ERROR("%s: Port %u not found", __FUNCTION__, port_no);
-        return false;
-    }
-
-    return (port->rx_pkt.interval_ms != 0);
 }

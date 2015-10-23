@@ -58,6 +58,14 @@ typedef struct pdua_port_s {
     /* Slot_Num Statistics if supported */
 
     bool                    dump_enabled;
+
+    /*
+     * Packet state of port.
+     *
+     * State is initialized to UNKNOWN. When rx pkt is registered, state is
+     * updated to HIT/MISS based on packet event. State is reset to UNKNOWN
+     * when rx pkt is unregistered.
+     */
     pdua_packet_state_t     pkt_state;
 } pdua_port_t;
 

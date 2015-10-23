@@ -75,12 +75,18 @@ typedef void
 (*pdua_pkt_event_listener_callback_f)(of_port_no_t port_no,
                                       pdua_packet_state_t pkt_state);
 
+
+/*
+ * Register a listener callback for packet events.
+ * The listener callback is invoked only when there is a change in packet state.
+ */
 indigo_error_t
 pdua_pkt_event_listener_register(pdua_pkt_event_listener_callback_f fn);
 
+/*
+ * Unregister a listener callback for packet events.
+ */
 void
 pdua_pkt_event_listener_unregister(pdua_pkt_event_listener_callback_f fn);
-
-bool pdua_port_is_rx_registered(of_port_no_t port_no);
 
 #endif /* __PDUA_H__ */
