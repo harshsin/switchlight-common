@@ -31,6 +31,8 @@
 #include <pdua/pdua.h>
 #include "pdua_int.h"
 
+#include <BigList/biglist.h>
+
 #define PDU_SLOT_NUM  2
 
 #define PDUA_DEBUG(fmt, ...)                       \
@@ -55,7 +57,28 @@ static void tx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *rx_req);
 static void pdu_periodic_tx(void *cookie);
 static void pdu_timeout_rx(void *cookie);
 
+static biglist_t *pkt_event_listener_list;
+
 pdua_system_t pdua_port_sys;
+
+static void
+pkt_state_change_handle(pdua_port_t *port, pdua_packet_state_t new_pkt_state)
+{
+    biglist_t *ble;
+    pdua_pkt_event_listener_callback_f fn;
+
+    if (port->pkt_state != new_pkt_state) {
+        PDUA_DEBUG("%s: port %u pkt state change: "
+                   "%{pdua_packet_state} -> %{pdua_packet_state}",
+                   __FUNCTION__, port->port_no, port->pkt_state, new_pkt_state);
+        BIGLIST_FOREACH_DATA(ble, pkt_event_listener_list,
+                             pdua_pkt_event_listener_callback_f,
+                             fn) {
+            fn(port->port_no, new_pkt_state);
+        }
+    }
+    port->pkt_state = new_pkt_state;
+}
 
 pdua_port_t *
 pdua_find_port(of_port_no_t port_no)
@@ -185,6 +208,9 @@ pdu_timeout_rx(void *cookie)
         return;
     }
 
+    /* It is a packet MISS if we reach this point */
+    pkt_state_change_handle(port, PDUA_PACKET_STATE_MISS);
+
     if (indigo_cxn_get_async_version(&version) != INDIGO_ERROR_NONE) {
         AIM_LOG_ERROR("%s: no controller connected", __FUNCTION__);
         return;
@@ -276,6 +302,9 @@ rx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *rx_req)
                           __FUNCTION__, port->port_no, indigo_strerror(rv));
             goto rx_reply_to_ctrl;
         }
+
+        /* Reset packet state */
+        pkt_state_change_handle(port, PDUA_PACKET_STATE_UNKNOWN);
     }
 
     AIM_TRUE_OR_DIE(!port->rx_pkt.interval_ms && !port->rx_pkt.data.data);
@@ -539,6 +568,9 @@ pdua_receive_packet(of_octets_t *data, of_port_no_t port_no)
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
+    /* It is a packet HIT if we reach this point */
+    pkt_state_change_handle(port, PDUA_PACKET_STATE_HIT);
+
     pdua_update_rx_timeout(port);
     debug_counter_inc(&pdua_port_sys.debug_info.total_pkt_exp_cnt);
     return INDIGO_CORE_LISTENER_RESULT_DROP;
@@ -624,6 +656,7 @@ pdua_system_init(void)
         if (port) {
             port->port_no = i;
             port->dump_enabled = false;
+            port->pkt_state = PDUA_PACKET_STATE_UNKNOWN;
         } else {
             AIM_LOG_INTERNAL("%s: Port %d not existing", __FUNCTION__, i);
         }
@@ -692,4 +725,22 @@ pdua_port_dump_enable_get(of_port_no_t port_no, bool *enabled)
     }
 
     return INDIGO_ERROR_NONE;
+}
+
+indigo_error_t
+pdua_pkt_event_listener_register(pdua_pkt_event_listener_callback_f fn)
+{
+    if (biglist_find(pkt_event_listener_list, fn)) {
+        AIM_LOG_ERROR("%s: listener is already registered", __FUNCTION__);
+        return INDIGO_ERROR_EXISTS;
+    }
+
+    pkt_event_listener_list = biglist_append(pkt_event_listener_list, fn);
+    return INDIGO_ERROR_NONE;
+}
+
+void
+pdua_pkt_event_listener_unregister(pdua_pkt_event_listener_callback_f fn)
+{
+    pkt_event_listener_list = biglist_remove(pkt_event_listener_list, fn);
 }

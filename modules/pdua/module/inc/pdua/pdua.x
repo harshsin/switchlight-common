@@ -18,10 +18,13 @@
  ****************************************************************/
 
 #include <pdua/pdua_config.h>
-//#include <pdua/pdua.h>
 
-/* <--auto.start.xmacro(ALL).define> */
-/* <auto.end.xmacro(ALL).define> */
+/* <auto.start.xenum(ALL).define> */
+#ifdef PDUA_ENUMERATION_ENTRY
+PDUA_ENUMERATION_ENTRY(pdua_packet_state, "Packet state of a port")
+#undef PDUA_ENUMERATION_ENTRY
+#endif
+/* <auto.end.xenum(ALL).define> */
 
 
 
