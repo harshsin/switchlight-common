@@ -66,6 +66,7 @@ igmpa_sum16(uint8_t* data, int len)
 }
 
 
+/* vlan_vid == 0xfff means the packet should be sent untagged */
 int
 igmpa_send_igmp_packet(igmpa_pkt_params_t *params)
 {
@@ -75,6 +76,7 @@ igmpa_send_igmp_packet(igmpa_pkt_params_t *params)
     const int L3_len = 20;
     const int igmp_len = 8;
     const int pkt_len = L2_len + tag_len + L3_len + igmp_len;
+    const uint16_t untagged = 0xfff;
     uint8_t pkt_bytes[pkt_len];
     uint32_t igmp_checksum;
     of_octets_t octets = { pkt_bytes, sizeof(pkt_bytes) };
@@ -85,11 +87,15 @@ igmpa_send_igmp_packet(igmpa_pkt_params_t *params)
     /* build and send report */
     ppe_packet_init(&ppep, pkt_bytes, pkt_len);
     /* set ethertypes before parsing */
-    /* FIXME use ppe_packet_format_set? */
-    pkt_bytes[12] = 0x81;
-    pkt_bytes[13] = 0x00;
-    pkt_bytes[16] = 0x08;
-    pkt_bytes[17] = 0x00;
+    if (params->vlan_vid != untagged) {
+        pkt_bytes[12] = 0x81;
+        pkt_bytes[13] = 0x00;
+        pkt_bytes[16] = 0x08;
+        pkt_bytes[17] = 0x00;
+    } else {
+        pkt_bytes[12] = 0x08;
+        pkt_bytes[13] = 0x00;
+    }
     if (ppe_parse(&ppep) < 0) {
         AIM_DIE("ppe_parse failed sending IGMP packet");
     }
@@ -105,9 +111,11 @@ igmpa_send_igmp_packet(igmpa_pkt_params_t *params)
     }
 
     /* tag */
-    if (ppe_field_set(&ppep, PPE_FIELD_8021Q_VLAN,
-                      params->vlan_vid) < 0) {
-        AIM_DIE("failed to set PPE_FIELD_8021Q_VLAN");
+    if (params->vlan_vid != untagged) {
+        if (ppe_field_set(&ppep, PPE_FIELD_8021Q_VLAN,
+                          params->vlan_vid) < 0) {
+            AIM_DIE("failed to set PPE_FIELD_8021Q_VLAN");
+        }
     }
 
     /* ipv4 */
@@ -138,8 +146,8 @@ igmpa_send_igmp_packet(igmpa_pkt_params_t *params)
         AIM_DIE("ppe_packet_update failed for IGMP report");
     }
 
-    /* send packet */
-    rv = slshared_fwd_packet_out(&octets, OF_PORT_DEST_CONTROLLER,
+    /* send packet, bypassing pipeline */
+    rv = slshared_fwd_packet_out(&octets, 0,
                                  params->output_port_no, QUEUE_ID_INVALID);
     if (rv != INDIGO_ERROR_NONE) {
         AIM_LOG_INTERNAL("Failed to send IGMP report: %s",
