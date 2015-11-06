@@ -301,6 +301,8 @@ indigo_core_listener_result_t
 igmpa_receive_pkt(ppe_packet_t *ppep, of_port_no_t in_port)
 {
     uint32_t vlan_vid;
+    uint32_t flags;
+    uint32_t offset;
     uint32_t l3_len;
     uint32_t l3hdr_words;
     uint32_t l4_len;
@@ -315,8 +317,12 @@ igmpa_receive_pkt(ppe_packet_t *ppep, of_port_no_t in_port)
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
-    /* FIXME extend PPE to get flags and frag offset */
-    /* FIXME drop frags: ipv4 MF set or ipv4 frag offset nonzero */
+    /* do not handle fragments */
+    ppe_field_get(ppep, PPE_FIELD_IP4_FLAGS, &flags);
+    ppe_field_get(ppep, PPE_FIELD_IP4_FRAG_OFFSET, &offset);
+    if ((flags & PPE_IP4_FLAGS_MF) || offset) {
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
 
     ppe_field_get(ppep, PPE_FIELD_IP4_TOTAL_LENGTH, &l3_len);
     ppe_field_get(ppep, PPE_FIELD_IP4_HEADER_SIZE, &l3hdr_words);
