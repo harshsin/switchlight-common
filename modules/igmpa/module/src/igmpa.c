@@ -175,7 +175,7 @@ handle_igmp_pkt(ppe_packet_t *ppep,
     checksum = igmpa_sum16(payload, l4_len);
     if (checksum != 0xffff) {
         AIM_LOG_RL_ERROR(&igmpa_pktin_log_limiter, os_time_monotonic(),
-                         "Packet_in parsing failed: bad checksum");
+                         "IGMP bad checksum %04x", checksum);
         debug_counter_inc(&igmp_bad_checksum);
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
@@ -267,8 +267,7 @@ handle_pim_pkt(ppe_packet_t *ppep,
     checksum = igmpa_sum16(payload, l4_len);
     if (checksum != 0xffff) {
         AIM_LOG_RL_ERROR(&igmpa_pktin_log_limiter, os_time_monotonic(),
-                         "PIM bad checksum %04x", 
-                         checksum);
+                         "PIM bad checksum %04x", checksum);
         debug_counter_inc(&pim_bad_checksum);
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
@@ -317,20 +316,28 @@ igmpa_receive_pkt(ppe_packet_t *ppep, of_port_no_t in_port)
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
-    /* do not handle fragments */
     ppe_field_get(ppep, PPE_FIELD_IP4_FLAGS, &flags);
     ppe_field_get(ppep, PPE_FIELD_IP4_FRAG_OFFSET, &offset);
-    if ((flags & PPE_IP4_FLAGS_MF) || offset) {
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
-    }
 
     ppe_field_get(ppep, PPE_FIELD_IP4_TOTAL_LENGTH, &l3_len);
     ppe_field_get(ppep, PPE_FIELD_IP4_HEADER_SIZE, &l3hdr_words);
     l4_len = l3_len - l3hdr_words * 4;
 
     if (ppe_header_get(ppep, PPE_HEADER_IGMP)) {
+        /* do not handle fragments */
+        if ((flags & PPE_IP4_FLAGS_MF) || offset) {
+            AIM_LOG_RL_ERROR(&igmpa_pktin_log_limiter, os_time_monotonic(),
+                             "Sending IGMP fragment to controller");
+            return INDIGO_CORE_LISTENER_RESULT_PASS;
+        }
         return handle_igmp_pkt(ppep, in_port, vlan_vid, l4_len);
     } else if (ppe_header_get(ppep, PPE_HEADER_PIM)) {
+        /* do not handle fragments */
+        if ((flags & PPE_IP4_FLAGS_MF) || offset) {
+            AIM_LOG_RL_ERROR(&igmpa_pktin_log_limiter, os_time_monotonic(),
+                             "Sending PIM fragment to controller");
+            return INDIGO_CORE_LISTENER_RESULT_PASS;
+        }
         return handle_pim_pkt(ppep, in_port, vlan_vid, l4_len);
     } else {
         return INDIGO_CORE_LISTENER_RESULT_PASS;
