@@ -120,6 +120,26 @@
 #define PDUA_CONFIG_OF_PORTS_MAX SLSHARED_CONFIG_OF_PORT_MAX
 #endif
 
+/**
+ * PDUA_CONFIG_TX_PRIO
+ *
+ * Indigo socket priority to register the tx callback with. */
+
+
+#ifndef PDUA_CONFIG_TX_PRIO
+#define PDUA_CONFIG_TX_PRIO IND_SOC_HIGH_PRIORITY
+#endif
+
+/**
+ * PDUA_CONFIG_RX_TIMEOUT_PRIO
+ *
+ * Indigo socket priority to register the rx timeout callback with. */
+
+
+#ifndef PDUA_CONFIG_RX_TIMEOUT_PRIO
+#define PDUA_CONFIG_RX_TIMEOUT_PRIO IND_SOC_NORMAL_PRIORITY
+#endif
+
 
 
 /**

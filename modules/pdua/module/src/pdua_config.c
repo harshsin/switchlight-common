@@ -64,6 +64,16 @@ pdua_config_settings_t pdua_config_settings[] =
 #else
 { PDUA_CONFIG_OF_PORTS_MAX(__pdua_config_STRINGIFY_NAME), "__undefined__" },
 #endif
+#ifdef PDUA_CONFIG_TX_PRIO
+    { __pdua_config_STRINGIFY_NAME(PDUA_CONFIG_TX_PRIO), __pdua_config_STRINGIFY_VALUE(PDUA_CONFIG_TX_PRIO) },
+#else
+{ PDUA_CONFIG_TX_PRIO(__pdua_config_STRINGIFY_NAME), "__undefined__" },
+#endif
+#ifdef PDUA_CONFIG_RX_TIMEOUT_PRIO
+    { __pdua_config_STRINGIFY_NAME(PDUA_CONFIG_RX_TIMEOUT_PRIO), __pdua_config_STRINGIFY_VALUE(PDUA_CONFIG_RX_TIMEOUT_PRIO) },
+#else
+{ PDUA_CONFIG_RX_TIMEOUT_PRIO(__pdua_config_STRINGIFY_NAME), "__undefined__" },
+#endif
     { NULL, NULL }
 };
 #undef __pdua_config_STRINGIFY_VALUE

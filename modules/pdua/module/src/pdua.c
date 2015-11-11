@@ -46,7 +46,8 @@ static indigo_error_t pdua_port_disable(ind_soc_timer_callback_f cb,
 
 static indigo_error_t pdua_port_enable(ind_soc_timer_callback_f cb,
                                        pdua_pkt_t *pkt, pdua_port_t *port,
-                                       of_octets_t *data, uint32_t interval_ms);
+                                       of_octets_t *data, uint32_t interval_ms,
+                                       ind_soc_priority_t prio);
 
 static void pdua_disable_tx_rx(pdua_port_t *pdua);
 static void pdu_timeout_rx(void *cookie);
@@ -148,14 +149,15 @@ pdua_port_disable(ind_soc_timer_callback_f cb, pdua_pkt_t *pkt,
 
 static indigo_error_t
 pdua_port_enable(ind_soc_timer_callback_f cb, pdua_pkt_t *pkt,
-                 pdua_port_t *port, of_octets_t *data, uint32_t interval_ms)
+                 pdua_port_t *port, of_octets_t *data, uint32_t interval_ms,
+                 ind_soc_priority_t prio)
 {
     indigo_error_t rv;
 
     rv = pdua_pkt_data_set(pkt, data);
     if (rv == INDIGO_ERROR_NONE) {
         rv = ind_soc_timer_event_register_with_priority(cb, port, interval_ms,
-                                                        IND_SOC_HIGH_PRIORITY);
+                                                        prio);
         if (rv == INDIGO_ERROR_NONE) {
             pkt->interval_ms = interval_ms;
         } else {
@@ -312,7 +314,7 @@ rx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *rx_req)
     /* 2. Set up new rx_pkt, timer */
     if (timeout_ms) {
         rv = pdua_port_enable(pdu_timeout_rx, &port->rx_pkt, port, &data,
-                              timeout_ms);
+                              timeout_ms, PDUA_CONFIG_RX_TIMEOUT_PRIO);
         if (rv != INDIGO_ERROR_NONE) {
             status_failed = 1;
             AIM_LOG_ERROR("%s: Port rx %u failed to enable %s",
@@ -396,7 +398,7 @@ tx_request_handle(indigo_cxn_id_t cxn_id, of_object_t *tx_req)
     /* 2. Set up new tx_pkt, alarm */
     if (tx_interval_ms) {
         rv = pdua_port_enable(pdu_periodic_tx, &port->tx_pkt, port, &data,
-                              tx_interval_ms);
+                              tx_interval_ms, PDUA_CONFIG_TX_PRIO);
         if (rv == INDIGO_ERROR_NONE) {
             /* Successfully enable, send one out immediately */
             pdu_periodic_tx(port);
@@ -527,8 +529,8 @@ pdua_update_rx_timeout(pdua_port_t *port)
     PDUA_DEBUG("%s: Using reset timer", __FUNCTION__);
 
     rv = ind_soc_timer_event_register_with_priority(pdu_timeout_rx, port,
-                                                    port->rx_pkt.interval_ms,
-                                                    IND_SOC_HIGH_PRIORITY);
+        port->rx_pkt.interval_ms, PDUA_CONFIG_RX_TIMEOUT_PRIO);
+
     if (rv != INDIGO_ERROR_NONE) {
         AIM_LOG_ERROR("%s: Port %u failed to register %s",
                       __FUNCTION__, port->port_no, indigo_strerror(rv));
