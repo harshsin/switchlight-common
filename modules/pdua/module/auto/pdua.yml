@@ -42,6 +42,12 @@ cdefs: &cdefs
 - PDUA_CONFIG_OF_PORTS_MAX:
     doc: "Maximum number of OF ports."
     default: SLSHARED_CONFIG_OF_PORT_MAX
+- PDUA_CONFIG_TX_PRIO:
+    doc: "Indigo socket priority to register the tx callback with."
+    default: IND_SOC_HIGH_PRIORITY
+- PDUA_CONFIG_RX_TIMEOUT_PRIO:
+    doc: "Indigo socket priority to register the rx timeout callback with."
+    default: IND_SOC_NORMAL_PRIORITY
 
 pdua_packet_state: &packet_states
 - UNKNOWN
