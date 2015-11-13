@@ -31,11 +31,6 @@ void igmpa_finish(void);
 indigo_core_listener_result_t
 igmpa_receive_pkt(ppe_packet_t *ppep, of_port_no_t in_port);
 
-/* returns gentable ids for bundle comparator;
- * tx_port_group entries should be installed first,
- * before gq_tx/report_tx entries */
-uint16_t igmpa_tx_port_group_table_id_get(void);
-
 void igmpa_stats_show(aim_pvs_t *pvs);
 
 #endif /* __IGMPA_H__ */
