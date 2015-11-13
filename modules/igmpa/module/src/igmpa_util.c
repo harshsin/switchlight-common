@@ -39,6 +39,34 @@ igmpa_parse_name_tlv(of_object_t *tlv, char *dst_name)
 
 
 /*
+ * assuming refkey is list(of_bsn_tlv_t),
+ * and 'name' points to a char array of length IGMP_NAME_LEN,
+ * extracts name tlv into specified 'name'
+ */
+void
+igmpa_refkey_name_get(of_object_t* refkey, char *name)
+{
+    of_object_t tlv;
+
+    if (of_list_bsn_tlv_first(refkey, &tlv) < 0) {
+        AIM_LOG_ERROR("%s: expected name TLV, instead got end of list",
+                      __FUNCTION__);
+    }
+    if (tlv.object_id == OF_BSN_TLV_NAME) {
+        indigo_error_t rv = igmpa_parse_name_tlv(&tlv, name);
+        if (rv != INDIGO_ERROR_NONE) {
+            AIM_LOG_ERROR("%s: failed to parse name",
+                          __FUNCTION__);
+        }
+    }
+    if (of_list_bsn_tlv_next(refkey, &tlv) == 0) {
+        AIM_LOG_ERROR("%s: expected end of value TLV list, instead got %s",
+                      __FUNCTION__, of_class_name(&tlv));
+    }
+}
+
+
+/*
  * compute one's complement sum of the 'len' bytes pointed to by 'data'.
  * stolen from ppe_util.c 
  */

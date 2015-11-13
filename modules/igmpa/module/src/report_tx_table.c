@@ -143,8 +143,10 @@ report_tx_parse_key(of_list_bsn_tlv_t *tlvs, report_tx_key_t *key)
             IGMPA_MEMCPY(key->tx_port_group_name,
                          tpg_entry->key.name, IGMP_NAME_LEN);
         } else {
-            AIM_LOG_ERROR("%s: could not find tx port group",
-                          __FUNCTION__);
+            char name[IGMP_NAME_LEN];
+            igmpa_refkey_name_get(&refkey, name);
+            AIM_LOG_ERROR("%s: could not find tx port group '%s'",
+                          __FUNCTION__, name);
             return INDIGO_ERROR_PARAM;
         }
     } else {

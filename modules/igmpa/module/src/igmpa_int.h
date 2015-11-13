@@ -19,6 +19,7 @@
 
 /* utility functions */
 indigo_error_t igmpa_parse_name_tlv(of_object_t *tlv, char *dst_name);
+void igmpa_refkey_name_get(of_object_t* refkey, char *name);
 uint16_t igmpa_sum16(uint8_t* data, int len);
 
 typedef struct igmpa_pkt_params_s {
