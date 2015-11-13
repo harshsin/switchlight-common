@@ -36,5 +36,6 @@ void igmpa_tx_port_group_stats_show(aim_pvs_t *pvs);
 void igmpa_tx_port_group_table_init(void);
 void igmpa_tx_port_group_table_finish(void);
 
+uint16_t igmpa_tx_port_group_table_id_get(void);
 
 #endif /* __TX_PORT_GROUP_TABLE_H__ */

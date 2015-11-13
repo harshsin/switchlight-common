@@ -133,18 +133,18 @@ report_tx_parse_key(of_list_bsn_tlv_t *tlvs, report_tx_key_t *key)
     if (tlv.object_id == OF_BSN_TLV_REFERENCE) {
         uint16_t table_id;
         of_object_t refkey;
-        tx_port_group_entry_t *tpg_entry;
-
         of_bsn_tlv_reference_table_id_get(&tlv, &table_id);
         of_bsn_tlv_reference_key_bind(&tlv, &refkey);
-
-        tpg_entry = igmpa_tx_port_group_lookup_by_ref(table_id, &refkey);
-        if (tpg_entry) {
-            IGMPA_MEMCPY(key->tx_port_group_name,
-                         tpg_entry->key.name, IGMP_NAME_LEN);
-        } else {
-            AIM_LOG_ERROR("%s: could not find tx port group",
-                          __FUNCTION__);
+        if (igmpa_refkey_name_get(&refkey, key->tx_port_group_name) < 0) {
+            AIM_LOG_ERROR("%s: failed to find name from reference TLV",
+                      __FUNCTION__);
+            return INDIGO_ERROR_PARAM;
+        }
+        if (table_id != igmpa_tx_port_group_table_id_get()) {
+            AIM_LOG_ERROR("%s: bad table id %u for tx port group '%s', "
+                          "expected %u",
+                          __FUNCTION__, table_id, key->tx_port_group_name,
+                          igmpa_tx_port_group_table_id_get());
             return INDIGO_ERROR_PARAM;
         }
     } else {

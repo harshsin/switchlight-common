@@ -278,3 +278,10 @@ igmpa_tx_port_group_table_finish(void)
     indigo_core_gentable_unregister(tx_port_group_gentable);
     bighash_table_destroy(ht_tx_port_group, NULL);
 }
+
+
+uint16_t
+igmpa_tx_port_group_table_id_get(void)
+{
+    return indigo_core_gentable_id(tx_port_group_gentable);
+}
