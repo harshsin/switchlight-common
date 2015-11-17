@@ -746,3 +746,26 @@ pdua_pkt_event_listener_unregister(pdua_pkt_event_listener_callback_f fn)
 {
     pkt_event_listener_list = biglist_remove(pkt_event_listener_list, fn);
 }
+
+void
+pdua_clear_all_configs(void)
+{
+    int i;
+    pdua_port_t *port;
+
+    /* Disable all rx configs first to avoid rx timeouts */
+    for (i = 0; i < pdua_port_sys.pdua_total_of_ports; i++) {
+        port = pdua_find_port(i);
+        if (port && port->rx_pkt.interval_ms) {
+            pdua_port_disable(pdu_timeout_rx, &port->rx_pkt, port);
+        }
+    }
+
+    /* Disable all tx configs */
+    for (i = 0; i < pdua_port_sys.pdua_total_of_ports; i++) {
+        port = pdua_find_port(i);
+        if (port && port->tx_pkt.interval_ms) {
+            pdua_port_disable(pdu_periodic_tx, &port->tx_pkt, port);
+        }
+    }
+}

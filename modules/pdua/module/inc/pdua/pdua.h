@@ -89,4 +89,12 @@ pdua_pkt_event_listener_register(pdua_pkt_event_listener_callback_f fn);
 void
 pdua_pkt_event_listener_unregister(pdua_pkt_event_listener_callback_f fn);
 
+/*
+ * Clear all pdua configs.
+ * All rx timers are unregistered first to avoid rx timeouts. Then all the tx
+ * timers are unregistered.
+ */
+void
+pdua_clear_all_configs(void);
+
 #endif /* __PDUA_H__ */
