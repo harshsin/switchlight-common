@@ -161,6 +161,10 @@ igmpa_send_igmp_packet(igmpa_pkt_params_t *params)
     if (ppe_field_set(&ppep, PPE_FIELD_IGMP_TYPE, params->igmp_type) < 0) {
         AIM_DIE("failed to set PPE_FIELD_IGMP_TYPE");
     }
+    if (ppe_field_set(&ppep, PPE_FIELD_IGMP_MAX_RESP_TIME,
+                      params->igmp_max_resp_time) < 0) {
+        AIM_DIE("failed to set PPE_FIELD_IGMP_MAX_RESP_TIME");
+    }
     if (ppe_field_set(&ppep, PPE_FIELD_IGMP_GROUP_ADDRESS,
                       params->igmp_group_addr) < 0) {
         AIM_DIE("failed to set PPE_FIELD_IGMP_GROUP_ADDRESS");

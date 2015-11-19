@@ -65,6 +65,7 @@ report_tx_send_packet(report_tx_entry_t *entry)
         .ipv4_src = entry->value.ipv4_src,
         .ipv4_dst = entry->key.ipv4,
         .igmp_type = PPE_IGMP_TYPE_V2_REPORT,
+        .igmp_max_resp_time = 0,
         .igmp_group_addr = entry->key.ipv4,
         .output_port_no = tpg_entry->value.port_no,
     };
