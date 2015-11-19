@@ -510,9 +510,21 @@ indigo_fwd_packet_out(of_packet_out_t *of_packet_out)
     ppe_field_get(&ppep, PPE_FIELD_IGMP_TYPE, &val);
     switch (val) {
     case PPE_IGMP_TYPE_QUERY:
+        {
+            uint32_t mrt;
+            ppe_field_get(&ppep, PPE_FIELD_IGMP_MAX_RESP_TIME, &mrt);
+            AIM_ASSERT(mrt == 100,
+                       "expected query max response time 100, got %u", mrt);
+        }
         query_sent = true;
         break;
     case PPE_IGMP_TYPE_V2_REPORT:
+        {
+            uint32_t mrt;
+            ppe_field_get(&ppep, PPE_FIELD_IGMP_MAX_RESP_TIME, &mrt);
+            AIM_ASSERT(mrt == 0,
+                       "expected report max response time of 0, got %u", mrt);
+        }
         report_sent = true;
         break;
     }

@@ -29,6 +29,7 @@ typedef struct igmpa_pkt_params_s {
     uint32_t ipv4_src;
     uint32_t ipv4_dst;
     uint8_t igmp_type;
+    uint8_t igmp_max_resp_time;
     uint32_t igmp_group_addr;
     of_port_no_t output_port_no;
 } igmpa_pkt_params_t;

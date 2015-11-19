@@ -61,6 +61,7 @@ gq_tx_send_packet(gq_tx_entry_t *entry)
         .ipv4_src = entry->value.ipv4_src,
         .ipv4_dst = 0xe0000001, /* 224.0.0.1 */
         .igmp_type = PPE_IGMP_TYPE_QUERY,
+        .igmp_max_resp_time = 100,  /* 10s */
         .igmp_group_addr = 0,  /* field is cleared */
         .output_port_no = tpg_entry->value.port_no,
     };
