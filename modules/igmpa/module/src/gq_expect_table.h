@@ -26,6 +26,7 @@ typedef struct gq_expect_entry_s {
     /* stats */
     indigo_time_t time_last_hit;  /* to compute idle_time */
     uint64_t rx_packets;
+    uint64_t tx_packets;  /* idle notifications sent */
 } gq_expect_entry_t;
 
 

@@ -8,7 +8,7 @@
  * Implements "igmp_report_expectation" gentable.
  * key: name (igmp_rx_port_group), vlan_vid, ipv4 (multicast address) 
  * value: none
- * stats: rx_packets, idle_time
+ * stats: rx_packets, idle_time, tx_packets (idle notifications sent)
  */
 
 
@@ -65,14 +65,18 @@ report_expect_send_idle_notif(report_expect_entry_t *entry)
     AIM_LOG_VERBOSE("send report idle notif, rx port group %s vlan %u ipv4 %{ipv4a}",
                     entry->key.name, entry->key.vlan_vid, entry->key.ipv4);
 
-    of_bsn_generic_async_name_set(notif, "igmp_report_idle");
+    {
+        of_str64_t name = "igmp_report_idle";
+        of_bsn_generic_async_name_set(notif, name);
+    }
     {
         of_bsn_tlv_name_t *tlv = of_bsn_tlv_name_new(version);
         of_octets_t octets;
         octets.data = (uint8_t*) entry->key.name;
         octets.bytes = strlen(entry->key.name);
-        AIM_ASSERT(of_bsn_tlv_name_value_set(tlv, &octets) == 0,
-                   "Cannot set idle notification name to %s", entry->key.name);
+        AIM_TRUE_OR_DIE(of_bsn_tlv_name_value_set(tlv, &octets) == 0,
+                        "Cannot set idle notification name to %s",
+                        entry->key.name);
         of_list_append(list, tlv);
         of_object_delete(tlv);
     }
@@ -88,12 +92,13 @@ report_expect_send_idle_notif(report_expect_entry_t *entry)
         of_list_append(list, tlv);
         of_object_delete(tlv);
     }
-    AIM_ASSERT(of_bsn_generic_async_tlvs_set(notif, list) == 0,
-               "Cannot set idle notification tlvs");
+    AIM_TRUE_OR_DIE(of_bsn_generic_async_tlvs_set(notif, list) == 0,
+                    "Cannot set idle notification tlvs");
     of_object_delete(list);
 
     /* send notification to controller */
     indigo_cxn_send_async_message(notif);
+    entry->tx_packets++;
     debug_counter_inc(&report_idle_notif);
 }
 
@@ -316,7 +321,15 @@ report_expect_get_stats(void *table_priv,
         of_bsn_tlv_rx_packets_init(&tlv, stats->version, -1, 1);
         of_list_bsn_tlv_append_bind(stats, &tlv);
         of_bsn_tlv_rx_packets_value_set(&tlv, entry->rx_packets);
-    }    
+    }
+
+    /* tx_packets (idle notifications sent) */
+    {
+        of_bsn_tlv_tx_packets_t tlv;
+        of_bsn_tlv_tx_packets_init(&tlv, stats->version, -1, 1);
+        of_list_bsn_tlv_append_bind(stats, &tlv);
+        of_bsn_tlv_tx_packets_value_set(&tlv, entry->tx_packets);
+    }
 }
 
 static indigo_core_gentable_t *report_expect_gentable;
