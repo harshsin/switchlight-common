@@ -758,6 +758,9 @@ pdua_clear_all_configs(void)
         port = pdua_find_port(i);
         if (port && port->rx_pkt.interval_ms) {
             pdua_port_disable(pdu_timeout_rx, &port->rx_pkt, port);
+
+            /* Reset packet state */
+            pkt_state_change_handle(port, PDUA_PACKET_STATE_UNKNOWN);
         }
     }
 
