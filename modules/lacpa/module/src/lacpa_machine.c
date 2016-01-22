@@ -695,7 +695,10 @@ lacpa_machine (lacpa_port_t *port, lacpa_pdu_t *pdu, lacpa_event_t event)
     case LACPA_EVENT_PROTOCOL_UNCONVERGED:
         port->lacp_state = LACPA_MACHINE_AGENT_DEFAULTED;
         LACPA_SET_STATE_DEFAULTED(port->actor.state);
-        LACPA_CLR_STATE_LACP_TIMEOUT(port->actor.state);
+        /*
+         * Allow lacp to operate in fast mode even after unconverged
+         */
+        //LACPA_CLR_STATE_LACP_TIMEOUT(port->actor.state);
 
         if (LACPA_IS_STATE_EXPIRED(port->actor.state)) {
             LACPA_CLR_STATE_EXPIRED(port->actor.state);
