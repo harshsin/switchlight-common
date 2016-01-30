@@ -702,7 +702,13 @@ lacpa_machine (lacpa_port_t *port, lacpa_pdu_t *pdu, lacpa_event_t event)
 
         if (LACPA_IS_STATE_EXPIRED(port->actor.state)) {
             LACPA_CLR_STATE_EXPIRED(port->actor.state);
-            LACPA_CLR_STATE_LACP_TIMEOUT(port->partner.state);
+        }
+
+        /*
+         * Keep sending lacp packets every second even after unconverged
+         */
+        if (!LACPA_IS_STATE_LACP_TIMEOUT(port->partner.state)) {
+            LACPA_SET_STATE_LACP_TIMEOUT(port->partner.state);
             lacpa_start_periodic_timer(port);
         }
 
