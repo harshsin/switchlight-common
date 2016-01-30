@@ -624,6 +624,13 @@ lacpa_machine (lacpa_port_t *port, lacpa_pdu_t *pdu, lacpa_event_t event)
         LACPA_SET_STATE_LACP_TIMEOUT(port->actor.state);
         LACPA_SET_STATE_AGGREGATION(port->actor.state);
 
+        /*
+         * Set Partner's LACP Timeout value to fast to start
+         * transmitting lacp packets every seconds until we discover
+         * the partner
+         */
+        LACPA_SET_STATE_LACP_TIMEOUT(port->partner.state);
+
         port->debug_info.ntt_reason = LACPA_TRANSMIT_AGENT_ENABLED;
         lacpa_transmit(port);
         lacpa_start_periodic_timer(port);
@@ -702,7 +709,13 @@ lacpa_machine (lacpa_port_t *port, lacpa_pdu_t *pdu, lacpa_event_t event)
 
         if (LACPA_IS_STATE_EXPIRED(port->actor.state)) {
             LACPA_CLR_STATE_EXPIRED(port->actor.state);
-            LACPA_CLR_STATE_LACP_TIMEOUT(port->partner.state);
+        }
+
+        /*
+         * Keep sending lacp packets every second even after unconverged
+         */
+        if (!LACPA_IS_STATE_LACP_TIMEOUT(port->partner.state)) {
+            LACPA_SET_STATE_LACP_TIMEOUT(port->partner.state);
             lacpa_start_periodic_timer(port);
         }
 
