@@ -632,7 +632,7 @@ find_mac(uint16_t vlan_vid, uint32_t ip, of_mac_addr_t *mac)
             debug_counter_inc(&router_ip_mismatch_counter);
         }
     } else {
-        AIM_LOG_TRACE("no router configured on vlan %u", vlan_vid);
+        AIM_LOG_TRACE("no router configured on vlan %u IP %{ipv4a}", vlan_vid, ip);
         debug_counter_inc(&unconfigured_vlan_counter);
     }
 
@@ -919,7 +919,7 @@ arpa_timer(void *cookie)
 static void
 arpa_send_query(struct arp_entry *entry, bool broadcast)
 {
-    AIM_LOG_VERBOSE("Sending %s query for VLAN %u IP %08x", broadcast ? "broadcast" : "unicast", entry->key.vlan_vid, entry->key.ipv4);
+    AIM_LOG_VERBOSE("Sending %s query for VLAN %u IP %{ipv4a}", broadcast ? "broadcast" : "unicast", entry->key.vlan_vid, entry->key.ipv4);
 
     /* Lookup the router for this VLAN */
     uint32_t router_ip;
@@ -951,7 +951,7 @@ arpa_send_query(struct arp_entry *entry, bool broadcast)
 static void
 arpa_send_idle_notification(struct arp_entry *entry)
 {
-    AIM_LOG_VERBOSE("Sending idle notification for VLAN %u IP %08x", entry->key.vlan_vid, entry->key.ipv4);
+    AIM_LOG_VERBOSE("Sending idle notification for VLAN %u IP %{ipv4a}", entry->key.vlan_vid, entry->key.ipv4);
 
     of_version_t version;
     if (indigo_cxn_get_async_version(&version) < 0) {
