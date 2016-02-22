@@ -17,21 +17,11 @@
  *
  ****************************************************************/
 
-/*************************************************************//**
- *
- * macblaster Internal Header
- *
- ****************************************************************/
-#ifndef __MACBLASTER_INT_H__
-#define __MACBLASTER_INT_H__
+#ifndef __MACBLASTER_H__
+#define __MACBLASTER_H__
 
-#include <indigo/of_state_manager.h>
-#include <SocketManager/socketmanager.h>
-#include <loci/loci_base.h>
-#include <PPE/ppe.h>
-#include <slshared/slshared.h>
-#include <slshared/slshared_config.h>
-#include <macblaster/macblaster_config.h>
-#include "macblaster_log.h"
+extern indigo_error_t macblaster_init(void);
 
-#endif /* __MACBLASTER_INT_H__ */
+extern indigo_error_t macblaster_finish(void);
+
+#endif /* __MACBLASTER_H__ */
