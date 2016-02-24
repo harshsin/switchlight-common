@@ -20,6 +20,8 @@
 #ifndef __MACBLASTER_H__
 #define __MACBLASTER_H__
 
+#include <indigo/error.h>
+
 extern indigo_error_t macblaster_init(void);
 
 extern indigo_error_t macblaster_finish(void);
