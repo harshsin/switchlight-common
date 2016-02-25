@@ -622,7 +622,7 @@ static indigo_error_t
 find_mac(uint16_t vlan_vid, uint32_t ip, of_mac_addr_t *mac)
 {
     uint32_t router_ip;
-    if (!router_ip_table_lookup2(vlan_vid, ip, &router_ip, mac)) {
+    if (!router_ip_table_lookup_with_subnet(vlan_vid, ip, &router_ip, mac)) {
         if (router_ip == ip) {
             AIM_LOG_TRACE("destined for our router IP");
             debug_counter_inc(&router_ip_hit_counter);
@@ -924,7 +924,7 @@ arpa_send_query(struct arp_entry *entry, bool broadcast)
     /* Lookup the router for this VLAN */
     uint32_t router_ip;
     of_mac_addr_t router_mac;
-    if (router_ip_table_lookup2(entry->key.vlan_vid, entry->key.ipv4, &router_ip, &router_mac) < 0) {
+    if (router_ip_table_lookup_with_subnet(entry->key.vlan_vid, entry->key.ipv4, &router_ip, &router_mac) < 0) {
         AIM_LOG_TRACE("no router configured on vlan %u for IP %{ipv4a}", entry->key.vlan_vid, entry->key.ipv4);
         return;
     }

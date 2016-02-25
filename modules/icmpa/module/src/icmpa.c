@@ -376,9 +376,9 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
     if (type == ICMP_DEST_UNREACHABLE && code == 3) {
         router_ip = dest_ip;
     } else {
-        if (router_ip_table_lookup2(vlan_id, dest_ip, &router_ip, &router_mac) < 0 &&
-                router_ip_table_lookup2(vlan_id, src_ip, &router_ip, &router_mac) < 0 &&
-                router_ip_table_lookup2(vlan_id, 0, &router_ip, &router_mac) < 0) {
+        if (router_ip_table_lookup_with_subnet(vlan_id, dest_ip, &router_ip, &router_mac) < 0 &&
+                router_ip_table_lookup_with_subnet(vlan_id, src_ip, &router_ip, &router_mac) < 0 &&
+                router_ip_table_lookup_with_subnet(vlan_id, 0, &router_ip, &router_mac) < 0) {
             AIM_LOG_TRACE("ICMPA: Router IP lookup failed for vlan %u src %{ipv4a} dest %{ipv4a}",
                           vlan_id, src_ip, dest_ip);
 

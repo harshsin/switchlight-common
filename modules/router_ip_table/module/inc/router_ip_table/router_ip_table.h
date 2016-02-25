@@ -47,7 +47,7 @@ indigo_error_t router_ip_table_lookup(uint16_t vlan, uint32_t *ip, of_mac_addr_t
  * @param [out] mac
  * @return Error code
  */
-indigo_error_t router_ip_table_lookup2(uint16_t vlan, uint32_t subnet, uint32_t *ip, of_mac_addr_t *mac);
+indigo_error_t router_ip_table_lookup_with_subnet(uint16_t vlan, uint32_t subnet, uint32_t *ip, of_mac_addr_t *mac);
 
 /**
  * @brief Lookup if a given ip is a valid router IP 

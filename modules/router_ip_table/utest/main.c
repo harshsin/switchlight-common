@@ -160,32 +160,32 @@ int aim_main(int argc, char* argv[])
 
     /* Two entries on the same VLAN */
     {
-        rv = router_ip_table_lookup2(10, 0x1236, &ip, &mac);
+        rv = router_ip_table_lookup_with_subnet(10, 0x1236, &ip, &mac);
         AIM_ASSERT(rv == INDIGO_ERROR_NOT_FOUND);
 
-        rv = router_ip_table_lookup2(10, 0x5679, &ip, &mac);
+        rv = router_ip_table_lookup_with_subnet(10, 0x5679, &ip, &mac);
         AIM_ASSERT(rv == INDIGO_ERROR_NOT_FOUND);
 
         rv = ops->add(table_priv, key3, value4, &entry_priv);
         AIM_ASSERT(rv == INDIGO_ERROR_NONE);
 
-        rv = router_ip_table_lookup2(10, 0x1235, &ip, &mac);
+        rv = router_ip_table_lookup_with_subnet(10, 0x1235, &ip, &mac);
         AIM_ASSERT(rv == INDIGO_ERROR_NONE);
         AIM_ASSERT(ip == 0x1234);
         AIM_ASSERT(!memcmp(&mac, &mac1, sizeof(of_mac_addr_t)));
 
-        rv = router_ip_table_lookup2(10, 0x5679, &ip, &mac);
+        rv = router_ip_table_lookup_with_subnet(10, 0x5679, &ip, &mac);
         AIM_ASSERT(rv == INDIGO_ERROR_NOT_FOUND);
 
         rv = ops->add(table_priv, key4, value5, &entry_priv2);
         AIM_ASSERT(rv == INDIGO_ERROR_NONE);
 
-        rv = router_ip_table_lookup2(10, 0x1235, &ip, &mac);
+        rv = router_ip_table_lookup_with_subnet(10, 0x1235, &ip, &mac);
         AIM_ASSERT(rv == INDIGO_ERROR_NONE);
         AIM_ASSERT(ip == 0x1234);
         AIM_ASSERT(!memcmp(&mac, &mac1, sizeof(of_mac_addr_t)));
 
-        rv = router_ip_table_lookup2(10, 0x5679, &ip, &mac);
+        rv = router_ip_table_lookup_with_subnet(10, 0x5679, &ip, &mac);
         AIM_ASSERT(rv == INDIGO_ERROR_NONE);
         AIM_ASSERT(ip == 0x5678);
         AIM_ASSERT(!memcmp(&mac, &mac2, sizeof(of_mac_addr_t)));
@@ -196,10 +196,10 @@ int aim_main(int argc, char* argv[])
         rv = ops->del(table_priv, entry_priv2, key4);
         AIM_ASSERT(rv == INDIGO_ERROR_NONE);
 
-        rv = router_ip_table_lookup2(10, 0x1235, &ip, &mac);
+        rv = router_ip_table_lookup_with_subnet(10, 0x1235, &ip, &mac);
         AIM_ASSERT(rv == INDIGO_ERROR_NOT_FOUND);
 
-        rv = router_ip_table_lookup2(10, 0x5679, &ip, &mac);
+        rv = router_ip_table_lookup_with_subnet(10, 0x5679, &ip, &mac);
         AIM_ASSERT(rv == INDIGO_ERROR_NOT_FOUND);
     }
 

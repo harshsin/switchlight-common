@@ -76,11 +76,11 @@ router_ip_table_finish()
 indigo_error_t
 router_ip_table_lookup(uint16_t vlan, uint32_t *ip, of_mac_addr_t *mac)
 {
-    return router_ip_table_lookup2(vlan, INVALID_IP, ip, mac);
+    return router_ip_table_lookup_with_subnet(vlan, INVALID_IP, ip, mac);
 }
 
 indigo_error_t
-router_ip_table_lookup2(uint16_t vlan, uint32_t subnet, uint32_t *ip, of_mac_addr_t *mac)
+router_ip_table_lookup_with_subnet(uint16_t vlan, uint32_t subnet, uint32_t *ip, of_mac_addr_t *mac)
 {
     if (vlan > MAX_VLAN) {
         return INDIGO_ERROR_RANGE;
