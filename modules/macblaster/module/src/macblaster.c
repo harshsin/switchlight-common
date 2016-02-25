@@ -29,6 +29,10 @@ struct macblaster_state {
     of_object_t cmd_tlv;
 };
 
+/* Debug counters */
+static debug_counter_t parse_failure_counter;
+static debug_counter_t pktout_failure_counter;
+
 static void
 macblaster_send_packet(of_port_no_t of_port,
                        uint16_t vlan_vid,
@@ -43,10 +47,15 @@ macblaster_send_packet(of_port_no_t of_port,
     ppe_packet_init(&ppep, macblaster_pkt, sizeof(macblaster_pkt));
 
     /* Set ethertypes before parsing */
-    macblaster_pkt[12] = 0x81;
-    macblaster_pkt[13] = 0x00;
-    macblaster_pkt[16] = 0x88;
-    macblaster_pkt[17] = 0xb5;
+    if (vlan_vid) {
+        macblaster_pkt[12] = 0x81;
+        macblaster_pkt[13] = 0x00;
+        macblaster_pkt[16] = 0x88;
+        macblaster_pkt[17] = 0xb5;
+    } else {
+        macblaster_pkt[12] = 0x88;
+        macblaster_pkt[13] = 0xb5;
+    }
 
     if (ppe_parse(&ppep) < 0) {
         AIM_DIE("macblaster_send_packet parsing failed");
@@ -62,13 +71,16 @@ macblaster_send_packet(of_port_no_t of_port,
         AIM_DIE("Failed to set PPE_FIELD_ETHERNET_SRC_MAC");
     }
 
-    if (ppe_field_set(&ppep, PPE_FIELD_8021Q_VLAN, vlan_vid) < 0) {
-        AIM_DIE("Failed to set PPE_FIELD_8021Q_VLAN");
+    if (vlan_vid) {
+        if (ppe_field_set(&ppep, PPE_FIELD_8021Q_VLAN, vlan_vid) < 0) {
+            AIM_DIE("Failed to set PPE_FIELD_8021Q_VLAN");
+        }
     }
 
     rv = slshared_fwd_packet_out(&octets, 0, of_port,
                                  SLSHARED_CONFIG_PDU_QUEUE_PRIORITY);
     if (rv < 0) {
+        debug_counter_inc(&pktout_failure_counter);
         AIM_LOG_ERROR("Failed to send packet: %s", indigo_strerror(rv));
     }
 }
@@ -84,6 +96,7 @@ macblaster_task(void *cookie)
 
     while (!of_list_bsn_tlv_next(state->cmd_tlvs, &state->cmd_tlv)) {
         if (state->cmd_tlv.object_id != OF_BSN_TLV_BUCKET) {
+            debug_counter_inc(&parse_failure_counter);
             AIM_LOG_ERROR("%s: expected bucket TLV, instead got %s",
                           __FUNCTION__, of_class_name(&state->cmd_tlv));
             goto done;
@@ -92,6 +105,7 @@ macblaster_task(void *cookie)
         of_bsn_tlv_bucket_value_bind(&state->cmd_tlv, &bucket_tlvs);
 
         if (of_list_bsn_tlv_first(&bucket_tlvs, &bucket_tlv) < 0) {
+            debug_counter_inc(&parse_failure_counter);
             AIM_LOG_ERROR("%s: expected vlan_vid TLV, instead got end of list",
                           __FUNCTION__);
             goto done;
@@ -100,12 +114,14 @@ macblaster_task(void *cookie)
         if (bucket_tlv.object_id == OF_BSN_TLV_VLAN_VID) {
             of_bsn_tlv_vlan_vid_value_get(&bucket_tlv, &vlan_vid);
         } else {
+            debug_counter_inc(&parse_failure_counter);
             AIM_LOG_ERROR("%s: expected vlan_vid TLV, instead got %s",
                           __FUNCTION__, of_class_name(&bucket_tlv));
             goto done;
         }
 
         if (of_list_bsn_tlv_next(&bucket_tlvs, &bucket_tlv) < 0) {
+            debug_counter_inc(&parse_failure_counter);
             AIM_LOG_ERROR("%s: expected mac TLV, instead got end of list",
                           __FUNCTION__);
             goto done;
@@ -114,18 +130,19 @@ macblaster_task(void *cookie)
         if (bucket_tlv.object_id == OF_BSN_TLV_MAC) {
             of_bsn_tlv_mac_value_get(&bucket_tlv, &mac);
         } else {
+            debug_counter_inc(&parse_failure_counter);
             AIM_LOG_ERROR("%s: expected mac TLV, instead got %s",
                           __FUNCTION__, of_class_name(&bucket_tlv));
             goto done;
         }
 
         if (of_list_bsn_tlv_next(&bucket_tlvs, &bucket_tlv) == 0) {
+            debug_counter_inc(&parse_failure_counter);
             AIM_LOG_ERROR("%s: expected end of bucket TLV list, instead got %s",
-                    __FUNCTION__, of_class_name(&bucket_tlv));
+                          __FUNCTION__, of_class_name(&bucket_tlv));
             goto done;
         }
 
-        AIM_LOG_INFO("%s: vlan %d mac %{mac}", __FUNCTION__, vlan_vid, &mac);
         macblaster_send_packet(state->of_port, vlan_vid, mac);
 
         if (ind_soc_should_yield()) {
@@ -160,11 +177,13 @@ macblaster_handle_flexlink_commmad(indigo_cxn_id_t cxn_id, of_object_t *msg)
     /* Get command TLVs and parse port number */
     state->cmd_tlvs = of_bsn_generic_command_tlvs_get(msg);
     if (state->cmd_tlvs == NULL) {
+        debug_counter_inc(&parse_failure_counter);
         AIM_LOG_ERROR("%s: getting command tlvs", __FUNCTION__);
         goto error;
     }
 
     if (of_list_bsn_tlv_first(state->cmd_tlvs, &state->cmd_tlv) < 0) {
+        debug_counter_inc(&parse_failure_counter);
         AIM_LOG_ERROR("%s: expected port TLV, instead got end of list",
                       __FUNCTION__);
         goto error;
@@ -173,6 +192,7 @@ macblaster_handle_flexlink_commmad(indigo_cxn_id_t cxn_id, of_object_t *msg)
     if (state->cmd_tlv.object_id == OF_BSN_TLV_PORT) {
         of_bsn_tlv_port_value_get(&state->cmd_tlv, &state->of_port);
     } else {
+        debug_counter_inc(&parse_failure_counter);
         AIM_LOG_ERROR("%s: expected port TLV, instead got %s",
                       __FUNCTION__, of_class_name(&state->cmd_tlv));
         goto error;
@@ -215,6 +235,14 @@ macblaster_init(void)
     if (macblaster_initialized) return INDIGO_ERROR_NONE;
 
     indigo_core_message_listener_register(macblaster_message_listener);
+
+    debug_counter_register(
+        &parse_failure_counter, "macblaster.parse_failure",
+        "Failed to parse message from controller");
+
+    debug_counter_register(
+        &pktout_failure_counter, "macblaster.pktout_failure",
+        "Failed to sent packet-outs");
 
     macblaster_initialized = true;
 

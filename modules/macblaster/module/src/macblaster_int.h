@@ -27,6 +27,7 @@
 
 #include <indigo/of_state_manager.h>
 #include <SocketManager/socketmanager.h>
+#include <debug_counter/debug_counter.h>
 #include <loci/loci_base.h>
 #include <PPE/ppe.h>
 #include <slshared/slshared.h>
