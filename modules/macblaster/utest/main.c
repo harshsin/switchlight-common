@@ -66,3 +66,8 @@ indigo_fwd_packet_out(of_packet_out_t *obj)
 	return INDIGO_ERROR_NONE;
 }
 
+void
+indigo_cxn_send_bsn_error(indigo_cxn_id_t cxn_id, of_object_t *orig,
+                          char *err_txt)
+{
+}

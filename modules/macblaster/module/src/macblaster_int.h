@@ -26,6 +26,7 @@
 #define __MACBLASTER_INT_H__
 
 #include <indigo/of_state_manager.h>
+#include <indigo/of_connection_manager.h>
 #include <SocketManager/socketmanager.h>
 #include <debug_counter/debug_counter.h>
 #include <loci/loci_base.h>
