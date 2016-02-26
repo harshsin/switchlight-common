@@ -158,7 +158,7 @@ done:
 }
 
 static indigo_error_t
-macblaster_handle_flexlink_commmad(indigo_cxn_id_t cxn_id, of_object_t *msg)
+macblaster_handle_flexlink_command(indigo_cxn_id_t cxn_id, of_object_t *msg)
 {
     of_str64_t command_name;
     struct macblaster_state *state;
@@ -173,7 +173,7 @@ macblaster_handle_flexlink_commmad(indigo_cxn_id_t cxn_id, of_object_t *msg)
     state->cxn_id = cxn_id;
     state->cmd = of_object_dup(msg);
     if (state->cmd == NULL) {
-        AIM_LOG_ERROR("%s: Allocating the command", __FUNCTION__);
+        AIM_LOG_ERROR("%s: Failed to allocate the command", __FUNCTION__);
         goto error;
     }
 
@@ -223,7 +223,7 @@ macblaster_message_listener(indigo_cxn_id_t cxn_id, of_object_t *msg)
 {
     switch (msg->object_id) {
         case OF_BSN_GENERIC_COMMAND:
-            return macblaster_handle_flexlink_commmad(cxn_id, msg);
+            return macblaster_handle_flexlink_command(cxn_id, msg);
 
         default:
             return INDIGO_CORE_LISTENER_RESULT_PASS;
