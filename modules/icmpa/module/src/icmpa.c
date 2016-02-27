@@ -365,6 +365,8 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
      *
      * For Icmp TTL Expired and ICMP Net Unreachable cases we need to
      * lookup the Vrouter IP based on the Vlan and dst IP to use as src ip
+     * If the packet is not in the src or dst VLAN then fall back to using
+     * any router IP on the VLAN.
      *
      * In case of traceroute to a host, packet triggerring ttl expired will
      * arrive on SYSTEM_VLAN and will be destined to the host and hence a
