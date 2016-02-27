@@ -36,6 +36,8 @@ void router_ip_table_finish();
  * @param [out] ip
  * @param [out] mac
  * @return Error code
+ *
+ * Deprecated in favor of router_ip_table_lookup_with_subnet.
  */
 indigo_error_t router_ip_table_lookup(uint16_t vlan, uint32_t *ip, of_mac_addr_t *mac);
 
