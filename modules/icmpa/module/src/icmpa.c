@@ -357,12 +357,16 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
+    ppe_field_get(ppep, PPE_FIELD_IP4_SRC_ADDR, &src_ip);
+
     /*
      * Traceroute is destined to the VRouter IP, hence we should use
      * that as the src IP for Icmp Port Unreachable.
      *
      * For Icmp TTL Expired and ICMP Net Unreachable cases we need to
-     * lookup the Vrouter IP based on the Vlan to use as src ip
+     * lookup the Vrouter IP based on the Vlan and dst IP to use as src ip
+     * If the packet is not in the src or dst VLAN then fall back to using
+     * any router IP on the VLAN.
      *
      * In case of traceroute to a host, packet triggerring ttl expired will
      * arrive on SYSTEM_VLAN and will be destined to the host and hence a
@@ -374,9 +378,11 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
     if (type == ICMP_DEST_UNREACHABLE && code == 3) {
         router_ip = dest_ip;
     } else {
-        if (router_ip_table_lookup(vlan_id, &router_ip, &router_mac) < 0) {
-            AIM_LOG_TRACE("ICMPA: Router IP lookup failed for vlan: %u",
-                          vlan_id);
+        if (router_ip_table_lookup_with_subnet(vlan_id, dest_ip, &router_ip, &router_mac) < 0 &&
+                router_ip_table_lookup_with_subnet(vlan_id, src_ip, &router_ip, &router_mac) < 0 &&
+                router_ip_table_lookup_with_subnet(vlan_id, 0, &router_ip, &router_mac) < 0) {
+            AIM_LOG_TRACE("ICMPA: Router IP lookup failed for vlan %u src %{ipv4a} dest %{ipv4a}",
+                          vlan_id, src_ip, dest_ip);
 
             if (!icmpa_router_ip_lookup(dest_ip, &router_ip)) {
                 AIM_LOG_ERROR("ICMPA: Router IP lookup failed in icmp table "
@@ -390,7 +396,6 @@ icmpa_send (ppe_packet_t *ppep, of_port_no_t port_no, uint32_t type,
     /*
      * MUST NOT send to a multicast/broadcast IP address.
      */
-    ppe_field_get(ppep, PPE_FIELD_IP4_SRC_ADDR, &src_ip);
     if (!isValidIP(src_ip)) {
         AIM_LOG_ERROR("ICMPA: src_ip %{ipv4a} in original ip packet not valid"
                       "(zero/multicast/broadcast)", src_ip);

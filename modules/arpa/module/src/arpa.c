@@ -622,7 +622,7 @@ static indigo_error_t
 find_mac(uint16_t vlan_vid, uint32_t ip, of_mac_addr_t *mac)
 {
     uint32_t router_ip;
-    if (!router_ip_table_lookup(vlan_vid, &router_ip, mac)) {
+    if (!router_ip_table_lookup_with_subnet(vlan_vid, ip, &router_ip, mac)) {
         if (router_ip == ip) {
             AIM_LOG_TRACE("destined for our router IP");
             debug_counter_inc(&router_ip_hit_counter);
@@ -632,7 +632,7 @@ find_mac(uint16_t vlan_vid, uint32_t ip, of_mac_addr_t *mac)
             debug_counter_inc(&router_ip_mismatch_counter);
         }
     } else {
-        AIM_LOG_TRACE("no router configured on vlan %u", vlan_vid);
+        AIM_LOG_TRACE("no router configured on vlan %u IP %{ipv4a}", vlan_vid, ip);
         debug_counter_inc(&unconfigured_vlan_counter);
     }
 
@@ -919,13 +919,13 @@ arpa_timer(void *cookie)
 static void
 arpa_send_query(struct arp_entry *entry, bool broadcast)
 {
-    AIM_LOG_VERBOSE("Sending %s query for VLAN %u IP %08x", broadcast ? "broadcast" : "unicast", entry->key.vlan_vid, entry->key.ipv4);
+    AIM_LOG_VERBOSE("Sending %s query for VLAN %u IP %{ipv4a}", broadcast ? "broadcast" : "unicast", entry->key.vlan_vid, entry->key.ipv4);
 
     /* Lookup the router for this VLAN */
     uint32_t router_ip;
     of_mac_addr_t router_mac;
-    if (router_ip_table_lookup(entry->key.vlan_vid, &router_ip, &router_mac) < 0) {
-        AIM_LOG_TRACE("no router configured on vlan %u", entry->key.vlan_vid);
+    if (router_ip_table_lookup_with_subnet(entry->key.vlan_vid, entry->key.ipv4, &router_ip, &router_mac) < 0) {
+        AIM_LOG_TRACE("no router configured on vlan %u for IP %{ipv4a}", entry->key.vlan_vid, entry->key.ipv4);
         return;
     }
 
@@ -951,7 +951,7 @@ arpa_send_query(struct arp_entry *entry, bool broadcast)
 static void
 arpa_send_idle_notification(struct arp_entry *entry)
 {
-    AIM_LOG_VERBOSE("Sending idle notification for VLAN %u IP %08x", entry->key.vlan_vid, entry->key.ipv4);
+    AIM_LOG_VERBOSE("Sending idle notification for VLAN %u IP %{ipv4a}", entry->key.vlan_vid, entry->key.ipv4);
 
     of_version_t version;
     if (indigo_cxn_get_async_version(&version) < 0) {
