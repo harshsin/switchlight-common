@@ -114,6 +114,11 @@ router_ip_check(uint32_t ip)
 
 /* router_ip table operations */
 
+/*
+ * This code accepts either the KO or KO+ version of the table. In KO+ the ipv4
+ * TLV was moved to the key and a netmask added to the value.
+ */
+
 static indigo_error_t
 router_ip_parse_key(of_list_bsn_tlv_t *key, uint16_t *vlan, uint32_t *ip)
 {
