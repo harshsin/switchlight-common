@@ -157,7 +157,7 @@ done:
     return IND_SOC_TASK_FINISHED;
 }
 
-static indigo_error_t
+static indigo_core_listener_result_t
 macblaster_handle_flexlink_command(indigo_cxn_id_t cxn_id, of_object_t *msg)
 {
     of_str64_t command_name;
