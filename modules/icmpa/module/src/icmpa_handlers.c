@@ -123,6 +123,21 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
     }
 
     /*
+     * Identify if the reason is L3 Destination miss.
+     *
+     * L3 destination miss needs to be processed before ICMP Echo
+     * requests since echo requests could come to cpu with
+     * L3 destination miss reason and in that case we should send
+     * an ICMP Destination Unreachable message to the sender
+     * instead of replying back to the ICMP Echo request.
+     */
+    if (match.fields.metadata & OFP_BSN_PKTIN_FLAG_L3_MISS) {
+        type = ICMP_DEST_UNREACHABLE;
+        code = 0;
+        return icmpa_send(&ppep, port_no, type, code);
+    }
+
+    /*
      * Identify if this is an Echo Request, destined to one of VRouter
      */
     if (ppe_header_get(&ppep, PPE_HEADER_ICMP)) {
@@ -153,13 +168,9 @@ icmpa_packet_in_handler (of_packet_in_t *packet_in)
     }
 
     /*
-     * Identify if the reason is valid for ICMP Agent to consume the packet
+     * Identify if the reason is TTL Expired.
      */
-    if (match.fields.metadata & OFP_BSN_PKTIN_FLAG_L3_MISS) {
-        type = ICMP_DEST_UNREACHABLE;
-        code = 0;
-        return icmpa_send(&ppep, port_no, type, code);
-    } else if (match.fields.metadata & OFP_BSN_PKTIN_FLAG_TTL_EXPIRED) {
+    if (match.fields.metadata & OFP_BSN_PKTIN_FLAG_TTL_EXPIRED) {
         type = ICMP_TIME_EXCEEDED;
         code = 0;
         return icmpa_send(&ppep, port_no, type, code);
