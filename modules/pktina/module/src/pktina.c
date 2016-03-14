@@ -40,7 +40,7 @@
 #include <sflowa/sflowa.h>
 
 DEBUG_COUNTER(pktin, "pktina.pktin",
-              "Received packet-in message from the kernel");
+              "Received packet-in message");
 DEBUG_COUNTER(ctrl_pktin, "pktina.pktin.controller",
               "Pktin's passed directly to the controller");
 DEBUG_COUNTER(sflow_pktin, "pktina.pktin.sflow",
@@ -164,21 +164,39 @@ pktina_distribute_packet(of_octets_t octets,
     return INDIGO_CORE_LISTENER_RESULT_PASS;
 }
 
-indigo_error_t
-pktina_process_of_packet_in(of_packet_in_t *packet_in)
+static indigo_core_listener_result_t
+pktina_of_packet_in_listener(of_packet_in_t *packet_in)
 {
     of_match_t match;
     of_octets_t octets;
+    indigo_core_listener_result_t result;
 
     AIM_TRUE_OR_DIE(of_packet_in_match_get(packet_in, &match) == 0);
     of_packet_in_data_get(packet_in, &octets);
 
-    if (pktina_distribute_packet(octets, match.fields.in_port, match.fields.metadata)
-        == INDIGO_CORE_LISTENER_RESULT_PASS) {
+    result = pktina_distribute_packet(octets, match.fields.in_port, match.fields.metadata);
+
+    if (result == INDIGO_CORE_LISTENER_RESULT_PASS) {
         debug_counter_inc(&ctrl_pktin);
-        return indigo_core_packet_in(packet_in);
     }
 
-    of_object_delete(packet_in);
+    return result;
+}
+
+/**
+ * pktina will always register/unregister packet-in listener
+ * independent of SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER define.
+ */
+indigo_error_t
+pktina_init(void)
+{
+    indigo_core_packet_in_listener_register(pktina_of_packet_in_listener);
+    return INDIGO_ERROR_NONE;
+}
+
+indigo_error_t
+pktina_finish(void)
+{
+    indigo_core_packet_in_listener_unregister(pktina_of_packet_in_listener);
     return INDIGO_ERROR_NONE;
 }

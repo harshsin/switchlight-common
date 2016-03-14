@@ -23,14 +23,8 @@
 #include <indigo/error.h>
 #include <indigo/of_state_manager.h>
 
-/**
- * Pass the packet-in though all the agents and send it to indigo
- * only if no agent ownes the packet or if it is a debug packet-in.
- * @param packet_in Pointer to the packet in object
- *
- * The pktin agent takes responsibility for the object
- */
+extern indigo_error_t pktina_init(void);
 
-extern indigo_error_t pktina_process_of_packet_in(of_packet_in_t *packet_in);
+extern indigo_error_t pktina_finish(void);
 
- #endif /* __PKTINA_H__ */
+#endif /* __PKTINA_H__ */
