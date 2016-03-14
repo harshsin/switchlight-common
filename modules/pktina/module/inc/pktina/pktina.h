@@ -17,16 +17,20 @@
  *
  ****************************************************************/
 
-/*************************************************************//**
- *
- * pktina Internal Header
- *
- ****************************************************************/
-#ifndef __PKTINA_INT_H__
-#define __PKTINA_INT_H__
+ #ifndef __PKTINA_H__
+ #define __PKTINA_H__
 
-#include <PPE/ppe.h>
-#include <pktina/pktina_config.h>
-#include <debug_counter/debug_counter.h>
+#include <indigo/error.h>
+#include <indigo/of_state_manager.h>
 
-#endif /* __PKTINA_INT_H__ */
+/**
+ * Pass the packet-in though all the agents and send it to indigo
+ * only if no agent ownes the packet or if it is a debug packet-in.
+ * @param packet_in Pointer to the packet in object
+ *
+ * The pktin agent takes responsibility for the object
+ */
+
+extern indigo_error_t pktina_process_of_packet_in(of_packet_in_t *packet_in);
+
+ #endif /* __PKTINA_H__ */

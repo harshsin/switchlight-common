@@ -20,7 +20,14 @@
 include ../../../init.mk
 MODULE := pktina_utest
 TEST_MODULE := pktina
-DEPENDMODULES := AIM
+DEPENDMODULES := AIM PPE IOF loci indigo SocketManager cjson Configuration \
+	BigList BigHash OFStateManager murmur OFConnectionManager OS uCli debug_counter timer_wheel \
+	minimatch BigRing slshared slot_allocator router_ip_table cdpa lldpa lacpa arpa icmpa igmpa dhcpra sflowa host_sflow
+
+GLOBAL_CFLAGS += -DINDIGO_LINUX_LOGGING
+GLOBAL_CFLAGS += -DINDIGO_LINUX_TIME
+GLOBAL_CFLAGS += -DINDIGO_MEM_STDLIB
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MODULES_INIT=1
 GLOBAL_CFLAGS += -DAIM_CONFIG_INCLUDE_MAIN=1
+GLOBAL_LINK_LIBS += -lm -rdynamic
 include $(BUILDER)/build-unit-test.mk

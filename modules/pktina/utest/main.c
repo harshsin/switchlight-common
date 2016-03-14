@@ -24,6 +24,10 @@
 #include <string.h>
 #include <AIM/aim.h>
 
+#include <indigo/of_state_manager.h>
+#include <indigo/port_manager.h>
+#include <SocketManager/socketmanager.h>
+
 int aim_main(int argc, char* argv[])
 {
     printf("pktina Utest Is Empty\n");
@@ -31,3 +35,83 @@ int aim_main(int argc, char* argv[])
     return 0;
 }
 
+
+void
+indigo_cxn_send_bsn_error(indigo_cxn_id_t cxn_id,
+                          of_object_t *orig,
+                          char *err_txt)
+{
+}
+
+indigo_error_t
+indigo_fwd_packet_out(of_packet_out_t *packet_out)
+{
+    return INDIGO_ERROR_NONE;
+}
+
+indigo_error_t
+indigo_port_modify(of_port_mod_t *port_mod)
+{
+    return INDIGO_ERROR_NONE;
+}
+
+indigo_error_t
+indigo_port_queue_config_get(of_queue_get_config_request_t *request,
+                             of_queue_get_config_reply_t **reply_ptr)
+{
+    return INDIGO_ERROR_NONE;
+}
+
+indigo_error_t
+indigo_fwd_forwarding_features_get(of_features_reply_t *features)
+{
+    return INDIGO_ERROR_NONE;
+}
+
+indigo_error_t
+indigo_port_interface_list(indigo_port_info_t **list)
+{
+    return INDIGO_ERROR_NOT_SUPPORTED;
+}
+
+void
+indigo_port_interface_list_destroy(indigo_port_info_t *list)
+{
+}
+
+void
+indigo_fwd_pipeline_stats_get(of_desc_str_t **pipelines,
+                              int *num_pipelines)
+{
+}
+
+void
+indigo_fwd_pipeline_get(of_desc_str_t pipeline)
+{
+}
+
+indigo_error_t
+indigo_fwd_pipeline_set(of_desc_str_t pipeline)
+{
+    return INDIGO_ERROR_NONE;
+}
+
+indigo_error_t
+indigo_port_experimenter(of_experimenter_t *experimenter,
+                         indigo_cxn_id_t cxn_id)
+{
+    return INDIGO_ERROR_NONE;
+}
+
+indigo_error_t
+indigo_port_features_get(of_features_reply_t *features)
+{
+    return INDIGO_ERROR_NONE;
+}
+
+indigo_error_t
+indigo_fwd_experimenter(of_experimenter_t *experimenter,
+                        indigo_cxn_id_t cxn_id)
+{
+    return INDIGO_ERROR_NONE;
+}
