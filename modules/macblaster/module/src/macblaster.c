@@ -233,7 +233,7 @@ macblaster_message_listener(indigo_cxn_id_t cxn_id, of_object_t *msg)
 static void
 macblaster_pkt_init(void)
 {
-    of_mac_addr_t eth_dst = {{0x01, 0x00, 0x0C, 0xCC, 0xCC, 0xCC}};
+    of_mac_addr_t eth_dst = {{0x01, 0x00, 0x0D, 0xCC, 0xCC, 0xCC}};
 
     MACBLASTER_MEMCPY(macblaster_tagged_pkt, &eth_dst, sizeof(eth_dst));
     macblaster_tagged_pkt[12] = 0x81;
