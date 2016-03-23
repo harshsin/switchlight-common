@@ -59,6 +59,11 @@ pktina_config_settings_t pktina_config_settings[] =
 #else
 { PKTINA_CONFIG_INCLUDE_UCLI(__pktina_config_STRINGIFY_NAME), "__undefined__" },
 #endif
+#ifdef PKTINA_CONFIG_OF_PORTS_MAX
+    { __pktina_config_STRINGIFY_NAME(PKTINA_CONFIG_OF_PORTS_MAX), __pktina_config_STRINGIFY_VALUE(PKTINA_CONFIG_OF_PORTS_MAX) },
+#else
+{ PKTINA_CONFIG_OF_PORTS_MAX(__pktina_config_STRINGIFY_NAME), "__undefined__" },
+#endif
     { NULL, NULL }
 };
 #undef __pktina_config_STRINGIFY_VALUE
