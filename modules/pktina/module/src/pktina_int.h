@@ -31,6 +31,10 @@
 #include "pktina_log.h"
 
 #define PKTINA_PORT_PKTIN_STATS             \
+    PKTINA_PORT_PKTIN_STAT(station_move)    \
+    PKTINA_PORT_PKTIN_STAT(new_host)        \
+    PKTINA_PORT_PKTIN_STAT(arp_cache)       \
+    PKTINA_PORT_PKTIN_STAT(debug_acl)       \
     PKTINA_PORT_PKTIN_STAT(cdp)             \
     PKTINA_PORT_PKTIN_STAT(lldp)            \
     PKTINA_PORT_PKTIN_STAT(lacp)            \

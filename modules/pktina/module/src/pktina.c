@@ -68,10 +68,14 @@ pktina_port_stats_get(of_port_no_t of_port)
     if (of_port < PKTINA_CONFIG_OF_PORTS_MAX) {
         /* Front panel port stats */
         return &pktina_port_stats[of_port];
-    } else {
+    } else if (of_port == OF_PORT_DEST_CONTROLLER) {
         /* CPU port stats */
         return &pktina_cpu_port_stats;
+    } else {
+        AIM_DIE("Unsupported of_port");
     }
+
+    return NULL;
 }
 
 static indigo_core_listener_result_t
@@ -80,18 +84,36 @@ pktina_distribute_packet(of_octets_t octets,
                          uint64_t metadata,
                          pktina_port_debug_t *port_stats)
 {
-    /* Identify if the packet-in needs to go to the controller before parsing */
-    if (metadata & OFP_BSN_PKTIN_FLAG_STATION_MOVE ||
-        metadata & OFP_BSN_PKTIN_FLAG_NEW_HOST ||
-        metadata & OFP_BSN_PKTIN_FLAG_ARP_CACHE) {
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
-    }
-
+    indigo_core_listener_result_t result = INDIGO_CORE_LISTENER_RESULT_PASS;
     ppe_packet_t ppep;
+
     ppe_packet_init(&ppep, octets.data, octets.bytes);
     if (ppe_parse(&ppep) < 0) {
         debug_counter_inc(&pktin_parse_error);
         return INDIGO_CORE_LISTENER_RESULT_DROP;
+    }
+
+    /* See if the packet-in is a SFLOW packet-in */
+    if (metadata & OFP_BSN_PKTIN_FLAG_SFLOW) {
+        result = sflowa_receive_packet(&ppep, in_port);
+        debug_counter_inc(&port_stats->sflow);
+        debug_counter_inc(&sflow_pktin);
+    }
+
+    /* Identify if the packet-in needs to go to the controller before parsing */
+    if (metadata & OFP_BSN_PKTIN_FLAG_STATION_MOVE) {
+        debug_counter_inc(&port_stats->station_move);
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    if (metadata & OFP_BSN_PKTIN_FLAG_NEW_HOST) {
+        debug_counter_inc(&port_stats->new_host);
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    if (metadata & OFP_BSN_PKTIN_FLAG_ARP_CACHE) {
+        debug_counter_inc(&port_stats->arp_cache);
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
     /*
@@ -106,7 +128,6 @@ pktina_distribute_packet(of_octets_t octets,
      * with icmp ttl expired msg to the original source,
      * since echo/traceroute response will take precedence.
      */
-    indigo_core_listener_result_t result = INDIGO_CORE_LISTENER_RESULT_PASS;
     if (!memcmp(octets.data, cdp_mac.addr, OF_MAC_ADDR_BYTES)) {
         result = cdpa_receive_packet(&octets, in_port);
         debug_counter_inc(&port_stats->cdp);
@@ -153,12 +174,6 @@ pktina_distribute_packet(of_octets_t octets,
         }
     }
 
-    /* See if the packet-in is a SFLOW packet-in */
-    if (metadata & OFP_BSN_PKTIN_FLAG_SFLOW) {
-        result = sflowa_receive_packet(&ppep, in_port);
-        debug_counter_inc(&port_stats->sflow);
-    }
-
     /*
      * Identify if the packet-in has debug/acl flag set
      * Debug/ACL packet-in's should always go the controller
@@ -167,6 +182,7 @@ pktina_distribute_packet(of_octets_t octets,
 
     if (result == INDIGO_CORE_LISTENER_RESULT_DROP) {
         if (debug_acl_flag) {
+            debug_counter_inc(&port_stats->debug_acl);
             return INDIGO_CORE_LISTENER_RESULT_PASS;
         } else {
             return INDIGO_CORE_LISTENER_RESULT_DROP;
