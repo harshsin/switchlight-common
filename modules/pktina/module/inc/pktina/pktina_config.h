@@ -108,6 +108,16 @@
 #define PKTINA_CONFIG_INCLUDE_UCLI 0
 #endif
 
+/**
+ * PKTINA_CONFIG_OF_PORTS_MAX
+ *
+ * Maximum number of OF ports. */
+
+
+#ifndef PKTINA_CONFIG_OF_PORTS_MAX
+#define PKTINA_CONFIG_OF_PORTS_MAX SLSHARED_CONFIG_OF_PORT_MAX
+#endif
+
 
 
 /**

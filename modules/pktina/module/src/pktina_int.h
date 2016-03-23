@@ -28,5 +28,29 @@
 #include <PPE/ppe.h>
 #include <pktina/pktina_config.h>
 #include <debug_counter/debug_counter.h>
+#include "pktina_log.h"
+
+#define PKTINA_PORT_PKTIN_STATS             \
+    PKTINA_PORT_PKTIN_STAT(cdp)             \
+    PKTINA_PORT_PKTIN_STAT(lldp)            \
+    PKTINA_PORT_PKTIN_STAT(lacp)            \
+    PKTINA_PORT_PKTIN_STAT(dhcp)            \
+    PKTINA_PORT_PKTIN_STAT(igmp)            \
+    PKTINA_PORT_PKTIN_STAT(arp)             \
+    PKTINA_PORT_PKTIN_STAT(l3_dst_miss)     \
+    PKTINA_PORT_PKTIN_STAT(icmp)            \
+    PKTINA_PORT_PKTIN_STAT(traceroute)      \
+    PKTINA_PORT_PKTIN_STAT(sflow)           \
+    PKTINA_PORT_PKTIN_STAT(bad_ttl)         \
+    PKTINA_PORT_PKTIN_STAT(total)
+
+typedef struct pktina_port_debug_s {
+#define PKTINA_PORT_PKTIN_STAT(name)   \
+    debug_counter_t name;              \
+    char name##_counter_name_buf[DEBUG_COUNTER_NAME_SIZE];
+
+    PKTINA_PORT_PKTIN_STATS
+#undef PKTINA_PORT_PKTIN_STAT
+} pktina_port_debug_t;
 
 #endif /* __PKTINA_INT_H__ */

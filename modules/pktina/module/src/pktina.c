@@ -19,12 +19,12 @@
 
 /****************************************************************
  * pktina takes packet-ins and distributes the PPE to relevant
- * switchlight-common agents based on packet-in reason and 
+ * switchlight-common agents based on packet-in reason and
  * packet type.
  *
  * NOTE: packet-of-death message is not handled here.
  * BRCMDriver3 uses indigo_core_packet_in_listener_register
- * to get packet-ins. 
+ * to get packet-ins.
  ****************************************************************/
 
 #include "pktina_int.h"
@@ -40,13 +40,16 @@
 #include <sflowa/sflowa.h>
 
 DEBUG_COUNTER(pktin, "pktina.pktin",
-              "Received packet-in message");
+              "Received packet-in messages");
 DEBUG_COUNTER(ctrl_pktin, "pktina.pktin.controller",
-              "Pktin's passed directly to the controller");
+              "Pktin's passed to the controller");
 DEBUG_COUNTER(sflow_pktin, "pktina.pktin.sflow",
               "Sflow sampled pktin's recv'd");
 DEBUG_COUNTER(pktin_parse_error, "pktina.pktin.parse_error",
               "Error while parsing packet-in");
+
+static pktina_port_debug_t *pktina_port_stats;
+static pktina_port_debug_t pktina_cpu_port_stats;
 
 static const of_mac_addr_t cdp_mac = { { 0x01, 0x00, 0x0c, 0xcc, 0xcc, 0xcc } };
 
@@ -59,13 +62,24 @@ is_ephemeral(uint32_t port)
     return (port >= 32768 && port <= 61000);
 }
 
+static pktina_port_debug_t *
+pktina_port_stats_get(of_port_no_t of_port)
+{
+    if (of_port < PKTINA_CONFIG_OF_PORTS_MAX) {
+        /* Front panel port stats */
+        return &pktina_port_stats[of_port];
+    } else {
+        /* CPU port stats */
+        return &pktina_cpu_port_stats;
+    }
+}
+
 static indigo_core_listener_result_t
 pktina_distribute_packet(of_octets_t octets,
                          uint32_t in_port,
-                         uint64_t metadata)
+                         uint64_t metadata,
+                         pktina_port_debug_t *port_stats)
 {
-    debug_counter_inc(&pktin);
-
     /* Identify if the packet-in needs to go to the controller before parsing */
     if (metadata & OFP_BSN_PKTIN_FLAG_STATION_MOVE ||
         metadata & OFP_BSN_PKTIN_FLAG_NEW_HOST ||
@@ -95,21 +109,29 @@ pktina_distribute_packet(of_octets_t octets,
     indigo_core_listener_result_t result = INDIGO_CORE_LISTENER_RESULT_PASS;
     if (!memcmp(octets.data, cdp_mac.addr, OF_MAC_ADDR_BYTES)) {
         result = cdpa_receive_packet(&octets, in_port);
+        debug_counter_inc(&port_stats->cdp);
     } else if (ppe_header_get(&ppep, PPE_HEADER_LLDP)) {
         result = lldpa_receive_packet(&octets, in_port);
+        debug_counter_inc(&port_stats->lldp);
     } else if (ppe_header_get(&ppep, PPE_HEADER_LACP)) {
         result = lacpa_receive_packet (&ppep, in_port);
+        debug_counter_inc(&port_stats->lacp);
     } else if (ppe_header_get(&ppep, PPE_HEADER_DHCP)) {
         result = dhcpra_receive_packet(&ppep, in_port);
+        debug_counter_inc(&port_stats->dhcp);
     } else if (ppe_header_get(&ppep, PPE_HEADER_IGMP)) {
         result = igmpa_receive_pkt(&ppep, in_port);
+        debug_counter_inc(&port_stats->igmp);
     } else if (ppe_header_get(&ppep, PPE_HEADER_ARP)) {
         bool check_source = (metadata & OFP_BSN_PKTIN_FLAG_ARP) != 0;
         result = arpa_receive_packet(&ppep, in_port, check_source);
+        debug_counter_inc(&port_stats->arp);
     } else if (metadata & OFP_BSN_PKTIN_FLAG_L3_MISS) {
         result = icmpa_send(&ppep, in_port, 3, 0);
+        debug_counter_inc(&port_stats->l3_dst_miss);
     } else if (ppe_header_get(&ppep, PPE_HEADER_ICMP)) {
         result = icmpa_reply(&ppep, in_port);
+        debug_counter_inc(&port_stats->icmp);
     } else if (ppe_header_get(&ppep, PPE_HEADER_UDP) &&
         ppe_header_get(&ppep, PPE_HEADER_IP4)) {
 
@@ -127,12 +149,14 @@ pktina_distribute_packet(of_octets_t octets,
         if (router_ip_check(dest_ip) && is_ephemeral(src_port) &&
             is_ephemeral(dest_port)) {
             result = icmpa_send(&ppep, in_port, 3, 3);
+            debug_counter_inc(&port_stats->traceroute);
         }
     }
 
     /* See if the packet-in is a SFLOW packet-in */
     if (metadata & OFP_BSN_PKTIN_FLAG_SFLOW) {
         result = sflowa_receive_packet(&ppep, in_port);
+        debug_counter_inc(&port_stats->sflow);
     }
 
     /*
@@ -155,6 +179,7 @@ pktina_distribute_packet(of_octets_t octets,
      */
     if (metadata & OFP_BSN_PKTIN_FLAG_TTL_EXPIRED) {
         result = icmpa_send(&ppep, in_port, 11, 0);
+        debug_counter_inc(&port_stats->bad_ttl);
     }
 
     if (result == INDIGO_CORE_LISTENER_RESULT_DROP && !debug_acl_flag) {
@@ -170,17 +195,77 @@ pktina_of_packet_in_listener(of_packet_in_t *packet_in)
     of_match_t match;
     of_octets_t octets;
     indigo_core_listener_result_t result;
+    pktina_port_debug_t *port_stats;
+
+    debug_counter_inc(&pktin);
 
     AIM_TRUE_OR_DIE(of_packet_in_match_get(packet_in, &match) == 0);
     of_packet_in_data_get(packet_in, &octets);
 
-    result = pktina_distribute_packet(octets, match.fields.in_port, match.fields.metadata);
+    port_stats = pktina_port_stats_get(match.fields.in_port);
+    debug_counter_inc(&port_stats->total);
+
+    result = pktina_distribute_packet(octets, match.fields.in_port,
+                                      match.fields.metadata, port_stats);
 
     if (result == INDIGO_CORE_LISTENER_RESULT_PASS) {
         debug_counter_inc(&ctrl_pktin);
     }
 
     return result;
+}
+
+static void
+pktina_port_debug_counter_register(of_port_no_t of_port,
+                                   pktina_port_debug_t *port_stat)
+{
+#define PKTINA_PORT_PKTIN_STAT(name)                            \
+    snprintf(port_stat->name##_counter_name_buf,                \
+        DEBUG_COUNTER_NAME_SIZE,                                \
+        "pktina.port:%u.%s", of_port, #name);                   \
+    debug_counter_register(&port_stat->name,                    \
+        port_stat->name##_counter_name_buf,                     \
+        #name" pktins received on this port");
+
+    PKTINA_PORT_PKTIN_STATS
+#undef PKTINA_PORT_PKTIN_STAT
+}
+
+static void
+pktina_port_debug_counter_unregister(pktina_port_debug_t *port_stat)
+{
+#define PKTINA_PORT_PKTIN_STAT(name)                            \
+    debug_counter_unregister(&port_stat->name);
+
+    PKTINA_PORT_PKTIN_STATS
+#undef PKTINA_PORT_PKTIN_STAT
+}
+
+static void
+pktina_debug_counter_register(void)
+{
+    of_port_no_t of_port;
+
+    /* Front panel port stats */
+    for (of_port = 0; of_port < PKTINA_CONFIG_OF_PORTS_MAX; of_port++) {
+        pktina_port_debug_counter_register(of_port, &pktina_port_stats[of_port]);
+    }
+
+    /* CPU port stats */
+    pktina_port_debug_counter_register(OF_PORT_DEST_CONTROLLER, &pktina_cpu_port_stats);
+}
+
+static void
+pktina_debug_counter_unregister(void)
+{
+    of_port_no_t of_port;
+
+    /* Front panel port stats */
+    for (of_port = 0; of_port < PKTINA_CONFIG_OF_PORTS_MAX; of_port++) {
+        pktina_port_debug_counter_unregister(&pktina_port_stats[of_port]);
+    }
+
+    pktina_port_debug_counter_unregister(&pktina_cpu_port_stats);
 }
 
 /**
@@ -190,7 +275,15 @@ pktina_of_packet_in_listener(of_packet_in_t *packet_in)
 indigo_error_t
 pktina_init(void)
 {
+    pktina_port_stats = aim_zmalloc(sizeof(pktina_port_debug_t) * PKTINA_CONFIG_OF_PORTS_MAX);
+    if (pktina_port_stats == NULL) {
+        AIM_LOG_ERROR("Failed to allocate resources for port stats");
+        return INDIGO_ERROR_RESOURCE;
+    }
+
     indigo_core_packet_in_listener_register(pktina_of_packet_in_listener);
+    pktina_debug_counter_register();
+
     return INDIGO_ERROR_NONE;
 }
 
@@ -198,5 +291,7 @@ indigo_error_t
 pktina_finish(void)
 {
     indigo_core_packet_in_listener_unregister(pktina_of_packet_in_listener);
+    pktina_debug_counter_unregister();
+    aim_free(pktina_port_stats);
     return INDIGO_ERROR_NONE;
 }
