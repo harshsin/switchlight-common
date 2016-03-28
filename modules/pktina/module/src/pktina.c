@@ -224,7 +224,7 @@ pktina_of_packet_in_listener(of_packet_in_t *packet_in)
     port_stats = pktina_port_stats_get(match.fields.in_port);
     if (port_stats == NULL) {
         debug_counter_inc(&pktin_invalid_port);
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
+        return INDIGO_CORE_LISTENER_RESULT_DROP;
     }
 
     debug_counter_inc(&port_stats->total);
