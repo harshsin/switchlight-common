@@ -47,6 +47,8 @@ DEBUG_COUNTER(sflow_pktin, "pktina.pktin.sflow",
               "Sflow sampled pktin's recv'd");
 DEBUG_COUNTER(pktin_parse_error, "pktina.pktin.parse_error",
               "Error while parsing packet-in");
+DEBUG_COUNTER(pktin_invalid_port, "pktina.pktin.invalid_port",
+              "Pktin's received on invalid port");
 
 static pktina_port_debug_t *pktina_port_stats;
 static pktina_port_debug_t pktina_cpu_port_stats;
@@ -72,7 +74,8 @@ pktina_port_stats_get(of_port_no_t of_port)
         /* CPU port stats */
         return &pktina_cpu_port_stats;
     } else {
-        AIM_DIE("Unsupported of_port");
+        /* Not expecting packet-ins from any other port */
+        AIM_LOG_ERROR("Packet-in on invalid port %u", of_port);
     }
 
     return NULL;
@@ -219,6 +222,11 @@ pktina_of_packet_in_listener(of_packet_in_t *packet_in)
     of_packet_in_data_get(packet_in, &octets);
 
     port_stats = pktina_port_stats_get(match.fields.in_port);
+    if (port_stats == NULL) {
+        debug_counter_inc(&pktin_invalid_port);
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
     debug_counter_inc(&port_stats->total);
 
     result = pktina_distribute_packet(octets, match.fields.in_port,
