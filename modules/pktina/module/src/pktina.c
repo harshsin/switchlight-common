@@ -119,6 +119,11 @@ pktina_distribute_packet(of_octets_t octets,
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
+    if (metadata & OFP_BSN_PKTIN_FLAG_VXLAN_SIP_MISS) {
+        debug_counter_inc(&port_stats->vxlan_sip_miss);
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
     /*
      * Identify the packet-in based on header type
      *
