@@ -671,6 +671,9 @@ pdua_system_init(void)
 
     pdua_register_system_counters();
 
+    pdua_tx_table_init();
+    pdua_rx_table_init();
+
     return 0;
 }
 
@@ -693,6 +696,9 @@ pdua_system_finish(void)
             AIM_LOG_INTERNAL("%s: Port %d not existing", __FUNCTION__, i);
         }
     }
+
+    pdua_tx_table_finish();
+    pdua_rx_table_finish();
 
     pdua_unregister_system_counters();
 }
@@ -771,4 +777,40 @@ pdua_clear_all_configs(void)
             pdua_port_disable(pdu_periodic_tx, &port->tx_pkt, port);
         }
     }
+}
+
+indigo_error_t
+pdua_port_rx_enable(pdua_port_t *port, of_octets_t *data,
+                    uint32_t timeout_ms)
+{
+    AIM_ASSERT(timeout_ms > 0);
+    AIM_ASSERT(port->rx_pkt.interval_ms == 0);
+    return pdua_port_enable(pdu_timeout_rx, &port->rx_pkt, port, data,
+                            timeout_ms, PDUA_CONFIG_RX_TIMEOUT_PRIO);
+}
+
+indigo_error_t
+pdua_port_rx_disable(pdua_port_t *port)
+{
+    indigo_error_t rv;
+    rv = pdua_port_disable(pdu_timeout_rx, &port->rx_pkt, port);
+    /* Reset packet state */
+    pkt_state_change_handle(port, PDUA_PACKET_STATE_UNKNOWN);
+    return rv;
+}
+
+indigo_error_t
+pdua_port_tx_enable(pdua_port_t *port, of_octets_t *data,
+                    uint32_t interval_ms)
+{
+    AIM_ASSERT(interval_ms > 0);
+    AIM_ASSERT(port->tx_pkt.interval_ms == 0);
+    return pdua_port_enable(pdu_periodic_tx, &port->tx_pkt, port,
+                            data, interval_ms, PDUA_CONFIG_TX_PRIO);
+}
+
+indigo_error_t
+pdua_port_tx_disable(pdua_port_t *port)
+{
+    return pdua_port_disable(pdu_periodic_tx, &port->tx_pkt, port);
 }
