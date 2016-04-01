@@ -108,7 +108,7 @@ parse_value__(of_list_bsn_tlv_t *value,
         return INDIGO_ERROR_PARAM;
     }
 
-    if (tlv.object_id == OF_BSN_TLV_IDLE_TIMEOUT) {
+    if (tlv.object_id == OF_BSN_TLV_INTERVAL) {
         of_bsn_tlv_interval_value_get(&tlv, interval);
     } else {
         AIM_LOG_ERROR("%s: expected interval, instead got %s",
