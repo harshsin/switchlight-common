@@ -331,9 +331,11 @@ pktina_port_debug_counters_print(ucli_context_t *uc, of_port_no_t of_port)
         return;
 
 #define PKTINA_PORT_PKTIN_STAT(name)                            \
-    ucli_printf(uc, "%s   %"PRIu64"\n",                         \
-                port_stat->name##_counter_name_buf,             \
-                debug_counter_get(&port_stat->name));
+    if (debug_counter_get(&port_stat->name)) {                  \
+        ucli_printf(uc, "%s   %"PRIu64"\n",                     \
+                    port_stat->name##_counter_name_buf,         \
+                    debug_counter_get(&port_stat->name));       \
+    }
 
     PKTINA_PORT_PKTIN_STATS
 #undef PKTINA_PORT_PKTIN_STAT

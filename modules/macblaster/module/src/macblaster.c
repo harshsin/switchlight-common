@@ -314,7 +314,7 @@ macblaster_debug_counter_unregister(void)
     }
 }
 
-#if PKTINA_CONFIG_INCLUDE_UCLI == 1
+#if MACBLASTER_CONFIG_INCLUDE_UCLI == 1
 
 void
 macblaster_debug_counters_print(ucli_context_t* uc)
@@ -342,10 +342,12 @@ macblaster_port_debug_counters_print(ucli_context_t *uc, of_port_no_t of_port)
 {
     macblaster_port_debug_t *port_stat = &macblaster_port_stats[of_port];
 
-#define MACBLASTER_PORT_STAT(name)                     \
-    ucli_printf(uc, "%s   %"PRIu64"\n",                \
-                port_stat->name##_counter_name_buf,    \
-                debug_counter_get(&port_stat->name));
+#define MACBLASTER_PORT_STAT(name)                          \
+    if (debug_counter_get(&port_stat->name)) {              \
+        ucli_printf(uc, "%s   %"PRIu64"\n",                 \
+                    port_stat->name##_counter_name_buf,     \
+                    debug_counter_get(&port_stat->name));   \
+    }
 
     MACBLASTER_PORT_STATS
 #undef MACBLASTER_PORT_STAT
@@ -356,14 +358,14 @@ macblaster_port_debug_counters_clear(of_port_no_t of_port)
 {
     macblaster_port_debug_t *port_stat = &macblaster_port_stats[of_port];
 
-#define MACBLASTER_PORT_STAT(name)                     \
+#define MACBLASTER_PORT_STAT(name)                          \
     debug_counter_reset(&port_stat->name);
 
     MACBLASTER_PORT_STATS
 #undef MACBLASTER_PORT_STAT
 }
 
-#endif /* PKTINA_CONFIG_INCLUDE_UCLI == 1 */
+#endif /* MACBLASTER_CONFIG_INCLUDE_UCLI == 1 */
 
 indigo_error_t
 macblaster_init(void)

@@ -66,7 +66,6 @@ macblaster_ucli_ucli__port_counters__(ucli_context_t* uc)
     if (uc->pargs->count == 0) {
         for (of_port = 0; of_port <= MACBLASTER_CONFIG_OF_PORTS_MAX; of_port++) {
             macblaster_port_debug_counters_print(uc, of_port);
-            ucli_printf(uc, "\n");
         }
     } else if (uc->pargs->count == 1) {
         /* Print macblaster stats of specific port */
