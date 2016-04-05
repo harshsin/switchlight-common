@@ -67,7 +67,7 @@ is_ephemeral(uint32_t port)
 static pktina_port_debug_t *
 pktina_port_stats_get(of_port_no_t of_port)
 {
-    if (of_port < PKTINA_CONFIG_OF_PORTS_MAX) {
+    if (of_port <= PKTINA_CONFIG_OF_PORTS_MAX) {
         /* Front panel port stats */
         return &pktina_port_stats[of_port];
     } else if (of_port == OF_PORT_DEST_CONTROLLER) {
@@ -276,7 +276,7 @@ pktina_debug_counter_register(void)
     of_port_no_t of_port;
 
     /* Front panel port stats */
-    for (of_port = 0; of_port < PKTINA_CONFIG_OF_PORTS_MAX; of_port++) {
+    for (of_port = 0; of_port <= PKTINA_CONFIG_OF_PORTS_MAX; of_port++) {
         pktina_port_debug_counter_register(of_port, &pktina_port_stats[of_port]);
     }
 
@@ -290,12 +290,71 @@ pktina_debug_counter_unregister(void)
     of_port_no_t of_port;
 
     /* Front panel port stats */
-    for (of_port = 0; of_port < PKTINA_CONFIG_OF_PORTS_MAX; of_port++) {
+    for (of_port = 0; of_port <= PKTINA_CONFIG_OF_PORTS_MAX; of_port++) {
         pktina_port_debug_counter_unregister(&pktina_port_stats[of_port]);
     }
 
     pktina_port_debug_counter_unregister(&pktina_cpu_port_stats);
 }
+
+#if PKTINA_CONFIG_INCLUDE_UCLI == 1
+
+void
+pktina_debug_counters_print(ucli_context_t* uc)
+{
+#define GLOBAL_DEBUG_COUNTER_PRINT(_counter)   \
+    ucli_printf(uc, "%s   %"PRIu64"\n", _counter.name, debug_counter_get(&_counter))
+
+    GLOBAL_DEBUG_COUNTER_PRINT(pktin);
+    GLOBAL_DEBUG_COUNTER_PRINT(ctrl_pktin);
+    GLOBAL_DEBUG_COUNTER_PRINT(sflow_pktin);
+    GLOBAL_DEBUG_COUNTER_PRINT(pktin_parse_error);
+    GLOBAL_DEBUG_COUNTER_PRINT(pktin_invalid_port);
+}
+
+void
+pktina_debug_counters_clear(void)
+{
+    debug_counter_reset(&pktin);
+    debug_counter_reset(&ctrl_pktin);
+    debug_counter_reset(&sflow_pktin);
+    debug_counter_reset(&pktin_parse_error);
+    debug_counter_reset(&pktin_invalid_port);
+}
+
+void
+pktina_port_debug_counters_print(ucli_context_t *uc, of_port_no_t of_port)
+{
+    pktina_port_debug_t *port_stat = pktina_port_stats_get(of_port);
+
+    if (!port_stat)
+        return;
+
+#define PKTINA_PORT_PKTIN_STAT(name)                            \
+    ucli_printf(uc, "%s   %"PRIu64"\n",                         \
+                port_stat->name##_counter_name_buf,             \
+                debug_counter_get(&port_stat->name));
+
+    PKTINA_PORT_PKTIN_STATS
+#undef PKTINA_PORT_PKTIN_STAT
+}
+
+void
+pktina_port_debug_counters_clear(of_port_no_t of_port)
+{
+    pktina_port_debug_t *port_stat = pktina_port_stats_get(of_port);
+
+    if (!port_stat)
+        return;
+
+#define PKTINA_PORT_PKTIN_STAT(name)                            \
+    debug_counter_reset(&port_stat->name);
+
+    PKTINA_PORT_PKTIN_STATS
+#undef PKTINA_PORT_PKTIN_STAT
+}
+
+#endif /* PKTINA_CONFIG_INCLUDE_UCLI == 1 */
 
 /**
  * pktina will always register/unregister packet-in listener
@@ -304,7 +363,7 @@ pktina_debug_counter_unregister(void)
 indigo_error_t
 pktina_init(void)
 {
-    pktina_port_stats = aim_zmalloc(sizeof(pktina_port_debug_t) * PKTINA_CONFIG_OF_PORTS_MAX);
+    pktina_port_stats = aim_zmalloc(sizeof(pktina_port_debug_t) * (PKTINA_CONFIG_OF_PORTS_MAX+1));
     if (pktina_port_stats == NULL) {
         AIM_LOG_ERROR("Failed to allocate resources for port stats");
         return INDIGO_ERROR_RESOURCE;

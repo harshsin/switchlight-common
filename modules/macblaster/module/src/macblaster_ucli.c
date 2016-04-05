@@ -18,6 +18,7 @@
  ****************************************************************/
 
 #include <macblaster/macblaster_config.h>
+#include "macblaster_int.h"
 
 #if MACBLASTER_CONFIG_INCLUDE_UCLI == 1
 
@@ -31,6 +32,93 @@ macblaster_ucli_ucli__config__(ucli_context_t* uc)
     UCLI_HANDLER_MACRO_MODULE_CONFIG(macblaster)
 }
 
+static ucli_status_t
+macblaster_ucli_ucli__counters__(ucli_context_t* uc)
+{
+    UCLI_COMMAND_INFO(uc, "counters", 0,
+                      "$summary#Print macblaster global counters.");
+
+    macblaster_debug_counters_print(uc);
+
+    return UCLI_STATUS_OK;
+}
+
+static ucli_status_t
+macblaster_ucli_ucli__counters_clear__(ucli_context_t* uc)
+{
+    UCLI_COMMAND_INFO(uc, "counters_clear", 0,
+                      "$summary#Clear macblaster global counters.");
+
+    macblaster_debug_counters_clear();
+
+    return UCLI_STATUS_OK;
+}
+
+static ucli_status_t
+macblaster_ucli_ucli__port_counters__(ucli_context_t* uc)
+{
+    of_port_no_t of_port;
+
+    UCLI_COMMAND_INFO(uc, "port_counters", -1,
+                      "$summary#Print macblaster port counters."
+                      "$args#[of_port_no]");
+
+    if (uc->pargs->count == 0) {
+        for (of_port = 0; of_port <= MACBLASTER_CONFIG_OF_PORTS_MAX; of_port++) {
+            macblaster_port_debug_counters_print(uc, of_port);
+            ucli_printf(uc, "\n");
+        }
+    } else if (uc->pargs->count == 1) {
+        /* Print macblaster stats of specific port */
+        UCLI_ARGPARSE_OR_RETURN(uc, "i", &of_port);
+        if (of_port <= MACBLASTER_CONFIG_OF_PORTS_MAX) {
+            macblaster_port_debug_counters_print(uc, of_port);
+        } else {
+            ucli_printf(uc, "Invalid OF port number %d, should be <= %d\n",
+                        of_port, MACBLASTER_CONFIG_OF_PORTS_MAX);
+            return UCLI_STATUS_E_PARAM;
+        }
+    } else {
+        ucli_printf(uc, "Invalid arguments\n");
+        ucli_printf(uc, "port_counters <of_port_no> --> print port stats\n");
+        ucli_printf(uc, "port_counters --> print all port stats\n");
+    }
+
+    return UCLI_STATUS_OK;
+}
+
+static ucli_status_t
+macblaster_ucli_ucli__port_counters_clear__(ucli_context_t* uc)
+{
+    of_port_no_t of_port;
+
+    UCLI_COMMAND_INFO(uc, "port_counters_clear", -1,
+                      "$summary#Clear macblaster port counters."
+                      "$args#[of_port_no]");
+
+    if (uc->pargs->count == 0) {
+        for (of_port = 0; of_port <= MACBLASTER_CONFIG_OF_PORTS_MAX; of_port++) {
+            macblaster_port_debug_counters_clear(of_port);
+        }
+    } else if (uc->pargs->count == 1) {
+        /* Clear macblaster stats of specific port */
+        UCLI_ARGPARSE_OR_RETURN(uc, "i", &of_port);
+        if (of_port <= MACBLASTER_CONFIG_OF_PORTS_MAX) {
+            macblaster_port_debug_counters_clear(of_port);
+        } else {
+            ucli_printf(uc, "Invalid OF port number %d, should be <= %d\n",
+                        of_port, MACBLASTER_CONFIG_OF_PORTS_MAX);
+            return UCLI_STATUS_E_PARAM;
+        }
+    } else {
+        ucli_printf(uc, "Invalid arguments\n");
+        ucli_printf(uc, "port_counters_clear <of_port_no> --> clear port stats\n");
+        ucli_printf(uc, "port_counters_clear --> clear all port stats\n");
+    }
+
+    return UCLI_STATUS_OK;
+}
+
 /* <auto.ucli.handlers.start> */
 /******************************************************************************
  *
@@ -38,9 +126,13 @@ macblaster_ucli_ucli__config__(ucli_context_t* uc)
  * source file.
  *
  *****************************************************************************/
-static ucli_command_handler_f macblaster_ucli_ucli_handlers__[] = 
+static ucli_command_handler_f macblaster_ucli_ucli_handlers__[] =
 {
     macblaster_ucli_ucli__config__,
+    macblaster_ucli_ucli__counters__,
+    macblaster_ucli_ucli__counters_clear__,
+    macblaster_ucli_ucli__port_counters__,
+    macblaster_ucli_ucli__port_counters_clear__,
     NULL
 };
 /******************************************************************************/
