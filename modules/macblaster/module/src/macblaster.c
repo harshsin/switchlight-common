@@ -158,14 +158,14 @@ done:
 }
 
 static indigo_core_listener_result_t
-macblaster_handle_flexlink_command(indigo_cxn_id_t cxn_id, of_object_t *msg)
+macblaster_handle_primary_backup_command(indigo_cxn_id_t cxn_id, of_object_t *msg)
 {
     of_str64_t command_name;
     struct macblaster_state *state;
 
     of_bsn_generic_command_name_get(msg, &command_name);
 
-    if (strcmp(command_name, "flexlink")) {
+    if (strcmp(command_name, "primary_backup")) {
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
@@ -223,7 +223,7 @@ macblaster_message_listener(indigo_cxn_id_t cxn_id, of_object_t *msg)
 {
     switch (msg->object_id) {
         case OF_BSN_GENERIC_COMMAND:
-            return macblaster_handle_flexlink_command(cxn_id, msg);
+            return macblaster_handle_primary_backup_command(cxn_id, msg);
 
         default:
             return INDIGO_CORE_LISTENER_RESULT_PASS;
