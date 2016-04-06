@@ -18,6 +18,7 @@
  ****************************************************************/
 
 #include <pktina/pktina_config.h>
+#include "pktina_int.h"
 
 #if PKTINA_CONFIG_INCLUDE_UCLI == 1
 
@@ -31,6 +32,98 @@ pktina_ucli_ucli__config__(ucli_context_t* uc)
     UCLI_HANDLER_MACRO_MODULE_CONFIG(pktina)
 }
 
+static ucli_status_t
+pktina_ucli_ucli__counters__(ucli_context_t* uc)
+{
+    UCLI_COMMAND_INFO(uc, "counters", 0,
+                      "$summary#Print pktina global counters.");
+
+    pktina_debug_counters_print(uc);
+
+    return UCLI_STATUS_OK;
+}
+
+static ucli_status_t
+pktina_ucli_ucli__counters_clear__(ucli_context_t* uc)
+{
+    UCLI_COMMAND_INFO(uc, "counters_clear", 0,
+                      "$summary#Clear pktina global counters.");
+
+    pktina_debug_counters_clear();
+
+    return UCLI_STATUS_OK;
+}
+
+static ucli_status_t
+pktina_ucli_ucli__port_counters__(ucli_context_t* uc)
+{
+    of_port_no_t of_port;
+
+    UCLI_COMMAND_INFO(uc, "port_counters", -1,
+                      "$summary#Print pktina port counters."
+                      "$args#[of_port_no]");
+
+    if (uc->pargs->count == 0) {
+        for (of_port = 0; of_port <= PKTINA_CONFIG_OF_PORTS_MAX; of_port++) {
+            pktina_port_debug_counters_print(uc, of_port);
+        }
+        pktina_port_debug_counters_print(uc, OF_PORT_DEST_CONTROLLER);
+    } else if (uc->pargs->count == 1) {
+        /* Print pktina stats of specific port */
+        UCLI_ARGPARSE_OR_RETURN(uc, "i", &of_port);
+        if (of_port <= PKTINA_CONFIG_OF_PORTS_MAX) {
+            pktina_port_debug_counters_print(uc, of_port);
+        } else if (of_port == OF_PORT_DEST_CONTROLLER) {
+            pktina_port_debug_counters_print(uc, OF_PORT_DEST_CONTROLLER);
+        } else {
+            ucli_printf(uc, "Invalid OF port number %d, should be <= %d\n",
+                        of_port, PKTINA_CONFIG_OF_PORTS_MAX);
+            return UCLI_STATUS_E_PARAM;
+        }
+    } else {
+        ucli_printf(uc, "Invalid arguments\n");
+        ucli_printf(uc, "port_counters <of_port_no> --> print port stats\n");
+        ucli_printf(uc, "port_counters --> print all port stats\n");
+    }
+
+    return UCLI_STATUS_OK;
+}
+
+static ucli_status_t
+pktina_ucli_ucli__port_counters_clear__(ucli_context_t* uc)
+{
+    of_port_no_t of_port;
+
+    UCLI_COMMAND_INFO(uc, "port_counters_clear", -1,
+                      "$summary#Clear pktina port counters."
+                      "$args#[of_port_no]");
+
+    if (uc->pargs->count == 0) {
+        for (of_port = 0; of_port <= PKTINA_CONFIG_OF_PORTS_MAX; of_port++) {
+            pktina_port_debug_counters_clear(of_port);
+        }
+        pktina_port_debug_counters_clear(OF_PORT_DEST_CONTROLLER);
+    } else if (uc->pargs->count == 1) {
+        /* Clear pktina stats of specific port */
+        UCLI_ARGPARSE_OR_RETURN(uc, "i", &of_port);
+        if (of_port <= PKTINA_CONFIG_OF_PORTS_MAX) {
+            pktina_port_debug_counters_clear(of_port);
+        } else if (of_port == OF_PORT_DEST_CONTROLLER) {
+            pktina_port_debug_counters_clear(OF_PORT_DEST_CONTROLLER);
+        } else {
+            ucli_printf(uc, "Invalid OF port number %d, should be <= %d\n",
+                        of_port, PKTINA_CONFIG_OF_PORTS_MAX);
+            return UCLI_STATUS_E_PARAM;
+        }
+    } else {
+        ucli_printf(uc, "Invalid arguments\n");
+        ucli_printf(uc, "port_counters_clear <of_port_no> --> clear port stats\n");
+        ucli_printf(uc, "port_counters_clear --> clear all port stats\n");
+    }
+
+    return UCLI_STATUS_OK;
+}
+
 /* <auto.ucli.handlers.start> */
 /******************************************************************************
  *
@@ -41,6 +134,10 @@ pktina_ucli_ucli__config__(ucli_context_t* uc)
 static ucli_command_handler_f pktina_ucli_ucli_handlers__[] =
 {
     pktina_ucli_ucli__config__,
+    pktina_ucli_ucli__counters__,
+    pktina_ucli_ucli__counters_clear__,
+    pktina_ucli_ucli__port_counters__,
+    pktina_ucli_ucli__port_counters_clear__,
     NULL
 };
 /******************************************************************************/

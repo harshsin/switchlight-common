@@ -108,6 +108,16 @@
 #define MACBLASTER_CONFIG_INCLUDE_UCLI 0
 #endif
 
+/**
+ * MACBLASTER_CONFIG_OF_PORTS_MAX
+ *
+ * Maximum number of OF ports. */
+
+
+#ifndef MACBLASTER_CONFIG_OF_PORTS_MAX
+#define MACBLASTER_CONFIG_OF_PORTS_MAX SLSHARED_CONFIG_OF_PORT_MAX
+#endif
+
 
 
 /**

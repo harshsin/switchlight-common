@@ -59,6 +59,11 @@ macblaster_config_settings_t macblaster_config_settings[] =
 #else
 { MACBLASTER_CONFIG_INCLUDE_UCLI(__macblaster_config_STRINGIFY_NAME), "__undefined__" },
 #endif
+#ifdef MACBLASTER_CONFIG_OF_PORTS_MAX
+    { __macblaster_config_STRINGIFY_NAME(MACBLASTER_CONFIG_OF_PORTS_MAX), __macblaster_config_STRINGIFY_VALUE(MACBLASTER_CONFIG_OF_PORTS_MAX) },
+#else
+{ MACBLASTER_CONFIG_OF_PORTS_MAX(__macblaster_config_STRINGIFY_NAME), "__undefined__" },
+#endif
     { NULL, NULL }
 };
 #undef __macblaster_config_STRINGIFY_VALUE

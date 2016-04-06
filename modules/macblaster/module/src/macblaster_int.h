@@ -36,4 +36,31 @@
 #include <macblaster/macblaster_config.h>
 #include "macblaster_log.h"
 
+#define MACBLASTER_PORT_STATS                    \
+    MACBLASTER_PORT_STAT(pktout_failure)         \
+    MACBLASTER_PORT_STAT(pktout_success)
+
+typedef struct macblaster_port_debug_s {
+#define MACBLASTER_PORT_STAT(name)     \
+    debug_counter_t name;              \
+    char name##_counter_name_buf[DEBUG_COUNTER_NAME_SIZE];
+
+    MACBLASTER_PORT_STATS
+#undef MACBLASTER_PORT_STAT
+} macblaster_port_debug_t;
+
+#if PKTINA_CONFIG_INCLUDE_UCLI == 1
+
+#include <uCli/ucli.h>
+
+extern void macblaster_debug_counters_print(ucli_context_t* uc);
+
+extern void macblaster_debug_counters_clear(void);
+
+extern void macblaster_port_debug_counters_print(ucli_context_t *uc, of_port_no_t of_port);
+
+extern void macblaster_port_debug_counters_clear(of_port_no_t of_port);
+
+#endif /* PKTINA_CONFIG_INCLUDE_UCLI == 1 */
+
 #endif /* __MACBLASTER_INT_H__ */
