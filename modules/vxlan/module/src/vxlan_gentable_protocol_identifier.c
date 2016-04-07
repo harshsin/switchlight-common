@@ -18,10 +18,9 @@
  ****************************************************************/
 
 #include <indigo/of_state_manager.h>
+#include <vxlan/vxlan.h>
 #include "vxlan_int.h"
 #include "vxlan_log.h"
-
-#define VXLAN_UDP_DST_PORT_UNDEFINED 0
 
 static indigo_core_gentable_t *vxlan_protocol_identifier;
 static const indigo_core_gentable_ops_t vxlan_protocol_identifier_ops;

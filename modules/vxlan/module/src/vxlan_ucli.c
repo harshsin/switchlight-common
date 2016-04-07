@@ -18,6 +18,8 @@
  ****************************************************************/
 
 #include <vxlan/vxlan_config.h>
+#include <vxlan/vxlan.h>
+#include "vxlan_gentable_vni_vlan_mapping.h"
 
 #if VXLAN_CONFIG_INCLUDE_UCLI == 1
 
@@ -31,6 +33,20 @@ vxlan_ucli_ucli__config__(ucli_context_t* uc)
     UCLI_HANDLER_MACRO_MODULE_CONFIG(vxlan)
 }
 
+static ucli_status_t
+vxlan_ucli_ucli__tables__(ucli_context_t* uc)
+{
+    int udp_port = vxlan_gentable_protocol_identifier_udp_dst_port_get();
+
+    if (udp_port) {
+        ucli_printf(uc, "vxlan_udp_dst_port %d\n\n", udp_port);
+    }
+
+    vxlan_gentable_vni_vlan_mapping_print(uc);
+
+    return UCLI_STATUS_OK;
+}
+
 /* <auto.ucli.handlers.start> */
 /******************************************************************************
  *
@@ -41,6 +57,7 @@ vxlan_ucli_ucli__config__(ucli_context_t* uc)
 static ucli_command_handler_f vxlan_ucli_ucli_handlers__[] =
 {
     vxlan_ucli_ucli__config__,
+    vxlan_ucli_ucli__tables__,
     NULL
 };
 /******************************************************************************/

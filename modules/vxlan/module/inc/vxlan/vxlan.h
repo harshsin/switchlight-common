@@ -17,21 +17,17 @@
  *
  ****************************************************************/
 
-/*************************************************************//**
- *
- * vxlan Internal Header
- *
- ****************************************************************/
-#ifndef __VXLAN_INT_H__
-#define __VXLAN_INT_H__
+#ifndef __VXLAN_H__
+#define __VXLAN_H__
 
-#include <vxlan/vxlan_config.h>
-#include <slshared/slshared.h>
+#include <indigo/error.h>
 
-#if VXLAN_CONFIG_INCLUDE_UCLI == 1
+#define VXLAN_UDP_DST_PORT_UNDEFINED 0
 
-#include <uCli/ucli.h>
+extern indigo_error_t vxlan_init(void);
+extern indigo_error_t vxlan_finish(void);
 
-#endif /* VXLAN_CONFIG_INCLUDE_UCLI == 1 */
+extern int vxlan_gentable_protocol_identifier_udp_dst_port_get(void);
+extern indigo_error_t vxlan_gentable_vni_vlan_mapping_get(uint32_t vni, uint16_t *vlan_vid);
 
-#endif /* __VXLAN_INT_H__ */
+#endif /* __VXLAN_H__ */

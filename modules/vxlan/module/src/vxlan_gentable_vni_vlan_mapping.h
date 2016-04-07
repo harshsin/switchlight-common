@@ -20,7 +20,13 @@
 #ifndef __VXLAN_GENTABLE_VNI_VLAN_MAPPING_H__
 #define __VXLAN_GENTABLE_VNI_VLAN_MAPPING_H__
 
-typedef struct vxlan_vni_vlan_mapping_key_s {
-}vxlan_vni_vlan_mapping_key_t;
+extern indigo_error_t vxlan_gentable_vni_vlan_mapping_init(void);
+
+extern indigo_error_t vxlan_gentable_vni_vlan_mapping_deinit(void);
+
+#if VXLAN_CONFIG_INCLUDE_UCLI == 1
+#include <uCli/ucli.h>
+extern void vxlan_gentable_vni_vlan_mapping_print(ucli_context_t *uc);
+#endif /* VXLAN_CONFIG_INCLUDE_UCLI == 1 */
 
 #endif /* __VXLAN_GENTABLE_VNI_VLAN_MAPPING_H__ */
