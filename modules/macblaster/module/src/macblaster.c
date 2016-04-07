@@ -25,6 +25,7 @@ static uint8_t macblaster_tagged_pkt[MACBLASTER_PKTLEN];
 static uint8_t macblaster_untagged_pkt[MACBLASTER_PKTLEN];
 static ppe_packet_t ppe_tagged_pkt;
 static ppe_packet_t ppe_untagged_pkt;
+static macblaster_port_debug_t *macblaster_port_stats;
 
 struct macblaster_state {
     indigo_cxn_id_t cxn_id;
@@ -39,6 +40,10 @@ DEBUG_COUNTER(parse_failure_counter, "macblaster.parse_failure",
               "Failed to parse message from controller");
 DEBUG_COUNTER(pktout_failure_counter, "macblaster.pktout_failure",
               "Failed to sent packet-outs");
+DEBUG_COUNTER(pktout_success_counter, "macblaster.pktout_success",
+              "Successfully sent packet-outs");
+DEBUG_COUNTER(gen_command_counter, "macblaster.gen_command_counter",
+              "Number of primary_backup gen-commands received");
 
 static void
 macblaster_send_packet(of_port_no_t of_port,
@@ -48,6 +53,8 @@ macblaster_send_packet(of_port_no_t of_port,
     indigo_error_t rv;
     ppe_packet_t *ppep;
     of_octets_t octets;
+
+    AIM_ASSERT(of_port <= MACBLASTER_CONFIG_OF_PORTS_MAX);
 
     octets.bytes = MACBLASTER_PKTLEN;
     octets.data = (vlan_vid) ? macblaster_tagged_pkt : macblaster_untagged_pkt;
@@ -68,7 +75,11 @@ macblaster_send_packet(of_port_no_t of_port,
                                  SLSHARED_CONFIG_PDU_QUEUE_PRIORITY);
     if (rv < 0) {
         debug_counter_inc(&pktout_failure_counter);
+        debug_counter_inc(&macblaster_port_stats[of_port].pktout_failure);
         AIM_LOG_ERROR("Failed to send packet: %s", indigo_strerror(rv));
+    } else {
+        debug_counter_inc(&pktout_success_counter);
+        debug_counter_inc(&macblaster_port_stats[of_port].pktout_success);
     }
 }
 
@@ -158,16 +169,18 @@ done:
 }
 
 static indigo_core_listener_result_t
-macblaster_handle_flexlink_command(indigo_cxn_id_t cxn_id, of_object_t *msg)
+macblaster_handle_primary_backup_command(indigo_cxn_id_t cxn_id, of_object_t *msg)
 {
     of_str64_t command_name;
     struct macblaster_state *state;
 
     of_bsn_generic_command_name_get(msg, &command_name);
 
-    if (strcmp(command_name, "flexlink")) {
+    if (strcmp(command_name, "primary_backup")) {
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
+
+    debug_counter_inc(&gen_command_counter);
 
     state = aim_zmalloc(sizeof(*state));
     state->cxn_id = cxn_id;
@@ -198,6 +211,13 @@ macblaster_handle_flexlink_command(indigo_cxn_id_t cxn_id, of_object_t *msg)
         goto error;
     }
 
+    if (state->of_port > MACBLASTER_CONFIG_OF_PORTS_MAX) {
+        indigo_cxn_send_bsn_error(cxn_id, msg, "Invalid openflow port");
+        AIM_LOG_ERROR("%s: Invalid openflow port %u > %u",
+                      __FUNCTION__, state->of_port, MACBLASTER_CONFIG_OF_PORTS_MAX);
+        goto error;
+    }
+
     /* Start long running task which parses VLAN, MAC buckets
      * and sends packet-out messages */
     if (ind_soc_task_register(macblaster_task, state, IND_SOC_LOW_PRIORITY) < 0) {
@@ -223,7 +243,7 @@ macblaster_message_listener(indigo_cxn_id_t cxn_id, of_object_t *msg)
 {
     switch (msg->object_id) {
         case OF_BSN_GENERIC_COMMAND:
-            return macblaster_handle_flexlink_command(cxn_id, msg);
+            return macblaster_handle_primary_backup_command(cxn_id, msg);
 
         default:
             return INDIGO_CORE_LISTENER_RESULT_PASS;
@@ -261,14 +281,105 @@ macblaster_pkt_init(void)
 
 }
 
+static void
+macblaster_debug_counter_register(void)
+{
+    of_port_no_t of_port;
+
+    for (of_port = 0; of_port <= MACBLASTER_CONFIG_OF_PORTS_MAX; of_port++) {
+#define MACBLASTER_PORT_STAT(name)                                          \
+        snprintf(macblaster_port_stats[of_port].name##_counter_name_buf,   \
+            DEBUG_COUNTER_NAME_SIZE,                                        \
+            "macblaster.port:%u.%s", of_port, #name);                       \
+        debug_counter_register(&macblaster_port_stats[of_port].name,        \
+            macblaster_port_stats[of_port].name##_counter_name_buf,         \
+            #name" on this port");
+
+        MACBLASTER_PORT_STATS
+#undef MACBLASTER_PORT_STAT
+    }
+}
+
+static void
+macblaster_debug_counter_unregister(void)
+{
+    of_port_no_t of_port;
+
+    for (of_port = 0; of_port <= MACBLASTER_CONFIG_OF_PORTS_MAX; of_port++) {
+#define MACBLASTER_PORT_STAT(name)                                          \
+        debug_counter_unregister(&macblaster_port_stats[of_port].name);
+
+        MACBLASTER_PORT_STATS
+#undef MACBLASTER_PORT_STAT
+    }
+}
+
+#if MACBLASTER_CONFIG_INCLUDE_UCLI == 1
+
+void
+macblaster_debug_counters_print(ucli_context_t* uc)
+{
+#define GLOBAL_DEBUG_COUNTER_PRINT(_counter)   \
+    ucli_printf(uc, "%s   %"PRIu64"\n", _counter.name, debug_counter_get(&_counter))
+
+    GLOBAL_DEBUG_COUNTER_PRINT(parse_failure_counter);
+    GLOBAL_DEBUG_COUNTER_PRINT(pktout_failure_counter);
+    GLOBAL_DEBUG_COUNTER_PRINT(pktout_success_counter);
+    GLOBAL_DEBUG_COUNTER_PRINT(gen_command_counter);
+}
+
+void
+macblaster_debug_counters_clear(void)
+{
+    debug_counter_reset(&parse_failure_counter);
+    debug_counter_reset(&pktout_failure_counter);
+    debug_counter_reset(&pktout_success_counter);
+    debug_counter_reset(&gen_command_counter);
+}
+
+void
+macblaster_port_debug_counters_print(ucli_context_t *uc, of_port_no_t of_port)
+{
+    macblaster_port_debug_t *port_stat = &macblaster_port_stats[of_port];
+
+#define MACBLASTER_PORT_STAT(name)                          \
+    if (debug_counter_get(&port_stat->name)) {              \
+        ucli_printf(uc, "%s   %"PRIu64"\n",                 \
+                    port_stat->name##_counter_name_buf,     \
+                    debug_counter_get(&port_stat->name));   \
+    }
+
+    MACBLASTER_PORT_STATS
+#undef MACBLASTER_PORT_STAT
+}
+
+void
+macblaster_port_debug_counters_clear(of_port_no_t of_port)
+{
+    macblaster_port_debug_t *port_stat = &macblaster_port_stats[of_port];
+
+#define MACBLASTER_PORT_STAT(name)                          \
+    debug_counter_reset(&port_stat->name);
+
+    MACBLASTER_PORT_STATS
+#undef MACBLASTER_PORT_STAT
+}
+
+#endif /* MACBLASTER_CONFIG_INCLUDE_UCLI == 1 */
+
 indigo_error_t
 macblaster_init(void)
 {
     if (macblaster_initialized) return INDIGO_ERROR_NONE;
 
+    int size = sizeof(macblaster_port_debug_t) * (MACBLASTER_CONFIG_OF_PORTS_MAX+1);
+    macblaster_port_stats = aim_zmalloc(size);
+
     indigo_core_message_listener_register(macblaster_message_listener);
 
     macblaster_pkt_init();
+
+    macblaster_debug_counter_register();
 
     macblaster_initialized = true;
 
@@ -281,6 +392,10 @@ macblaster_finish(void)
     if (!macblaster_initialized) return INDIGO_ERROR_NONE;
 
     indigo_core_message_listener_unregister(macblaster_message_listener);
+
+    macblaster_debug_counter_unregister();
+
+    aim_free(macblaster_port_stats);
 
     macblaster_initialized = false;
 

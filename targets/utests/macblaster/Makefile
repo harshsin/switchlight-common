@@ -20,7 +20,7 @@
 include ../../../init.mk
 MODULE := macblaster_utest
 TEST_MODULE := macblaster
-DEPENDMODULES := AIM indigo loci PPE IOF OS SocketManager cjson Configuration BigList debug_counter timer_wheel slshared
+DEPENDMODULES := AIM indigo loci PPE IOF OS SocketManager cjson Configuration BigList debug_counter timer_wheel slshared uCli
 GLOBAL_CFLAGS += -DINDIGO_LINUX_LOGGING
 GLOBAL_CFLAGS += -DINDIGO_LINUX_TIME
 GLOBAL_CFLAGS += -DINDIGO_MEM_STDLIB
