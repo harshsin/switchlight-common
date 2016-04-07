@@ -110,13 +110,15 @@ vxlan_protocol_identifier_add(void *table_priv, of_list_bsn_tlv_t *key,
     }
 
     /* Sanity check: vxlan_protocol_identifier gentable can have only one entry */
-    if (vxlan_udp_dst_port) {
+    if (vxlan_udp_dst_port != VXLAN_UDP_DST_PORT_UNDEFINED) {
         AIM_LOG_ERROR("%s: Trying to install more than one entry, "
                       "udp_dst_port %d", __FUNCTION__, vxlan_udp_dst_port);
         return INDIGO_ERROR_TABLE_FULL;
     }
 
     vxlan_udp_dst_port = udp_dst_port;
+
+    AIM_LOG_TRACE("%s: udp_dst_port %d", __FUNCTION__, vxlan_udp_dst_port);
 
     return INDIGO_ERROR_NONE;
 }
@@ -144,6 +146,7 @@ static indigo_error_t
 vxlan_protocol_identifier_delete(void *table_priv, void *entry_priv,
                                  of_list_bsn_tlv_t *key)
 {
+    AIM_LOG_TRACE("%s: udp_dst_port %d", __FUNCTION__, vxlan_udp_dst_port);
     vxlan_udp_dst_port = VXLAN_UDP_DST_PORT_UNDEFINED;
     return INDIGO_ERROR_NONE;
 }

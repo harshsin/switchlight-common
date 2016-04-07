@@ -229,6 +229,11 @@ vxlan_vni_vlan_mapping_delete(void *table_priv, void *entry_priv,
 
     bighash_remove(vni_vlan_mapping, &entry->hash_entry);
 
+    AIM_LOG_TRACE("%s: vni %u vlan_vid %u",
+                  __FUNCTION__, entry->key.vni, entry->vlan_vid);
+
+    aim_free(entry);
+
     return INDIGO_ERROR_NONE;
 }
 
