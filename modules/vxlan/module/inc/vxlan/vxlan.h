@@ -24,10 +24,26 @@
 
 #define VXLAN_UDP_DST_PORT_UNDEFINED 0
 
+/**
+ * Initialize VXLAN agent.
+ */
 extern indigo_error_t vxlan_init(void);
+
+/**
+ * Uninitialize VXLAN agent.
+ */
 extern indigo_error_t vxlan_finish(void);
 
+/**
+ * Get VXLAN udp destination port configured.
+ * Returns VXLAN_UDP_DST_PORT_UNDEFINED if not configured.
+ */
 extern int vxlan_gentable_protocol_identifier_udp_dst_port_get(void);
+
+/**
+ * Get vlan_vid for given vni.
+ * Returns INDIGO_ERROR_NOT_FOUND if mapping is not configured.
+ */
 extern indigo_error_t vxlan_gentable_vni_vlan_mapping_get(uint32_t vni, uint16_t *vlan_vid);
 
 #endif /* __VXLAN_H__ */
