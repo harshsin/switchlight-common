@@ -45,7 +45,7 @@ vxlan_gentable_protocol_identifier_deinit(void)
 }
 
 int
-vxlan_gentable_protocol_identifier_udp_dst_port_get(void)
+vxlan_protocol_identifier_udp_dst_port_get(void)
 {
     return vxlan_udp_dst_port;
 }

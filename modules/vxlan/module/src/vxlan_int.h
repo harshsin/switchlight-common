@@ -27,6 +27,7 @@
 
 #include <vxlan/vxlan_config.h>
 #include <slshared/slshared.h>
+#include <slshared/slshared_config.h>
 
 #if VXLAN_CONFIG_INCLUDE_UCLI == 1
 

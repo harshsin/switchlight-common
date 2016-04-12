@@ -67,7 +67,7 @@ vxlan_gentable_vni_vlan_mapping_deinit(void)
 }
 
 indigo_error_t
-vxlan_gentable_vni_vlan_mapping_get(uint32_t vni, uint16_t *vlan_vid)
+vxlan_vni_vlan_mapping_get(uint32_t vni, uint16_t *vlan_vid)
 {
     vxlan_vni_vlan_mapping_key_t key = {.vni = vni};
     vxlan_vni_vlan_mapping_t *entry = vni_vlan_mapping_hashtable_first(
