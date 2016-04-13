@@ -135,7 +135,9 @@ pktina_distribute_packet(of_octets_t octets,
         debug_counter_inc(&vxlan_pktin);
 
         /* For VXLAN packet-in's, strip of the outer headers encap
-           and send the inner L2 payload to the agents. */
+           and send the inner L2 payload to the agents.
+           But, we will always send the original VXLAN encapped
+           packet-in to the controller. */
         uint32_t vni;
         uint16_t vlan;
         vxlan_vni_get(&ppep, &vni);
