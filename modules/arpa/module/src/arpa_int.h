@@ -16,4 +16,8 @@ void arpa_vlan_reply_table_init(void);
 void arpa_vlan_reply_table_finish(void);
 indigo_error_t arpa_vlan_reply_table_lookup(uint16_t vlan_vid, of_mac_addr_t *mac);
 
+void arpa_disable_source_check_table_init(void);
+void arpa_disable_source_check_table_finish(void);
+bool arpa_disable_source_check_table_lookup(uint16_t vlan_vid);
+
 #endif /* __ARPA_INT_H__ */
