@@ -160,6 +160,9 @@ static debug_counter_t router_ip_hit_counter;
 static debug_counter_t arp_reply_hit_counter;
 static debug_counter_t unknown_target_counter;
 static debug_counter_t arp_vlan_reply_hit_counter;
+DEBUG_COUNTER(source_check_disabled_counter,
+    "arpa.source_check_disabled",
+    "ARP source check disabled for this segment");
 
 
 /* Public interface */
@@ -269,6 +272,7 @@ arpa_init()
 
     arpa_reply_table_init();
     arpa_vlan_reply_table_init();
+    arpa_disable_source_check_table_init();
 
     return INDIGO_ERROR_NONE;
 }
@@ -285,6 +289,7 @@ arpa_finish()
     timer_wheel_destroy(timer_wheel);
     arpa_reply_table_finish();
     arpa_vlan_reply_table_finish();
+    arpa_disable_source_check_table_finish();
 }
 
 
@@ -799,6 +804,11 @@ arpa_send_packet(struct arp_info *info)
 static bool
 arpa_check_source(struct arp_info *info)
 {
+    if (arpa_disable_source_check_table_lookup(info->vlan_vid)) {
+        debug_counter_inc(&source_check_disabled_counter);
+        return true;
+    }
+
     struct arp_entry *entry = arpa_lookup(info->vlan_vid, info->spa);
     if (entry == NULL) {
         AIM_LOG_TRACE("Source not found in ARP table");
