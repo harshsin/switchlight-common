@@ -17,6 +17,23 @@
  *
  ****************************************************************/
 
+/*
+ * This table allows the controller to disable the ARP source miss check for
+ * specific VLANs. It will be used to ignore duplicate IPs on the inband segment
+ * in the case of VM controllers.
+ *
+ * The VM controller uses Linux bond mode balance-xor with ARP monitoring. Each
+ * slave interface periodically sends ARP requests to a magic IP. If a slave does
+ * not receive an ARP reply for some time it will be ineligible for TX.
+ *
+ * The problem is that all slaves on all controllers use the same source IP. This
+ * means that the leaf switches see ARPs from multiple MACs with the same IP, and
+ * many ARP packets are sent to the controller (without sending replies back).
+ *
+ * The new table lets the controller turn off the ARP source check for the inband
+ * segment so the ARP agent doesn't see the duplicate source IPs.
+ */
+
 #include <arpa/arpa.h>
 #include <indigo/of_state_manager.h>
 #include <BigHash/bighash.h>
