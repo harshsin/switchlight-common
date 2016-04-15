@@ -22,7 +22,7 @@ MODULE := pktina_utest
 TEST_MODULE := pktina
 DEPENDMODULES := AIM PPE IOF loci indigo SocketManager cjson Configuration \
 	BigList BigHash OFStateManager murmur OFConnectionManager OS uCli debug_counter timer_wheel \
-	minimatch BigRing slshared slot_allocator router_ip_table cdpa lldpa lacpa arpa icmpa igmpa dhcpra sflowa host_sflow
+	minimatch BigRing slshared slot_allocator router_ip_table cdpa lldpa lacpa arpa icmpa igmpa dhcpra sflowa host_sflow vxlan
 
 GLOBAL_CFLAGS += -DINDIGO_LINUX_LOGGING
 GLOBAL_CFLAGS += -DINDIGO_LINUX_TIME

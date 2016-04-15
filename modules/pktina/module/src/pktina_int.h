@@ -50,6 +50,7 @@
     PKTINA_PORT_PKTIN_STAT(sflow)           \
     PKTINA_PORT_PKTIN_STAT(bad_ttl)         \
     PKTINA_PORT_PKTIN_STAT(vxlan_sip_miss)  \
+    PKTINA_PORT_PKTIN_STAT(vxlan)           \
     PKTINA_PORT_PKTIN_STAT(total)
 
 typedef struct pktina_port_debug_s {
