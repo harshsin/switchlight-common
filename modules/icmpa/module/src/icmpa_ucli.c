@@ -87,6 +87,8 @@ icmpa_ucli_ucli__show_counters__(ucli_context_t* uc)
                     debug_counter_get(&pkt_counters.icmp_total_passed_packets));
         ucli_printf(uc, "INTERNAL ERRORS            : %" PRId64 "\n",
                     debug_counter_get(&pkt_counters.icmp_internal_errors));
+        ucli_printf(uc, "FRAGMENTED PACKETS         : %" PRId64 "\n",
+                    debug_counter_get(&pkt_counters.icmp_fragmented_packets));
         ucli_printf(uc, "*************END DUMPING INFO********************\n");
     }
 
@@ -124,6 +126,7 @@ icmpa_ucli_ucli__clear_counters__(ucli_context_t* uc)
         debug_counter_reset(&pkt_counters.icmp_total_out_packets);
         debug_counter_reset(&pkt_counters.icmp_total_passed_packets);
         debug_counter_reset(&pkt_counters.icmp_internal_errors);
+        debug_counter_reset(&pkt_counters.icmp_fragmented_packets);
 
         for (port = 0; port <= ICMPA_CONFIG_OF_PORTS_MAX; port++) {
             icmpa_clear_portcounters__(uc, port);
@@ -160,7 +163,7 @@ icmpa_ucli_ucli__config__(ucli_context_t* uc)
  * source file.
  *
  *****************************************************************************/
-static ucli_command_handler_f icmpa_ucli_ucli_handlers__[] = 
+static ucli_command_handler_f icmpa_ucli_ucli_handlers__[] =
 {
     icmpa_ucli_ucli__show_counters__,
     icmpa_ucli_ucli__clear_counters__,
