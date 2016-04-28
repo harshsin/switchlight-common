@@ -11,14 +11,13 @@
 #include <uCli/ucli_argparse.h>
 #include <uCli/ucli_handler_macros.h>
 
-static ucli_status_t
-icmpv6_ucli_ucli__config__(ucli_context_t* uc)
-{
-    UCLI_HANDLER_MACRO_MODULE_CONFIG(icmpv6)
-}
-
 /* <auto.ucli.handlers.start> */
 /* <auto.ucli.handlers.end> */
+
+static ucli_command_handler_f icmpv6_ucli_ucli_handlers__[] = 
+{
+    NULL
+};
 
 static ucli_module_t
 icmpv6_ucli_module__ =
