@@ -33,6 +33,9 @@
 #define VLAN_VID(tci) ((tci) & 0xfff)
 #define VLAN_PCP(tci) ((tci) >> 13)
 
+#define PRE_VLAN_TAG_LEN      12
+#define VLAN_TAG_LEN          4
+
 /**
  * @brief Construct an of_packet_out_t and send the packet out.
  * This api is a wrapper around indigo_fwd_packet_out.

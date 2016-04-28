@@ -28,6 +28,9 @@
 #include <PPE/ppe.h>
 #include <pktina/pktina_config.h>
 #include <debug_counter/debug_counter.h>
+#include <loci/loci_base.h>
+#include <slshared/slshared.h>
+#include <slshared/slshared_config.h>
 #include "pktina_log.h"
 
 #define PKTINA_PORT_PKTIN_STATS             \
@@ -46,6 +49,8 @@
     PKTINA_PORT_PKTIN_STAT(traceroute)      \
     PKTINA_PORT_PKTIN_STAT(sflow)           \
     PKTINA_PORT_PKTIN_STAT(bad_ttl)         \
+    PKTINA_PORT_PKTIN_STAT(vxlan_sip_miss)  \
+    PKTINA_PORT_PKTIN_STAT(vxlan)           \
     PKTINA_PORT_PKTIN_STAT(total)
 
 typedef struct pktina_port_debug_s {
@@ -56,5 +61,19 @@ typedef struct pktina_port_debug_s {
     PKTINA_PORT_PKTIN_STATS
 #undef PKTINA_PORT_PKTIN_STAT
 } pktina_port_debug_t;
+
+#if PKTINA_CONFIG_INCLUDE_UCLI == 1
+
+#include <uCli/ucli.h>
+
+extern void pktina_debug_counters_print(ucli_context_t* uc);
+
+extern void pktina_debug_counters_clear(void);
+
+extern void pktina_port_debug_counters_print(ucli_context_t *uc, of_port_no_t of_port);
+
+extern void pktina_port_debug_counters_clear(of_port_no_t of_port);
+
+#endif /* PKTINA_CONFIG_INCLUDE_UCLI == 1 */
 
 #endif /* __PKTINA_INT_H__ */

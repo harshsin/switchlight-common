@@ -38,6 +38,7 @@
 #include <indigo/port_manager.h>
 #include <igmpa/igmpa.h>
 #include <sflowa/sflowa.h>
+#include <vxlan/vxlan.h>
 
 DEBUG_COUNTER(pktin, "pktina.pktin",
               "Received packet-in messages");
@@ -49,6 +50,8 @@ DEBUG_COUNTER(pktin_parse_error, "pktina.pktin.parse_error",
               "Error while parsing packet-in");
 DEBUG_COUNTER(pktin_invalid_port, "pktina.pktin.invalid_port",
               "Pktin's received on invalid port");
+DEBUG_COUNTER(vxlan_pktin, "pktina.pktin.vxlan",
+              "VXLAN encapped pktin's recv'd");
 
 static pktina_port_debug_t *pktina_port_stats;
 static pktina_port_debug_t pktina_cpu_port_stats;
@@ -67,7 +70,7 @@ is_ephemeral(uint32_t port)
 static pktina_port_debug_t *
 pktina_port_stats_get(of_port_no_t of_port)
 {
-    if (of_port < PKTINA_CONFIG_OF_PORTS_MAX) {
+    if (of_port <= PKTINA_CONFIG_OF_PORTS_MAX) {
         /* Front panel port stats */
         return &pktina_port_stats[of_port];
     } else if (of_port == OF_PORT_DEST_CONTROLLER) {
@@ -119,6 +122,72 @@ pktina_distribute_packet(of_octets_t octets,
         return INDIGO_CORE_LISTENER_RESULT_PASS;
     }
 
+    if (metadata & OFP_BSN_PKTIN_FLAG_VXLAN_SIP_MISS) {
+        debug_counter_inc(&port_stats->vxlan_sip_miss);
+        return INDIGO_CORE_LISTENER_RESULT_PASS;
+    }
+
+    /* Identify if packet-in is VXLAN encapped. */
+    uint32_t payload_length;
+    uint8_t* vxlan_payload = vxlan_payload_get(&ppep, &payload_length);
+    if (vxlan_payload && !(metadata & OFP_BSN_PKTIN_FLAG_PDU)) {
+        debug_counter_inc(&port_stats->vxlan);
+        debug_counter_inc(&vxlan_pktin);
+
+        /* For VXLAN packet-in's, strip of the outer headers encap
+           and send the inner L2 payload to the agents.
+           But, we will always send the original VXLAN encapped
+           packet-in to the controller. */
+        uint32_t vni;
+        uint16_t vlan;
+        vxlan_vni_get(&ppep, &vni);
+        vxlan_vni_vlan_mapping_get(vni, &vlan);
+
+        AIM_LOG_TRACE("%s: VXLAN vni %u, vlan %u, packet=%{data}",
+                      __FUNCTION__, vni, vlan, vxlan_payload, payload_length);
+
+        /* RFC7348, Section6.1.  Inner VLAN Tag Handling
+           Inner VLAN Tag Handling in VTEP and VXLAN gateway should conform to
+           the following:
+
+           Decapsulated VXLAN frames with the inner VLAN tag SHOULD be discarded
+           unless configured otherwise.  On the encapsulation side, a VTEP
+           SHOULD NOT include an inner VLAN tag on tunnel packets unless
+           configured otherwise.  When a VLAN-tagged packet is a candidate for
+           VXLAN tunneling, the encapsulating VTEP SHOULD strip the VLAN tag
+           unless configured otherwise. */
+
+        /* Check if inner payload has vlan tag, disard if it
+           does as per above */
+        ppe_header_t format;
+        ppe_packet_init(&ppep, vxlan_payload, payload_length);
+        if (ppe_parse(&ppep) < 0) {
+            debug_counter_inc(&pktin_parse_error);
+            return INDIGO_CORE_LISTENER_RESULT_DROP;
+        }
+
+        ppe_packet_format_get(&ppep, &format);
+        if (format == PPE_HEADER_8021Q) {
+            AIM_LOG_ERROR("%s: Received tagged VXLAN Packet_in with vni %u",
+                          __FUNCTION__, vni);
+            return INDIGO_CORE_LISTENER_RESULT_DROP;
+        }
+
+        /* Add a vlan tag with internal vlan before sending the
+           packet-in to the agents. */
+
+        /* NOTE: ppe_packet_format_set() does a realloc and allocates
+           memory for new packet with vlan tag.
+           Call to ppe_packet_denit() would free that memory.
+           Hence, make sure to call ppe_packet_denit() from all
+           return paths. */
+        ppe_packet_format_set(&ppep, PPE_HEADER_8021Q);
+        ppe_field_set(&ppep, PPE_FIELD_8021Q_VLAN, vlan);
+
+        AIM_LOG_TRACE("%s: modified packet=%{data}", __FUNCTION__,
+                      ppep.data, ppep.size);
+    }
+
     /*
      * Identify the packet-in based on header type
      *
@@ -138,7 +207,7 @@ pktina_distribute_packet(of_octets_t octets,
         result = lldpa_receive_packet(&octets, in_port);
         debug_counter_inc(&port_stats->lldp);
     } else if (ppe_header_get(&ppep, PPE_HEADER_LACP)) {
-        result = lacpa_receive_packet (&ppep, in_port);
+        result = lacpa_receive_packet(&ppep, in_port);
         debug_counter_inc(&port_stats->lacp);
     } else if (ppe_header_get(&ppep, PPE_HEADER_DHCP)) {
         result = dhcpra_receive_packet(&ppep, in_port);
@@ -184,6 +253,7 @@ pktina_distribute_packet(of_octets_t octets,
     bool debug_acl_flag = metadata & (OFP_BSN_PKTIN_FLAG_INGRESS_ACL|OFP_BSN_PKTIN_FLAG_DEBUG);
 
     if (result == INDIGO_CORE_LISTENER_RESULT_DROP) {
+        ppe_packet_denit(&ppep);
         if (debug_acl_flag) {
             debug_counter_inc(&port_stats->debug_acl);
             return INDIGO_CORE_LISTENER_RESULT_PASS;
@@ -200,6 +270,8 @@ pktina_distribute_packet(of_octets_t octets,
         result = icmpa_send(&ppep, in_port, 11, 0);
         debug_counter_inc(&port_stats->bad_ttl);
     }
+
+    ppe_packet_denit(&ppep);
 
     if (result == INDIGO_CORE_LISTENER_RESULT_DROP && !debug_acl_flag) {
         return INDIGO_CORE_LISTENER_RESULT_DROP;
@@ -271,7 +343,7 @@ pktina_debug_counter_register(void)
     of_port_no_t of_port;
 
     /* Front panel port stats */
-    for (of_port = 0; of_port < PKTINA_CONFIG_OF_PORTS_MAX; of_port++) {
+    for (of_port = 0; of_port <= PKTINA_CONFIG_OF_PORTS_MAX; of_port++) {
         pktina_port_debug_counter_register(of_port, &pktina_port_stats[of_port]);
     }
 
@@ -285,12 +357,75 @@ pktina_debug_counter_unregister(void)
     of_port_no_t of_port;
 
     /* Front panel port stats */
-    for (of_port = 0; of_port < PKTINA_CONFIG_OF_PORTS_MAX; of_port++) {
+    for (of_port = 0; of_port <= PKTINA_CONFIG_OF_PORTS_MAX; of_port++) {
         pktina_port_debug_counter_unregister(&pktina_port_stats[of_port]);
     }
 
     pktina_port_debug_counter_unregister(&pktina_cpu_port_stats);
 }
+
+#if PKTINA_CONFIG_INCLUDE_UCLI == 1
+
+void
+pktina_debug_counters_print(ucli_context_t* uc)
+{
+#define GLOBAL_DEBUG_COUNTER_PRINT(_counter)   \
+    ucli_printf(uc, "%s   %"PRIu64"\n", _counter.name, debug_counter_get(&_counter))
+
+    GLOBAL_DEBUG_COUNTER_PRINT(pktin);
+    GLOBAL_DEBUG_COUNTER_PRINT(ctrl_pktin);
+    GLOBAL_DEBUG_COUNTER_PRINT(sflow_pktin);
+    GLOBAL_DEBUG_COUNTER_PRINT(pktin_parse_error);
+    GLOBAL_DEBUG_COUNTER_PRINT(pktin_invalid_port);
+    GLOBAL_DEBUG_COUNTER_PRINT(vxlan_pktin);
+}
+
+void
+pktina_debug_counters_clear(void)
+{
+    debug_counter_reset(&pktin);
+    debug_counter_reset(&ctrl_pktin);
+    debug_counter_reset(&sflow_pktin);
+    debug_counter_reset(&pktin_parse_error);
+    debug_counter_reset(&pktin_invalid_port);
+    debug_counter_reset(&vxlan_pktin);
+}
+
+void
+pktina_port_debug_counters_print(ucli_context_t *uc, of_port_no_t of_port)
+{
+    pktina_port_debug_t *port_stat = pktina_port_stats_get(of_port);
+
+    if (!port_stat)
+        return;
+
+#define PKTINA_PORT_PKTIN_STAT(name)                            \
+    if (debug_counter_get(&port_stat->name)) {                  \
+        ucli_printf(uc, "%s   %"PRIu64"\n",                     \
+                    port_stat->name##_counter_name_buf,         \
+                    debug_counter_get(&port_stat->name));       \
+    }
+
+    PKTINA_PORT_PKTIN_STATS
+#undef PKTINA_PORT_PKTIN_STAT
+}
+
+void
+pktina_port_debug_counters_clear(of_port_no_t of_port)
+{
+    pktina_port_debug_t *port_stat = pktina_port_stats_get(of_port);
+
+    if (!port_stat)
+        return;
+
+#define PKTINA_PORT_PKTIN_STAT(name)                            \
+    debug_counter_reset(&port_stat->name);
+
+    PKTINA_PORT_PKTIN_STATS
+#undef PKTINA_PORT_PKTIN_STAT
+}
+
+#endif /* PKTINA_CONFIG_INCLUDE_UCLI == 1 */
 
 /**
  * pktina will always register/unregister packet-in listener
@@ -299,7 +434,7 @@ pktina_debug_counter_unregister(void)
 indigo_error_t
 pktina_init(void)
 {
-    pktina_port_stats = aim_zmalloc(sizeof(pktina_port_debug_t) * PKTINA_CONFIG_OF_PORTS_MAX);
+    pktina_port_stats = aim_zmalloc(sizeof(pktina_port_debug_t) * (PKTINA_CONFIG_OF_PORTS_MAX+1));
     if (pktina_port_stats == NULL) {
         AIM_LOG_ERROR("Failed to allocate resources for port stats");
         return INDIGO_ERROR_RESOURCE;

@@ -45,6 +45,9 @@ cdefs: &cdefs
 - MACBLASTER_CONFIG_INCLUDE_UCLI:
     doc: "Include generic uCli support."
     default: 0
+- MACBLASTER_CONFIG_OF_PORTS_MAX:
+    doc: "Maximum number of OF ports."
+    default: SLSHARED_CONFIG_OF_PORT_MAX
 
 
 definitions:
