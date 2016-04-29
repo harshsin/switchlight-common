@@ -92,4 +92,18 @@ pdua_port_t *pdua_find_port(of_port_no_t port_no);
 
 extern pdua_system_t pdua_port_sys;
 
+indigo_error_t pdua_rx_table_init(void);
+indigo_error_t pdua_rx_table_finish(void);
+
+indigo_error_t pdua_tx_table_init(void);
+indigo_error_t pdua_tx_table_finish(void);
+
+indigo_error_t pdua_port_rx_enable(pdua_port_t *port, of_octets_t *data,
+                                   uint32_t timeout_ms);
+indigo_error_t pdua_port_rx_disable(pdua_port_t *port);
+
+indigo_error_t pdua_port_tx_enable(pdua_port_t *port, of_octets_t *data,
+                                   uint32_t interval_ms);
+indigo_error_t pdua_port_tx_disable(pdua_port_t *port);
+
 #endif /* __PDUA_INT_H__ */

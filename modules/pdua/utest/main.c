@@ -83,6 +83,19 @@ indigo_error_t indigo_cxn_get_async_version(of_version_t *ver)
     return INDIGO_ERROR_NONE;
 }
 
+void indigo_core_gentable_register(const char *name,
+                                   const indigo_core_gentable_ops_t *ops,
+                                   void *table_priv,
+                                   uint32_t max_size,
+                                   uint32_t buckets_size,
+                                   indigo_core_gentable_t **gentable)
+{
+}
+
+void indigo_core_gentable_unregister(indigo_core_gentable_t *gentable)
+{
+}
+
 /*NOTE:
  * This is used to test timeout.
  * When we register we do call back
