@@ -223,6 +223,9 @@ icmpa_init (void)
     debug_counter_register(&pkt_counters.icmp_internal_errors,
                            "icmpa.icmp_internal_errors",
                            "Internal errors in icmpa");
+    debug_counter_register(&pkt_counters.icmp_fragmented_packets,
+                           "icmpa.icmp_fragmented_packets",
+                           "Fragmented icmp packet-ins");
 
     ICMPA_MEMSET(&port_pkt_counters[0], 0,
        sizeof(icmpa_typecode_packet_counter_t) * (ICMPA_CONFIG_OF_PORTS_MAX+1));
@@ -264,6 +267,7 @@ icmpa_finish (void)
     debug_counter_unregister(&pkt_counters.icmp_total_out_packets);
     debug_counter_unregister(&pkt_counters.icmp_total_passed_packets);
     debug_counter_unregister(&pkt_counters.icmp_internal_errors);
+    debug_counter_unregister(&pkt_counters.icmp_fragmented_packets);
 
     ICMPA_MEMSET(&port_pkt_counters[0], 0,
        sizeof(icmpa_typecode_packet_counter_t) * (ICMPA_CONFIG_OF_PORTS_MAX+1));

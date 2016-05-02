@@ -189,6 +189,7 @@ icmpa_reply (ppe_packet_t *ppep, of_port_no_t port_no)
     uint32_t                   icmp_data_len;
     uint32_t                   vlan_id, vlan_pcp;
     uint32_t                   src_ip, dest_ip;
+    uint32_t                   flags, offset;
     indigo_error_t             rv;
 
     if (!ppep) return INDIGO_CORE_LISTENER_RESULT_PASS;
@@ -203,12 +204,17 @@ icmpa_reply (ppe_packet_t *ppep, of_port_no_t port_no)
     ppe_field_get(ppep, PPE_FIELD_ICMP_TYPE, &icmp_type);
 
     /*
-     * Check to make sure this is an ICMP ECHO Request
-     * else, pass the packet-in to the controller
+     * Check to make sure this is an ICMP ECHO Request.
+     * Only pass ICMP Echo requests to the controller, drop
+     * the rest of the ICMP packet-in's. This will make
+     * sure that fragmented ICMP ECHO Request's do not go
+     * to the controller.
      */
     if (icmp_type != ICMP_ECHO_REQUEST) {
         AIM_LOG_TRACE("Not a ICMP ECHO Request Packet, type: %d", icmp_type);
-        return INDIGO_CORE_LISTENER_RESULT_PASS;
+        return (icmp_type == ICMP_ECHO_REPLY)?
+                INDIGO_CORE_LISTENER_RESULT_PASS :
+                INDIGO_CORE_LISTENER_RESULT_DROP;
     }
 
     /*
@@ -241,6 +247,17 @@ icmpa_reply (ppe_packet_t *ppep, of_port_no_t port_no)
         AIM_LOG_ERROR("ICMPA: Echo request src_ip %{ipv4a} not valid"
                       "(zero/multicast/broadcast)", src_ip);
         debug_counter_inc(&pkt_counters.icmp_internal_errors);
+        return INDIGO_CORE_LISTENER_RESULT_DROP;
+    }
+
+    /*
+     * Do not handle fragments.
+     */
+    ppe_field_get(ppep, PPE_FIELD_IP4_FLAGS, &flags);
+    ppe_field_get(ppep, PPE_FIELD_IP4_FRAG_OFFSET, &offset);
+    if ((flags & PPE_IP4_FLAGS_MF) || offset) {
+        AIM_LOG_ERROR("ICMPA: Do not handle fragments");
+        debug_counter_inc(&pkt_counters.icmp_fragmented_packets);
         return INDIGO_CORE_LISTENER_RESULT_DROP;
     }
 

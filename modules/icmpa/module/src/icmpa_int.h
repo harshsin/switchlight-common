@@ -67,6 +67,7 @@ typedef struct icmpa_packet_counter_s { /* icmpa_packet_counter */
     debug_counter_t  icmp_total_out_packets;
     debug_counter_t  icmp_total_passed_packets;
     debug_counter_t  icmp_internal_errors;
+    debug_counter_t  icmp_fragmented_packets;
 } icmpa_packet_counter_t;
 
 typedef struct icmpa_typecode_packet_counter_s { /* icmpa_typecode_packet_counter */
