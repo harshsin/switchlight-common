@@ -902,11 +902,9 @@ arpa_timer(void *cookie)
         if (entry->timer_state == ARP_TIMER_STATE_UNICAST_QUERY) {
             arpa_send_query(entry, false);
             arpa_set_timer_state(entry, ARP_TIMER_STATE_BROADCAST_QUERY);
-            debug_counter_inc(&unicast_requery_counter);
         } else if (entry->timer_state == ARP_TIMER_STATE_BROADCAST_QUERY) {
             arpa_send_query(entry, true);
             arpa_set_timer_state(entry, ARP_TIMER_STATE_IDLE_TIMEOUT);
-            debug_counter_inc(&broadcast_requery_counter);
         } else if (entry->timer_state == ARP_TIMER_STATE_IDLE_TIMEOUT) {
             arpa_send_idle_notification(entry);
             idle_notifications++;
@@ -956,6 +954,12 @@ arpa_send_query(struct arp_entry *entry, bool broadcast)
     info.tpa = entry->key.ipv4;
 
     arpa_send_packet(&info);
+
+    if (broadcast) {
+        debug_counter_inc(&broadcast_requery_counter);
+    } else {
+        debug_counter_inc(&unicast_requery_counter);
+    }
 }
 
 static void
