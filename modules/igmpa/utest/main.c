@@ -880,3 +880,32 @@ int aim_main(int argc, char* argv[])
     return 0;
 }
 
+
+/* stubs for gq tx gencmd */
+void
+indigo_cxn_pause(indigo_cxn_id_t cxn_id)
+{
+}
+
+void
+indigo_cxn_resume(indigo_cxn_id_t cxn_id)
+{
+}
+
+indigo_error_t
+indigo_core_message_listener_register(indigo_core_message_listener_f fn)
+{
+    return INDIGO_ERROR_NONE;
+}
+
+void
+indigo_core_message_listener_unregister(indigo_core_message_listener_f fn)
+{
+}
+
+void
+indigo_cxn_send_bsn_error(indigo_cxn_id_t cxn_id, of_object_t *orig,
+                          char *err_txt)
+{
+}
+
