@@ -37,11 +37,11 @@ static ucli_status_t
 vxlan_ucli_ucli__tables__(ucli_context_t* uc)
 {
     UCLI_COMMAND_INFO(uc, "tables", 0,
-                      "$summary#Print vxlan aget tables.");
+                      "$summary#Print vxlan agent tables.");
 
     int udp_port = vxlan_protocol_identifier_udp_dst_port_get();
 
-    if (udp_port) {
+    if (udp_port != VXLAN_UDP_DST_PORT_UNDEFINED) {
         ucli_printf(uc, "vxlan_udp_dst_port %d\n\n", udp_port);
     }
 
