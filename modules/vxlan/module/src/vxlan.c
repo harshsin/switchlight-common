@@ -86,7 +86,8 @@ static uint8_t*
 vxlan_header_get(ppe_packet_t *ppep)
 {
     uint8_t *start;
-    uint32_t vxlan_udp_port, pkt_udp_dest_port;
+    uint32_t pkt_udp_dest_port;
+    int vxlan_udp_port;
 
     vxlan_udp_port = vxlan_protocol_identifier_udp_dst_port_get();
 
