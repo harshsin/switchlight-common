@@ -1,5 +1,5 @@
 /*
- * Copyright 2015, Big Switch Networks, Inc.
+ * Copyright 2015-2016, Big Switch Networks, Inc.
  *
  * IGMP agent implementation.
  */
@@ -38,6 +38,8 @@
 #include "gq_expect_table.h"
 #include "gq_tx_table.h"
 #include "pim_expect_table.h"
+
+#include "gq_tx_gencmd.h"
 
 #include "igmpa_int.h"
 #include "igmpa_log.h"
@@ -413,6 +415,7 @@ igmpa_stats_clear(void)
     igmpa_gq_expect_stats_clear();
     igmpa_gq_tx_stats_clear();
     igmpa_pim_expect_stats_clear();
+    igmpa_gq_tx_gencmd_stats_clear();
 }
 
 
@@ -460,6 +463,7 @@ igmpa_stats_show(aim_pvs_t *pvs)
     igmpa_gq_expect_stats_show(pvs);
     igmpa_gq_tx_stats_show(pvs);
     igmpa_pim_expect_stats_show(pvs);
+    igmpa_gq_tx_gencmd_stats_show(pvs);
 }
 
 
@@ -481,6 +485,8 @@ igmpa_init(void)
     indigo_core_packet_in_listener_register(handle_pktin);
 #endif
 
+    igmpa_gq_tx_gencmd_init();
+
     return INDIGO_ERROR_NONE;
 }
 
@@ -488,6 +494,8 @@ igmpa_init(void)
 void
 igmpa_finish(void)
 {
+    igmpa_gq_tx_gencmd_finish();
+
 #if SLSHARED_CONFIG_PKTIN_LISTENER_REGISTER == 1
     indigo_core_packet_in_listener_unregister(handle_pktin);
 #endif
