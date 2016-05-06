@@ -23,7 +23,7 @@
 #include <indigo/error.h>
 #include <PPE/ppe.h>
 
-#define VXLAN_UDP_DST_PORT_UNDEFINED 0
+#define VXLAN_UDP_DST_PORT_UNDEFINED (-1)
 
 /**
  * Initialize VXLAN agent.

@@ -88,6 +88,13 @@ vxlan_header_get(ppe_packet_t *ppep)
     uint8_t *start;
     uint32_t vxlan_udp_port, pkt_udp_dest_port;
 
+    vxlan_udp_port = vxlan_protocol_identifier_udp_dst_port_get();
+
+    /* Check if VXLAN UDP dest port is programmed. */
+    if (vxlan_udp_port == VXLAN_UDP_DST_PORT_UNDEFINED) {
+        return NULL;
+    }
+
     /* VXLAN packets are UDP packets and the destination port
        is a well-known UDP port (4789 per RFC7348). */
     start = ppe_header_get(ppep, PPE_HEADER_UDP);
@@ -95,7 +102,6 @@ vxlan_header_get(ppe_packet_t *ppep)
         return NULL;
     }
 
-    vxlan_udp_port = vxlan_protocol_identifier_udp_dst_port_get();
     ppe_field_get(ppep, PPE_FIELD_UDP_DST_PORT, &pkt_udp_dest_port);
 
     /* Check if the packet UDP dest port matches VXLAN UDP port. */
@@ -118,6 +124,12 @@ vxlan_payload_get(ppe_packet_t *ppep, uint32_t *length)
 
     uint32_t udp_length;
     ppe_field_get(ppep, PPE_FIELD_UDP_LENGTH, &udp_length);
+
+    /* VXLAN packet should have atleast outer UDP header and VXLAN header */
+    if (udp_length < (SLSHARED_CONFIG_UDP_HEADER_SIZE + VXLAN_HEADER_SIZE)) {
+        return NULL;
+    }
+
     *length = udp_length - SLSHARED_CONFIG_UDP_HEADER_SIZE - VXLAN_HEADER_SIZE;
 
     /* Since we know this is a VXLAN packet, find the start of the inner
