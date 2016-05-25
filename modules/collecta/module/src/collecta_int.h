@@ -58,6 +58,8 @@ typedef struct collect_debug_counters_s { /* collect_debug_counters */
     debug_counter_t packet_out;
 } collect_debug_counters_t;
 
+extern uint64_t datapath_id;
+extern struct ind_cfg_ops collecta_cfg_ops;
 extern collect_debug_counters_t collect_counters;
 
 list_head_t *collect_collectors_list(void);

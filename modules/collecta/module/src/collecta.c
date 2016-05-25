@@ -33,7 +33,10 @@
 #include <AIM/aim.h>
 #include <OS/os_time.h>
 #include <PPE/ppe.h>
+#include <Configuration/configuration.h>
 #include <indigo/of_state_manager.h>
+#include <slshared/slshared_config.h>
+#include <collecta/collecta.h>
 
 #include "collecta_int.h"
 #include "collecta_log.h"
@@ -43,24 +46,25 @@
 0                           32
  ---------------------------
 |datagram version(=1)       |
+ --------------------------- 
+|port                       |
  ---------------------------
 |datapath_id                |
  ---------------------------
 |datapath_id(cont)          |
  --------------------------- 
-|port                       |
- --------------------------- 
 */
 typedef struct collect_header_s {
     uint32_t version;
-    uint64_t datapath_id;
     uint32_t in_port;
+    uint64_t datapath_id;
 } collect_header_t;
 
 static bool collecta_initialized = false;
 static indigo_core_gentable_t *collect_collector_table;
 static const indigo_core_gentable_ops_t collect_collector_ops;
 static LIST_DEFINE(collect_collectors);
+static indigo_core_listener_result_t collecta_packet_in_handler(of_packet_in_t *packet_in);
 
 collect_debug_counters_t collect_counters;
 aim_ratelimiter_t collect_pktin_log_limiter;
@@ -77,6 +81,9 @@ collecta_init(void)
     if (collecta_initialized) return INDIGO_ERROR_NONE;
 
     AIM_LOG_TRACE("init");
+
+    /* register for config ops to get datapath id */
+    ind_cfg_register(&collecta_cfg_ops);
 
     indigo_core_gentable_register("collect_collector", &collect_collector_ops, NULL,
                                   4, 4, &collect_collector_table);
@@ -206,7 +213,7 @@ collect_send_packet(uint8_t *pkt, uint32_t pktLen)
  * This api can be used to send a collect sampled packet directly
  * to the collect agent
  */
-indigo_core_listener_result_t
+static indigo_core_listener_result_t
 collecta_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
 {
     uint32_t pktLen;
@@ -237,7 +244,7 @@ collecta_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
     pkt = aim_zmalloc((size_t)pktLen);
     hdr = (collect_header_t *)pkt;
     hdr->version = 1;
-    hdr->datapath_id = 0L; /* TODO: get real datapath id */
+    hdr->datapath_id = datapath_id;
     hdr->in_port = in_port;
     memcpy(pkt + sizeof(*hdr), ppep->data, ppep->size);
     collect_send_packet(pkt, pktLen);
@@ -251,7 +258,7 @@ collecta_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
  *
  * API for handling incoming collect samples
  */
-indigo_core_listener_result_t
+static indigo_core_listener_result_t
 collecta_packet_in_handler(of_packet_in_t *packet_in)
 {
     of_octets_t  octets;

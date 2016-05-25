@@ -4,6 +4,9 @@
  *
  *****************************************************************************/
 #include <collecta/collecta_config.h>
+#include <stdlib.h>
+#include <cjson/cJSON.h>
+#include <Configuration/configuration.h>
 
 /* <auto.start.cdefs(COLLECTA_CONFIG_HEADER).source> */
 #define __collecta_config_STRINGIFY_NAME(_x) #_x
@@ -74,3 +77,26 @@ collecta_config_show(struct aim_pvs_s* pvs)
 
 /* <auto.end.cdefs(COLLECTA_CONFIG_HEADER).source> */
 
+uint64_t datapath_id = 0L;
+static uint64_t dpid_stage = 0L;
+
+static indigo_error_t
+collecta_cfg_stage(cJSON *root) {
+    char *dpid_str = NULL;
+    int err = ind_cfg_lookup_string(root, "of_datapath_id", &dpid_str);
+    if (err >= 0) {
+        dpid_stage = strtoull(dpid_str, NULL, 16);
+    }
+    return INDIGO_ERROR_NONE;
+}
+
+static void
+collecta_cfg_commit(void)
+{
+    datapath_id = dpid_stage;
+}
+
+const struct ind_cfg_ops collecta_cfg_ops = {
+    .stage = collecta_cfg_stage,
+    .commit = collecta_cfg_commit,
+};
