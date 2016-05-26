@@ -246,7 +246,7 @@ collecta_receive_packet(ppe_packet_t *ppep, of_port_no_t in_port)
     hdr->version = 1;
     hdr->datapath_id = datapath_id;
     hdr->in_port = in_port;
-    memcpy(pkt + sizeof(*hdr), ppep->data, ppep->size);
+    AIM_MEMCPY(pkt + sizeof(*hdr), ppep->data, ppep->size);
     collect_send_packet(pkt, pktLen);
     aim_free(pkt);
 
@@ -349,7 +349,7 @@ collect_collector_parse_key(of_list_bsn_tlv_t *tlvs,
 {
     of_object_t tlv;
 
-    memset(key, 0, sizeof(*key));
+    AIM_MEMSET(key, 0, sizeof(*key));
 
     if (of_list_bsn_tlv_first(tlvs, &tlv) < 0) {
         AIM_LOG_ERROR("empty key list");
@@ -385,7 +385,7 @@ collect_collector_parse_value(of_list_bsn_tlv_t *tlvs,
 {
     of_object_t tlv;
 
-    memset(value, 0, sizeof(*value));
+    AIM_MEMSET(value, 0, sizeof(*value));
 
     if (of_list_bsn_tlv_first(tlvs, &tlv) < 0) {
         AIM_LOG_ERROR("empty value list");
