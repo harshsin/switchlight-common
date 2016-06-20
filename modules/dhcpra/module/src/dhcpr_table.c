@@ -94,7 +94,7 @@ is_valid_vlan_value (uint32_t vlan)
     return (vlan <= VLAN_MAX);
 }
 
-/* 
+/*
  * vrouter_key_t must be packed
  * if not, murmur might encode uninitialized padding
  */
@@ -104,7 +104,7 @@ hash_vrouter_key(vrouter_key_t *vrk)
     return murmur_hash(vrk, sizeof(*vrk), 0);
 }
 
-/* 
+/*
  * vrouter_key_t must be packed
  * if not, memcmp might compare unitialized padding
  */
@@ -127,6 +127,26 @@ find_hash_entry_by_virtual_router_key(bighash_table_t *table,
         vr_entry_key.vrouter_ip = te->vrouter_ip;
         vr_entry_key.vrf = te->vrf;
         if (is_vrouter_key_equal(&vr_entry_key, key)) {
+            return te;
+        }
+    }
+    return NULL;
+}
+
+static dhc_relay_t *
+find_hash_entry_by_virtual_router_key_and_vlan(bighash_table_t *table,
+                                               vrouter_key_t *key,
+                                               int32_t vlan)
+{
+    bighash_entry_t *e;
+    vrouter_key_t vr_entry_key;
+
+    for (e = bighash_first(table, hash_vrouter_key(key)); e; e = bighash_next(e)) {
+        dhc_relay_t *te = container_of(e, vrouter_hash_entry, dhc_relay_t);
+        vr_entry_key.vrouter_ip = te->vrouter_ip;
+        vr_entry_key.vrf = te->vrf;
+        if (is_vrouter_key_equal(&vr_entry_key, key) &&
+            (vlan == te->internal_vlan_id)) {
             return te;
         }
     }
@@ -385,8 +405,12 @@ dhcpr_table_modify(void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key, o
     /* Legality check - make sure hash is not corrupted */
     vr_entry_key.vrouter_ip = entry->vrouter_ip;
     vr_entry_key.vrf = entry->vrf;
-    de = find_hash_entry_by_virtual_router_key(&dhcpr_vrouter_ip_table, &vr_entry_key);
-    AIM_TRUE_OR_DIE(de && de == entry, "table_modify");
+    /* It is possible that two VLANs can end up with same VRF and router IP
+     * during modify. Make sure VLAN is also matching. */
+    de = find_hash_entry_by_virtual_router_key_and_vlan(&dhcpr_vrouter_ip_table,
+                                                        &vr_entry_key,
+                                                        entry->internal_vlan_id);
+    AIM_ASSERT(de && de == entry);
 
     /* 1. Update circuit if necessary */
     if ((entry->opt_id.circuit_id.bytes == circuit_id.bytes) &&
@@ -436,8 +460,12 @@ dhcpr_table_delete(void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key)
     /* Legality check */
     vr_entry_key.vrouter_ip = entry->vrouter_ip;
     vr_entry_key.vrf = entry->vrf;
-    de = find_hash_entry_by_virtual_router_key(&dhcpr_vrouter_ip_table, &vr_entry_key);
-    AIM_TRUE_OR_DIE(de && de == entry, "table_delete");
+    /* It is possible that two VLANs can end up with same VRF and router IP
+     * during modify. Make sure VLAN is also matching. */
+    de = find_hash_entry_by_virtual_router_key_and_vlan(&dhcpr_vrouter_ip_table,
+                                                        &vr_entry_key,
+                                                        entry->internal_vlan_id);
+    AIM_ASSERT(de && de == entry);
     bighash_remove(&dhcpr_vrouter_ip_table, &entry->vrouter_hash_entry);
 
     AIM_TRUE_OR_DIE(entry == dhcpr_vlan_table[entry->internal_vlan_id]);
