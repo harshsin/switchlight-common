@@ -405,6 +405,8 @@ dhcpr_table_modify(void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key, o
     /* Legality check - make sure hash is not corrupted */
     vr_entry_key.vrouter_ip = entry->vrouter_ip;
     vr_entry_key.vrf = entry->vrf;
+    /* It is possible that two VLANs can end up with same VRF and router IP
+     * during modify. Make sure VLAN is also matching. */
     de = find_hash_entry_by_virtual_router_key_and_vlan(&dhcpr_vrouter_ip_table,
                                                         &vr_entry_key,
                                                         entry->internal_vlan_id);
@@ -458,6 +460,8 @@ dhcpr_table_delete(void *table_priv, void *entry_priv, of_list_bsn_tlv_t *key)
     /* Legality check */
     vr_entry_key.vrouter_ip = entry->vrouter_ip;
     vr_entry_key.vrf = entry->vrf;
+    /* It is possible that two VLANs can end up with same VRF and router IP
+     * during modify. Make sure VLAN is also matching. */
     de = find_hash_entry_by_virtual_router_key_and_vlan(&dhcpr_vrouter_ip_table,
                                                         &vr_entry_key,
                                                         entry->internal_vlan_id);
