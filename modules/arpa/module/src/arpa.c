@@ -106,6 +106,13 @@ struct arp_entry {
      * Time we started waiting for a timeout
      */
     indigo_time_t start_time;
+
+    /*
+     * Mark this flag after sending an idle notification.
+     * If we get a arp packet from the source after idle notification,
+     * we need to send arp_not_idle notification.
+     */
+    bool idle_notification_sent;
 };
 
 #define TEMPLATE_NAME arp_entries_hashtable
@@ -121,6 +128,7 @@ static bool arpa_check_source(struct arp_info *info);
 static void arpa_set_timer_state(struct arp_entry *entry, enum arp_timer_state state);
 static void arpa_timer(void *cookie);
 static void arpa_send_idle_notification(struct arp_entry *entry);
+static void arpa_send_not_idle_notification(struct arp_entry *entry);
 static void arpa_send_query(struct arp_entry *entry, bool broadcast);
 static indigo_error_t find_mac(uint16_t vlan_vid, uint32_t ip, of_mac_addr_t *mac);
 
@@ -163,6 +171,9 @@ static debug_counter_t arp_vlan_reply_hit_counter;
 DEBUG_COUNTER(source_check_disabled_counter,
     "arpa.source_check_disabled",
     "ARP source check disabled for this segment");
+DEBUG_COUNTER(not_idle_notification_counter,
+    "arpa.not_idle_notification",
+    "Sent a notification to the controller that an ARP table entry was not idle");
 
 
 /* Public interface */
@@ -804,6 +815,8 @@ arpa_send_packet(struct arp_info *info)
 static bool
 arpa_check_source(struct arp_info *info)
 {
+    AIM_LOG_TRACE("Harsh - atleast called");
+
     if (arpa_disable_source_check_table_lookup(info->vlan_vid)) {
         debug_counter_inc(&source_check_disabled_counter);
         return true;
@@ -821,6 +834,11 @@ arpa_check_source(struct arp_info *info)
         entry->stats.miss_packets++;
         debug_counter_inc(&source_mismatch_counter);
         return false;
+    }
+
+    if (entry->idle_notification_sent) {
+        arpa_send_not_idle_notification(entry);
+        entry->idle_notification_sent = false;
     }
 
     entry->stats.active_time = entry->start_time = INDIGO_CURRENT_TIME;
@@ -907,6 +925,7 @@ arpa_timer(void *cookie)
             arpa_set_timer_state(entry, ARP_TIMER_STATE_IDLE_TIMEOUT);
         } else if (entry->timer_state == ARP_TIMER_STATE_IDLE_TIMEOUT) {
             arpa_send_idle_notification(entry);
+            entry->idle_notification_sent = true;
             idle_notifications++;
             entry->start_time = now;
             arpa_set_timer_state(entry, ARP_TIMER_STATE_UNICAST_QUERY);
@@ -980,4 +999,47 @@ arpa_send_idle_notification(struct arp_entry *entry)
     of_bsn_arp_idle_vlan_vid_set(msg, entry->key.vlan_vid);
     of_bsn_arp_idle_ipv4_addr_set(msg, entry->key.ipv4);
     indigo_cxn_send_async_message(msg);
+}
+
+static void
+arpa_send_not_idle_notification(struct arp_entry *entry)
+{
+    AIM_LOG_VERBOSE("Sending not idle notification for VLAN %u IP %{ipv4a}", entry->key.vlan_vid, entry->key.ipv4);
+
+    of_version_t version;
+    if (indigo_cxn_get_async_version(&version) < 0) {
+        /* No controller connected */
+        return;
+    } else if (version < OF_VERSION_1_3) {
+        /* ARP not idle notification requires OF 1.3+ */
+        return;
+    }
+
+    of_object_t *notif = of_bsn_generic_async_new(version);
+    of_list_bsn_tlv_t *list = of_list_bsn_tlv_new(version);
+
+    {
+        of_str64_t name = "arp_not_idle";
+        of_bsn_generic_async_name_set(notif, name);
+    }
+
+    {
+        of_bsn_tlv_vlan_vid_t *tlv = of_bsn_tlv_vlan_vid_new(version);
+        of_bsn_tlv_vlan_vid_value_set(tlv, entry->key.vlan_vid);
+        of_list_append(list, tlv);
+        of_object_delete(tlv);
+    }
+    {
+        of_bsn_tlv_ipv4_t *tlv = of_bsn_tlv_ipv4_new(version);
+        of_bsn_tlv_ipv4_value_set(tlv, entry->key.ipv4);
+        of_list_append(list, tlv);
+        of_object_delete(tlv);
+    }
+    AIM_TRUE_OR_DIE(of_bsn_generic_async_tlvs_set(notif, list) == 0,
+                    "Cannot set arp_not_idle notification tlvs");
+    of_object_delete(list);
+
+    /* send notification to controller */
+    indigo_cxn_send_async_message(notif);
+    debug_counter_inc(&not_idle_notification_counter);
 }
